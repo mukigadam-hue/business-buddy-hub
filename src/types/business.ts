@@ -30,6 +30,8 @@ export interface Sale {
   grandTotal: number;
   timestamp: string;
   recordedBy: string;
+  fromOrderId?: string;
+  fromOrderCode?: string;
 }
 
 export interface PurchaseItem {
@@ -71,6 +73,7 @@ export interface Order {
   status: 'pending' | 'priced' | 'confirmed' | 'completed' | 'cancelled';
   timestamp: string;
   code: string;
+  transferredToSale?: boolean;
 }
 
 export interface ServiceRecord {
@@ -87,6 +90,7 @@ export interface BusinessInfo {
   address: string;
   contact: string;
   email: string;
+  totalCapital: number;
 }
 
 export interface BusinessData {

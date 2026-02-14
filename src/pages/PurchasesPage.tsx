@@ -4,33 +4,29 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Trash2, Package } from 'lucide-react';
 import type { PurchaseItem } from '@/types/business';
-
-const categories = ['Electronics', 'Food & Beverages', 'Clothing', 'Hardware', 'Stationery', 'Cosmetics', 'Other'];
-const qualities = ['New', 'Grade A', 'Grade B', 'Grade C', 'Refurbished'];
 
 export default function PurchasesPage() {
   const { data, addPurchase } = useBusiness();
   const [items, setItems] = useState<Omit<PurchaseItem, 'id' | 'subtotal'>[]>([]);
   const [supplier, setSupplier] = useState('');
-  const [form, setForm] = useState({ name: '', category: 'Other', quality: 'New', quantity: '1', unitPrice: '' });
+  const [form, setForm] = useState({ name: '', category: '', quality: '', quantity: '1', unitPrice: '' });
 
-  // Suggest existing stock item names
   const suggestions = data.stock.map(s => s.name);
+  const existingCategories = [...new Set(data.stock.map(s => s.category).filter(Boolean))];
 
   function addItem() {
     if (!form.name.trim()) return;
     setItems(prev => [...prev, {
       itemName: form.name.trim(),
-      category: form.category,
-      quality: form.quality,
+      category: form.category.trim(),
+      quality: form.quality.trim(),
       quantity: parseInt(form.quantity) || 1,
       unitPrice: parseFloat(form.unitPrice) || 0,
     }]);
-    setForm({ name: '', category: 'Other', quality: 'New', quantity: '1', unitPrice: '' });
+    setForm({ name: '', category: '', quality: '', quantity: '1', unitPrice: '' });
   }
 
   function removeItem(idx: number) {
@@ -77,21 +73,23 @@ export default function PurchasesPage() {
             </div>
             <div className="w-28">
               <Label>Category</Label>
-              <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Input
+                value={form.category}
+                onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                placeholder="Type category..."
+                list="purchase-cat-suggestions"
+              />
+              <datalist id="purchase-cat-suggestions">
+                {existingCategories.map(c => <option key={c} value={c} />)}
+              </datalist>
             </div>
             <div className="w-28">
               <Label>Quality</Label>
-              <Select value={form.quality} onValueChange={v => setForm(f => ({ ...f, quality: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {qualities.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Input
+                value={form.quality}
+                onChange={e => setForm(f => ({ ...f, quality: e.target.value }))}
+                placeholder="e.g. New..."
+              />
             </div>
             <div className="w-20">
               <Label>Qty</Label>
@@ -165,8 +163,8 @@ export default function PurchasesPage() {
                     <span className="font-bold">${p.grandTotal.toFixed(2)}</span>
                   </div>
                   <div className="text-sm text-muted-foreground space-y-0.5">
-                    {p.items.map(item => (
-                      <div key={item.id} className="flex justify-between">
+                    {p.items.map((item, i) => (
+                      <div key={i} className="flex justify-between">
                         <span>{item.itemName} × {item.quantity}</span>
                         <span>${item.subtotal.toFixed(2)}</span>
                       </div>

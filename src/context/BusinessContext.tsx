@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { BusinessData, StockItem, Sale, Purchase, Order, ServiceRecord, BusinessInfo } from '@/types/business';
+import { toast } from 'sonner';
+import type { BusinessData, StockItem, Sale, Purchase, Order, ServiceRecord, BusinessInfo, OrderItem } from '@/types/business';
 
 const defaultBusinessInfo: BusinessInfo = {
   name: 'My Business',
   address: '123 Main Street',
   contact: '+1 234 567 890',
   email: 'info@mybusiness.com',
+  totalCapital: 0,
 };
 
 const defaultData: BusinessData = {
@@ -20,7 +22,14 @@ const defaultData: BusinessData = {
 function loadData(): BusinessData {
   try {
     const raw = localStorage.getItem('biztrack_data');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Ensure totalCapital exists
+      if (parsed.businessInfo && parsed.businessInfo.totalCapital === undefined) {
+        parsed.businessInfo.totalCapital = 0;
+      }
+      return parsed;
+    }
   } catch {}
   return defaultData;
 }
@@ -46,11 +55,15 @@ interface BusinessContextType {
   addSale: (sale: Omit<Sale, 'id' | 'timestamp'>) => void;
   addPurchase: (purchase: Omit<Purchase, 'id' | 'timestamp'>) => void;
   addOrder: (order: Omit<Order, 'id' | 'timestamp' | 'code'>) => void;
+  updateOrder: (id: string, updates: Partial<Order>) => void;
   updateOrderStatus: (id: string, status: Order['status']) => void;
+  completeOrderToSale: (orderId: string) => void;
   addService: (service: Omit<ServiceRecord, 'id' | 'timestamp'>) => void;
   getTopSellingItems: () => { name: string; totalSold: number }[];
   getLowStockItems: () => StockItem[];
   getOutOfStockItems: () => StockItem[];
+  getTodayRevenue: () => number;
+  getExpectedRevenue: () => { wholesale: number; retail: number; totalProfit: number };
 }
 
 const BusinessContext = createContext<BusinessContextType | null>(null);
@@ -116,6 +129,9 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     const now = new Date().toISOString();
     setData(prev => {
       const newStock = [...prev.stock];
+      const addedItems: string[] = [];
+      const updatedItems: string[] = [];
+      
       purchase.items.forEach(purchaseItem => {
         const idx = newStock.findIndex(
           s => s.name.toLowerCase() === purchaseItem.itemName.toLowerCase()
@@ -126,6 +142,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
             quantity: newStock[idx].quantity + purchaseItem.quantity,
             updatedAt: now,
           };
+          updatedItems.push(`${purchaseItem.itemName} (+${purchaseItem.quantity})`);
         } else {
           newStock.push({
             id: generateId(),
@@ -139,8 +156,18 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
             createdAt: now,
             updatedAt: now,
           });
+          addedItems.push(`${purchaseItem.itemName} (${purchaseItem.quantity})`);
         }
       });
+
+      // Notify about stock changes
+      if (updatedItems.length > 0) {
+        toast.success('Stock Updated', { description: updatedItems.join(', ') });
+      }
+      if (addedItems.length > 0) {
+        toast.info('New Items Added to Stock', { description: addedItems.join(', ') });
+      }
+
       return {
         ...prev,
         stock: newStock,
@@ -156,11 +183,73 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const updateOrder = useCallback((id: string, updates: Partial<Order>) => {
+    setData(prev => ({
+      ...prev,
+      orders: prev.orders.map(o => (o.id === id ? { ...o, ...updates } : o)),
+    }));
+  }, []);
+
   const updateOrderStatus = useCallback((id: string, status: Order['status']) => {
     setData(prev => ({
       ...prev,
       orders: prev.orders.map(o => (o.id === id ? { ...o, status } : o)),
     }));
+  }, []);
+
+  const completeOrderToSale = useCallback((orderId: string) => {
+    const now = new Date().toISOString();
+    setData(prev => {
+      const order = prev.orders.find(o => o.id === orderId);
+      if (!order || order.transferredToSale) return prev;
+
+      // Deduct from stock
+      const newStock = [...prev.stock];
+      order.items.forEach(orderItem => {
+        const idx = newStock.findIndex(s => s.name.toLowerCase() === orderItem.itemName.toLowerCase());
+        if (idx >= 0) {
+          newStock[idx] = {
+            ...newStock[idx],
+            quantity: Math.max(0, newStock[idx].quantity - orderItem.quantity),
+            updatedAt: now,
+          };
+        }
+      });
+
+      const saleItems = order.items.map(item => ({
+        id: generateId(),
+        stockItemId: '',
+        itemName: item.itemName,
+        category: item.category,
+        quality: item.quality,
+        quantity: item.quantity,
+        priceType: item.priceType,
+        unitPrice: item.unitPrice,
+        subtotal: item.subtotal,
+        timestamp: now,
+      }));
+
+      const newSale: Sale = {
+        id: generateId(),
+        items: saleItems,
+        grandTotal: order.grandTotal,
+        timestamp: now,
+        recordedBy: 'Order Transfer',
+        fromOrderId: order.id,
+        fromOrderCode: order.code,
+      };
+
+      toast.success('Order Transferred to Sales', {
+        description: `Order ${order.code} (${order.customerName}) — $${order.grandTotal.toFixed(2)}`,
+      });
+
+      return {
+        ...prev,
+        stock: newStock,
+        orders: prev.orders.map(o => o.id === orderId ? { ...o, status: 'completed' as const, transferredToSale: true } : o),
+        sales: [...prev.sales, newSale],
+      };
+    });
   }, []);
 
   const addService = useCallback((service: Omit<ServiceRecord, 'id' | 'timestamp'>) => {
@@ -189,6 +278,35 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     return data.stock.filter(item => item.quantity === 0);
   }, [data.stock]);
 
+  const getTodayRevenue = useCallback(() => {
+    const today = new Date().toDateString();
+    return data.sales
+      .filter(s => new Date(s.timestamp).toDateString() === today)
+      .reduce((sum, s) => sum + s.grandTotal, 0);
+  }, [data.sales]);
+
+  const getExpectedRevenue = useCallback(() => {
+    let wholesale = 0;
+    let retail = 0;
+    let totalCost = 0;
+
+    data.stock.forEach(item => {
+      wholesale += item.quantity * item.wholesalePrice;
+      retail += item.quantity * item.retailPrice;
+    });
+
+    // Estimate cost from purchases
+    data.purchases.forEach(p => {
+      totalCost += p.grandTotal;
+    });
+
+    return {
+      wholesale,
+      retail,
+      totalProfit: retail - totalCost,
+    };
+  }, [data.stock, data.purchases]);
+
   return (
     <BusinessContext.Provider
       value={{
@@ -200,11 +318,15 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         addSale,
         addPurchase,
         addOrder,
+        updateOrder,
         updateOrderStatus,
+        completeOrderToSale,
         addService,
         getTopSellingItems,
         getLowStockItems,
         getOutOfStockItems,
+        getTodayRevenue,
+        getExpectedRevenue,
       }}
     >
       {children}

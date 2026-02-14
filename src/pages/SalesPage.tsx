@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, ShoppingCart } from 'lucide-react';
-import type { SaleItem } from '@/types/business';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Trash2, ShoppingCart, Receipt as ReceiptIcon } from 'lucide-react';
+import type { SaleItem, Sale } from '@/types/business';
+import Receipt from '@/components/Receipt';
 
 export default function SalesPage() {
   const { data, addSale } = useBusiness();
@@ -15,6 +17,7 @@ export default function SalesPage() {
   const [selectedStock, setSelectedStock] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [priceType, setPriceType] = useState<'wholesale' | 'retail'>('retail');
+  const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
 
   const todaySales = data.sales.filter(s => new Date(s.timestamp).toDateString() === new Date().toDateString());
 
@@ -149,23 +152,49 @@ export default function SalesPage() {
               {todaySales.map(sale => (
                 <div key={sale.id} className="border rounded-lg p-3 space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">{new Date(sale.timestamp).toLocaleTimeString()}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{new Date(sale.timestamp).toLocaleTimeString()}</span>
+                      {sale.fromOrderCode && (
+                        <span className="text-xs bg-accent/10 text-accent px-1.5 py-0.5 rounded-full">From Order {sale.fromOrderCode}</span>
+                      )}
+                    </div>
                     <span className="font-bold text-success">${sale.grandTotal.toFixed(2)}</span>
                   </div>
                   <div className="text-sm space-y-1">
-                    {sale.items.map(item => (
-                      <div key={item.id} className="flex justify-between text-muted-foreground">
+                    {sale.items.map((item, i) => (
+                      <div key={i} className="flex justify-between text-muted-foreground">
                         <span>{item.itemName} × {item.quantity} ({item.priceType})</span>
                         <span>${item.subtotal.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
+                  <Button size="sm" variant="ghost" onClick={() => setReceiptSale(sale)}>
+                    <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
+                  </Button>
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Receipt Dialog */}
+      <Dialog open={!!receiptSale} onOpenChange={o => { if (!o) setReceiptSale(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Sale Receipt</DialogTitle>
+          </DialogHeader>
+          {receiptSale && (
+            <Receipt
+              items={receiptSale.items}
+              grandTotal={receiptSale.grandTotal}
+              code={receiptSale.fromOrderCode}
+              date={receiptSale.timestamp}
+              type="sale"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

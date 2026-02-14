@@ -1,17 +1,13 @@
 import { useState } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
 import type { StockItem } from '@/types/business';
-
-const categories = ['Electronics', 'Food & Beverages', 'Clothing', 'Hardware', 'Stationery', 'Cosmetics', 'Other'];
-const qualities = ['New', 'Grade A', 'Grade B', 'Grade C', 'Refurbished'];
 
 export default function StockPage() {
   const { data, addStockItem, updateStockItem, deleteStockItem } = useBusiness();
@@ -19,7 +15,7 @@ export default function StockPage() {
   const [open, setOpen] = useState(false);
   const [editItem, setEditItem] = useState<StockItem | null>(null);
   const [form, setForm] = useState({
-    name: '', category: 'Other', quality: 'New',
+    name: '', category: '', quality: '',
     wholesalePrice: '', retailPrice: '', quantity: '', minStockLevel: '5',
   });
 
@@ -28,8 +24,10 @@ export default function StockPage() {
     item.category.toLowerCase().includes(search.toLowerCase())
   );
 
+  const existingCategories = [...new Set(data.stock.map(s => s.category).filter(Boolean))];
+
   function resetForm() {
-    setForm({ name: '', category: 'Other', quality: 'New', wholesalePrice: '', retailPrice: '', quantity: '', minStockLevel: '5' });
+    setForm({ name: '', category: '', quality: '', wholesalePrice: '', retailPrice: '', quantity: '', minStockLevel: '5' });
     setEditItem(null);
   }
 
@@ -37,8 +35,8 @@ export default function StockPage() {
     e.preventDefault();
     const itemData = {
       name: form.name.trim(),
-      category: form.category,
-      quality: form.quality,
+      category: form.category.trim(),
+      quality: form.quality.trim(),
       wholesalePrice: parseFloat(form.wholesalePrice) || 0,
       retailPrice: parseFloat(form.retailPrice) || 0,
       quantity: parseInt(form.quantity) || 0,
@@ -87,21 +85,23 @@ export default function StockPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Category</Label>
-                  <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={form.category}
+                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                    placeholder="Type category..."
+                    list="stock-cat-suggestions"
+                  />
+                  <datalist id="stock-cat-suggestions">
+                    {existingCategories.map(c => <option key={c} value={c} />)}
+                  </datalist>
                 </div>
                 <div>
                   <Label>Quality</Label>
-                  <Select value={form.quality} onValueChange={v => setForm(f => ({ ...f, quality: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {qualities.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={form.quality}
+                    onChange={e => setForm(f => ({ ...f, quality: e.target.value }))}
+                    placeholder="e.g. New, Grade A..."
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">

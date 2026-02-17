@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserPlus, Copy, Trash2, Shield, Crown, User, Users, ShoppingBag } from 'lucide-react';
+import { UserPlus, Trash2, Shield, Crown, User, Users, ShoppingBag, MessageCircle, Share2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Member {
@@ -20,6 +21,118 @@ interface Customer {
   customer_name: string;
   phone: string;
   created_at: string;
+}
+
+function ShareButtons({ code, type }: { code: string; type: 'worker' | 'customer' }) {
+  const label = type === 'worker' ? 'Worker' : 'Customer';
+  const message = `Join our business as a ${label}! Use this invite code: ${code}`;
+  const encoded = encodeURIComponent(message);
+
+  const platforms = [
+    {
+      name: 'WhatsApp',
+      icon: <MessageCircle className="h-4 w-4" />,
+      url: `https://wa.me/?text=${encoded}`,
+      bg: 'bg-green-600 hover:bg-green-700 text-white',
+    },
+    {
+      name: 'X',
+      icon: (
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+      ),
+      url: `https://twitter.com/intent/tweet?text=${encoded}`,
+      bg: 'bg-black hover:bg-gray-800 text-white',
+    },
+    {
+      name: 'Facebook',
+      icon: (
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+        </svg>
+      ),
+      url: `https://www.facebook.com/sharer/sharer.php?quote=${encoded}`,
+      bg: 'bg-blue-600 hover:bg-blue-700 text-white',
+    },
+    {
+      name: 'Copy',
+      icon: <Share2 className="h-4 w-4" />,
+      action: () => {
+        navigator.clipboard.writeText(code);
+        toast.success('Code copied to clipboard!');
+      },
+      bg: 'bg-muted hover:bg-muted/80 text-foreground',
+    },
+  ];
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap mt-2">
+      <span className="text-xs text-muted-foreground">Share via:</span>
+      {platforms.map((p) => (
+        <button
+          key={p.name}
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${p.bg}`}
+          onClick={() => {
+            if ('action' in p && p.action) {
+              p.action();
+            } else if ('url' in p) {
+              window.open(p.url, '_blank', 'noopener,noreferrer');
+            }
+          }}
+        >
+          {p.icon}
+          {p.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function RedeemCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
+  const { redeemInviteCode } = useBusiness();
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleRedeem() {
+    if (!code.trim()) {
+      toast.error('Please enter an invite code');
+      return;
+    }
+    setLoading(true);
+    const success = await redeemInviteCode(code.trim());
+    if (success) {
+      setCode('');
+      onRedeemed();
+    }
+    setLoading(false);
+  }
+
+  return (
+    <Card className="shadow-card border-dashed border-primary/30">
+      <CardContent className="p-4 space-y-3">
+        <h2 className="text-base font-semibold flex items-center gap-2">
+          <Send className="h-4 w-4" />
+          Redeem Invite Code
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Have an invite code? Enter it below to join a business as a worker or customer.
+        </p>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Enter code (e.g. ABC123)"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            className="font-mono tracking-wider uppercase"
+            maxLength={10}
+          />
+          <Button onClick={handleRedeem} disabled={loading || !code.trim()}>
+            {loading ? 'Joining...' : 'Join'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function TeamPage() {
@@ -52,11 +165,6 @@ export default function TeamPage() {
     if (type === 'worker') setWorkerCode(code);
     else setCustomerCode(code);
     setLoading(false);
-  }
-
-  function copyCode(code: string) {
-    navigator.clipboard.writeText(code);
-    toast.success('Code copied! Share it via WhatsApp or any messaging app.');
   }
 
   async function handleRemove(userId: string) {
@@ -97,16 +205,14 @@ export default function TeamPage() {
               : 'Generate a code for customers so they can place orders through the app.'}
           </p>
           {code ? (
-            <div className="flex items-center gap-3">
-              <div className="flex-1 rounded-lg p-3 text-center" style={{ backgroundColor: isWorker ? 'hsl(var(--primary) / 0.08)' : 'hsl(var(--accent) / 0.3)' }}>
+            <div className="space-y-2">
+              <div className="rounded-lg p-3 text-center" style={{ backgroundColor: isWorker ? 'hsl(var(--primary) / 0.08)' : 'hsl(var(--accent) / 0.3)' }}>
                 <span className="text-2xl font-mono font-bold tracking-widest">{code}</span>
                 <p className="text-xs text-muted-foreground mt-1">
                   {isWorker ? '🔐 Worker Code — Expires in 7 days' : '🛒 Customer Code — Expires in 7 days'}
                 </p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => copyCode(code)}>
-                <Copy className="h-4 w-4 mr-1" />Copy
-              </Button>
+              <ShareButtons code={code} type={type} />
             </div>
           ) : (
             <Button onClick={onGenerate} disabled={loading} variant={isWorker ? 'default' : 'secondary'}>
@@ -127,6 +233,9 @@ export default function TeamPage() {
           {currentBusiness?.name} — Manage your workers and customers
         </p>
       </div>
+
+      {/* Redeem Code Section — always visible */}
+      <RedeemCodeSection onRedeemed={() => { loadMembers(); loadCustomers(); }} />
 
       <Tabs defaultValue="workers" className="w-full">
         <TabsList className="grid w-full grid-cols-2">

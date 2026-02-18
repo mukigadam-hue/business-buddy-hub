@@ -1,9 +1,11 @@
 import { useBusiness } from '@/context/BusinessContext';
+import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, TrendingUp, AlertTriangle, XCircle, DollarSign, ShoppingCart } from 'lucide-react';
+import { Package, TrendingUp, AlertTriangle, XCircle, DollarSign, ShoppingCart, Wrench } from 'lucide-react';
 
 export default function Dashboard() {
-  const { currentBusiness, stock, sales } = useBusiness();
+  const { currentBusiness, stock, sales, services } = useBusiness();
+  const { fmt } = useCurrency();
 
   const todaySales = sales.filter(s => {
     const d = new Date(s.created_at);
@@ -11,15 +13,19 @@ export default function Dashboard() {
   });
   const todayRevenue = todaySales.reduce((sum, s) => sum + Number(s.grand_total), 0);
 
+  const todayServices = services.filter(s => new Date(s.created_at).toDateString() === new Date().toDateString());
+  const todayServiceRevenue = todayServices.reduce((sum, s) => sum + Number(s.cost), 0);
+
   const lowStock = stock.filter(item => item.quantity > 0 && item.quantity <= item.min_stock_level);
   const outOfStock = stock.filter(item => item.quantity === 0);
 
-  // Top selling
-  const itemCounts: Record<string, { name: string; totalSold: number }> = {};
+  // Top selling — distinguish by name + category + quality
+  const itemCounts: Record<string, { name: string; category: string; quality: string; totalSold: number }> = {};
   sales.forEach(sale => {
     sale.items.forEach(item => {
-      if (!itemCounts[item.item_name]) itemCounts[item.item_name] = { name: item.item_name, totalSold: 0 };
-      itemCounts[item.item_name].totalSold += item.quantity;
+      const key = `${item.item_name}||${item.category}||${item.quality}`;
+      if (!itemCounts[key]) itemCounts[key] = { name: item.item_name, category: item.category, quality: item.quality, totalSold: 0 };
+      itemCounts[key].totalSold += item.quantity;
     });
   });
   const topSelling = Object.values(itemCounts).sort((a, b) => b.totalSold - a.totalSold).slice(0, 10);
@@ -48,7 +54,7 @@ export default function Dashboard() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-success/10"><DollarSign className="h-5 w-5 text-success" /></div>
-              <div><p className="text-xs text-muted-foreground">Today's Revenue</p><p className="text-xl font-bold">${todayRevenue.toLocaleString()}</p></div>
+              <div><p className="text-xs text-muted-foreground">Today's Revenue</p><p className="text-xl font-bold">{fmt(todayRevenue + todayServiceRevenue)}</p></div>
             </div>
           </CardContent>
         </Card>
@@ -79,8 +85,16 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {topSelling.map((item, i) => (
-                  <div key={item.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3"><span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span><span className="text-sm font-medium">{item.name}</span></div>
+                  <div key={`${item.name}-${item.category}-${item.quality}`} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
+                      <div>
+                        <p className="text-sm font-medium">{item.name}</p>
+                        {(item.category || item.quality) && (
+                          <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>
+                        )}
+                      </div>
+                    </div>
                     <span className="text-sm font-semibold text-primary">{item.totalSold} sold</span>
                   </div>
                 ))}
@@ -98,13 +112,19 @@ export default function Dashboard() {
               <div className="space-y-2">
                 {outOfStock.map(item => (
                   <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-destructive/5">
-                    <span className="text-sm font-medium">{item.name}</span>
+                    <div>
+                      <p className="text-sm font-medium">{item.name}</p>
+                      {(item.category || item.quality) && <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>}
+                    </div>
                     <span className="text-xs font-semibold text-destructive px-2 py-0.5 rounded-full bg-destructive/10">OUT OF STOCK</span>
                   </div>
                 ))}
                 {lowStock.map(item => (
                   <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-warning/5">
-                    <span className="text-sm font-medium">{item.name}</span>
+                    <div>
+                      <p className="text-sm font-medium">{item.name}</p>
+                      {(item.category || item.quality) && <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>}
+                    </div>
                     <span className="text-xs font-semibold text-warning px-2 py-0.5 rounded-full bg-warning/10">{item.quantity} left</span>
                   </div>
                 ))}
@@ -114,26 +134,54 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <Card className="shadow-card">
-        <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-primary" />Recent Sales</CardTitle></CardHeader>
-        <CardContent>
-          {sales.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No sales recorded yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {sales.slice(0, 5).map(sale => (
-                <div key={sale.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                  <div>
-                    <span className="text-sm font-medium">{sale.items.map(i => i.item_name).join(', ')}</span>
-                    <p className="text-xs text-muted-foreground">{new Date(sale.created_at).toLocaleString()}</p>
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card className="shadow-card">
+          <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-primary" />Recent Sales</CardTitle></CardHeader>
+          <CardContent>
+            {sales.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No sales recorded yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {sales.slice(0, 5).map(sale => (
+                  <div key={sale.id} className="flex items-start justify-between p-2 rounded-lg bg-muted/50">
+                    <div>
+                      {sale.items.map((item, i) => (
+                        <p key={i} className="text-sm font-medium">
+                          {item.item_name}
+                          {(item.category || item.quality) && <span className="text-xs text-muted-foreground ml-1">· {[item.category, item.quality].filter(Boolean).join(' · ')}</span>}
+                        </p>
+                      ))}
+                      <p className="text-xs text-muted-foreground">{new Date(sale.created_at).toLocaleString()}</p>
+                    </div>
+                    <span className="text-sm font-bold text-success">{fmt(Number(sale.grand_total))}</span>
                   </div>
-                  <span className="text-sm font-bold text-success">${Number(sale.grand_total).toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Wrench className="h-4 w-4 text-accent" />Recent Services</CardTitle></CardHeader>
+          <CardContent>
+            {services.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No services recorded yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {services.slice(0, 5).map(s => (
+                  <div key={s.id} className="flex items-start justify-between p-2 rounded-lg bg-muted/50">
+                    <div>
+                      <p className="text-sm font-medium">{s.service_name}</p>
+                      <p className="text-xs text-muted-foreground">{s.customer_name} · {new Date(s.created_at).toLocaleString()}</p>
+                    </div>
+                    <span className="text-sm font-bold text-accent">{fmt(Number(s.cost))}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

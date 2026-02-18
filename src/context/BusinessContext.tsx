@@ -138,8 +138,8 @@ interface BusinessContextType {
   addStockItem: (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateStockItem: (id: string, updates: Partial<StockItem>) => Promise<void>;
   deleteStockItem: (id: string) => Promise<void>;
-  addSale: (items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[], grandTotal: number, recordedBy: string, fromOrderId?: string, fromOrderCode?: string) => Promise<void>;
-  addPurchase: (items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; subtotal: number }[], grandTotal: number, supplier: string, recordedBy: string) => Promise<void>;
+  addSale: (items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; customer_name?: string }[], grandTotal: number, recordedBy: string, fromOrderId?: string, fromOrderCode?: string) => Promise<void>;
+  addPurchase: (items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number }[], grandTotal: number, supplier: string, recordedBy: string) => Promise<void>;
   addOrder: (type: string, customerName: string, items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[], grandTotal: number, status: string) => Promise<void>;
   updateOrder: (id: string, items: OrderItem[], grandTotal: number, status?: string) => Promise<void>;
   completeOrderToSale: (orderId: string) => Promise<void>;
@@ -361,7 +361,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addSale = useCallback(async (
-    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[],
+    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; customer_name?: string }[],
     grandTotal: number, recordedBy: string, fromOrderId?: string, fromOrderCode?: string
   ) => {
     if (!currentBusinessId) return;
@@ -384,8 +384,10 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }));
     await supabase.from('sale_items').insert(saleItems);
 
-    // Deduct from stock
+    // Deduct from stock — match by id first, then by name+category+quality
     for (const item of items) {
+      // Skip service items
+      if (item.price_type === 'service') continue;
       if (item.stock_item_id) {
         const stockItem = stock.find(s => s.id === item.stock_item_id);
         if (stockItem) {
@@ -394,7 +396,11 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
           }).eq('id', item.stock_item_id);
         }
       } else {
-        const stockItem = stock.find(s => s.name.toLowerCase() === item.item_name.toLowerCase());
+        const stockItem = stock.find(s =>
+          s.name.toLowerCase() === item.item_name.toLowerCase() &&
+          s.category.toLowerCase() === (item.category || '').toLowerCase() &&
+          s.quality.toLowerCase() === (item.quality || '').toLowerCase()
+        ) || stock.find(s => s.name.toLowerCase() === item.item_name.toLowerCase());
         if (stockItem) {
           await supabase.from('stock_items').update({
             quantity: Math.max(0, stockItem.quantity - item.quantity),
@@ -406,7 +412,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, [currentBusinessId, stock]);
 
   const addPurchase = useCallback(async (
-    items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; subtotal: number }[],
+    items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number }[],
     grandTotal: number, supplier: string, recordedBy: string
   ) => {
     if (!currentBusinessId) return;
@@ -421,18 +427,28 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }));
     await supabase.from('purchase_items').insert(purchaseItems);
 
-    // Update stock
+    // Update stock — match by name + category + quality for uniqueness
     for (const item of items) {
-      const existingStock = stock.find(s => s.name.toLowerCase() === item.item_name.toLowerCase());
+      const existingStock = stock.find(s =>
+        s.name.toLowerCase() === item.item_name.toLowerCase() &&
+        s.category.toLowerCase() === item.category.toLowerCase() &&
+        s.quality.toLowerCase() === item.quality.toLowerCase()
+      ) || stock.find(s => s.name.toLowerCase() === item.item_name.toLowerCase() && !item.category && !item.quality);
+
+      const ws = item.wholesale_price ?? item.unit_price;
+      const ret = item.retail_price ?? item.unit_price;
+
       if (existingStock) {
         await supabase.from('stock_items').update({
           quantity: existingStock.quantity + item.quantity,
+          wholesale_price: ws,
+          retail_price: ret,
         }).eq('id', existingStock.id);
         toast.success(`Stock Updated: ${item.item_name} (+${item.quantity})`);
       } else {
         await supabase.from('stock_items').insert({
           business_id: currentBusinessId, name: item.item_name, category: item.category,
-          quality: item.quality, wholesale_price: item.unit_price, retail_price: item.unit_price,
+          quality: item.quality, wholesale_price: ws, retail_price: ret,
           quantity: item.quantity, min_stock_level: 5,
         });
         toast.info(`New Item Added to Stock: ${item.item_name}`);

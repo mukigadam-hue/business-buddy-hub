@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
+import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
 import type { StockItem } from '@/context/BusinessContext';
 
+function toSentenceCase(str: string): string {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
 export default function StockPage() {
   const { stock, addStockItem, updateStockItem, deleteStockItem } = useBusiness();
+  const { fmt } = useCurrency();
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const [editItem, setEditItem] = useState<StockItem | null>(null);
@@ -34,9 +41,9 @@ export default function StockPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const itemData = {
-      name: form.name.trim(),
-      category: form.category.trim(),
-      quality: form.quality.trim(),
+      name: toSentenceCase(form.name.trim()),
+      category: toSentenceCase(form.category.trim()),
+      quality: toSentenceCase(form.quality.trim()),
       wholesale_price: parseFloat(form.wholesale_price) || 0,
       retail_price: parseFloat(form.retail_price) || 0,
       quantity: parseInt(form.quantity) || 0,
@@ -75,20 +82,20 @@ export default function StockPage() {
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>{editItem ? 'Edit Item' : 'Add New Item'}</DialogTitle></DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-3">
+              <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <Label>Item Name</Label>
-                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => setForm(f => ({ ...f, name: toSentenceCase(f.name) }))} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Category</Label>
-                  <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Type category..." list="stock-cat-suggestions" />
+                  <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} onBlur={() => setForm(f => ({ ...f, category: toSentenceCase(f.category) }))} placeholder="Type category..." list="stock-cat-suggestions" />
                   <datalist id="stock-cat-suggestions">{existingCategories.map(c => <option key={c} value={c} />)}</datalist>
                 </div>
                 <div>
                   <Label>Quality</Label>
-                  <Input value={form.quality} onChange={e => setForm(f => ({ ...f, quality: e.target.value }))} placeholder="e.g. New, Grade A..." />
+                  <Input value={form.quality} onChange={e => setForm(f => ({ ...f, quality: e.target.value }))} onBlur={() => setForm(f => ({ ...f, quality: toSentenceCase(f.quality) }))} placeholder="e.g. New, Grade A..." />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -133,11 +140,11 @@ export default function StockPage() {
                   filtered.map(item => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.category}</TableCell>
-                      <TableCell>{item.quality}</TableCell>
-                      <TableCell className="text-right">${Number(item.wholesale_price).toFixed(2)}</TableCell>
-                      <TableCell className="text-right">${Number(item.retail_price).toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-semibold">{item.quantity}</TableCell>
+                       <TableCell>{item.category}</TableCell>
+                       <TableCell>{item.quality}</TableCell>
+                       <TableCell className="text-right">{fmt(Number(item.wholesale_price))}</TableCell>
+                       <TableCell className="text-right">{fmt(Number(item.retail_price))}</TableCell>
+                       <TableCell className="text-right font-semibold">{item.quantity}</TableCell>
                       <TableCell>
                         {item.quantity === 0 ? (
                           <span className="text-xs font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Out</span>

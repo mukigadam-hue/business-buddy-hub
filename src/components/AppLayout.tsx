@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, ChevronDown, Crown, User } from 'lucide-react';
+import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useBusiness } from '@/context/BusinessContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -31,7 +31,7 @@ function BusinessRoleBanner({ userRole, businessName }: { userRole: string | nul
   const isAdmin = userRole === 'admin';
 
   return (
-    <div className={`px-4 py-2 text-xs font-medium flex items-center gap-2 ${
+    <div className={`px-4 py-1.5 text-xs font-medium flex items-center gap-2 ${
       isOwner
         ? 'bg-primary/10 text-primary border-b border-primary/20'
         : isAdmin
@@ -41,17 +41,70 @@ function BusinessRoleBanner({ userRole, businessName }: { userRole: string | nul
       {isOwner ? (
         <><Crown className="h-3.5 w-3.5" /> 👔 You own <span className="font-bold">{businessName}</span></>
       ) : (
-        <><User className="h-3.5 w-3.5" /> 🏢 Employed at <span className="font-bold">{businessName}</span> — You are a {userRole}</>
+        <><User className="h-3.5 w-3.5" /> 🏢 Employed at <span className="font-bold">{businessName}</span> — {userRole}</>
       )}
     </div>
+  );
+}
+
+function NotificationsPanel() {
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useBusiness();
+  const [open, setOpen] = useState(false);
+  const unread = notifications.filter(n => !n.is_read).length;
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button className="relative p-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors">
+          {unread > 0 ? (
+            <BellDot className="h-5 w-5 text-warning" />
+          ) : (
+            <Bell className="h-5 w-5 text-sidebar-foreground" />
+          )}
+          {unread > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-warning text-warning-foreground text-[10px] flex items-center justify-center font-bold">
+              {unread > 9 ? '9+' : unread}
+            </span>
+          )}
+        </button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-80 max-h-screen overflow-y-auto">
+        <SheetHeader className="flex flex-row items-center justify-between">
+          <SheetTitle>Notifications {unread > 0 && `(${unread} new)`}</SheetTitle>
+          {unread > 0 && (
+            <Button size="sm" variant="ghost" onClick={markAllNotificationsRead} className="text-xs">Mark all read</Button>
+          )}
+        </SheetHeader>
+        <div className="mt-4 space-y-2">
+          {notifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No notifications yet.</p>
+          ) : (
+            notifications.map(n => (
+              <button
+                key={n.id}
+                onClick={() => markNotificationRead(n.id)}
+                className={`w-full text-left p-3 rounded-lg border transition-colors ${n.is_read ? 'bg-muted/30 border-border' : 'bg-warning/5 border-warning/30'}`}
+              >
+                <p className={`text-sm font-medium ${n.is_read ? 'text-muted-foreground' : 'text-foreground'}`}>{n.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
+                <p className="text-xs text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                {!n.is_read && <span className="inline-block mt-1 text-[10px] bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full">NEW</span>}
+              </button>
+            ))
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const { signOut } = useAuth();
-  const { businesses, currentBusiness, setCurrentBusinessId, userRole, memberships } = useBusiness();
+  const { businesses, currentBusiness, setCurrentBusinessId, userRole, memberships, notifications } = useBusiness();
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   function getRoleForBusiness(businessId: string) {
     return memberships.find(m => m.business_id === businessId)?.role || 'worker';
@@ -79,9 +132,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Sidebar */}
         <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
-          <div className="p-5 border-b border-sidebar-border">
-            <h1 className="text-xl font-bold text-sidebar-accent-foreground tracking-tight">📦 BizTrack</h1>
-            <p className="text-xs text-sidebar-muted mt-1">Business Manager</p>
+          <div className="p-5 border-b border-sidebar-border flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-sidebar-accent-foreground tracking-tight">📦 BizTrack</h1>
+              <p className="text-xs text-sidebar-muted mt-1">Business Manager</p>
+            </div>
+            <NotificationsPanel />
           </div>
           
           {/* Desktop Business Switcher */}
@@ -150,7 +206,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           );
         })}
 
-        {/* Business Switcher in bottom nav */}
+        {/* Notifications bell for mobile */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <button className="relative flex flex-col items-center gap-0.5 text-xs text-muted-foreground">
+              {unreadCount > 0 ? <BellDot className="h-5 w-5 text-warning" /> : <Bell className="h-5 w-5" />}
+              <span>Alerts</span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 right-1 h-3.5 w-3.5 rounded-full bg-warning text-warning-foreground text-[9px] flex items-center justify-center font-bold">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] overflow-y-auto">
+            <SheetHeader><SheetTitle>Notifications</SheetTitle></SheetHeader>
+            <NotificationsPanel />
+          </SheetContent>
+        </Sheet>
+
+        {/* Business Switcher */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
             <button className="flex flex-col items-center gap-0.5 text-xs text-muted-foreground transition-colors">
@@ -158,13 +233,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="truncate max-w-[56px]">Switch</span>
             </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] overflow-y-auto">
             <SheetHeader>
               <SheetTitle className="text-left flex items-center gap-2">
                 <Building2 className="h-5 w-5" /> My Businesses
               </SheetTitle>
             </SheetHeader>
-            <div className="mt-4 space-y-2 overflow-y-auto">
+            <div className="mt-4 space-y-2">
               {businesses.map(b => {
                 const role = getRoleForBusiness(b.id);
                 const isActive = b.id === currentBusiness?.id;
@@ -173,9 +248,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     key={b.id}
                     onClick={() => { setCurrentBusinessId(b.id); setSheetOpen(false); }}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
-                      isActive
-                        ? 'bg-primary/10 border-2 border-primary'
-                        : 'bg-muted/50 border-2 border-transparent hover:border-muted-foreground/20'
+                      isActive ? 'bg-primary/10 border-2 border-primary' : 'bg-muted/50 border-2 border-transparent hover:border-muted-foreground/20'
                     }`}
                   >
                     <span className="text-2xl">{getRoleBadge(role)}</span>
@@ -191,8 +264,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </button>
                 );
               })}
-
-              {/* Quick links */}
               <div className="pt-3 border-t space-y-1">
                 <Link to="/settings" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-sm text-muted-foreground hover:bg-muted/50 transition-colors">
                   <Settings className="h-4 w-4" /> Settings & Add Business

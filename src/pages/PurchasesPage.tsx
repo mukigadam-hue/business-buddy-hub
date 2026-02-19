@@ -26,9 +26,14 @@ export default function PurchasesPage() {
     name: '', category: '', quality: '', quantity: '1',
     unit_price: '', wholesale_price: '', retail_price: '',
   });
+  const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
 
-  const suggestions = stock.map(s => s.name);
-  const existingCategories = [...new Set(stock.map(s => s.category).filter(Boolean))];
+  const activeStock = stock.filter(s => !s.deleted_at);
+  const suggestions = activeStock.map(s => s.name);
+  const existingCategories = [...new Set(activeStock.map(s => s.category).filter(Boolean))];
+
+  const todayPurchases = purchases.filter(p => new Date(p.created_at).toDateString() === new Date().toDateString());
+  const previousPurchases = purchases.filter(p => new Date(p.created_at).toDateString() !== new Date().toDateString());
 
   function applyCase(field: 'name' | 'category' | 'quality') {
     setForm(f => ({ ...f, [field]: toSentenceCase(f[field]) }));
@@ -49,7 +54,6 @@ export default function PurchasesPage() {
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
-
   const grandTotal = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
 
   async function handleSave() {
@@ -67,6 +71,34 @@ export default function PurchasesPage() {
     setItems([]);
     setSupplier('');
     setRecordedBy('');
+  }
+
+  function PurchaseCard({ p }: { p: typeof purchases[0] }) {
+    return (
+      <div className="border rounded-lg p-3">
+        <div className="flex justify-between items-center mb-1">
+          <div>
+            <span className="font-medium text-sm">{p.supplier}</span>
+            {p.recorded_by && <span className="text-xs text-muted-foreground ml-2">by {p.recorded_by}</span>}
+          </div>
+          <span className="font-bold text-success bg-success/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(p.grand_total))}</span>
+        </div>
+        <p className="text-xs text-muted-foreground mb-2">{new Date(p.created_at).toLocaleString()}</p>
+        <div className="text-sm text-muted-foreground space-y-1 max-h-40 overflow-y-auto">
+          {p.items.map((item, i) => (
+            <div key={i} className="flex justify-between items-start">
+              <div>
+                <span className="font-medium text-foreground">{item.item_name}</span>
+                {item.category && <span className="text-xs ml-1 text-muted-foreground">· {item.category}</span>}
+                {item.quality && <span className="text-xs ml-1 text-muted-foreground">· {item.quality}</span>}
+                <span className="ml-1">× {item.quantity}</span>
+              </div>
+              <span className="tabular-nums ml-2">{fmt(Number(item.subtotal))}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -90,34 +122,17 @@ export default function PurchasesPage() {
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[150px]">
               <Label>Item Name</Label>
-              <Input
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                onBlur={() => applyCase('name')}
-                list="stock-suggestions"
-                placeholder="Type or select..."
-              />
+              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => applyCase('name')} list="stock-suggestions" placeholder="Type or select..." />
               <datalist id="stock-suggestions">{suggestions.map(s => <option key={s} value={s} />)}</datalist>
             </div>
             <div className="w-28">
               <Label>Category</Label>
-              <Input
-                value={form.category}
-                onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                onBlur={() => applyCase('category')}
-                placeholder="Category..."
-                list="purchase-cat-suggestions"
-              />
+              <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} onBlur={() => applyCase('category')} placeholder="Category..." list="purchase-cat-suggestions" />
               <datalist id="purchase-cat-suggestions">{existingCategories.map(c => <option key={c} value={c} />)}</datalist>
             </div>
             <div className="w-28">
               <Label>Quality</Label>
-              <Input
-                value={form.quality}
-                onChange={e => setForm(f => ({ ...f, quality: e.target.value }))}
-                onBlur={() => applyCase('quality')}
-                placeholder="e.g. Grade A..."
-              />
+              <Input value={form.quality} onChange={e => setForm(f => ({ ...f, quality: e.target.value }))} onBlur={() => applyCase('quality')} placeholder="e.g. Grade A..." />
             </div>
             <div className="w-16"><Label>Qty</Label><Input type="number" min="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} /></div>
             <div className="w-24"><Label>Cost/Unit</Label><Input type="number" min="0" step="0.01" value={form.unit_price} onChange={e => setForm(f => ({ ...f, unit_price: e.target.value }))} placeholder="0.00" /></div>
@@ -128,7 +143,7 @@ export default function PurchasesPage() {
 
           {items.length > 0 && (
             <>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-60 overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -145,16 +160,16 @@ export default function PurchasesPage() {
                         <TableCell>{item.category}</TableCell>
                         <TableCell>{item.quality}</TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right">{fmt(item.unit_price)}</TableCell>
-                        <TableCell className="text-right">{fmt(item.wholesale_price)}</TableCell>
-                        <TableCell className="text-right">{fmt(item.retail_price)}</TableCell>
-                        <TableCell className="text-right font-semibold">{fmt(item.quantity * item.unit_price)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmt(item.unit_price)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmt(item.wholesale_price)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmt(item.retail_price)}</TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums">{fmt(item.quantity * item.unit_price)}</TableCell>
                         <TableCell><Button variant="ghost" size="icon" onClick={() => removeItem(i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
                       </TableRow>
                     ))}
                     <TableRow>
                       <TableCell colSpan={7} className="text-right font-bold">Grand Total</TableCell>
-                      <TableCell className="text-right font-bold text-lg">{fmt(grandTotal)}</TableCell>
+                      <TableCell className="text-right font-bold text-lg text-success tabular-nums">{fmt(grandTotal)}</TableCell>
                       <TableCell></TableCell>
                     </TableRow>
                   </TableBody>
@@ -168,37 +183,33 @@ export default function PurchasesPage() {
         </CardContent>
       </Card>
 
+      {/* Purchase History Tabs */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveTab('today')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'today' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+        >
+          Today's Purchases ({todayPurchases.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('previous')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'previous' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+        >
+          Previous Purchases ({previousPurchases.length})
+        </button>
+      </div>
+
       <Card className="shadow-card">
         <CardContent className="p-4">
-          <h2 className="text-base font-semibold mb-3">Recent Purchases</h2>
-          {purchases.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No purchases recorded yet.</p>
+          <h2 className="text-base font-semibold mb-3">
+            {activeTab === 'today' ? "Today's Purchases" : "Previous Purchases"}
+          </h2>
+          {(activeTab === 'today' ? todayPurchases : previousPurchases).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No purchases {activeTab === 'today' ? 'today' : 'from previous days'} yet.</p>
           ) : (
-            <div className="space-y-3">
-              {purchases.map(p => (
-                <div key={p.id} className="border rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <span className="font-medium text-sm">{p.supplier}</span>
-                      {p.recorded_by && <span className="text-xs text-muted-foreground ml-2">by {p.recorded_by}</span>}
-                    </div>
-                    <span className="font-bold">{fmt(Number(p.grand_total))}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mb-2">{new Date(p.created_at).toLocaleString()}</p>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    {p.items.map((item, i) => (
-                      <div key={i} className="flex justify-between items-start">
-                        <div>
-                          <span className="font-medium text-foreground">{item.item_name}</span>
-                          {item.category && <span className="text-xs ml-1 text-muted-foreground">· {item.category}</span>}
-                          {item.quality && <span className="text-xs ml-1 text-muted-foreground">· {item.quality}</span>}
-                          <span className="ml-1">× {item.quantity}</span>
-                        </div>
-                        <span>{fmt(Number(item.subtotal))}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+              {(activeTab === 'today' ? todayPurchases : previousPurchases).map(p => (
+                <PurchaseCard key={p.id} p={p} />
               ))}
             </div>
           )}

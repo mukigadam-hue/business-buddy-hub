@@ -155,6 +155,36 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           category: string
@@ -349,6 +379,48 @@ export type Database = {
           },
         ]
       }
+      receipts: {
+        Row: {
+          business_id: string
+          business_info: Json | null
+          buyer_name: string
+          code: string | null
+          created_at: string
+          grand_total: number
+          id: string
+          items: Json
+          receipt_type: string
+          seller_name: string
+          transaction_id: string
+        }
+        Insert: {
+          business_id: string
+          business_info?: Json | null
+          buyer_name?: string
+          code?: string | null
+          created_at?: string
+          grand_total?: number
+          id?: string
+          items?: Json
+          receipt_type?: string
+          seller_name?: string
+          transaction_id: string
+        }
+        Update: {
+          business_id?: string
+          business_info?: Json | null
+          buyer_name?: string
+          code?: string | null
+          created_at?: string
+          grand_total?: number
+          id?: string
+          items?: Json
+          receipt_type?: string
+          seller_name?: string
+          transaction_id?: string
+        }
+        Relationships: []
+      }
       sale_items: {
         Row: {
           category: string
@@ -410,6 +482,7 @@ export type Database = {
         Row: {
           business_id: string
           created_at: string
+          customer_name: string
           from_order_code: string | null
           from_order_id: string | null
           grand_total: number
@@ -419,6 +492,7 @@ export type Database = {
         Insert: {
           business_id: string
           created_at?: string
+          customer_name?: string
           from_order_code?: string | null
           from_order_id?: string | null
           grand_total?: number
@@ -428,6 +502,7 @@ export type Database = {
         Update: {
           business_id?: string
           created_at?: string
+          customer_name?: string
           from_order_code?: string | null
           from_order_id?: string | null
           grand_total?: number
@@ -452,6 +527,7 @@ export type Database = {
           customer_name: string
           description: string
           id: string
+          seller_name: string
           service_name: string
         }
         Insert: {
@@ -461,6 +537,7 @@ export type Database = {
           customer_name?: string
           description?: string
           id?: string
+          seller_name?: string
           service_name: string
         }
         Update: {
@@ -470,6 +547,7 @@ export type Database = {
           customer_name?: string
           description?: string
           id?: string
+          seller_name?: string
           service_name?: string
         }
         Relationships: [
@@ -536,6 +614,7 @@ export type Database = {
           business_id: string
           category: string
           created_at: string
+          deleted_at: string | null
           id: string
           min_stock_level: number
           name: string
@@ -549,6 +628,7 @@ export type Database = {
           business_id: string
           category?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           min_stock_level?: number
           name: string
@@ -562,6 +642,7 @@ export type Database = {
           business_id?: string
           category?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           min_stock_level?: number
           name?: string

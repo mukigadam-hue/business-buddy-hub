@@ -15,19 +15,22 @@ interface ReceiptItem {
 interface ReceiptProps {
   items: ReceiptItem[];
   grandTotal: number;
-  customerName?: string;
+  buyerName?: string;
+  sellerName?: string;
+  customerName?: string; // legacy
   code?: string;
   date: string;
-  type: 'sale' | 'order';
+  type: 'sale' | 'order' | 'service';
   businessInfo?: { name: string; address: string; contact: string; email: string };
 }
 
-export default function Receipt({ items, grandTotal, customerName, code, date, type, businessInfo }: ReceiptProps) {
+export default function Receipt({ items, grandTotal, buyerName, sellerName, customerName, code, date, type, businessInfo }: ReceiptProps) {
   const { fmt } = useCurrency();
+  const buyer = buyerName || customerName || '';
 
   return (
     <Card className="shadow-card max-w-sm mx-auto">
-      <CardContent className="p-4 space-y-3 text-sm">
+      <CardContent className="p-4 space-y-3 text-sm overflow-y-auto max-h-[70vh]">
         {businessInfo && (
           <div className="text-center space-y-0.5">
             <h3 className="font-bold text-base">{businessInfo.name}</h3>
@@ -37,11 +40,27 @@ export default function Receipt({ items, grandTotal, customerName, code, date, t
         )}
         <Separator />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{type === 'order' ? 'Order' : 'Sale'} Receipt</span>
+          <span>{type === 'order' ? 'Order' : type === 'service' ? 'Service' : 'Sale'} Receipt</span>
           <span>{new Date(date).toLocaleString()}</span>
         </div>
-        {code && <div className="text-xs text-muted-foreground">Code: <span className="font-semibold text-foreground">{code}</span></div>}
-        {customerName && <div className="text-xs text-muted-foreground">Customer: <span className="font-semibold text-foreground">{customerName}</span></div>}
+        {code && <div className="text-xs text-muted-foreground">Ref: <span className="font-semibold text-foreground">{code}</span></div>}
+
+        {/* Buyer & Seller */}
+        <div className="bg-muted/40 rounded-lg p-2 space-y-1">
+          {buyer && (
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Buyer:</span>
+              <span className="font-semibold text-foreground">{buyer}</span>
+            </div>
+          )}
+          {sellerName && (
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Seller:</span>
+              <span className="font-semibold text-foreground">{sellerName}</span>
+            </div>
+          )}
+        </div>
+
         <Separator />
         <div className="space-y-2">
           <div className="flex justify-between text-xs font-semibold text-muted-foreground">
@@ -51,11 +70,11 @@ export default function Receipt({ items, grandTotal, customerName, code, date, t
             <div key={i} className="space-y-0.5">
               <div className="flex justify-between">
                 <span className="font-medium">{item.itemName} × {item.quantity}{item.priceType && item.priceType !== 'service' ? ` (${item.priceType})` : ''}</span>
-                <span className="font-medium">{fmt(item.subtotal)}</span>
+                <span className="font-medium tabular-nums ml-2">{fmt(item.subtotal)}</span>
               </div>
-              {(item.category || item.quality) && (
+              {(item.category || item.quality) && item.category !== 'Service' && (
                 <p className="text-xs text-muted-foreground pl-2">
-                  {[item.category, item.quality].filter(Boolean).join(' · ')}
+                  {[item.category, item.quality].filter(Boolean).filter(v => v !== '-').join(' · ')}
                 </p>
               )}
             </div>
@@ -63,7 +82,8 @@ export default function Receipt({ items, grandTotal, customerName, code, date, t
         </div>
         <Separator />
         <div className="flex justify-between font-bold text-base">
-          <span>TOTAL</span><span>{fmt(grandTotal)}</span>
+          <span>TOTAL</span>
+          <span className="text-success tabular-nums">{fmt(grandTotal)}</span>
         </div>
         <p className="text-center text-xs text-muted-foreground pt-2">Thank you for your business!</p>
       </CardContent>

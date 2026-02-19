@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 
-// Types matching the database schema
 export interface StockItem {
   id: string;
   business_id: string;
@@ -16,6 +15,7 @@ export interface StockItem {
   min_stock_level: number;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
 }
 
 export interface SaleItem {
@@ -37,6 +37,7 @@ export interface Sale {
   business_id: string;
   grand_total: number;
   recorded_by: string;
+  customer_name: string;
   from_order_id: string | null;
   from_order_code: string | null;
   created_at: string;
@@ -99,6 +100,7 @@ export interface ServiceRecord {
   description: string;
   cost: number;
   customer_name: string;
+  seller_name: string;
   created_at: string;
 }
 
@@ -121,6 +123,30 @@ export interface BusinessMembership {
   created_at: string;
 }
 
+export interface ReceiptRecord {
+  id: string;
+  business_id: string;
+  receipt_type: string;
+  transaction_id: string;
+  buyer_name: string;
+  seller_name: string;
+  grand_total: number;
+  items: any[];
+  business_info: any;
+  code: string | null;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  business_id: string;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 interface BusinessContextType {
   currentBusiness: Business | null;
   businesses: Business[];
@@ -131,19 +157,33 @@ interface BusinessContextType {
   purchases: Purchase[];
   orders: Order[];
   services: ServiceRecord[];
+  notifications: Notification[];
   loading: boolean;
   setCurrentBusinessId: (id: string) => void;
   createBusiness: (name: string, address: string, contact: string, email: string) => Promise<void>;
   updateBusiness: (updates: Partial<Business>) => Promise<void>;
-  addStockItem: (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  addStockItem: (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at'>) => Promise<void>;
   updateStockItem: (id: string, updates: Partial<StockItem>) => Promise<void>;
   deleteStockItem: (id: string) => Promise<void>;
-  addSale: (items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; customer_name?: string }[], grandTotal: number, recordedBy: string, fromOrderId?: string, fromOrderCode?: string) => Promise<void>;
+  restoreStockItem: (id: string) => Promise<void>;
+  permanentDeleteStockItem: (id: string) => Promise<void>;
+  addSale: (
+    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[],
+    grandTotal: number,
+    recordedBy: string,
+    customerName: string,
+    fromOrderId?: string,
+    fromOrderCode?: string
+  ) => Promise<Sale | null>;
   addPurchase: (items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number }[], grandTotal: number, supplier: string, recordedBy: string) => Promise<void>;
   addOrder: (type: string, customerName: string, items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[], grandTotal: number, status: string) => Promise<void>;
   updateOrder: (id: string, items: OrderItem[], grandTotal: number, status?: string) => Promise<void>;
-  completeOrderToSale: (orderId: string) => Promise<void>;
-  addService: (service: Omit<ServiceRecord, 'id' | 'business_id' | 'created_at'>) => Promise<void>;
+  completeOrderToSale: (orderId: string, buyerName: string, sellerName: string) => Promise<void>;
+  addService: (service: Omit<ServiceRecord, 'id' | 'business_id' | 'created_at'>) => Promise<ServiceRecord | null>;
+  saveReceipt: (receipt: Omit<ReceiptRecord, 'id' | 'created_at'>) => Promise<void>;
+  getReceipts: () => Promise<ReceiptRecord[]>;
+  markNotificationRead: (id: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
   generateInviteCode: (type?: 'worker' | 'customer') => Promise<string | null>;
   getCustomers: () => Promise<{ id: string; user_id: string; customer_name: string; phone: string; created_at: string }[]>;
   removeCustomer: (id: string) => Promise<void>;
@@ -172,19 +212,18 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [services, setServices] = useState<ServiceRecord[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   const currentBusiness = businesses.find(b => b.id === currentBusinessId) || null;
   const userRole = memberships.find(m => m.business_id === currentBusinessId)?.role || null;
 
-  // Save current business to localStorage
   useEffect(() => {
     if (currentBusinessId) {
       localStorage.setItem('biztrack_current_business', currentBusinessId);
     }
   }, [currentBusinessId]);
 
-  // Load businesses and memberships
   useEffect(() => {
     if (!user) {
       setBusinesses([]);
@@ -195,11 +234,10 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     loadBusinesses();
   }, [user]);
 
-  // Load business data when current business changes
   useEffect(() => {
     if (currentBusinessId && user) {
       loadBusinessData();
-      setupRealtimeSubscriptions();
+      return setupRealtimeSubscriptions();
     }
   }, [currentBusinessId, user]);
 
@@ -240,17 +278,19 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   async function loadBusinessData() {
     if (!currentBusinessId) return;
     
-    const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes] = await Promise.all([
+    const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes, notifRes] = await Promise.all([
       supabase.from('stock_items').select('*').eq('business_id', currentBusinessId).order('name'),
       supabase.from('sales').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }),
       supabase.from('purchases').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }),
       supabase.from('orders').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }),
       supabase.from('services').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }),
+      supabase.from('notifications').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(50),
     ]);
 
     setStock((stockRes.data || []) as StockItem[]);
+    setNotifications((notifRes.data || []) as Notification[]);
     
-    // Load sale items for each sale
+    // Load sale items
     const salesData = (salesRes.data || []) as any[];
     if (salesData.length > 0) {
       const saleIds = salesData.map(s => s.id);
@@ -300,26 +340,26 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
     const channel = supabase
       .channel(`business-${currentBusinessId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_items', filter: `business_id=eq.${currentBusinessId}` }, () => {
-        loadBusinessData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `business_id=eq.${currentBusinessId}` }, () => {
-        loadBusinessData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases', filter: `business_id=eq.${currentBusinessId}` }, () => {
-        loadBusinessData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `business_id=eq.${currentBusinessId}` }, () => {
-        loadBusinessData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'services', filter: `business_id=eq.${currentBusinessId}` }, () => {
-        loadBusinessData();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_items', filter: `business_id=eq.${currentBusinessId}` }, () => { loadBusinessData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `business_id=eq.${currentBusinessId}` }, () => { loadBusinessData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases', filter: `business_id=eq.${currentBusinessId}` }, () => { loadBusinessData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `business_id=eq.${currentBusinessId}` }, () => { loadBusinessData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'services', filter: `business_id=eq.${currentBusinessId}` }, () => { loadBusinessData(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `business_id=eq.${currentBusinessId}` }, (payload) => {
+        const notif = payload.new as Notification;
+        setNotifications(prev => [notif, ...prev]);
+        toast(notif.title, { description: notif.message });
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
+  }
+
+  async function addNotification(type: string, title: string, message: string) {
+    if (!currentBusinessId) return;
+    await supabase.from('notifications').insert({
+      business_id: currentBusinessId, type, title, message,
+    } as any);
   }
 
   const createBusiness = useCallback(async (name: string, address: string, contact: string, email: string) => {
@@ -341,7 +381,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     toast.success('Business updated!');
   }, [currentBusinessId]);
 
-  const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at'>) => {
+  const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
     if (!currentBusinessId) return;
     const { error } = await supabase.from('stock_items').insert({ ...item, business_id: currentBusinessId });
     if (error) { toast.error(error.message); return; }
@@ -354,22 +394,43 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     toast.success('Stock item updated!');
   }, []);
 
+  // Soft delete
   const deleteStockItem = useCallback(async (id: string) => {
+    const { error } = await supabase.from('stock_items').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Item moved to recycle bin');
+  }, []);
+
+  const restoreStockItem = useCallback(async (id: string) => {
+    const { error } = await supabase.from('stock_items').update({ deleted_at: null }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Item restored to stock!');
+  }, []);
+
+  const permanentDeleteStockItem = useCallback(async (id: string) => {
     const { error } = await supabase.from('stock_items').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
-    toast.success('Stock item deleted!');
+    toast.success('Item permanently deleted');
   }, []);
 
   const addSale = useCallback(async (
-    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; customer_name?: string }[],
-    grandTotal: number, recordedBy: string, fromOrderId?: string, fromOrderCode?: string
-  ) => {
-    if (!currentBusinessId) return;
+    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[],
+    grandTotal: number,
+    recordedBy: string,
+    customerName: string,
+    fromOrderId?: string,
+    fromOrderCode?: string
+  ): Promise<Sale | null> => {
+    if (!currentBusinessId) return null;
     const { data: saleData, error: saleError } = await supabase.from('sales').insert({
-      business_id: currentBusinessId, grand_total: grandTotal, recorded_by: recordedBy,
-      from_order_id: fromOrderId || null, from_order_code: fromOrderCode || null,
-    }).select().single();
-    if (saleError || !saleData) { toast.error(saleError?.message || 'Failed'); return; }
+      business_id: currentBusinessId,
+      grand_total: grandTotal,
+      recorded_by: recordedBy,
+      customer_name: customerName,
+      from_order_id: fromOrderId || null,
+      from_order_code: fromOrderCode || null,
+    } as any).select().single();
+    if (saleError || !saleData) { toast.error(saleError?.message || 'Failed'); return null; }
 
     const saleItems = items.map(item => ({
       sale_id: saleData.id,
@@ -384,31 +445,28 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }));
     await supabase.from('sale_items').insert(saleItems);
 
-    // Deduct from stock — match by id first, then by name+category+quality
+    // Deduct from stock
+    const currentStock = stock;
     for (const item of items) {
-      // Skip service items
       if (item.price_type === 'service') continue;
       if (item.stock_item_id) {
-        const stockItem = stock.find(s => s.id === item.stock_item_id);
+        const stockItem = currentStock.find(s => s.id === item.stock_item_id);
         if (stockItem) {
-          await supabase.from('stock_items').update({
-            quantity: Math.max(0, stockItem.quantity - item.quantity),
-          }).eq('id', item.stock_item_id);
+          await supabase.from('stock_items').update({ quantity: Math.max(0, stockItem.quantity - item.quantity) }).eq('id', item.stock_item_id);
         }
       } else {
-        const stockItem = stock.find(s =>
+        const stockItem = currentStock.find(s =>
           s.name.toLowerCase() === item.item_name.toLowerCase() &&
           s.category.toLowerCase() === (item.category || '').toLowerCase() &&
           s.quality.toLowerCase() === (item.quality || '').toLowerCase()
-        ) || stock.find(s => s.name.toLowerCase() === item.item_name.toLowerCase());
+        ) || currentStock.find(s => s.name.toLowerCase() === item.item_name.toLowerCase());
         if (stockItem) {
-          await supabase.from('stock_items').update({
-            quantity: Math.max(0, stockItem.quantity - item.quantity),
-          }).eq('id', stockItem.id);
+          await supabase.from('stock_items').update({ quantity: Math.max(0, stockItem.quantity - item.quantity) }).eq('id', stockItem.id);
         }
       }
     }
     toast.success('Sale recorded!');
+    return { ...saleData, items: saleItems as any, customer_name: customerName } as Sale;
   }, [currentBusinessId, stock]);
 
   const addPurchase = useCallback(async (
@@ -427,13 +485,17 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }));
     await supabase.from('purchase_items').insert(purchaseItems);
 
-    // Update stock — match by name + category + quality for uniqueness
+    // Notify
+    await addNotification('new_purchase', '🛒 New Purchase Recorded', `${items.length} item(s) from ${supplier} — Total: recorded by ${recordedBy}`);
+
+    // Update stock
+    const currentStock = stock;
     for (const item of items) {
-      const existingStock = stock.find(s =>
+      const existingStock = currentStock.find(s =>
         s.name.toLowerCase() === item.item_name.toLowerCase() &&
         s.category.toLowerCase() === item.category.toLowerCase() &&
         s.quality.toLowerCase() === item.quality.toLowerCase()
-      ) || stock.find(s => s.name.toLowerCase() === item.item_name.toLowerCase() && !item.category && !item.quality);
+      ) || currentStock.find(s => s.name.toLowerCase() === item.item_name.toLowerCase() && !item.category && !item.quality);
 
       const ws = item.wholesale_price ?? item.unit_price;
       const ret = item.retail_price ?? item.unit_price;
@@ -444,14 +506,12 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
           wholesale_price: ws,
           retail_price: ret,
         }).eq('id', existingStock.id);
-        toast.success(`Stock Updated: ${item.item_name} (+${item.quantity})`);
       } else {
         await supabase.from('stock_items').insert({
           business_id: currentBusinessId, name: item.item_name, category: item.category,
           quality: item.quality, wholesale_price: ws, retail_price: ret,
           quantity: item.quantity, min_stock_level: 5,
         });
-        toast.info(`New Item Added to Stock: ${item.item_name}`);
       }
     }
     toast.success('Purchase recorded!');
@@ -476,6 +536,11 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       unit_price: item.unit_price, subtotal: item.subtotal,
     }));
     await supabase.from('order_items').insert(orderItems);
+
+    // Notify for inbox orders
+    if (type === 'inbox') {
+      await addNotification('new_order', '📥 New Order Received', `Order ${code} from ${customerName} — ${items.length} item(s)`);
+    }
     toast.success('Order created!');
   }, [currentBusinessId]);
 
@@ -490,19 +555,19 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       quality: item.quality, quantity: item.quantity, price_type: item.price_type,
       unit_price: item.unit_price, subtotal: item.subtotal,
     }));
-    await supabase.from('order_items').insert(orderItems);
+    if (orderItems.length > 0) {
+      await supabase.from('order_items').insert(orderItems);
+    }
     toast.success('Order updated!');
     await loadBusinessData();
   }, [currentBusinessId]);
 
-  const completeOrderToSale = useCallback(async (orderId: string) => {
+  const completeOrderToSale = useCallback(async (orderId: string, buyerName: string, sellerName: string) => {
     const order = orders.find(o => o.id === orderId);
     if (!order || order.transferred_to_sale) return;
 
-    // Mark order as completed
     await supabase.from('orders').update({ status: 'completed', transferred_to_sale: true }).eq('id', orderId);
 
-    // Create sale from order
     await addSale(
       order.items.map(item => ({
         item_name: item.item_name, category: item.category, quality: item.quality,
@@ -510,7 +575,8 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         subtotal: item.subtotal,
       })),
       order.grand_total,
-      'Order Transfer',
+      sellerName,
+      buyerName,
       order.id,
       order.code
     );
@@ -519,11 +585,41 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     await loadBusinessData();
   }, [orders, addSale]);
 
-  const addService = useCallback(async (service: Omit<ServiceRecord, 'id' | 'business_id' | 'created_at'>) => {
-    if (!currentBusinessId) return;
-    const { error } = await supabase.from('services').insert({ ...service, business_id: currentBusinessId });
-    if (error) { toast.error(error.message); return; }
+  const addService = useCallback(async (service: Omit<ServiceRecord, 'id' | 'business_id' | 'created_at'>): Promise<ServiceRecord | null> => {
+    if (!currentBusinessId) return null;
+    const { data, error } = await supabase.from('services').insert({
+      ...service,
+      business_id: currentBusinessId,
+    } as any).select().single();
+    if (error) { toast.error(error.message); return null; }
     toast.success('Service recorded!');
+    return data as ServiceRecord;
+  }, [currentBusinessId]);
+
+  const saveReceipt = useCallback(async (receipt: Omit<ReceiptRecord, 'id' | 'created_at'>) => {
+    if (!currentBusinessId) return;
+    await supabase.from('receipts').insert({ ...receipt } as any);
+  }, [currentBusinessId]);
+
+  const getReceipts = useCallback(async (): Promise<ReceiptRecord[]> => {
+    if (!currentBusinessId) return [];
+    const { data } = await supabase
+      .from('receipts')
+      .select('*')
+      .eq('business_id', currentBusinessId)
+      .order('created_at', { ascending: false });
+    return (data || []) as any[];
+  }, [currentBusinessId]);
+
+  const markNotificationRead = useCallback(async (id: string) => {
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+  }, []);
+
+  const markAllNotificationsRead = useCallback(async () => {
+    if (!currentBusinessId) return;
+    await supabase.from('notifications').update({ is_read: true }).eq('business_id', currentBusinessId).eq('is_read', false);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   }, [currentBusinessId]);
 
   const generateInviteCode = useCallback(async (type: 'worker' | 'customer' = 'worker'): Promise<string | null> => {
@@ -559,21 +655,14 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       .select('user_id, role')
       .eq('business_id', currentBusinessId);
     if (!memberData) return [];
-    
     const userIds = memberData.map(m => m.user_id);
     const { data: profileData } = await supabase
       .from('profiles')
       .select('id, full_name, email')
       .in('id', userIds);
-    
     return memberData.map(m => {
       const profile = profileData?.find(p => p.id === m.user_id);
-      return {
-        user_id: m.user_id,
-        role: m.role,
-        email: profile?.email || '',
-        full_name: profile?.full_name || '',
-      };
+      return { user_id: m.user_id, role: m.role, email: profile?.email || '', full_name: profile?.full_name || '' };
     });
   }, [currentBusinessId]);
 
@@ -587,9 +676,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const updateMemberRole = useCallback(async (userId: string, role: string) => {
     if (!currentBusinessId) return;
-    // Delete and re-insert since we can't update role easily with RLS
-    await supabase.from('business_memberships').delete()
-      .eq('user_id', userId).eq('business_id', currentBusinessId);
+    await supabase.from('business_memberships').delete().eq('user_id', userId).eq('business_id', currentBusinessId);
     const { error } = await supabase.from('business_memberships').insert({
       user_id: userId, business_id: currentBusinessId, role: role as any,
     });
@@ -620,11 +707,13 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   return (
     <BusinessContext.Provider value={{
       currentBusiness, businesses, memberships, userRole,
-      stock, sales, purchases, orders, services, loading,
+      stock, sales, purchases, orders, services, notifications, loading,
       setCurrentBusinessId, createBusiness, updateBusiness,
-      addStockItem, updateStockItem, deleteStockItem,
+      addStockItem, updateStockItem, deleteStockItem, restoreStockItem, permanentDeleteStockItem,
       addSale, addPurchase, addOrder, updateOrder, completeOrderToSale,
-      addService, generateInviteCode, redeemInviteCode,
+      addService, saveReceipt, getReceipts,
+      markNotificationRead, markAllNotificationsRead,
+      generateInviteCode, redeemInviteCode,
       getMembers, removeMember, updateMemberRole,
       getCustomers, removeCustomer, refreshData,
     }}>

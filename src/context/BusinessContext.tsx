@@ -9,6 +9,7 @@ export interface StockItem {
   name: string;
   category: string;
   quality: string;
+  buying_price: number;
   wholesale_price: number;
   retail_price: number;
   quantity: number;
@@ -497,19 +498,21 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         s.quality.toLowerCase() === item.quality.toLowerCase()
       ) || currentStock.find(s => s.name.toLowerCase() === item.item_name.toLowerCase() && !item.category && !item.quality);
 
+      const buyPrice = item.unit_price; // purchase cost = buying price
       const ws = item.wholesale_price ?? item.unit_price;
       const ret = item.retail_price ?? item.unit_price;
 
       if (existingStock) {
         await supabase.from('stock_items').update({
           quantity: existingStock.quantity + item.quantity,
+          buying_price: buyPrice,
           wholesale_price: ws,
           retail_price: ret,
         }).eq('id', existingStock.id);
       } else {
         await supabase.from('stock_items').insert({
           business_id: currentBusinessId, name: item.item_name, category: item.category,
-          quality: item.quality, wholesale_price: ws, retail_price: ret,
+          quality: item.quality, buying_price: buyPrice, wholesale_price: ws, retail_price: ret,
           quantity: item.quantity, min_stock_level: 5,
         });
       }

@@ -83,11 +83,13 @@ export default function SettingsPage() {
 
   const totalRevenue = sales.reduce((sum, s) => sum + Number(s.grand_total), 0);
 
-  // Total capital = sum of (quantity × wholesale/buying price)
+  // Total capital = sum of (quantity × buying/shopping price)
   let buyingCapital = 0;
+  let wholesaleCapital = 0;
   let retailCapital = 0;
   activeStock.forEach(item => {
-    buyingCapital += item.quantity * Number(item.wholesale_price);
+    buyingCapital += item.quantity * Number(item.buying_price);
+    wholesaleCapital += item.quantity * Number(item.wholesale_price);
     retailCapital += item.quantity * Number(item.retail_price);
   });
 
@@ -135,7 +137,7 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold">Settings</h1>
 
       {/* Financial Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="shadow-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -148,7 +150,7 @@ export default function SettingsPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-info/10"><Wallet className="h-5 w-5 text-info" /></div>
-              <div><p className="text-xs text-muted-foreground">Total Capital (Buying Price)</p><p className="text-base font-bold text-info tabular-nums">{fmt(buyingCapital)}</p></div>
+              <div><p className="text-xs text-muted-foreground">Total Capital (Shopping Price)</p><p className="text-base font-bold text-info tabular-nums">{fmt(buyingCapital)}</p></div>
             </div>
           </CardContent>
         </Card>
@@ -156,7 +158,15 @@ export default function SettingsPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-accent/10"><TrendingUp className="h-5 w-5 text-accent" /></div>
-              <div><p className="text-xs text-muted-foreground">Stock Value (Retail)</p><p className="text-base font-bold tabular-nums">{fmt(retailCapital)}</p></div>
+              <div><p className="text-xs text-muted-foreground">Stock Value (Wholesale)</p><p className="text-base font-bold tabular-nums">{fmt(wholesaleCapital)}</p></div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-success/10"><TrendingUp className="h-5 w-5 text-success" /></div>
+              <div><p className="text-xs text-muted-foreground">Stock Value (Retail)</p><p className="text-base font-bold text-success tabular-nums">{fmt(retailCapital)}</p></div>
             </div>
           </CardContent>
         </Card>

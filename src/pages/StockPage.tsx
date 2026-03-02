@@ -26,7 +26,7 @@ export default function StockPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '', category: '', quality: '',
-    wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5',
+    buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5',
   });
 
   const activeStock = stock.filter(s => !s.deleted_at);
@@ -41,7 +41,7 @@ export default function StockPage() {
   const existingCategories = [...new Set(stock.map(s => s.category).filter(Boolean))];
 
   function resetForm() {
-    setForm({ name: '', category: '', quality: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5' });
+    setForm({ name: '', category: '', quality: '', buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5' });
     setEditItem(null);
   }
 
@@ -51,6 +51,7 @@ export default function StockPage() {
       name: toSentenceCase(form.name.trim()),
       category: toSentenceCase(form.category.trim()),
       quality: toSentenceCase(form.quality.trim()),
+      buying_price: parseFloat(form.buying_price) || 0,
       wholesale_price: parseFloat(form.wholesale_price) || 0,
       retail_price: parseFloat(form.retail_price) || 0,
       quantity: parseInt(form.quantity) || 0,
@@ -69,7 +70,7 @@ export default function StockPage() {
     setEditItem(item);
     setForm({
       name: item.name, category: item.category, quality: item.quality,
-      wholesale_price: String(item.wholesale_price), retail_price: String(item.retail_price),
+      buying_price: String(item.buying_price), wholesale_price: String(item.wholesale_price), retail_price: String(item.retail_price),
       quantity: String(item.quantity), min_stock_level: String(item.min_stock_level),
     });
     setOpen(true);
@@ -110,9 +111,13 @@ export default function StockPage() {
                     <Input value={form.quality} onChange={e => setForm(f => ({ ...f, quality: e.target.value }))} onBlur={() => setForm(f => ({ ...f, quality: toSentenceCase(f.quality) }))} placeholder="e.g. New, Grade A..." />
                   </div>
                 </div>
+                <div>
+                  <Label>Buying/Shopping Price (Cost from supplier)</Label>
+                  <Input type="number" min="0" step="0.01" value={form.buying_price} onChange={e => setForm(f => ({ ...f, buying_price: e.target.value }))} required placeholder="Price you buy at" />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Buying Price (Wholesale)</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} required /></div>
-                  <div><Label>Selling Price (Retail)</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} required /></div>
+                  <div><Label>Wholesale Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} required placeholder="Sell to wholesalers" /></div>
+                  <div><Label>Retail Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} required placeholder="Sell to customers" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Quantity</Label><Input type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} required /></div>
@@ -152,7 +157,8 @@ export default function StockPage() {
                   <TableHead>Category</TableHead>
                   <TableHead>Quality</TableHead>
                   {showBuyingPrice && <TableHead className="text-right bg-info/10 text-info font-semibold">💰 Buying Price</TableHead>}
-                  <TableHead className="text-right">Retail Price</TableHead>
+                  <TableHead className="text-right">Wholesale</TableHead>
+                  <TableHead className="text-right">Retail</TableHead>
                   <TableHead className="text-right">Qty</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -160,7 +166,7 @@ export default function StockPage() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={showBuyingPrice ? 8 : 7} className="text-center text-muted-foreground py-8">No items found. Add your first stock item.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={showBuyingPrice ? 9 : 8} className="text-center text-muted-foreground py-8">No items found. Add your first stock item.</TableCell></TableRow>
                 ) : (
                   filtered.map(item => (
                     <TableRow key={item.id}>
@@ -169,9 +175,10 @@ export default function StockPage() {
                       <TableCell>{item.quality}</TableCell>
                       {showBuyingPrice && (
                         <TableCell className="text-right bg-info/5">
-                          <span className="font-semibold text-info tabular-nums">{fmt(Number(item.wholesale_price))}</span>
+                          <span className="font-semibold text-info tabular-nums">{fmt(Number(item.buying_price))}</span>
                         </TableCell>
                       )}
+                      <TableCell className="text-right tabular-nums">{fmt(Number(item.wholesale_price))}</TableCell>
                       <TableCell className="text-right tabular-nums font-medium">{fmt(Number(item.retail_price))}</TableCell>
                       <TableCell className="text-right font-semibold">{item.quantity}</TableCell>
                       <TableCell>

@@ -612,6 +612,7 @@ export type Database = {
       stock_items: {
         Row: {
           business_id: string
+          buying_price: number
           category: string
           created_at: string
           deleted_at: string | null
@@ -626,6 +627,7 @@ export type Database = {
         }
         Insert: {
           business_id: string
+          buying_price?: number
           category?: string
           created_at?: string
           deleted_at?: string | null
@@ -640,6 +642,7 @@ export type Database = {
         }
         Update: {
           business_id?: string
+          buying_price?: number
           category?: string
           created_at?: string
           deleted_at?: string | null

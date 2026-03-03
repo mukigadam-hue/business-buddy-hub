@@ -14,6 +14,9 @@ export interface StockItem {
   retail_price: number;
   quantity: number;
   min_stock_level: number;
+  image_url_1: string;
+  image_url_2: string;
+  image_url_3: string;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -126,6 +129,7 @@ export interface Business {
   contact: string;
   email: string;
   total_capital: number;
+  logo_url: string;
   owner_id: string;
   created_at: string;
 }
@@ -353,13 +357,29 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   function setupRealtimeSubscriptions() {
     if (!currentBusinessId) return;
 
+    // Use debounced reload to avoid multiple rapid reloads
+    let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedReload = () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => loadBusinessData(), 300);
+    };
+
     const channel = supabase
       .channel(`business-${currentBusinessId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_items', filter: `business_id=eq.${currentBusinessId}` }, () => { loadBusinessData(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `business_id=eq.${currentBusinessId}` }, () => { loadBusinessData(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases', filter: `business_id=eq.${currentBusinessId}` }, () => { loadBusinessData(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `business_id=eq.${currentBusinessId}` }, () => { loadBusinessData(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'services', filter: `business_id=eq.${currentBusinessId}` }, () => { loadBusinessData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_items', filter: `business_id=eq.${currentBusinessId}` }, (payload) => {
+        // Optimistic: update stock in-place for simple updates
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          setStock(prev => prev.map(s => s.id === (payload.new as any).id ? { ...s, ...payload.new } as StockItem : s));
+        } else if (payload.eventType === 'INSERT' && payload.new) {
+          setStock(prev => [...prev, payload.new as StockItem].sort((a, b) => a.name.localeCompare(b.name)));
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          setStock(prev => prev.filter(s => s.id !== (payload.old as any).id));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `business_id=eq.${currentBusinessId}` }, debouncedReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases', filter: `business_id=eq.${currentBusinessId}` }, debouncedReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `business_id=eq.${currentBusinessId}` }, debouncedReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'services', filter: `business_id=eq.${currentBusinessId}` }, debouncedReload)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `business_id=eq.${currentBusinessId}` }, (payload) => {
         const notif = payload.new as Notification;
         setNotifications(prev => [notif, ...prev]);
@@ -367,7 +387,10 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
+      supabase.removeChannel(channel);
+    };
   }
 
   async function addNotification(type: string, title: string, message: string) {
@@ -398,12 +421,16 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
     if (!currentBusinessId) return;
-    const { error } = await supabase.from('stock_items').insert({ ...item, business_id: currentBusinessId });
+    const { data, error } = await supabase.from('stock_items').insert({ ...item, business_id: currentBusinessId } as any).select().single();
     if (error) { toast.error(error.message); return; }
+    // Optimistic insert
+    if (data) setStock(prev => [...prev, data as unknown as StockItem].sort((a, b) => a.name.localeCompare(b.name)));
     toast.success('Item added to stock!');
   }, [currentBusinessId]);
 
   const updateStockItem = useCallback(async (id: string, updates: Partial<StockItem>) => {
+    // Optimistic update
+    setStock(prev => prev.map(s => s.id === id ? { ...s, ...updates } as StockItem : s));
     const { error } = await supabase.from('stock_items').update(updates).eq('id', id);
     if (error) { toast.error(error.message); return; }
     toast.success('Stock item updated!');

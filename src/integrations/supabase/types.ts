@@ -88,6 +88,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          logo_url: string | null
           name: string
           owner_id: string
           total_capital: number
@@ -98,6 +99,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          logo_url?: string | null
           name: string
           owner_id: string
           total_capital?: number
@@ -108,6 +110,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          logo_url?: string | null
           name?: string
           owner_id?: string
           total_capital?: number
@@ -671,6 +674,9 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           id: string
+          image_url_1: string | null
+          image_url_2: string | null
+          image_url_3: string | null
           min_stock_level: number
           name: string
           quality: string
@@ -686,6 +692,9 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           id?: string
+          image_url_1?: string | null
+          image_url_2?: string | null
+          image_url_3?: string | null
           min_stock_level?: number
           name: string
           quality?: string
@@ -701,6 +710,9 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           id?: string
+          image_url_1?: string | null
+          image_url_2?: string | null
+          image_url_3?: string | null
           min_stock_level?: number
           name?: string
           quality?: string

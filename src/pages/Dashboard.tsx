@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, TrendingUp, AlertTriangle, XCircle, DollarSign, ShoppingCart, Wrench } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Package, TrendingUp, AlertTriangle, XCircle, DollarSign, ShoppingCart, Wrench, Camera } from 'lucide-react';
+import ImageUpload from '@/components/ImageUpload';
+import QuickAddItem from '@/components/QuickAddItem';
 
 export default function Dashboard() {
-  const { currentBusiness, stock, sales, services } = useBusiness();
+  const { currentBusiness, updateBusiness, stock, sales, services } = useBusiness();
   const { fmt } = useCurrency();
 
   const activeStock = stock.filter(s => !s.deleted_at);
@@ -38,7 +41,8 @@ export default function Dashboard() {
   const [showAllAlerts, setShowAllAlerts] = useState(false);
   const [showAllSales, setShowAllSales] = useState(false);
   const [showAllServices, setShowAllServices] = useState(false);
-
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [showLogoUpload, setShowLogoUpload] = useState(false);
   const visibleTop = showAllTop ? topSelling : topSelling.slice(0, 5);
   const allAlerts = [...outOfStock, ...lowStock];
   const visibleAlerts = showAllAlerts ? allAlerts : allAlerts.slice(0, 5);
@@ -56,13 +60,49 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="gradient-primary rounded-xl p-6 text-primary-foreground">
-        <h1 className="text-2xl font-bold">{currentBusiness?.name || 'My Business'}</h1>
-        <div className="flex flex-wrap gap-4 mt-2 text-sm opacity-90">
-          {currentBusiness?.address && <span>📍 {currentBusiness.address}</span>}
-          {currentBusiness?.contact && <span>📞 {currentBusiness.contact}</span>}
-          {currentBusiness?.email && <span>✉️ {currentBusiness.email}</span>}
+        <div className="flex items-start gap-4">
+          {/* Business Logo */}
+          <div className="shrink-0">
+            {currentBusiness?.logo_url ? (
+              <div className="relative cursor-pointer" onClick={() => setShowLogoUpload(v => !v)}>
+                <img src={currentBusiness.logo_url} alt="Logo" className="h-16 w-16 rounded-xl object-cover border-2 border-primary-foreground/30" />
+              </div>
+            ) : (
+              <button onClick={() => setShowLogoUpload(v => !v)}
+                className="h-16 w-16 rounded-xl border-2 border-dashed border-primary-foreground/40 flex items-center justify-center hover:border-primary-foreground/70 transition-colors">
+                <Camera className="h-6 w-6 opacity-60" />
+              </button>
+            )}
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold">{currentBusiness?.name || 'My Business'}</h1>
+            <div className="flex flex-wrap gap-4 mt-2 text-sm opacity-90">
+              {currentBusiness?.address && <span>📍 {currentBusiness.address}</span>}
+              {currentBusiness?.contact && <span>📞 {currentBusiness.contact}</span>}
+              {currentBusiness?.email && <span>✉️ {currentBusiness.email}</span>}
+            </div>
+          </div>
         </div>
+        {showLogoUpload && (
+          <div className="mt-4 p-3 bg-background/10 rounded-lg">
+            <ImageUpload
+              bucket="business-logos"
+              path={currentBusiness?.id || 'logo'}
+              currentUrl={currentBusiness?.logo_url}
+              onUploaded={(url) => { updateBusiness({ logo_url: url } as any); setShowLogoUpload(false); }}
+              onRemoved={() => updateBusiness({ logo_url: '' } as any)}
+              size="md"
+              label="Business Logo"
+            />
+          </div>
+        )}
       </div>
+
+      {/* Quick Add Item with Photo */}
+      <Button onClick={() => setShowQuickAdd(true)} className="w-full" variant="outline" size="lg">
+        <Camera className="h-5 w-5 mr-2" /> Add Item with Photos
+      </Button>
+      <QuickAddItem open={showQuickAdd} onOpenChange={setShowQuickAdd} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="shadow-card">

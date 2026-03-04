@@ -7,12 +7,71 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Pencil, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, RotateCcw, AlertTriangle, Image, X } from 'lucide-react';
 import type { StockItem } from '@/context/BusinessContext';
 
 function toSentenceCase(str: string): string {
   if (!str) return str;
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
+function ItemGalleryDialog({ item, open, onOpenChange }: { item: StockItem; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { fmt } = useCurrency();
+  const images = [item.image_url_1, item.image_url_2, item.image_url_3].filter(Boolean) as string[];
+  const [activeImg, setActiveImg] = useState(0);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Image className="h-4 w-4" /> {item.name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {images.length > 0 ? (
+            <>
+              <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                <img src={images[activeImg] || images[0]} alt={item.name} className="w-full h-full object-cover" />
+              </div>
+              {images.length > 1 && (
+                <div className="flex gap-2 justify-center">
+                  {images.map((img, i) => (
+                    <button key={i} onClick={() => setActiveImg(i)}
+                      className={`w-16 h-16 rounded-md overflow-hidden border-2 transition-colors ${i === activeImg ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                      <img src={img} alt={`${item.name} ${i + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="aspect-square rounded-lg bg-muted flex items-center justify-center">
+              <p className="text-sm text-muted-foreground">No photos uploaded</p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="bg-muted/40 rounded-lg p-2">
+              <p className="text-xs text-muted-foreground">Category</p>
+              <p className="font-medium">{item.category || '-'}</p>
+            </div>
+            <div className="bg-muted/40 rounded-lg p-2">
+              <p className="text-xs text-muted-foreground">Quality</p>
+              <p className="font-medium">{item.quality || '-'}</p>
+            </div>
+            <div className="bg-muted/40 rounded-lg p-2">
+              <p className="text-xs text-muted-foreground">In Stock</p>
+              <p className="font-bold text-lg">{item.quantity}</p>
+            </div>
+            <div className="bg-muted/40 rounded-lg p-2">
+              <p className="text-xs text-muted-foreground">Retail Price</p>
+              <p className="font-bold text-success">{fmt(Number(item.retail_price))}</p>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function StockPage() {
@@ -24,6 +83,7 @@ export default function StockPage() {
   const [showBuyingPrice, setShowBuyingPrice] = useState(false);
   const [showRecycleBin, setShowRecycleBin] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [viewGalleryItem, setViewGalleryItem] = useState<StockItem | null>(null);
   const [form, setForm] = useState({
     name: '', category: '', quality: '',
     buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5',
@@ -37,6 +97,9 @@ export default function StockPage() {
     item.category.toLowerCase().includes(search.toLowerCase()) ||
     item.quality.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Items with photos for gallery view
+  const itemsWithPhotos = activeStock.filter(s => s.image_url_1 || s.image_url_2 || s.image_url_3);
 
   const existingCategories = [...new Set(stock.map(s => s.category).filter(Boolean))];
 
@@ -138,6 +201,37 @@ export default function StockPage() {
         <Input placeholder="Search items by name, category, quality..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
+      {/* Photo Gallery */}
+      {itemsWithPhotos.length > 0 && (
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <h2 className="text-base font-semibold mb-3 flex items-center gap-2"><Image className="h-4 w-4 text-primary" /> Item Photos ({itemsWithPhotos.length})</h2>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+              {itemsWithPhotos.map(item => {
+                const thumb = item.image_url_1 || item.image_url_2 || item.image_url_3;
+                return (
+                  <button key={item.id} onClick={() => setViewGalleryItem(item)} className="group text-left space-y-1">
+                    <div className="aspect-square rounded-lg overflow-hidden bg-muted border-2 border-transparent group-hover:border-primary transition-colors">
+                      <img src={thumb!} alt={item.name} className="w-full h-full object-cover" />
+                    </div>
+                    <p className="text-xs font-medium truncate">{item.name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {[item.category, item.quality].filter(Boolean).join(' · ')}
+                    </p>
+                    <p className="text-[10px] font-semibold">Qty: {item.quantity}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gallery Dialog */}
+      {viewGalleryItem && (
+        <ItemGalleryDialog item={viewGalleryItem} open={!!viewGalleryItem} onOpenChange={o => { if (!o) setViewGalleryItem(null); }} />
+      )}
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!confirmDelete} onOpenChange={o => { if (!o) setConfirmDelete(null); }}>
         <DialogContent className="max-w-sm">
@@ -156,6 +250,7 @@ export default function StockPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead></TableHead>
                   <TableHead>Item</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Quality</TableHead>
@@ -169,38 +264,52 @@ export default function StockPage() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={showBuyingPrice ? 9 : 8} className="text-center text-muted-foreground py-8">No items found. Add your first stock item.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={showBuyingPrice ? 10 : 9} className="text-center text-muted-foreground py-8">No items found. Add your first stock item.</TableCell></TableRow>
                 ) : (
-                  filtered.map(item => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.category}</TableCell>
-                      <TableCell>{item.quality}</TableCell>
-                      {showBuyingPrice && (
-                        <TableCell className="text-right bg-info/5">
-                          <span className="font-semibold text-info tabular-nums">{fmt(Number(item.buying_price))}</span>
+                  filtered.map(item => {
+                    const thumb = item.image_url_1 || item.image_url_2 || item.image_url_3;
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell className="w-10 pr-0">
+                          {thumb ? (
+                            <button onClick={() => setViewGalleryItem(item)} className="w-8 h-8 rounded overflow-hidden bg-muted hover:ring-2 ring-primary transition-all">
+                              <img src={thumb} alt="" className="w-full h-full object-cover" />
+                            </button>
+                          ) : (
+                            <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
+                              <Image className="h-3 w-3 text-muted-foreground" />
+                            </div>
+                          )}
                         </TableCell>
-                      )}
-                      <TableCell className="text-right tabular-nums">{fmt(Number(item.wholesale_price))}</TableCell>
-                      <TableCell className="text-right tabular-nums font-medium">{fmt(Number(item.retail_price))}</TableCell>
-                      <TableCell className="text-right font-semibold">{item.quantity}</TableCell>
-                      <TableCell>
-                        {item.quantity === 0 ? (
-                          <span className="text-xs font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Out</span>
-                        ) : item.quantity <= item.min_stock_level ? (
-                          <span className="text-xs font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">Low</span>
-                        ) : (
-                          <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">OK</span>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>{item.category}</TableCell>
+                        <TableCell>{item.quality}</TableCell>
+                        {showBuyingPrice && (
+                          <TableCell className="text-right bg-info/5">
+                            <span className="font-semibold text-info tabular-nums">{fmt(Number(item.buying_price))}</span>
+                          </TableCell>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-1 justify-end">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(item)}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => setConfirmDelete(item.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                        <TableCell className="text-right tabular-nums">{fmt(Number(item.wholesale_price))}</TableCell>
+                        <TableCell className="text-right tabular-nums font-medium">{fmt(Number(item.retail_price))}</TableCell>
+                        <TableCell className="text-right font-semibold">{item.quantity}</TableCell>
+                        <TableCell>
+                          {item.quantity === 0 ? (
+                            <span className="text-xs font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Out</span>
+                          ) : item.quantity <= item.min_stock_level ? (
+                            <span className="text-xs font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">Low</span>
+                          ) : (
+                            <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">OK</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-1 justify-end">
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(item)}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => setConfirmDelete(item.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

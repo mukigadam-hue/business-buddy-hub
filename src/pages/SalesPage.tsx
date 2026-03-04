@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Trash2, ShoppingCart, Receipt as ReceiptIcon, Wrench } from 'lucide-react';
+import { Plus, Trash2, ShoppingCart, Receipt as ReceiptIcon, Wrench, Package } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import type { Sale } from '@/context/BusinessContext';
 
@@ -28,6 +28,11 @@ export default function SalesPage() {
   const [serviceItems, setServiceItems] = useState<{
     service_name: string; description: string; cost: number;
   }[]>([]);
+  // Parts used from stock for service items
+  const [serviceParts, setServiceParts] = useState<{
+    stock_item_id: string; item_name: string; category: string; quality: string;
+    quantity: number; unit_price: number; subtotal: number;
+  }[]>([]);
 
   const [selectedStock, setSelectedStock] = useState('');
   const [quantity, setQuantity] = useState('1');
@@ -37,6 +42,10 @@ export default function SalesPage() {
   const [sellerName, setSellerName] = useState('');
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
+
+  // Service parts selection
+  const [selectedPartStock, setSelectedPartStock] = useState('');
+  const [partQty, setPartQty] = useState('1');
 
   const activeStock = stock.filter(s => !s.deleted_at);
   const todaySales = sales.filter(s => new Date(s.created_at).toDateString() === new Date().toDateString());
@@ -70,14 +79,35 @@ export default function SalesPage() {
     setSvcForm({ service_name: '', description: '', cost: '' });
   }
 
+  function addServicePart() {
+    const stockItem = activeStock.find(s => s.id === selectedPartStock);
+    if (!stockItem) return;
+    const qty = parseInt(partQty) || 1;
+    const maxQty = stockItem.quantity - serviceParts.filter(p => p.stock_item_id === stockItem.id).reduce((s, p) => s + p.quantity, 0);
+    if (qty > maxQty) return;
+    setServiceParts(prev => [...prev, {
+      stock_item_id: stockItem.id,
+      item_name: stockItem.name,
+      category: stockItem.category,
+      quality: stockItem.quality,
+      quantity: qty,
+      unit_price: Number(stockItem.retail_price),
+      subtotal: qty * Number(stockItem.retail_price),
+    }]);
+    setSelectedPartStock('');
+    setPartQty('1');
+  }
+
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
   function removeServiceItem(idx: number) { setServiceItems(prev => prev.filter((_, i) => i !== idx)); }
+  function removeServicePart(idx: number) { setServiceParts(prev => prev.filter((_, i) => i !== idx)); }
 
   const itemsTotal = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   const servicesTotal = serviceItems.reduce((sum, svc) => sum + svc.cost, 0);
-  const grandTotal = itemsTotal + servicesTotal;
+  const partsTotal = serviceParts.reduce((sum, p) => sum + p.subtotal, 0);
+  const grandTotal = itemsTotal + servicesTotal + partsTotal;
 
-  const canSave = (items.length > 0 || serviceItems.length > 0) && buyerName.trim() && sellerName.trim();
+  const canSave = (items.length > 0 || serviceItems.length > 0 || serviceParts.length > 0) && buyerName.trim() && sellerName.trim();
 
   async function handleSave() {
     if (!canSave) return;
@@ -93,6 +123,16 @@ export default function SalesPage() {
         price_type: 'service',
         unit_price: svc.cost,
         subtotal: svc.cost,
+      })),
+      ...serviceParts.map(part => ({
+        stock_item_id: part.stock_item_id,
+        item_name: `[Part] ${part.item_name}`,
+        category: part.category,
+        quality: part.quality,
+        quantity: part.quantity,
+        price_type: 'part',
+        unit_price: part.unit_price,
+        subtotal: part.subtotal,
       })),
     ];
 
@@ -119,6 +159,7 @@ export default function SalesPage() {
 
     setItems([]);
     setServiceItems([]);
+    setServiceParts([]);
     setBuyerName('');
     setSellerName('');
   }
@@ -152,7 +193,8 @@ export default function SalesPage() {
                 {item.item_name} × {item.quantity}
                 {item.category && item.category !== 'Service' && <span className="text-xs ml-1">· {item.category}</span>}
                 {item.quality && item.quality !== '-' && <span className="text-xs ml-1">· {item.quality}</span>}
-                {item.price_type && item.price_type !== 'service' && <span className="text-xs ml-1 text-muted-foreground">({item.price_type})</span>}
+                {item.price_type && item.price_type !== 'service' && item.price_type !== 'part' && <span className="text-xs ml-1 text-muted-foreground">({item.price_type})</span>}
+                {item.price_type === 'part' && <span className="text-xs ml-1 text-accent">(part used)</span>}
               </span>
               <span className="tabular-nums ml-2">{fmt(Number(item.subtotal))}</span>
             </div>
@@ -164,6 +206,8 @@ export default function SalesPage() {
       </div>
     );
   }
+
+  const availablePartsStock = activeStock.filter(s => s.quantity > 0);
 
   return (
     <div className="space-y-6">
@@ -241,7 +285,59 @@ export default function SalesPage() {
             </div>
           </div>
 
-          {(items.length > 0 || serviceItems.length > 0) && (
+          {/* Parts Used from Stock for Services */}
+          {(serviceItems.length > 0 || serviceParts.length > 0) && (
+            <div className="border rounded-lg p-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <Package className="h-3.5 w-3.5" /> Items/Parts Used from Stock (for services)
+              </p>
+              <div className="flex flex-wrap gap-2 items-end">
+                <div className="flex-1 min-w-[180px]">
+                  <Label className="text-xs">Select Part</Label>
+                  <Select value={selectedPartStock} onValueChange={setSelectedPartStock}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose from stock..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availablePartsStock.map(s => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-16">
+                  <Label className="text-xs">Qty</Label>
+                  <Input type="number" min="1" value={partQty} onChange={e => setPartQty(e.target.value)} />
+                </div>
+                <Button size="sm" variant="outline" onClick={addServicePart} disabled={!selectedPartStock}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />Add Part
+                </Button>
+              </div>
+              {serviceParts.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  {serviceParts.map((part, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
+                      <span>
+                        {part.item_name} × {part.quantity}
+                        {part.category && <span className="text-xs text-muted-foreground ml-1">· {part.category}</span>}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="tabular-nums font-medium text-xs">{fmt(part.subtotal)}</span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeServicePart(i)}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="text-xs text-muted-foreground text-right">Parts total: {fmt(partsTotal)}</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(items.length > 0 || serviceItems.length > 0 || serviceParts.length > 0) && (
             <>
               <div className="overflow-x-auto max-h-64 overflow-y-auto">
                 <Table>
@@ -278,6 +374,20 @@ export default function SalesPage() {
                         <TableCell className="text-right tabular-nums">{fmt(svc.cost)}</TableCell>
                         <TableCell className="text-right font-semibold tabular-nums">{fmt(svc.cost)}</TableCell>
                         <TableCell><Button variant="ghost" size="icon" onClick={() => removeServiceItem(i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
+                      </TableRow>
+                    ))}
+                    {serviceParts.map((part, i) => (
+                      <TableRow key={`part-${i}`} className="bg-accent/5">
+                        <TableCell className="font-medium">
+                          <span className="flex items-center gap-1"><Package className="h-3 w-3 text-accent" />{part.item_name}</span>
+                        </TableCell>
+                        <TableCell>{part.category}</TableCell>
+                        <TableCell>{part.quality}</TableCell>
+                        <TableCell className="text-accent text-xs">Part Used</TableCell>
+                        <TableCell className="text-right">{part.quantity}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmt(part.unit_price)}</TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums">{fmt(part.subtotal)}</TableCell>
+                        <TableCell><Button variant="ghost" size="icon" onClick={() => removeServicePart(i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
                       </TableRow>
                     ))}
                     <TableRow>

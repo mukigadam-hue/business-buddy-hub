@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Save, DollarSign, TrendingUp, Wallet, Building2, Plus, Crown, User, ChevronRight, Receipt as ReceiptIcon, Search, ShoppingCart, Trash2, RotateCcw } from 'lucide-react';
+import { Save, DollarSign, TrendingUp, Wallet, Building2, Plus, Crown, User, ChevronRight, Receipt as ReceiptIcon, Search, ShoppingCart, Trash2, RotateCcw, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import type { ReceiptRecord } from '@/context/BusinessContext';
@@ -59,7 +59,7 @@ function AddBusinessDialog({ onCreated }: { onCreated: () => void }) {
 }
 
 export default function SettingsPage() {
-  const { currentBusiness, updateBusiness, stock, sales, purchases, businesses, memberships, setCurrentBusinessId, getReceipts, restoreStockItem, permanentDeleteStockItem } = useBusiness();
+  const { currentBusiness, updateBusiness, stock, sales, purchases, services, businesses, memberships, setCurrentBusinessId, getReceipts, restoreStockItem, permanentDeleteStockItem } = useBusiness();
   const { currency, setCurrency, fmt } = useCurrency();
   const [form, setForm] = useState({
     name: currentBusiness?.name || '',
@@ -77,11 +77,46 @@ export default function SettingsPage() {
   const activeStock = stock.filter(s => !s.deleted_at);
   const deletedStock = stock.filter(s => s.deleted_at);
 
-  const todayRevenue = sales
+  // ====== REVENUE CALCULATIONS ======
+  // Today's stock sales revenue: sum of sale items that are NOT services
+  const todayStockSalesRevenue = sales
     .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
-    .reduce((sum, s) => sum + Number(s.grand_total), 0);
+    .reduce((sum, s) => {
+      const stockItemsTotal = s.items
+        .filter(i => i.price_type !== 'service')
+        .reduce((t, i) => t + Number(i.subtotal), 0);
+      return sum + stockItemsTotal;
+    }, 0);
 
-  const totalRevenue = sales.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  // Today's service revenue from standalone services table
+  const todayServiceRevenue = services
+    .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
+    .reduce((sum, s) => sum + Number(s.cost), 0);
+
+  // Today's service revenue embedded in sales (service items inside sale transactions)
+  const todaySaleServiceRevenue = sales
+    .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
+    .reduce((sum, s) => {
+      const svcTotal = s.items
+        .filter(i => i.price_type === 'service')
+        .reduce((t, i) => t + Number(i.subtotal), 0);
+      return sum + svcTotal;
+    }, 0);
+
+  const todayTotalServiceRevenue = todayServiceRevenue + todaySaleServiceRevenue;
+  const todayRevenue = todayStockSalesRevenue + todayTotalServiceRevenue;
+
+  // All-time revenue
+  const totalStockSalesRevenue = sales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+
+  const totalServiceRevenue = services.reduce((sum, s) => sum + Number(s.cost), 0)
+    + sales.reduce((sum, s) => {
+      return sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+    }, 0);
+
+  const totalRevenue = totalStockSalesRevenue + totalServiceRevenue;
 
   // Total capital = sum of (quantity × buying/shopping price)
   let buyingCapital = 0;
@@ -137,12 +172,16 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold">Settings</h1>
 
       {/* Financial Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="shadow-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-success/10"><DollarSign className="h-5 w-5 text-success" /></div>
-              <div><p className="text-xs text-muted-foreground">Today's Revenue</p><p className="text-base font-bold text-success tabular-nums">{fmt(todayRevenue)}</p></div>
+              <div>
+                <p className="text-xs text-muted-foreground">Today's Revenue</p>
+                <p className="text-base font-bold text-success tabular-nums">{fmt(todayRevenue)}</p>
+                <p className="text-[10px] text-muted-foreground">Stock: {fmt(todayStockSalesRevenue)} · Services: {fmt(todayTotalServiceRevenue)}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -154,6 +193,17 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10"><ShoppingCart className="h-5 w-5 text-primary" /></div>
+              <div><p className="text-xs text-muted-foreground">Total Purchases</p><p className="text-base font-bold tabular-nums">{fmt(totalPurchases)}</p></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <Card className="shadow-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -170,24 +220,30 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10"><ShoppingCart className="h-5 w-5 text-primary" /></div>
-              <div><p className="text-xs text-muted-foreground">Total Purchases</p><p className="text-base font-bold tabular-nums">{fmt(totalPurchases)}</p></div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Revenue summary */}
+      {/* Revenue summary with separate service fee */}
       <Card className="shadow-card">
         <CardContent className="p-4">
           <h2 className="text-base font-semibold mb-2">Revenue Overview</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="p-3 rounded-lg bg-success/5 border border-success/20">
               <p className="text-xs text-muted-foreground">Total Revenue (All Time)</p>
               <p className="text-lg font-bold text-success tabular-nums">{fmt(totalRevenue)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-1 mb-1">
+                <ShoppingCart className="h-3 w-3 text-primary" />
+                <p className="text-xs text-muted-foreground">Stock Sales Revenue</p>
+              </div>
+              <p className="text-lg font-bold text-primary tabular-nums">{fmt(totalStockSalesRevenue)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+              <div className="flex items-center gap-1 mb-1">
+                <Wrench className="h-3 w-3 text-accent" />
+                <p className="text-xs text-muted-foreground">Service Fee Revenue</p>
+              </div>
+              <p className="text-lg font-bold text-accent tabular-nums">{fmt(totalServiceRevenue)}</p>
             </div>
             <div className="p-3 rounded-lg bg-info/5 border border-info/20">
               <p className="text-xs text-muted-foreground">Expected Profit (Retail - Buying)</p>

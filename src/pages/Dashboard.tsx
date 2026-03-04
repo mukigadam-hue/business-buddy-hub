@@ -17,10 +17,19 @@ export default function Dashboard() {
     const d = new Date(s.created_at);
     return d.toDateString() === new Date().toDateString();
   });
-  const todayRevenue = todaySales.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  // Stock sales revenue (exclude service items embedded in sales)
+  const todayStockSalesRevenue = todaySales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
 
   const todayServices = services.filter(s => new Date(s.created_at).toDateString() === new Date().toDateString());
   const todayServiceRevenue = todayServices.reduce((sum, s) => sum + Number(s.cost), 0);
+  // Service items embedded in sales
+  const todaySaleServiceRevenue = todaySales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+  const todayTotalServiceRevenue = todayServiceRevenue + todaySaleServiceRevenue;
+  const todayRevenue = todayStockSalesRevenue + todayTotalServiceRevenue;
 
   const lowStock = activeStock.filter(item => item.quantity > 0 && item.quantity <= item.min_stock_level);
   const outOfStock = activeStock.filter(item => item.quantity === 0);
@@ -117,7 +126,7 @@ export default function Dashboard() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-success/10"><DollarSign className="h-5 w-5 text-success" /></div>
-              <div><p className="text-xs text-muted-foreground">Today's Revenue</p><p className="text-xl font-bold text-success">{fmt(todayRevenue + todayServiceRevenue)}</p></div>
+              <div><p className="text-xs text-muted-foreground">Today's Revenue</p><p className="text-xl font-bold text-success">{fmt(todayRevenue)}</p></div>
             </div>
           </CardContent>
         </Card>

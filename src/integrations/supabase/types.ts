@@ -84,6 +84,7 @@ export type Database = {
       businesses: {
         Row: {
           address: string
+          business_type: string
           contact: string
           created_at: string
           email: string
@@ -95,6 +96,7 @@ export type Database = {
         }
         Insert: {
           address?: string
+          business_type?: string
           contact?: string
           created_at?: string
           email?: string
@@ -106,6 +108,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          business_type?: string
           contact?: string
           created_at?: string
           email?: string
@@ -116,6 +119,207 @@ export type Database = {
           total_capital?: number
         }
         Relationships: []
+      }
+      factory_expenses: {
+        Row: {
+          amount: number
+          business_id: string
+          category: string
+          created_at: string
+          description: string
+          expense_date: string
+          id: string
+          recorded_by: string
+        }
+        Insert: {
+          amount?: number
+          business_id: string
+          category?: string
+          created_at?: string
+          description?: string
+          expense_date?: string
+          id?: string
+          recorded_by?: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string
+          category?: string
+          created_at?: string
+          description?: string
+          expense_date?: string
+          id?: string
+          recorded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_expenses_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factory_production: {
+        Row: {
+          business_id: string
+          created_at: string
+          expiry_date: string | null
+          id: string
+          materials_used: Json
+          notes: string
+          product_name: string
+          product_stock_id: string | null
+          production_date: string
+          quantity_produced: number
+          recorded_by: string
+          waste_quantity: number
+          waste_unit: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          materials_used?: Json
+          notes?: string
+          product_name: string
+          product_stock_id?: string | null
+          production_date: string
+          quantity_produced?: number
+          recorded_by?: string
+          waste_quantity?: number
+          waste_unit?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          materials_used?: Json
+          notes?: string
+          product_name?: string
+          product_stock_id?: string | null
+          production_date?: string
+          quantity_produced?: number
+          recorded_by?: string
+          waste_quantity?: number
+          waste_unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_production_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factory_production_product_stock_id_fkey"
+            columns: ["product_stock_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factory_raw_materials: {
+        Row: {
+          business_id: string
+          category: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          min_stock_level: number
+          name: string
+          quantity: number
+          supplier: string
+          unit_cost: number
+          unit_type: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          category?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          min_stock_level?: number
+          name: string
+          quantity?: number
+          supplier?: string
+          unit_cost?: number
+          unit_type?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          category?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          min_stock_level?: number
+          name?: string
+          quantity?: number
+          supplier?: string
+          unit_cost?: number
+          unit_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_raw_materials_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factory_team_members: {
+        Row: {
+          business_id: string
+          created_at: string
+          full_name: string
+          hire_date: string
+          id: string
+          is_active: boolean
+          phone: string
+          rank: string
+          salary: number
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          full_name: string
+          hire_date?: string
+          id?: string
+          is_active?: boolean
+          phone?: string
+          rank?: string
+          salary?: number
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          full_name?: string
+          hire_date?: string
+          id?: string
+          is_active?: boolean
+          phone?: string
+          rank?: string
+          salary?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_team_members_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invite_codes: {
         Row: {

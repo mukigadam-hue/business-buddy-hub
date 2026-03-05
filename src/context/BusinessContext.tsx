@@ -131,6 +131,7 @@ export interface Business {
   total_capital: number;
   logo_url: string;
   owner_id: string;
+  business_type: string;
   created_at: string;
 }
 

@@ -147,21 +147,21 @@ export default function FactoryTeam() {
               </h2>
               <div className="space-y-2">
                 {members.map(m => (
-                  <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <p className="text-sm font-medium">{m.full_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {m.phone && `📞 ${m.phone} · `}
-                        Hired: {new Date(m.hire_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-success tabular-nums">{fmt(Number(m.salary))}/mo</span>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(m)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => updateTeamMember(m.id, { is_active: false })}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                    </div>
-                  </div>
-                ))}
+                   <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border">
+                     <div>
+                       <p className="text-sm font-medium">{m.full_name}</p>
+                       <p className="text-xs text-muted-foreground">
+                         {m.phone && `📞 ${m.phone} · `}
+                         Hired: {new Date(m.hire_date).toLocaleDateString()}
+                       </p>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       {isOwnerOrAdmin && <span className="text-sm font-semibold text-success tabular-nums">{fmt(Number(m.salary))}/mo</span>}
+                       {isOwnerOrAdmin && <Button variant="ghost" size="icon" onClick={() => openEdit(m)}><Edit2 className="h-3.5 w-3.5" /></Button>}
+                       {isOwnerOrAdmin && <Button variant="ghost" size="icon" onClick={() => updateTeamMember(m.id, { is_active: false })}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}
+                     </div>
+                   </div>
+                 ))}
               </div>
             </CardContent>
           </Card>

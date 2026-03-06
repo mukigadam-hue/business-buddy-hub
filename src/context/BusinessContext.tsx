@@ -132,6 +132,8 @@ export interface Business {
   logo_url: string;
   owner_id: string;
   business_type: string;
+  business_code: string;
+  settings_password: string;
   created_at: string;
 }
 

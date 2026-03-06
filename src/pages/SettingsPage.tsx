@@ -6,51 +6,74 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Save, DollarSign, TrendingUp, Wallet, Building2, Plus, Crown, User, ChevronRight, Receipt as ReceiptIcon, Search, ShoppingCart, Trash2, RotateCcw, Wrench } from 'lucide-react';
+import { Save, DollarSign, TrendingUp, Wallet, Building2, Plus, Crown, User, ChevronRight, Receipt as ReceiptIcon, Search, ShoppingCart, Trash2, RotateCcw, Wrench, Lock, Copy, Factory, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import type { ReceiptRecord } from '@/context/BusinessContext';
+import { supabase } from '@/integrations/supabase/client';
 
 function toSentenceCase(str: string): string {
   if (!str) return str;
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
-function AddBusinessDialog({ onCreated }: { onCreated: () => void }) {
+function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' }) {
   const { createBusiness } = useBusiness();
   const [open, setOpen] = useState(false);
+  const [businessType, setBusinessType] = useState<'business' | 'factory'>(defaultType);
   const [form, setForm] = useState({ name: '', address: '', contact: '', email: '' });
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) { toast.error('Business name is required'); return; }
+    if (!form.name.trim()) { toast.error('Name is required'); return; }
     setLoading(true);
     await createBusiness(form.name.trim(), form.address.trim(), form.contact.trim(), form.email.trim());
+    // Update type if factory
+    if (businessType === 'factory') {
+      const { data } = await supabase.from('businesses').select('id').order('created_at', { ascending: false }).limit(1).single();
+      if (data) {
+        await supabase.from('businesses').update({ business_type: 'factory' } as any).eq('id', data.id);
+      }
+    }
     setForm({ name: '', address: '', contact: '', email: '' });
     setOpen(false);
     setLoading(false);
     onCreated();
+    if (businessType === 'factory') window.location.reload();
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Button variant="outline" className="w-full border-dashed" onClick={() => setOpen(true)}>
-        <Plus className="h-4 w-4 mr-2" /> Add Personal Business
+        <Plus className="h-4 w-4 mr-2" /> Add Business or Factory
       </Button>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" /> Create New Business
+            <Building2 className="h-5 w-5" /> Create New
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3 mt-2">
-          <div><Label>Business Name *</Label><Input placeholder="e.g. My Wholesale Shop" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => setBusinessType('business')}
+              className={`p-3 rounded-xl border-2 text-center transition-all ${businessType === 'business' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}>
+              <span className="text-2xl">🏪</span>
+              <p className="text-xs font-semibold mt-1">Business</p>
+            </button>
+            <button type="button" onClick={() => setBusinessType('factory')}
+              className={`p-3 rounded-xl border-2 text-center transition-all ${businessType === 'factory' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}>
+              <span className="text-2xl">🏭</span>
+              <p className="text-xs font-semibold mt-1">Factory</p>
+            </button>
+          </div>
+          <div><Label>Name *</Label><Input placeholder={businessType === 'factory' ? 'My Factory' : 'My Shop'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
           <div><Label>Address</Label><Input placeholder="Location" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
           <div><Label>Contact</Label><Input placeholder="Phone number" value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} /></div>
-          <div><Label>Email</Label><Input type="email" placeholder="business@email.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+          <div><Label>Email</Label><Input type="email" placeholder="email@example.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating...' : 'Create Business'}
+            {businessType === 'factory' ? <Factory className="h-4 w-4 mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
+            Create {businessType === 'factory' ? 'Factory' : 'Business'}
           </Button>
         </form>
       </DialogContent>
@@ -59,14 +82,37 @@ function AddBusinessDialog({ onCreated }: { onCreated: () => void }) {
 }
 
 export default function SettingsPage() {
-  const { currentBusiness, updateBusiness, stock, sales, purchases, services, businesses, memberships, setCurrentBusinessId, getReceipts, restoreStockItem, permanentDeleteStockItem } = useBusiness();
+  const { currentBusiness, updateBusiness, stock, sales, purchases, services, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, restoreStockItem, permanentDeleteStockItem } = useBusiness();
   const { currency, setCurrency, fmt } = useCurrency();
+  const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
+
+  // Password gate
+  const [unlocked, setUnlocked] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const hasPassword = currentBusiness?.settings_password && currentBusiness.settings_password.length > 0;
+
+  // If owner/admin and no password set, auto-unlock
+  useEffect(() => {
+    if (isOwnerOrAdmin && !hasPassword) setUnlocked(true);
+    else if (!isOwnerOrAdmin) setUnlocked(false); // workers can never unlock
+  }, [isOwnerOrAdmin, hasPassword, currentBusiness?.id]);
+
+  function handleUnlock() {
+    if (passwordInput === currentBusiness?.settings_password) {
+      setUnlocked(true);
+      setPasswordInput('');
+    } else {
+      toast.error('Incorrect settings password');
+    }
+  }
+
   const [form, setForm] = useState({
     name: currentBusiness?.name || '',
     address: currentBusiness?.address || '',
     contact: currentBusiness?.contact || '',
     email: currentBusiness?.email || '',
   });
+  const [settingsPassword, setSettingsPassword] = useState(currentBusiness?.settings_password || '');
   const [currencyInput, setCurrencyInput] = useState(currency);
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
   const [receiptSearch, setReceiptSearch] = useState('');
@@ -74,78 +120,64 @@ export default function SettingsPage() {
   const [receiptsLoaded, setReceiptsLoaded] = useState(false);
   const [showRecycleBin, setShowRecycleBin] = useState(false);
 
+  useEffect(() => {
+    setForm({
+      name: currentBusiness?.name || '',
+      address: currentBusiness?.address || '',
+      contact: currentBusiness?.contact || '',
+      email: currentBusiness?.email || '',
+    });
+    setSettingsPassword(currentBusiness?.settings_password || '');
+  }, [currentBusiness?.id]);
+
   const activeStock = stock.filter(s => !s.deleted_at);
   const deletedStock = stock.filter(s => s.deleted_at);
 
   // ====== REVENUE CALCULATIONS ======
-  // Today's stock sales revenue: sum of sale items that are NOT services
   const todayStockSalesRevenue = sales
     .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
     .reduce((sum, s) => {
-      const stockItemsTotal = s.items
-        .filter(i => i.price_type !== 'service')
-        .reduce((t, i) => t + Number(i.subtotal), 0);
+      const stockItemsTotal = s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
       return sum + stockItemsTotal;
     }, 0);
 
-  // Today's service revenue from standalone services table
   const todayServiceRevenue = services
     .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
     .reduce((sum, s) => sum + Number(s.cost), 0);
 
-  // Today's service revenue embedded in sales (service items inside sale transactions)
   const todaySaleServiceRevenue = sales
     .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
-    .reduce((sum, s) => {
-      const svcTotal = s.items
-        .filter(i => i.price_type === 'service')
-        .reduce((t, i) => t + Number(i.subtotal), 0);
-      return sum + svcTotal;
-    }, 0);
+    .reduce((sum, s) => s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0) + sum, 0);
 
   const todayTotalServiceRevenue = todayServiceRevenue + todaySaleServiceRevenue;
   const todayRevenue = todayStockSalesRevenue + todayTotalServiceRevenue;
 
-  // All-time revenue
-  const totalStockSalesRevenue = sales.reduce((sum, s) => {
-    return sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
-  }, 0);
-
-  const totalServiceRevenue = services.reduce((sum, s) => sum + Number(s.cost), 0)
-    + sales.reduce((sum, s) => {
-      return sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0);
-    }, 0);
-
+  const totalStockSalesRevenue = sales.reduce((sum, s) => sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0), 0);
+  const totalServiceRevenue = services.reduce((sum, s) => sum + Number(s.cost), 0) + sales.reduce((sum, s) => sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0), 0);
   const totalRevenue = totalStockSalesRevenue + totalServiceRevenue;
 
-  // Total capital = sum of (quantity × buying/shopping price)
-  let buyingCapital = 0;
-  let wholesaleCapital = 0;
-  let retailCapital = 0;
+  let buyingCapital = 0, wholesaleCapital = 0, retailCapital = 0;
   activeStock.forEach(item => {
     buyingCapital += item.quantity * Number(item.buying_price);
     wholesaleCapital += item.quantity * Number(item.wholesale_price);
     retailCapital += item.quantity * Number(item.retail_price);
   });
-
-  // Total purchases
   const totalPurchases = purchases.reduce((sum, p) => sum + Number(p.grand_total), 0);
 
   function getRoleForBusiness(businessId: string) {
     return memberships.find(m => m.business_id === businessId)?.role || 'worker';
   }
-
   const ownedBusinesses = businesses.filter(b => getRoleForBusiness(b.id) === 'owner');
   const employedBusinesses = businesses.filter(b => getRoleForBusiness(b.id) !== 'owner');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await updateBusiness({
-      name: form.name.trim(),
-      address: form.address.trim(),
-      contact: form.contact.trim(),
-      email: form.email.trim(),
-    });
+    await updateBusiness({ name: form.name.trim(), address: form.address.trim(), contact: form.contact.trim(), email: form.email.trim() });
+  }
+
+  async function handleSavePassword() {
+    await updateBusiness({ settings_password: settingsPassword } as any);
+    toast.success('Settings password updated!');
   }
 
   function handleSaveCurrency() {
@@ -167,9 +199,68 @@ export default function SettingsPage() {
     (r.code && r.code.toLowerCase().includes(receiptSearch.toLowerCase()))
   );
 
+  // Password gate for workers or when password is set
+  if (!isOwnerOrAdmin) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">Settings</h1>
+        <Card className="shadow-card">
+          <CardContent className="p-6 text-center space-y-4">
+            <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
+            <h2 className="text-lg font-semibold">Access Restricted</h2>
+            <p className="text-sm text-muted-foreground">Settings are only accessible to the business owner or admin.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (hasPassword && !unlocked) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">Settings</h1>
+        <Card className="shadow-card">
+          <CardContent className="p-6 space-y-4 max-w-sm mx-auto">
+            <div className="text-center">
+              <Lock className="h-12 w-12 mx-auto text-primary mb-3" />
+              <h2 className="text-lg font-semibold">Enter Settings Password</h2>
+              <p className="text-sm text-muted-foreground">This section is password protected.</p>
+            </div>
+            <div>
+              <Input type="password" placeholder="Enter password" value={passwordInput} onChange={e => setPasswordInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleUnlock()} />
+            </div>
+            <Button onClick={handleUnlock} className="w-full"><Lock className="h-4 w-4 mr-2" />Unlock</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Settings</h1>
+
+      {/* Business Code */}
+      <Card className="shadow-card border-primary/20">
+        <CardContent className="p-4">
+          <h2 className="text-base font-semibold flex items-center gap-2 mb-2">
+            <KeyRound className="h-4 w-4" /> Your Business Code
+          </h2>
+          <p className="text-xs text-muted-foreground mb-3">Share this code with other BizTrack users so they can send you orders. This is your unique identifier.</p>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 rounded-lg p-3 text-center bg-primary/5 border border-primary/20">
+              <span className="text-2xl font-mono font-bold tracking-widest">{(currentBusiness as any)?.business_code || '...'}</span>
+            </div>
+            <Button variant="outline" size="icon" onClick={() => {
+              navigator.clipboard.writeText((currentBusiness as any)?.business_code || '');
+              toast.success('Business code copied!');
+            }}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Financial Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -222,7 +313,7 @@ export default function SettingsPage() {
         </Card>
       </div>
 
-      {/* Revenue summary with separate service fee */}
+      {/* Revenue summary */}
       <Card className="shadow-card">
         <CardContent className="p-4">
           <h2 className="text-base font-semibold mb-2">Revenue Overview</h2>
@@ -232,23 +323,32 @@ export default function SettingsPage() {
               <p className="text-lg font-bold text-success tabular-nums">{fmt(totalRevenue)}</p>
             </div>
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <div className="flex items-center gap-1 mb-1">
-                <ShoppingCart className="h-3 w-3 text-primary" />
-                <p className="text-xs text-muted-foreground">Stock Sales Revenue</p>
-              </div>
+              <div className="flex items-center gap-1 mb-1"><ShoppingCart className="h-3 w-3 text-primary" /><p className="text-xs text-muted-foreground">Stock Sales Revenue</p></div>
               <p className="text-lg font-bold text-primary tabular-nums">{fmt(totalStockSalesRevenue)}</p>
             </div>
             <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
-              <div className="flex items-center gap-1 mb-1">
-                <Wrench className="h-3 w-3 text-accent" />
-                <p className="text-xs text-muted-foreground">Service Fee Revenue</p>
-              </div>
+              <div className="flex items-center gap-1 mb-1"><Wrench className="h-3 w-3 text-accent" /><p className="text-xs text-muted-foreground">Service Fee Revenue</p></div>
               <p className="text-lg font-bold text-accent tabular-nums">{fmt(totalServiceRevenue)}</p>
             </div>
             <div className="p-3 rounded-lg bg-info/5 border border-info/20">
               <p className="text-xs text-muted-foreground">Expected Profit (Retail - Buying)</p>
               <p className="text-lg font-bold text-info tabular-nums">{fmt(retailCapital - buyingCapital)}</p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Settings Password */}
+      <Card className="shadow-card">
+        <CardContent className="p-4 space-y-3">
+          <h2 className="text-base font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> Settings Password</h2>
+          <p className="text-xs text-muted-foreground">Set a password to protect settings from unauthorized access. Only you (the boss) will be able to open this page.</p>
+          <div className="flex gap-3 items-end">
+            <div className="flex-1">
+              <Label>Password</Label>
+              <Input type="password" value={settingsPassword} onChange={e => setSettingsPassword(e.target.value)} placeholder="Leave empty to disable" />
+            </div>
+            <Button onClick={handleSavePassword}><Save className="h-4 w-4 mr-2" />Save</Button>
           </div>
         </CardContent>
       </Card>
@@ -274,9 +374,7 @@ export default function SettingsPage() {
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold flex items-center gap-2"><ReceiptIcon className="h-4 w-4" /> Receipt Archive</h2>
-            {!receiptsLoaded && (
-              <Button size="sm" variant="outline" onClick={loadReceipts}>Load Receipts</Button>
-            )}
+            {!receiptsLoaded && <Button size="sm" variant="outline" onClick={loadReceipts}>Load Receipts</Button>}
           </div>
           {receiptsLoaded && (
             <>
@@ -300,9 +398,7 @@ export default function SettingsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-success tabular-nums text-sm">{fmt(Number(r.grand_total))}</span>
-                        <Button size="sm" variant="ghost" onClick={() => setViewingReceipt(r)}>
-                          <ReceiptIcon className="h-3.5 w-3.5" />
-                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setViewingReceipt(r)}><ReceiptIcon className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
                   ))}
@@ -318,12 +414,8 @@ export default function SettingsPage() {
         <Card className="shadow-card border-destructive/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold flex items-center gap-2 text-destructive">
-                🗑️ Recycle Bin ({deletedStock.length} stock items)
-              </h2>
-              <Button size="sm" variant="ghost" onClick={() => setShowRecycleBin(v => !v)}>
-                {showRecycleBin ? 'Hide' : 'Show'}
-              </Button>
+              <h2 className="text-base font-semibold flex items-center gap-2 text-destructive">🗑️ Recycle Bin ({deletedStock.length})</h2>
+              <Button size="sm" variant="ghost" onClick={() => setShowRecycleBin(v => !v)}>{showRecycleBin ? 'Hide' : 'Show'}</Button>
             </div>
             {showRecycleBin && (
               <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -335,12 +427,8 @@ export default function SettingsPage() {
                       <p className="text-xs text-muted-foreground">Deleted: {new Date(item.deleted_at!).toLocaleString()}</p>
                     </div>
                     <div className="flex gap-2 shrink-0">
-                      <Button size="sm" variant="outline" onClick={() => restoreStockItem(item.id)}>
-                        <RotateCcw className="h-3 w-3 mr-1" />Restore
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => permanentDeleteStockItem(item.id)}>
-                        <Trash2 className="h-3 w-3 mr-1" />Delete Forever
-                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => restoreStockItem(item.id)}><RotateCcw className="h-3 w-3 mr-1" />Restore</Button>
+                      <Button size="sm" variant="destructive" onClick={() => permanentDeleteStockItem(item.id)}><Trash2 className="h-3 w-3 mr-1" />Delete Forever</Button>
                     </div>
                   </div>
                 ))}
@@ -353,21 +441,20 @@ export default function SettingsPage() {
       {/* My Businesses Section */}
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-4">
-          <h2 className="text-base font-semibold flex items-center gap-2">
-            <Building2 className="h-4 w-4" /> My Businesses
-          </h2>
+          <h2 className="text-base font-semibold flex items-center gap-2"><Building2 className="h-4 w-4" /> My Businesses & Factories</h2>
           {ownedBusinesses.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">👔 Your Businesses</p>
               {ownedBusinesses.map(b => {
                 const isActive = b.id === currentBusiness?.id;
+                const isFact = (b as any).business_type === 'factory';
                 return (
-                  <button key={b.id} onClick={() => setCurrentBusinessId(b.id)}
+                  <button key={b.id} onClick={() => { setCurrentBusinessId(b.id); if (isFact !== ((currentBusiness as any)?.business_type === 'factory')) window.location.reload(); }}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isActive ? 'bg-primary/10 border-2 border-primary' : 'bg-muted/30 border-2 border-transparent hover:border-primary/20'}`}>
-                    <Crown className="h-4 w-4 text-primary shrink-0" />
+                    <span className="text-xl">{isFact ? '🏭' : '🏪'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{b.name}</p>
-                      <p className="text-xs text-muted-foreground">{b.address || 'No address'}</p>
+                      <p className="text-xs text-muted-foreground">{b.address || 'No address'} · {isFact ? 'Factory' : 'Business'}</p>
                     </div>
                     {isActive ? (
                       <span className="text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full shrink-0">Active</span>
@@ -385,13 +472,14 @@ export default function SettingsPage() {
               {employedBusinesses.map(b => {
                 const isActive = b.id === currentBusiness?.id;
                 const role = getRoleForBusiness(b.id);
+                const isFact = (b as any).business_type === 'factory';
                 return (
-                  <button key={b.id} onClick={() => setCurrentBusinessId(b.id)}
+                  <button key={b.id} onClick={() => { setCurrentBusinessId(b.id); if (isFact !== ((currentBusiness as any)?.business_type === 'factory')) window.location.reload(); }}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isActive ? 'bg-orange-500/10 border-2 border-orange-500' : 'bg-muted/30 border-2 border-transparent hover:border-orange-500/20'}`}>
-                    <User className="h-4 w-4 text-orange-600 dark:text-orange-400 shrink-0" />
+                    <span className="text-xl">{isFact ? '🏭' : '🏪'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{b.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{role}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{role} · {isFact ? 'Factory' : 'Business'}</p>
                     </div>
                     {isActive ? (
                       <span className="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-full shrink-0">Active</span>
@@ -407,7 +495,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Current Business Information */}
+      {/* Business Information */}
       <Card className="shadow-card">
         <CardContent className="p-4">
           <h2 className="text-base font-semibold mb-3">Business Information — {currentBusiness?.name}</h2>

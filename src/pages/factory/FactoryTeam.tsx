@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useFactory } from '@/context/FactoryContext';
 import { useBusiness } from '@/context/BusinessContext';
+import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit2, Trash2, Users, UserPlus, Send, Share2, MessageCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, UserPlus, Send, Share2, MessageCircle, Calendar, Clock, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
@@ -18,7 +19,8 @@ const RANKS = ['Supervisor', 'Inspector', 'Maintenance', 'Security', 'Worker', '
 
 export default function FactoryTeam() {
   const { teamMembers, addTeamMember, updateTeamMember, deleteTeamMember } = useFactory();
-  const { currentBusiness, generateInviteCode, redeemInviteCode } = useBusiness();
+  const { currentBusiness, userRole, memberships, generateInviteCode, redeemInviteCode } = useBusiness();
+  const { user } = useAuth();
   const { fmt } = useCurrency();
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -27,6 +29,8 @@ export default function FactoryTeam() {
   const [workerCode, setWorkerCode] = useState<string | null>(null);
   const [redeemCode, setRedeemCode] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 
   const activeMembers = teamMembers.filter(t => t.is_active);
   const inactiveMembers = teamMembers.filter(t => !t.is_active);
@@ -95,11 +99,47 @@ export default function FactoryTeam() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="h-6 w-6" /> Factory Team</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {activeMembers.length} active members · Monthly salary: {fmt(totalSalary)}
+            {activeMembers.length} active members{isOwnerOrAdmin && ` · Monthly salary: ${fmt(totalSalary)}`}
           </p>
         </div>
-        <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Worker</Button>
+        {isOwnerOrAdmin && <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Worker</Button>}
       </div>
+
+      {/* Worker's own profile (when not owner/admin) */}
+      {!isOwnerOrAdmin && (() => {
+        const myMembership = memberships.find((m: any) => m.business_id === currentBusiness?.id && m.user_id === user?.id);
+        const myTeamRecord = teamMembers.find(t => t.full_name.toLowerCase() === (user?.user_metadata?.full_name || '').toLowerCase());
+        const joinDate = myMembership?.created_at;
+        const tenure = joinDate ? Math.floor((Date.now() - new Date(joinDate).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+        const tenureLabel = tenure < 30 ? `${tenure} days` : tenure < 365 ? `${Math.floor(tenure / 30)} months` : `${Math.floor(tenure / 365)} yr ${Math.floor((tenure % 365) / 30)} mo`;
+        return (
+          <Card className="shadow-card border-primary/20">
+            <CardContent className="p-4">
+              <h2 className="text-base font-semibold flex items-center gap-2 mb-3"><User className="h-4 w-4" /> My Employment Details</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <p className="text-xs text-muted-foreground">Role</p>
+                  <p className="text-sm font-semibold capitalize">{myMembership?.role || 'worker'}</p>
+                </div>
+                {myTeamRecord && (
+                  <div className="p-3 rounded-lg bg-success/5 border border-success/20">
+                    <p className="text-xs text-muted-foreground">Salary</p>
+                    <p className="text-sm font-semibold text-success">{fmt(Number(myTeamRecord.salary))}/mo</p>
+                  </div>
+                )}
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Hired</p>
+                  <p className="text-sm font-semibold">{myTeamRecord?.hire_date ? new Date(myTeamRecord.hire_date).toLocaleDateString() : joinDate ? new Date(joinDate).toLocaleDateString() : 'N/A'}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Tenure</p>
+                  <p className="text-sm font-semibold">{tenureLabel}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Invite Section */}
       <div className="grid md:grid-cols-2 gap-4">
@@ -145,21 +185,21 @@ export default function FactoryTeam() {
               </h2>
               <div className="space-y-2">
                 {members.map(m => (
-                  <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <p className="text-sm font-medium">{m.full_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {m.phone && `📞 ${m.phone} · `}
-                        Hired: {new Date(m.hire_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-success tabular-nums">{fmt(Number(m.salary))}/mo</span>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(m)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => updateTeamMember(m.id, { is_active: false })}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                    </div>
-                  </div>
-                ))}
+                   <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border">
+                     <div>
+                       <p className="text-sm font-medium">{m.full_name}</p>
+                       <p className="text-xs text-muted-foreground">
+                         {m.phone && `📞 ${m.phone} · `}
+                         Hired: {new Date(m.hire_date).toLocaleDateString()}
+                       </p>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       {isOwnerOrAdmin && <span className="text-sm font-semibold text-success tabular-nums">{fmt(Number(m.salary))}/mo</span>}
+                       {isOwnerOrAdmin && <Button variant="ghost" size="icon" onClick={() => openEdit(m)}><Edit2 className="h-3.5 w-3.5" /></Button>}
+                       {isOwnerOrAdmin && <Button variant="ghost" size="icon" onClick={() => updateTeamMember(m.id, { is_active: false })}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}
+                     </div>
+                   </div>
+                 ))}
               </div>
             </CardContent>
           </Card>

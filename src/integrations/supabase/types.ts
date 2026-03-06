@@ -84,6 +84,7 @@ export type Database = {
       businesses: {
         Row: {
           address: string
+          business_code: string | null
           business_type: string
           contact: string
           created_at: string
@@ -92,10 +93,12 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_id: string
+          settings_password: string | null
           total_capital: number
         }
         Insert: {
           address?: string
+          business_code?: string | null
           business_type?: string
           contact?: string
           created_at?: string
@@ -104,10 +107,12 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_id: string
+          settings_password?: string | null
           total_capital?: number
         }
         Update: {
           address?: string
+          business_code?: string | null
           business_type?: string
           contact?: string
           created_at?: string
@@ -116,6 +121,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_id?: string
+          settings_password?: string | null
           total_capital?: number
         }
         Relationships: []

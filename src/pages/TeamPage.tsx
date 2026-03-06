@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
+import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserPlus, Trash2, Shield, Crown, User, Users, ShoppingBag, MessageCircle, Share2, Send } from 'lucide-react';
+import { UserPlus, Trash2, Shield, Crown, User, Users, ShoppingBag, MessageCircle, Share2, Send, Calendar, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Member {
@@ -136,7 +137,8 @@ function RedeemCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
 }
 
 export default function TeamPage() {
-  const { currentBusiness, userRole, generateInviteCode, getMembers, removeMember, updateMemberRole, getCustomers, removeCustomer } = useBusiness();
+  const { currentBusiness, userRole, generateInviteCode, getMembers, removeMember, updateMemberRole, getCustomers, removeCustomer, memberships } = useBusiness();
+  const { user } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [workerCode, setWorkerCode] = useState<string | null>(null);
@@ -225,6 +227,12 @@ export default function TeamPage() {
     );
   }
 
+  // Find current user's membership info
+  const myMembership = members.find(m => m.user_id === user?.id);
+  const myJoinDate = memberships.find(m => m.business_id === currentBusiness?.id && m.user_id === user?.id)?.created_at;
+  const tenure = myJoinDate ? Math.floor((Date.now() - new Date(myJoinDate).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const tenureLabel = tenure < 30 ? `${tenure} days` : tenure < 365 ? `${Math.floor(tenure / 30)} months` : `${Math.floor(tenure / 365)} yr ${Math.floor((tenure % 365) / 30)} mo`;
+
   return (
     <div className="space-y-6">
       <div>
@@ -233,6 +241,35 @@ export default function TeamPage() {
           {currentBusiness?.name} — Manage your workers and customers
         </p>
       </div>
+
+      {/* Worker's own profile card (when not owner) */}
+      {!isOwnerOrAdmin && myMembership && (
+        <Card className="shadow-card border-primary/20">
+          <CardContent className="p-4">
+            <h2 className="text-base font-semibold flex items-center gap-2 mb-3">
+              <User className="h-4 w-4" /> My Employment Details
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground">Name</p>
+                <p className="text-sm font-semibold">{myMembership.full_name}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground">Role</p>
+                <p className="text-sm font-semibold capitalize">{myMembership.role}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Joined</p>
+                <p className="text-sm font-semibold">{myJoinDate ? new Date(myJoinDate).toLocaleDateString() : 'N/A'}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Tenure</p>
+                <p className="text-sm font-semibold">{tenureLabel}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Redeem Code Section — always visible */}
       <RedeemCodeSection onRedeemed={() => { loadMembers(); loadCustomers(); }} />

@@ -19,7 +19,7 @@ const RANKS = ['Supervisor', 'Inspector', 'Maintenance', 'Security', 'Worker', '
 
 export default function FactoryTeam() {
   const { teamMembers, addTeamMember, updateTeamMember, deleteTeamMember } = useFactory();
-  const { currentBusiness, userRole, generateInviteCode, redeemInviteCode } = useBusiness();
+  const { currentBusiness, userRole, memberships, generateInviteCode, redeemInviteCode } = useBusiness();
   const { fmt } = useCurrency();
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);

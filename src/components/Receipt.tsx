@@ -20,7 +20,7 @@ interface ReceiptProps {
   customerName?: string; // legacy
   code?: string;
   date: string;
-  type: 'sale' | 'order' | 'service';
+  type: 'sale' | 'order' | 'service' | 'checkout';
   businessInfo?: { name: string; address: string; contact: string; email: string };
 }
 

@@ -13,6 +13,8 @@ const businessNavItems = [
   { to: '/sales', label: 'Sales', icon: TrendingUp },
   { to: '/purchases', label: 'Purchases', icon: ShoppingCart },
   { to: '/orders', label: 'Orders', icon: ClipboardList },
+  { to: '/checkout', label: 'Checkout', icon: ShoppingBag },
+  { to: '/payments', label: 'Verify Payments', icon: ShieldCheck },
   { to: '/services', label: 'Services', icon: Wrench },
   { to: '/team', label: 'Team', icon: Users },
   { to: '/settings', label: 'Settings', icon: Settings },

@@ -453,6 +453,8 @@ export type Database = {
           customer_name: string
           grand_total: number
           id: string
+          payment_method: string
+          proof_url: string | null
           sharing_code: string | null
           status: string
           transferred_to_sale: boolean
@@ -465,6 +467,8 @@ export type Database = {
           customer_name?: string
           grand_total?: number
           id?: string
+          payment_method?: string
+          proof_url?: string | null
           sharing_code?: string | null
           status?: string
           transferred_to_sale?: boolean
@@ -477,6 +481,8 @@ export type Database = {
           customer_name?: string
           grand_total?: number
           id?: string
+          payment_method?: string
+          proof_url?: string | null
           sharing_code?: string | null
           status?: string
           transferred_to_sale?: boolean

@@ -99,8 +99,10 @@ export default function DiscoverPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {results.map(biz => (
-            <Card key={biz.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              <CardContent className="p-4 space-y-3">
+            <Card key={biz.id} className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedBiz(biz)}>
+              <CardContent className="p-4 space-y-3" onClick={e => e.stopPropagation()}>
+                {/* Clickable header */}
+                <div className="flex items-start gap-3 cursor-pointer" onClick={() => setSelectedBiz(biz)}>
                 {/* Header */}
                 <div className="flex items-start gap-3">
                   {biz.logo_url ? (

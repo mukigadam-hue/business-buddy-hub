@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Search, Pencil, Trash2, RotateCcw, AlertTriangle, Image, X, ScanLine } from 'lucide-react';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import type { StockItem } from '@/context/BusinessContext';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string): string {
   if (!str) return str;

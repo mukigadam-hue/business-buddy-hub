@@ -40,6 +40,7 @@ interface EnrichedContact extends BusinessContact {
 
 export default function ContactsPage() {
   const { currentBusiness, userRole } = useBusiness();
+  const { maxContacts } = usePremium();
   const [contacts, setContacts] = useState<EnrichedContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchCode, setSearchCode] = useState('');

@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Search, Plus, Building2, Phone, Mail, MapPin, Trash2, Edit2, UserPlus, ExternalLink, HandMetal, Clock, ArrowUpDown } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import AdSpace from '@/components/AdSpace';
 
 interface BusinessContact {
   id: string;

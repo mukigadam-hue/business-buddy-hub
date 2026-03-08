@@ -276,6 +276,8 @@ export default function TeamPage() {
       {/* Redeem Code Section — always visible */}
       <RedeemCodeSection onRedeemed={() => { loadMembers(); loadCustomers(); }} />
 
+      <AdSpace variant="banner" />
+
       <Tabs defaultValue="workers" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="workers" className="flex items-center gap-2">

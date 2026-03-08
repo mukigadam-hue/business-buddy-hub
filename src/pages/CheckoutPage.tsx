@@ -13,6 +13,7 @@ import { Plus, Trash2, CreditCard, Smartphone, Upload, CheckCircle, ShoppingBag 
 import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import type { Order } from '@/context/BusinessContext';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string) {
   return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;

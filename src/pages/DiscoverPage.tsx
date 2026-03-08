@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import BusinessDetailDialog from '@/components/BusinessDetailDialog';
+import AdSpace from '@/components/AdSpace';
 
 interface DiscoveredBusiness {
   id: string;

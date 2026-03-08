@@ -30,6 +30,7 @@ export default function PurchasesPage() {
   });
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
 
+  const [scannerOpen, setScannerOpen] = useState(false);
   const activeStock = stock.filter(s => !s.deleted_at);
   const suggestions = activeStock.map(s => s.name);
   const existingCategories = [...new Set(activeStock.map(s => s.category).filter(Boolean))];

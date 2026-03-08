@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine } from 'lucide-react';
+import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine, Search, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
@@ -47,6 +47,14 @@ export default function OrdersPage() {
   const [completing, setCompleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Recipient selection for requests
+  const [contacts, setContacts] = useState<{ id: string; contact_business_id: string; nickname: string; business_name?: string; business_code?: string }[]>([]);
+  const [recipientMode, setRecipientMode] = useState<'contact' | 'code'>('contact');
+  const [selectedContactBusinessId, setSelectedContactBusinessId] = useState<string>('');
+  const [recipientCode, setRecipientCode] = useState('');
+  const [recipientLookup, setRecipientLookup] = useState<{ id: string; name: string } | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
+
   const liveOrders = orders.filter(o => o.type === 'my_order');
   const inboxOrders = orders.filter(o => o.type === 'inbox');
   const myRequests = orders.filter(o => o.type === 'request');
@@ -58,6 +66,52 @@ export default function OrdersPage() {
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [orderMode, setOrderMode] = useState<'my_order' | 'inbox' | 'request'>('my_order');
+
+  // Load contacts for recipient selection
+  useEffect(() => {
+    if (!currentBusiness) return;
+    async function loadContacts() {
+      const { data } = await supabase
+        .from('business_contacts')
+        .select('id, contact_business_id, nickname')
+        .eq('business_id', currentBusiness!.id);
+      if (data) {
+        // Fetch business names for contacts
+        const contactIds = data.map(c => c.contact_business_id);
+        if (contactIds.length > 0) {
+          const { data: bizData } = await supabase
+            .from('businesses')
+            .select('id, name, business_code')
+            .in('id', contactIds);
+          const enriched = data.map(c => {
+            const biz = bizData?.find(b => b.id === c.contact_business_id);
+            return { ...c, business_name: biz?.name || '', business_code: biz?.business_code || '' };
+          });
+          setContacts(enriched);
+        } else {
+          setContacts(data.map(c => ({ ...c, business_name: '', business_code: '' })));
+        }
+      }
+    }
+    loadContacts();
+  }, [currentBusiness]);
+
+  async function lookupRecipientByCode() {
+    if (!recipientCode.trim()) return;
+    setLookingUp(true);
+    try {
+      const { data } = await supabase.rpc('lookup_business_by_code', { _code: recipientCode.trim().toUpperCase() });
+      if (data && data.length > 0) {
+        setRecipientLookup({ id: data[0].id, name: data[0].name });
+        toast.success(`Found: ${data[0].name}`);
+      } else {
+        setRecipientLookup(null);
+        toast.error('No business found with that code');
+      }
+    } finally {
+      setLookingUp(false);
+    }
+  }
 
   function applyCase(field: 'name' | 'category' | 'quality') {
     setForm(f => ({ ...f, [field]: toSentenceCase(f[field]) }));
@@ -94,17 +148,36 @@ export default function OrdersPage() {
 
   async function handleCreateOrder(type: string) {
     if (items.length === 0) return;
+    
+    // For requests, require a recipient
+    let recipientBusinessId: string | undefined;
+    if (type === 'request') {
+      if (recipientMode === 'contact') {
+        if (!selectedContactBusinessId) { toast.error('Please select a recipient business'); return; }
+        recipientBusinessId = selectedContactBusinessId;
+      } else {
+        if (!recipientLookup) { toast.error('Please look up a valid business code first'); return; }
+        recipientBusinessId = recipientLookup.id;
+      }
+      // Don't send to yourself
+      if (recipientBusinessId === currentBusiness?.id) { toast.error("You can't send an order to yourself"); return; }
+    }
+
     const comment = type === 'request' && requestComment.trim() ? requestComment.trim() : undefined;
     const name = customerName.trim() || (comment ? `Comment: ${comment}` : 'Walk-in');
     await addOrder(
       type, name,
       items.map(item => ({ ...item, subtotal: item.quantity * item.unit_price })),
-      grandTotal, type === 'request' ? 'pending' : 'confirmed'
+      grandTotal, type === 'request' ? 'pending' : 'confirmed',
+      recipientBusinessId
     );
     setItems([]);
     setCustomerName('');
     setSellerName('');
     setRequestComment('');
+    setSelectedContactBusinessId('');
+    setRecipientCode('');
+    setRecipientLookup(null);
   }
 
   function openEditOrder(order: Order) {
@@ -387,6 +460,62 @@ export default function OrdersPage() {
             {orderMode === 'request' && (
               <div className="p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground border">
                 <strong>My Request:</strong> You are ordering without setting prices. The supplier will fill in prices and send back for your approval.
+              </div>
+            )}
+
+            {/* Recipient selector for requests */}
+            {orderMode === 'request' && (
+              <div className="border rounded-lg p-3 space-y-3">
+                <p className="text-xs font-medium flex items-center gap-1"><Building2 className="h-3.5 w-3.5" /> Send To (Recipient Business)</p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant={recipientMode === 'contact' ? 'default' : 'outline'} onClick={() => { setRecipientMode('contact'); setRecipientLookup(null); setRecipientCode(''); }}>
+                    From Contacts
+                  </Button>
+                  <Button size="sm" variant={recipientMode === 'code' ? 'default' : 'outline'} onClick={() => { setRecipientMode('code'); setSelectedContactBusinessId(''); }}>
+                    Enter Business Code
+                  </Button>
+                </div>
+
+                {recipientMode === 'contact' && (
+                  <div>
+                    {contacts.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No contacts saved. Use a business code instead, or add contacts from the Contacts page.</p>
+                    ) : (
+                      <Select value={selectedContactBusinessId} onValueChange={setSelectedContactBusinessId}>
+                        <SelectTrigger><SelectValue placeholder="Select a contact..." /></SelectTrigger>
+                        <SelectContent>
+                          {contacts.map(c => (
+                            <SelectItem key={c.contact_business_id} value={c.contact_business_id}>
+                              {c.nickname || c.business_name} {c.business_code ? `(${c.business_code})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
+
+                {recipientMode === 'code' && (
+                  <div className="flex gap-2">
+                    <Input
+                      value={recipientCode}
+                      onChange={e => { setRecipientCode(e.target.value.toUpperCase()); setRecipientLookup(null); }}
+                      placeholder="Enter 8-char business code..."
+                      className="flex-1 uppercase"
+                      maxLength={8}
+                    />
+                    <Button size="sm" variant="outline" onClick={lookupRecipientByCode} disabled={lookingUp || recipientCode.length < 3}>
+                      <Search className="h-3.5 w-3.5 mr-1" />{lookingUp ? 'Looking...' : 'Find'}
+                    </Button>
+                  </div>
+                )}
+
+                {recipientMode === 'code' && recipientLookup && (
+                  <div className="p-2 bg-success/10 border border-success/20 rounded-md text-xs flex items-center gap-2">
+                    <CheckCircle className="h-3.5 w-3.5 text-success" />
+                    <span>Sending to: <strong>{recipientLookup.name}</strong></span>
+                  </div>
+                )}
               </div>
             )}
 

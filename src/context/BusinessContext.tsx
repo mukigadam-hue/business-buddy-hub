@@ -199,7 +199,7 @@ interface BusinessContextType {
     fromOrderCode?: string
   ) => Promise<Sale | null>;
   addPurchase: (items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number }[], grandTotal: number, supplier: string, recordedBy: string) => Promise<void>;
-  addOrder: (type: string, customerName: string, items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[], grandTotal: number, status: string) => Promise<void>;
+  addOrder: (type: string, customerName: string, items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[], grandTotal: number, status: string, recipientBusinessId?: string) => Promise<void>;
   updateOrder: (id: string, items: OrderItem[], grandTotal: number, status?: string) => Promise<void>;
   completeOrderToSale: (orderId: string, buyerName: string, sellerName: string) => Promise<void>;
   addService: (service: Omit<ServiceRecord, 'id' | 'business_id' | 'created_at' | 'items_used'>, itemsUsed?: { stock_item_id: string; item_name: string; category: string; quality: string; quantity: number; unit_price: number; subtotal: number }[]) => Promise<ServiceRecord | null>;
@@ -568,13 +568,16 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const addOrder = useCallback(async (
     type: string, customerName: string,
     items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[],
-    grandTotal: number, status: string
+    grandTotal: number, status: string, recipientBusinessId?: string
   ) => {
     if (!currentBusinessId) return;
     const code = generateCode();
+    const sharingCode = recipientBusinessId ? 'SHR-' + Math.random().toString(36).substring(2, 10).toUpperCase() : null;
+
+    // Create sender's order (request)
     const { data: orderData, error } = await supabase.from('orders').insert({
       business_id: currentBusinessId, type, customer_name: customerName,
-      grand_total: grandTotal, status, code,
+      grand_total: grandTotal, status, code, sharing_code: sharingCode,
     }).select().single();
     if (error || !orderData) { toast.error(error?.message || 'Failed'); return; }
 
@@ -585,11 +588,45 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }));
     await supabase.from('order_items').insert(orderItems);
 
-    // Notify for inbox orders
+    // If sending to a recipient business, create inbox copy there
+    if (recipientBusinessId && type === 'request') {
+      const { data: inboxOrder, error: inboxErr } = await supabase.from('orders').insert({
+        business_id: recipientBusinessId, type: 'inbox', customer_name: customerName,
+        grand_total: grandTotal, status: 'pending', code, sharing_code: sharingCode,
+      }).select().single();
+
+      if (!inboxErr && inboxOrder) {
+        const inboxItems = items.map(item => ({
+          order_id: inboxOrder.id, item_name: item.item_name, category: item.category,
+          quality: item.quality, quantity: item.quantity, price_type: item.price_type,
+          unit_price: item.unit_price, subtotal: item.subtotal,
+        }));
+        await supabase.from('order_items').insert(inboxItems);
+
+        // Create shared_orders link
+        await supabase.from('shared_orders').insert({
+          order_id: orderData.id,
+          from_business_id: currentBusinessId,
+          to_business_id: recipientBusinessId,
+          sharing_code: sharingCode!,
+        });
+
+        // Notify recipient business
+        await supabase.from('notifications').insert({
+          business_id: recipientBusinessId,
+          type: 'new_order',
+          title: '📥 New Order Request Received',
+          message: `Order ${code} from ${customerName} — ${items.length} item(s)`,
+        });
+      }
+    }
+
+    // Notify for direct inbox orders
     if (type === 'inbox') {
       await addNotification('new_order', '📥 New Order Received', `Order ${code} from ${customerName} — ${items.length} item(s)`);
     }
-    toast.success('Order created!');
+    toast.success(recipientBusinessId ? 'Request sent to supplier!' : 'Order created!');
+    await loadBusinessData();
   }, [currentBusinessId]);
 
   const updateOrder = useCallback(async (id: string, items: OrderItem[], grandTotal: number, status?: string) => {

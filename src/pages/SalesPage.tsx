@@ -12,7 +12,6 @@ import { Plus, Trash2, ShoppingCart, Receipt as ReceiptIcon, Wrench, Package, Sc
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
-import BarcodeScanner from '@/components/BarcodeScanner';
 import type { Sale } from '@/context/BusinessContext';
 
 function toSentenceCase(str: string): string {

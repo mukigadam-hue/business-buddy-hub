@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Wrench, Receipt as ReceiptIcon, Plus, Trash2, Package } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import type { ServiceRecord } from '@/context/BusinessContext';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string): string {
   if (!str) return str;

@@ -476,6 +476,28 @@ export default function WorkerPaymentManager({ isOwnerOrAdmin }: Props) {
         <DialogContent>
           <DialogHeader><DialogTitle>Pay {selectedWorker?.full_name}</DialogTitle></DialogHeader>
           <div className="space-y-3">
+            {selectedWorker && (() => {
+              const bal = getWorkerBalance(selectedWorker.id);
+              const netPay = Math.max(0, selectedWorker.salary - bal.totalAdvances);
+              return (
+                <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>Salary</span>
+                    <span className="font-semibold">{fmt(selectedWorker.salary)}</span>
+                  </div>
+                  {bal.totalAdvances > 0 && (
+                    <div className="flex justify-between text-sm text-warning">
+                      <span>− Advance deduction</span>
+                      <span className="font-semibold">{fmt(bal.totalAdvances)}</span>
+                    </div>
+                  )}
+                  <div className="border-t pt-1 flex justify-between text-sm font-bold">
+                    <span>Net to pay</span>
+                    <span className="text-success">{fmt(netPay)}</span>
+                  </div>
+                </div>
+              );
+            })()}
             <div>
               <Label>Amount</Label>
               <Input type="number" value={payForm.amount} onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))} />

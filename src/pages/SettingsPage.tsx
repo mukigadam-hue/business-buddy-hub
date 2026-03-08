@@ -378,6 +378,15 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Language Settings */}
+      <Card className="shadow-card">
+        <CardContent className="p-4">
+          <LanguageSelector variant="full" />
+        </CardContent>
+      </Card>
+
+      <AdSpace variant="inline" />
+
       {/* Financial Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="shadow-card">

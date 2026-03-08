@@ -411,6 +411,7 @@ export default function StockPage() {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }

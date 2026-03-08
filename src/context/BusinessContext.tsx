@@ -206,6 +206,7 @@ interface BusinessContextType {
   loading: boolean;
   setCurrentBusinessId: (id: string) => void;
   createBusiness: (name: string, address: string, contact: string, email: string) => Promise<void>;
+  deleteBusiness: (businessId: string, reason: string) => Promise<boolean>;
   updateBusiness: (updates: Partial<Business>) => Promise<void>;
   addStockItem: (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at'>) => Promise<void>;
   updateStockItem: (id: string, updates: Partial<StockItem>) => Promise<void>;
@@ -484,6 +485,26 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     await loadBusinesses();
     if (data) setCurrentBusinessId(data.id);
   }, [user]);
+
+  const deleteBusiness = useCallback(async (businessId: string, reason: string): Promise<boolean> => {
+    if (!user) return false;
+    // Log the deletion reason as a note (could also store in a table)
+    console.log(`Business ${businessId} deleted. Reason: ${reason}`);
+    const { error } = await supabase.from('businesses').delete().eq('id', businessId);
+    if (error) { toast.error(error.message); return false; }
+    toast.success('Business deleted permanently');
+    setBusinesses(prev => prev.filter(b => b.id !== businessId));
+    if (currentBusinessId === businessId) {
+      const remaining = businesses.filter(b => b.id !== businessId);
+      if (remaining.length > 0) {
+        setCurrentBusinessId(remaining[0].id);
+      } else {
+        setCurrentBusinessId('');
+      }
+    }
+    await loadBusinesses();
+    return true;
+  }, [user, currentBusinessId, businesses]);
 
   const updateBusiness = useCallback(async (updates: Partial<Business>) => {
     if (!currentBusinessId) return;
@@ -1039,7 +1060,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     <BusinessContext.Provider value={{
       currentBusiness, businesses, memberships, userRole,
       stock, sales, purchases, orders, services, expenses, notifications, loading,
-      setCurrentBusinessId, createBusiness, updateBusiness,
+      setCurrentBusinessId, createBusiness, deleteBusiness, updateBusiness,
       addStockItem, updateStockItem, deleteStockItem, restoreStockItem, permanentDeleteStockItem,
       addSale, addPurchase, addOrder, updateOrder, completeOrderToSale,
       addService, updateServicePayment, saveReceipt, getReceipts,

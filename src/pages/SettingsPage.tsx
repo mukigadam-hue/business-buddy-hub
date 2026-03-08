@@ -198,7 +198,7 @@ function DiscoverVisibilityCard({ businessId }: { businessId: string }) {
 }
 
 export default function SettingsPage() {
-  const { currentBusiness, updateBusiness, stock, sales, purchases, services, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, restoreStockItem, permanentDeleteStockItem } = useBusiness();
+  const { currentBusiness, updateBusiness, stock, sales, purchases, services, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, restoreStockItem, permanentDeleteStockItem, deleteBusiness } = useBusiness();
   const { currency, setCurrency, fmt } = useCurrency();
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 
@@ -235,6 +235,10 @@ export default function SettingsPage() {
   const [viewingReceipt, setViewingReceipt] = useState<ReceiptRecord | null>(null);
   const [receiptsLoaded, setReceiptsLoaded] = useState(false);
   const [showRecycleBin, setShowRecycleBin] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setForm({
@@ -638,6 +642,76 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Delete Business */}
+      {userRole === 'owner' && (
+        <Card className="shadow-card border-destructive/30">
+          <CardContent className="p-4 space-y-3">
+            <h2 className="text-base font-semibold text-destructive flex items-center gap-2">
+              <Trash2 className="h-4 w-4" /> Delete Business
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Permanently delete <strong>{currentBusiness?.name}</strong> and all its data. This action cannot be undone.
+            </p>
+            <Button variant="destructive" className="w-full" onClick={() => setShowDeleteDialog(true)}>
+              <Trash2 className="h-4 w-4 mr-2" /> Delete This Business
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delete Business Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={o => { if (!o) { setDeleteReason(''); setDeleteConfirmName(''); } setShowDeleteDialog(o); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="h-5 w-5" /> Delete Business
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              You are about to permanently delete <strong>{currentBusiness?.name}</strong>. All stock, sales, purchases, orders, services, expenses, and team data will be lost forever.
+            </p>
+            <div>
+              <Label>Reason for deletion *</Label>
+              <textarea
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[80px] mt-1"
+                placeholder="e.g. Business collapsed, relocating, switching platforms..."
+                value={deleteReason}
+                onChange={e => setDeleteReason(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Type <strong>{currentBusiness?.name}</strong> to confirm</Label>
+              <Input
+                className="mt-1"
+                placeholder="Type business name to confirm"
+                value={deleteConfirmName}
+                onChange={e => setDeleteConfirmName(e.target.value)}
+              />
+            </div>
+            <Button
+              variant="destructive"
+              className="w-full"
+              disabled={deleting || !deleteReason.trim() || deleteConfirmName !== currentBusiness?.name}
+              onClick={async () => {
+                setDeleting(true);
+                const success = await deleteBusiness(currentBusiness!.id, deleteReason.trim());
+                setDeleting(false);
+                if (success) {
+                  setShowDeleteDialog(false);
+                  setDeleteReason('');
+                  setDeleteConfirmName('');
+                  window.location.reload();
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {deleting ? 'Deleting...' : 'Permanently Delete'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Receipt View Dialog */}
       <Dialog open={!!viewingReceipt} onOpenChange={o => { if (!o) setViewingReceipt(null); }}>

@@ -20,18 +20,30 @@ import LanguageSelector from '@/components/LanguageSelector';
 import { toSentenceCase } from '@/lib/utils';
 
 function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' }) {
-  const { createBusiness } = useBusiness();
+  const { createBusiness, currentBusiness } = useBusiness();
   const [open, setOpen] = useState(false);
   const [businessType, setBusinessType] = useState<'business' | 'factory'>(defaultType);
   const [form, setForm] = useState({ name: '', address: '', contact: '', email: '' });
+  const [countryCode, setCountryCode] = useState('');
+  const [countrySearch, setCountrySearch] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open && (currentBusiness as any)?.country_code) {
+      setCountryCode((currentBusiness as any).country_code);
+    }
+  }, [open, currentBusiness]);
+
+  const filteredCountries = countrySearch
+    ? countries.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()))
+    : countries;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) { toast.error('Name is required'); return; }
+    if (!countryCode) { toast.error('Please select a country'); return; }
     setLoading(true);
-    await createBusiness(form.name.trim(), form.address.trim(), form.contact.trim(), form.email.trim());
-    // Update type if factory
+    await createBusiness(form.name.trim(), form.address.trim(), form.contact.trim(), form.email.trim(), countryCode);
     if (businessType === 'factory') {
       const { data } = await supabase.from('businesses').select('id').order('created_at', { ascending: false }).limit(1).single();
       if (data) {
@@ -45,18 +57,43 @@ function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated:
     if (businessType === 'factory') window.location.reload();
   }
 
+  const selectedCountry = getCountryByCode(countryCode);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Button variant="outline" className="w-full border-dashed" onClick={() => setOpen(true)}>
         <Plus className="h-4 w-4 mr-2" /> Add Business or Factory
       </Button>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" /> Create New
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+          <div>
+            <Label className="text-xs font-semibold">Country *</Label>
+            {selectedCountry ? (
+              <button type="button" onClick={() => setCountryCode('')}
+                className="w-full mt-1 flex items-center gap-2 p-2 rounded-lg border-2 border-primary bg-primary/5 text-left text-sm">
+                <span>{selectedCountry.flag}</span>
+                <span className="font-medium">{selectedCountry.name}</span>
+                <span className="text-xs text-muted-foreground ml-auto">{selectedCountry.currencySymbol}</span>
+              </button>
+            ) : (
+              <div className="mt-1 space-y-1">
+                <Input placeholder="Search country..." value={countrySearch} onChange={e => setCountrySearch(e.target.value)} className="h-8 text-xs" />
+                <div className="max-h-32 overflow-y-auto rounded-lg border border-border">
+                  {filteredCountries.map(c => (
+                    <button key={c.code} type="button" onClick={() => { setCountryCode(c.code); setCountrySearch(''); }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-muted/60 text-xs border-b border-border last:border-0">
+                      <span>{c.flag}</span><span>{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <button type="button" onClick={() => setBusinessType('business')}
               className={`p-3 rounded-xl border-2 text-center transition-all ${businessType === 'business' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}>
@@ -71,7 +108,7 @@ function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated:
           </div>
           <div><Label>Name *</Label><Input placeholder={businessType === 'factory' ? 'My Factory' : 'My Shop'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
           <div><Label>Address</Label><Input placeholder="Location" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
-          <div><Label>Contact</Label><Input placeholder="Phone number" value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} /></div>
+          <div><Label>Contact</Label><Input placeholder={selectedCountry ? `${selectedCountry.phonePrefix} ...` : 'Phone number'} value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} /></div>
           <div><Label>Email</Label><Input type="email" placeholder="email@example.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
           <Button type="submit" className="w-full" disabled={loading}>
             {businessType === 'factory' ? <Factory className="h-4 w-4 mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}

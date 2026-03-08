@@ -76,56 +76,59 @@ function BusinessContent() {
 
   if (!currentBusiness) return <BusinessSetupPage />;
 
-  const isFactory = (currentBusiness as any).business_type === 'factory';
+  return (
+    <BrowserRouter>
+      <BusinessRoutes />
+    </BrowserRouter>
+  );
+}
+
+function BusinessRoutes() {
+  const { currentBusiness } = useBusiness();
+  const isFactory = (currentBusiness as any)?.business_type === 'factory';
 
   if (isFactory) {
     return (
       <FactoryProvider>
-        <BrowserRouter>
-          <AppLayout>
-            <Routes>
-              <Route path="/" element={<FactoryDashboard />} />
-              <Route path="/input-stock" element={<FactoryInputStock />} />
-              <Route path="/product-stock" element={<FactoryProductStock />} />
-              <Route path="/production" element={<FactoryProduction />} />
-              <Route path="/sales" element={<FactorySales />} />
-              <Route path="/purchases" element={<FactoryPurchases />} />
-              <Route path="/orders" element={<OrdersPage />} />
-              <Route path="/services" element={<FactoryServices />} />
-              <Route path="/expenses" element={<FactoryExpenses />} />
-              <Route path="/contacts" element={<ContactsPage />} />
-              <Route path="/discover" element={<DiscoverPage />} />
-              <Route path="/team" element={<FactoryTeam />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AppLayout>
-        </BrowserRouter>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<FactoryDashboard />} />
+            <Route path="/input-stock" element={<FactoryInputStock />} />
+            <Route path="/product-stock" element={<FactoryProductStock />} />
+            <Route path="/production" element={<FactoryProduction />} />
+            <Route path="/sales" element={<FactorySales />} />
+            <Route path="/purchases" element={<FactoryPurchases />} />
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/services" element={<FactoryServices />} />
+            <Route path="/expenses" element={<FactoryExpenses />} />
+            <Route path="/contacts" element={<ContactsPage />} />
+            <Route path="/discover" element={<DiscoverPage />} />
+            <Route path="/team" element={<FactoryTeam />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AppLayout>
       </FactoryProvider>
     );
   }
 
   return (
-    <BrowserRouter>
-      <AppLayout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/stock" element={<StockPage />} />
-          <Route path="/sales" element={<SalesPage />} />
-          <Route path="/purchases" element={<PurchasesPage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          
-          
-          <Route path="/contacts" element={<ContactsPage />} />
-          <Route path="/discover" element={<DiscoverPage />} />
-          <Route path="/services" element={<ServicesPage />} />
-          <Route path="/expenses" element={<BusinessExpenses />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/team" element={<TeamPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </AppLayout>
-    </BrowserRouter>
+    <AppLayout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/stock" element={<StockPage />} />
+        <Route path="/sales" element={<SalesPage />} />
+        <Route path="/purchases" element={<PurchasesPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/contacts" element={<ContactsPage />} />
+        <Route path="/discover" element={<DiscoverPage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/expenses" element={<BusinessExpenses />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/team" element={<TeamPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AppLayout>
   );
 }
 

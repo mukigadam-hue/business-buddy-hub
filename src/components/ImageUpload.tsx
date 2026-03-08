@@ -28,6 +28,9 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
   const isMobile = useIsMobile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const { canUploadItemPhotos } = usePremium();
+
+  const blocked = premiumOnly && !canUploadItemPhotos;
 
   const dimensions = size === 'sm' ? 'h-20 w-20' : size === 'lg' ? 'h-40 w-40' : 'h-28 w-28';
   const displayUrl = preview || currentUrl;

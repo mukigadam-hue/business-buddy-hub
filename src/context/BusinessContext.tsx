@@ -144,6 +144,7 @@ export interface Business {
   business_type: string;
   business_code: string;
   settings_password: string;
+  country_code: string;
   created_at: string;
 }
 

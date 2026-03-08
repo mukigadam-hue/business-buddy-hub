@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ScanLine, X, FlashlightOff, Flashlight } from 'lucide-react';
+import { ScanLine, X, FlashlightOff, Flashlight, Lock } from 'lucide-react';
+import { usePremium } from '@/hooks/usePremium';
+import { toast } from 'sonner';
 
 interface BarcodeScannerProps {
   open: boolean;
@@ -11,6 +13,7 @@ interface BarcodeScannerProps {
 }
 
 export default function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerProps) {
+  const { canUseScanner } = usePremium();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);

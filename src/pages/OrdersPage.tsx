@@ -394,7 +394,12 @@ export default function OrdersPage() {
 
   async function handleCompleteOrder() {
     if (!completeDialog || !completeBuyer.trim() || !completeSeller.trim()) return;
-    if (paymentMethod === 'mobile_money' && !proofFile) {
+
+    const isB2BRequest = completeDialog.type === 'request';
+    const isB2BInbox = completeDialog.type === 'inbox';
+    
+    // For request orders (buyer), require payment proof for mobile money
+    if (isB2BRequest && paymentMethod === 'mobile_money' && !proofFile) {
       toast.error('Please upload payment proof screenshot');
       return;
     }
@@ -403,7 +408,7 @@ export default function OrdersPage() {
     try {
       let proofUrl: string | null = null;
 
-      // Upload proof if mobile money
+      // Upload proof if mobile money (only for buyer/request orders or live orders)
       if (paymentMethod === 'mobile_money' && proofFile) {
         const ext = proofFile.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
@@ -418,44 +423,76 @@ export default function OrdersPage() {
         proofUrl = urlData.publicUrl;
       }
 
-      // Update order with payment info
-      await supabase.from('orders').update({
-        payment_method: paymentMethod,
-        proof_url: proofUrl,
-        status: paymentMethod === 'card' ? 'paid' : 'pending',
-      } as any).eq('id', completeDialog.id);
+      if (isB2BRequest) {
+        // Buyer submitting payment → update order and notify supplier
+        await supabase.from('orders').update({
+          payment_method: paymentMethod,
+          proof_url: proofUrl,
+          status: 'payment_submitted',
+        } as any).eq('id', completeDialog.id);
 
-      // Complete order to sale
-      await completeOrderToSale(completeDialog.id, toSentenceCase(completeBuyer.trim()), toSentenceCase(completeSeller.trim()));
-      
-      // Save receipt
-      if (currentBusiness) {
-        await saveReceipt({
-          business_id: currentBusiness.id,
-          receipt_type: 'order',
-          transaction_id: completeDialog.id,
-          buyer_name: toSentenceCase(completeBuyer.trim()),
-          seller_name: toSentenceCase(completeSeller.trim()),
-          grand_total: completeDialog.grand_total,
-          items: completeDialog.items.map(i => ({
-            itemName: i.item_name, category: i.category, quality: i.quality,
-            quantity: i.quantity, priceType: i.price_type, unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal),
-          })),
-          business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
-          code: completeDialog.code,
+        // Sync status to supplier's inbox order
+        await supabase.functions.invoke('sync-order-prices', {
+          body: { inboxOrderId: completeDialog.id, action: 'submit_payment' },
         });
+
+        toast.success('Payment submitted! Waiting for supplier to confirm.');
+      } else if (isB2BInbox) {
+        // Supplier issuing receipt after payment confirmed
+        await completeOrderToSale(completeDialog.id, toSentenceCase(completeBuyer.trim()), toSentenceCase(completeSeller.trim()));
+        
+        if (currentBusiness) {
+          await saveReceipt({
+            business_id: currentBusiness.id,
+            receipt_type: 'order',
+            transaction_id: completeDialog.id,
+            buyer_name: toSentenceCase(completeBuyer.trim()),
+            seller_name: toSentenceCase(completeSeller.trim()),
+            grand_total: completeDialog.grand_total,
+            items: completeDialog.items.map(i => ({
+              itemName: i.item_name, category: i.category, quality: i.quality,
+              quantity: i.quantity, priceType: i.price_type, unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal),
+            })),
+            business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
+            code: completeDialog.code,
+          });
+        }
+        toast.success('Receipt issued!');
+      } else {
+        // Live order — original flow
+        await supabase.from('orders').update({
+          payment_method: paymentMethod,
+          proof_url: proofUrl,
+          status: paymentMethod === 'card' ? 'paid' : 'pending',
+        } as any).eq('id', completeDialog.id);
+
+        await completeOrderToSale(completeDialog.id, toSentenceCase(completeBuyer.trim()), toSentenceCase(completeSeller.trim()));
+        
+        if (currentBusiness) {
+          await saveReceipt({
+            business_id: currentBusiness.id,
+            receipt_type: 'order',
+            transaction_id: completeDialog.id,
+            buyer_name: toSentenceCase(completeBuyer.trim()),
+            seller_name: toSentenceCase(completeSeller.trim()),
+            grand_total: completeDialog.grand_total,
+            items: completeDialog.items.map(i => ({
+              itemName: i.item_name, category: i.category, quality: i.quality,
+              quantity: i.quantity, priceType: i.price_type, unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal),
+            })),
+            business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
+            code: completeDialog.code,
+          });
+        }
+        toast.success(paymentMethod === 'mobile_money' ? 'Order completed! Payment proof submitted.' : 'Order completed and paid!');
       }
 
-      toast.success(
-        paymentMethod === 'mobile_money'
-          ? 'Order completed! Payment proof submitted for verification.'
-          : 'Order completed and paid!'
-      );
       setCompleteDialog(null);
       setCompleteBuyer('');
       setCompleteSeller('');
       setProofFile(null);
       setProofPreview(null);
+      await refreshData();
     } catch (err: any) {
       toast.error(err.message || 'Failed to complete order');
     } finally {

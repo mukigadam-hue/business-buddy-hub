@@ -11,6 +11,7 @@ import { Camera, Upload, Plus, X, Loader2, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
+import { compressImage } from '@/lib/compressImage';
 
 interface QuickAddItemProps {
   open: boolean;

@@ -348,42 +348,6 @@ export default function TeamPage() {
           <WorkerPaymentManager isOwnerOrAdmin={isOwnerOrAdmin} />
         </TabsContent>
 
-        {/* Customers Tab */}
-        <TabsContent value="customers" className="space-y-4 mt-4">
-          {isOwnerOrAdmin && (
-            <InviteSection type="customer" code={customerCode} onGenerate={() => handleGenerateCode('customer')} />
-          )}
-
-          <Card className="shadow-card">
-            <CardContent className="p-4">
-              <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
-                <ShoppingBag className="h-4 w-4" /> Customer List
-              </h2>
-              {customers.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">No customers yet. Generate an invite code to add customers.</p>
-              ) : (
-                <div className="space-y-3">
-                  {customers.map(customer => (
-                    <div key={customer.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-sm">{customer.customer_name || 'Unknown'}</p>
-                          <p className="text-xs text-muted-foreground">{customer.phone || 'No phone'}</p>
-                        </div>
-                      </div>
-                      {isOwnerOrAdmin && (
-                        <Button variant="ghost" size="icon" onClick={() => handleRemoveCustomer(customer.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );

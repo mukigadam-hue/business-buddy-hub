@@ -21,8 +21,9 @@ export default function FactoryProductStock() {
   const [editItem, setEditItem] = useState<string | null>(null);
   const [viewGallery, setViewGallery] = useState<string | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [form, setForm] = useState({
-    name: '', category: '', quality: '', quantity: '0',
+    name: '', category: '', quality: '', quantity: '0', barcode: '',
     buying_price: '', wholesale_price: '', retail_price: '', min_stock_level: '5',
     image_url_1: '', image_url_2: '', image_url_3: '',
   });

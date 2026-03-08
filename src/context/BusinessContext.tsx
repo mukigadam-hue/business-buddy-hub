@@ -45,6 +45,9 @@ export interface Sale {
   customer_name: string;
   from_order_id: string | null;
   from_order_code: string | null;
+  payment_status: string;
+  amount_paid: number;
+  balance: number;
   created_at: string;
   items: SaleItem[];
 }
@@ -67,6 +70,9 @@ export interface Purchase {
   grand_total: number;
   supplier: string;
   recorded_by: string;
+  payment_status: string;
+  amount_paid: number;
+  balance: number;
   created_at: string;
   items: PurchaseItem[];
 }
@@ -209,9 +215,13 @@ interface BusinessContextType {
     recordedBy: string,
     customerName: string,
     fromOrderId?: string,
-    fromOrderCode?: string
+    fromOrderCode?: string,
+    paymentStatus?: string,
+    amountPaid?: number
   ) => Promise<Sale | null>;
-  addPurchase: (items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number }[], grandTotal: number, supplier: string, recordedBy: string) => Promise<void>;
+  addPurchase: (items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number }[], grandTotal: number, supplier: string, recordedBy: string, paymentStatus?: string, amountPaid?: number) => Promise<void>;
+  updateSalePayment: (saleId: string, amountPaid: number, paymentStatus: string) => Promise<void>;
+  updatePurchasePayment: (purchaseId: string, amountPaid: number, paymentStatus: string) => Promise<void>;
   addOrder: (type: string, customerName: string, items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[], grandTotal: number, status: string, recipientBusinessId?: string, comment?: string) => Promise<void>;
   updateOrder: (id: string, items: OrderItem[], grandTotal: number, status?: string) => Promise<void>;
   completeOrderToSale: (orderId: string, buyerName: string, sellerName: string) => Promise<void>;
@@ -521,9 +531,14 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     recordedBy: string,
     customerName: string,
     fromOrderId?: string,
-    fromOrderCode?: string
+    fromOrderCode?: string,
+    paymentStatus: string = 'paid',
+    amountPaid?: number
   ): Promise<Sale | null> => {
     if (!currentBusinessId) return null;
+    const paid = amountPaid ?? grandTotal;
+    const bal = Math.max(0, grandTotal - paid);
+    const status = bal <= 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
     const { data: saleData, error: saleError } = await supabase.from('sales').insert({
       business_id: currentBusinessId,
       grand_total: grandTotal,
@@ -531,6 +546,9 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       customer_name: customerName,
       from_order_id: fromOrderId || null,
       from_order_code: fromOrderCode || null,
+      payment_status: paymentStatus === 'paid' ? status : paymentStatus,
+      amount_paid: paid,
+      balance: bal,
     } as any).select().single();
     if (saleError || !saleData) { toast.error(saleError?.message || 'Failed'); return null; }
 
@@ -573,12 +591,19 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const addPurchase = useCallback(async (
     items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number }[],
-    grandTotal: number, supplier: string, recordedBy: string
+    grandTotal: number, supplier: string, recordedBy: string,
+    paymentStatus: string = 'paid', amountPaid?: number
   ) => {
     if (!currentBusinessId) return;
+    const paid = amountPaid ?? grandTotal;
+    const bal = Math.max(0, grandTotal - paid);
+    const status = bal <= 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
     const { data: purchaseData, error } = await supabase.from('purchases').insert({
       business_id: currentBusinessId, grand_total: grandTotal, supplier, recorded_by: recordedBy,
-    }).select().single();
+      payment_status: paymentStatus === 'paid' ? status : paymentStatus,
+      amount_paid: paid,
+      balance: bal,
+    } as any).select().single();
     if (error || !purchaseData) { toast.error(error?.message || 'Failed'); return; }
 
     const purchaseItems = items.map(item => ({
@@ -917,6 +942,32 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     setExpenses(prev => prev.filter(e => e.id !== id));
   }, []);
 
+  const updateSalePayment = useCallback(async (saleId: string, amountPaid: number, paymentStatus: string) => {
+    const sale = sales.find(s => s.id === saleId);
+    if (!sale) return;
+    const bal = Math.max(0, Number(sale.grand_total) - amountPaid);
+    const status = bal <= 0 ? 'paid' : (amountPaid > 0 ? 'partial' : 'unpaid');
+    const { error } = await supabase.from('sales').update({
+      amount_paid: amountPaid, balance: bal, payment_status: status,
+    }).eq('id', saleId);
+    if (error) { toast.error(error.message); return; }
+    setSales(prev => prev.map(s => s.id === saleId ? { ...s, amount_paid: amountPaid, balance: bal, payment_status: status } : s));
+    toast.success('Payment updated!');
+  }, [sales]);
+
+  const updatePurchasePayment = useCallback(async (purchaseId: string, amountPaid: number, paymentStatus: string) => {
+    const purchase = purchases.find(p => p.id === purchaseId);
+    if (!purchase) return;
+    const bal = Math.max(0, Number(purchase.grand_total) - amountPaid);
+    const status = bal <= 0 ? 'paid' : (amountPaid > 0 ? 'partial' : 'unpaid');
+    const { error } = await supabase.from('purchases').update({
+      amount_paid: amountPaid, balance: bal, payment_status: status,
+    } as any).eq('id', purchaseId);
+    if (error) { toast.error(error.message); return; }
+    setPurchases(prev => prev.map(p => p.id === purchaseId ? { ...p, amount_paid: amountPaid, balance: bal, payment_status: status } : p));
+    toast.success('Payment updated!');
+  }, [purchases]);
+
   const refreshData = useCallback(async () => {
     await loadBusinessData();
   }, [currentBusinessId]);
@@ -930,6 +981,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       addSale, addPurchase, addOrder, updateOrder, completeOrderToSale,
       addService, saveReceipt, getReceipts,
       addExpense, deleteExpense,
+      updateSalePayment, updatePurchasePayment,
       markNotificationRead, markAllNotificationsRead,
       generateInviteCode, redeemInviteCode,
       getMembers, removeMember, updateMemberRole,

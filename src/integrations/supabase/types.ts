@@ -1026,26 +1026,35 @@ export type Database = {
       }
       purchases: {
         Row: {
+          amount_paid: number
+          balance: number
           business_id: string
           created_at: string
           grand_total: number
           id: string
+          payment_status: string
           recorded_by: string
           supplier: string
         }
         Insert: {
+          amount_paid?: number
+          balance?: number
           business_id: string
           created_at?: string
           grand_total?: number
           id?: string
+          payment_status?: string
           recorded_by?: string
           supplier?: string
         }
         Update: {
+          amount_paid?: number
+          balance?: number
           business_id?: string
           created_at?: string
           grand_total?: number
           id?: string
+          payment_status?: string
           recorded_by?: string
           supplier?: string
         }
@@ -1189,6 +1198,8 @@ export type Database = {
       }
       sales: {
         Row: {
+          amount_paid: number
+          balance: number
           business_id: string
           created_at: string
           customer_name: string
@@ -1196,9 +1207,12 @@ export type Database = {
           from_order_id: string | null
           grand_total: number
           id: string
+          payment_status: string
           recorded_by: string
         }
         Insert: {
+          amount_paid?: number
+          balance?: number
           business_id: string
           created_at?: string
           customer_name?: string
@@ -1206,9 +1220,12 @@ export type Database = {
           from_order_id?: string | null
           grand_total?: number
           id?: string
+          payment_status?: string
           recorded_by?: string
         }
         Update: {
+          amount_paid?: number
+          balance?: number
           business_id?: string
           created_at?: string
           customer_name?: string
@@ -1216,6 +1233,7 @@ export type Database = {
           from_order_id?: string | null
           grand_total?: number
           id?: string
+          payment_status?: string
           recorded_by?: string
         }
         Relationships: [

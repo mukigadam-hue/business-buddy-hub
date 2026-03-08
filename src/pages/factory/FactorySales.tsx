@@ -17,7 +17,7 @@ import type { Sale } from '@/context/BusinessContext';
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 
 export default function FactorySales() {
-  const { stock, sales, addSale, saveReceipt, currentBusiness } = useBusiness();
+  const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment } = useBusiness();
   const { fmt } = useCurrency();
 
   const activeProducts = stock.filter(s => !s.deleted_at);
@@ -42,6 +42,10 @@ export default function FactorySales() {
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [partScannerOpen, setPartScannerOpen] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');
+  const [amountPaid, setAmountPaid] = useState('');
+  const [editPaymentSale, setEditPaymentSale] = useState<Sale | null>(null);
+  const [editAmountPaid, setEditAmountPaid] = useState('');
 
   const [svcForm, setSvcForm] = useState({ service_name: '', description: '', cost: '' });
   const [selectedPartStock, setSelectedPartStock] = useState('');
@@ -145,7 +149,8 @@ export default function FactorySales() {
       })),
     ];
 
-    const sale = await addSale(allItems, grandTotal, toSentenceCase(sellerName.trim()), toSentenceCase(customerName.trim()));
+    const paidAmt = paymentStatus === 'paid' ? grandTotal : (parseFloat(amountPaid) || 0);
+    const sale = await addSale(allItems, grandTotal, toSentenceCase(sellerName.trim()), toSentenceCase(customerName.trim()), undefined, undefined, paymentStatus, paidAmt);
     if (sale && currentBusiness) {
       const receiptItems = allItems.map(i => ({
         itemName: i.item_name, category: i.category, quality: i.quality,
@@ -160,7 +165,7 @@ export default function FactorySales() {
       });
       setReceiptSale(sale);
     }
-    setItems([]); setServiceItems([]); setServiceParts([]); setCustomerName(''); setSellerName('');
+    setItems([]); setServiceItems([]); setServiceParts([]); setCustomerName(''); setSellerName(''); setPaymentStatus('paid'); setAmountPaid('');
   }
 
   return (
@@ -352,6 +357,30 @@ export default function FactorySales() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Payment Status */}
+              <div className="p-3 bg-muted/40 rounded-lg border space-y-2">
+                <Label className="text-xs font-semibold">💰 Payment Status</Label>
+                <div className="flex gap-2 flex-wrap">
+                  {(['paid', 'partial', 'unpaid'] as const).map(s => (
+                    <button key={s} onClick={() => setPaymentStatus(s)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${paymentStatus === s
+                        ? s === 'paid' ? 'bg-success text-success-foreground' : s === 'partial' ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'
+                        : 'bg-muted text-muted-foreground'}`}>
+                      {s === 'paid' ? '✅ Paid Full' : s === 'partial' ? '⚠️ Paid Partial' : '❌ Not Paid (Credit)'}
+                    </button>
+                  ))}
+                </div>
+                {paymentStatus !== 'paid' && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs whitespace-nowrap">Amount Paid:</Label>
+                    <Input type="number" min="0" step="0.01" value={amountPaid} onChange={e => setAmountPaid(e.target.value)}
+                      placeholder="0.00" className="w-32" />
+                    <span className="text-xs text-muted-foreground">
+                      Balance: <span className="font-bold text-destructive">{fmt(grandTotal - (parseFloat(amountPaid) || 0))}</span>
+                    </span>
+                  </div>
+                )}
+              </div>
               <Button onClick={handleSave} className="w-full" disabled={!canSave}>
                 <TrendingUp className="h-4 w-4 mr-2" />Complete Sale — {fmt(grandTotal)}
               </Button>
@@ -377,14 +406,20 @@ export default function FactorySales() {
           ) : (
             <div className="space-y-3 max-h-[500px] overflow-y-auto">
               {(activeTab === 'today' ? todaySales : prevSales).map(s => (
-                <div key={s.id} className="border rounded-lg p-3">
+                <div key={s.id} className={`border rounded-lg p-3 ${s.payment_status === 'unpaid' ? 'border-destructive/40 bg-destructive/5' : s.payment_status === 'partial' ? 'border-warning/40 bg-warning/5' : ''}`}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium">👤 {s.customer_name}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium">👤 {s.customer_name}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${s.payment_status === 'paid' ? 'bg-success/10 text-success' : s.payment_status === 'partial' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
+                        {s.payment_status === 'paid' ? '✅ Paid' : s.payment_status === 'partial' ? `⚠️ Partial (${fmt(Number(s.amount_paid))})` : '❌ Unpaid'}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-success bg-success/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(s.grand_total))}</span>
                       <Button size="sm" variant="ghost" onClick={() => setReceiptSale(s)}><ReceiptIcon className="h-3.5 w-3.5" /></Button>
                     </div>
                   </div>
+                  {s.payment_status !== 'paid' && <p className="text-xs font-semibold text-destructive">Balance: {fmt(Number(s.balance))}</p>}
                   <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString()}</p>
                   <div className="text-sm text-muted-foreground space-y-1 mt-1">
                     {s.items.map((item, i) => (
@@ -398,6 +433,11 @@ export default function FactorySales() {
                       </div>
                     ))}
                   </div>
+                  {s.payment_status !== 'paid' && (
+                    <Button size="sm" variant="outline" className="mt-2" onClick={() => { setEditPaymentSale(s); setEditAmountPaid(String(s.amount_paid || 0)); }}>
+                      💰 Update Payment
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -421,6 +461,31 @@ export default function FactorySales() {
               date={receiptSale.created_at} type="sale"
               businessInfo={currentBusiness ? { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email } : undefined}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Payment Dialog */}
+      <Dialog open={!!editPaymentSale} onOpenChange={o => { if (!o) setEditPaymentSale(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Update Payment — {editPaymentSale?.customer_name}</DialogTitle></DialogHeader>
+          {editPaymentSale && (
+            <div className="space-y-3">
+              <p className="text-sm">Total: <span className="font-bold">{fmt(Number(editPaymentSale.grand_total))}</span></p>
+              <p className="text-sm">Previously Paid: <span className="font-bold">{fmt(Number(editPaymentSale.amount_paid))}</span></p>
+              <div>
+                <Label>New Total Amount Paid</Label>
+                <Input type="number" min="0" step="0.01" value={editAmountPaid} onChange={e => setEditAmountPaid(e.target.value)} />
+              </div>
+              <p className="text-sm">New Balance: <span className="font-bold text-destructive">{fmt(Number(editPaymentSale.grand_total) - (parseFloat(editAmountPaid) || 0))}</span></p>
+              <Button className="w-full" onClick={async () => {
+                const amt = parseFloat(editAmountPaid) || 0;
+                await updateSalePayment(editPaymentSale.id, amt, amt >= Number(editPaymentSale.grand_total) ? 'paid' : amt > 0 ? 'partial' : 'unpaid');
+                setEditPaymentSale(null);
+              }}>
+                💰 Save Payment
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>

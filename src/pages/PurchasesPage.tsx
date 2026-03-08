@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Trash2, Package, ScanLine } from 'lucide-react';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
@@ -16,7 +17,7 @@ function toSentenceCase(str: string): string {
 }
 
 export default function PurchasesPage() {
-  const { stock, purchases, addPurchase } = useBusiness();
+  const { stock, purchases, addPurchase, updatePurchasePayment } = useBusiness();
   const { fmt } = useCurrency();
   const [items, setItems] = useState<{
     item_name: string; category: string; quality: string;
@@ -29,6 +30,10 @@ export default function PurchasesPage() {
     unit_price: '', wholesale_price: '', retail_price: '',
   });
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
+  const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');
+  const [amountPaid, setAmountPaid] = useState('');
+  const [editPaymentPurchase, setEditPaymentPurchase] = useState<typeof purchases[0] | null>(null);
+  const [editAmountPaid, setEditAmountPaid] = useState('');
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const activeStock = stock.filter(s => !s.deleted_at);
@@ -61,6 +66,7 @@ export default function PurchasesPage() {
 
   async function handleSave() {
     if (items.length === 0) return;
+    const paidAmt = paymentStatus === 'paid' ? grandTotal : (parseFloat(amountPaid) || 0);
     await addPurchase(
       items.map(item => ({
         item_name: item.item_name, category: item.category, quality: item.quality,
@@ -69,22 +75,34 @@ export default function PurchasesPage() {
         subtotal: item.quantity * item.unit_price,
       })),
       grandTotal, supplier.trim() || 'Unknown',
-      toSentenceCase(recordedBy.trim()) || 'Staff'
+      toSentenceCase(recordedBy.trim()) || 'Staff',
+      paymentStatus, paidAmt
     );
     setItems([]);
     setSupplier('');
     setRecordedBy('');
+    setPaymentStatus('paid');
+    setAmountPaid('');
   }
 
   function PurchaseCard({ p }: { p: typeof purchases[0] }) {
+    const isPaid = p.payment_status === 'paid';
+    const isPartial = p.payment_status === 'partial';
+    const isUnpaid = p.payment_status === 'unpaid';
     return (
-      <div className="border rounded-lg p-3">
+      <div className={`border rounded-lg p-3 ${isUnpaid ? 'border-destructive/40 bg-destructive/5' : isPartial ? 'border-warning/40 bg-warning/5' : ''}`}>
         <div className="flex justify-between items-center mb-1">
           <div>
             <span className="font-medium text-sm">{p.supplier}</span>
             {p.recorded_by && <span className="text-xs text-muted-foreground ml-2">by {p.recorded_by}</span>}
           </div>
           <span className="font-bold text-success bg-success/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(p.grand_total))}</span>
+        </div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${isPaid ? 'bg-success/10 text-success' : isPartial ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
+            {isPaid ? '✅ Paid' : isPartial ? `⚠️ Partial (${fmt(Number(p.amount_paid))})` : '❌ Unpaid'}
+          </span>
+          {!isPaid && <span className="text-xs font-semibold text-destructive">Balance: {fmt(Number(p.balance))}</span>}
         </div>
         <p className="text-xs text-muted-foreground mb-2">{new Date(p.created_at).toLocaleString()}</p>
         <div className="text-sm text-muted-foreground space-y-1 max-h-40 overflow-y-auto">
@@ -100,6 +118,11 @@ export default function PurchasesPage() {
             </div>
           ))}
         </div>
+        {!isPaid && (
+          <Button size="sm" variant="outline" className="mt-2" onClick={() => { setEditPaymentPurchase(p); setEditAmountPaid(String(p.amount_paid || 0)); }}>
+            💰 Update Payment
+          </Button>
+        )}
       </div>
     );
   }
@@ -194,6 +217,30 @@ export default function PurchasesPage() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Payment Status */}
+              <div className="p-3 bg-muted/40 rounded-lg border space-y-2">
+                <Label className="text-xs font-semibold">💰 Payment Status</Label>
+                <div className="flex gap-2">
+                  {(['paid', 'partial', 'unpaid'] as const).map(s => (
+                    <button key={s} onClick={() => setPaymentStatus(s)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${paymentStatus === s
+                        ? s === 'paid' ? 'bg-success text-success-foreground' : s === 'partial' ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'
+                        : 'bg-muted text-muted-foreground'}`}>
+                      {s === 'paid' ? '✅ Paid Full' : s === 'partial' ? '⚠️ Paid Partial' : '❌ Not Paid (Credit)'}
+                    </button>
+                  ))}
+                </div>
+                {paymentStatus !== 'paid' && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs whitespace-nowrap">Amount Paid:</Label>
+                    <Input type="number" min="0" step="0.01" value={amountPaid} onChange={e => setAmountPaid(e.target.value)}
+                      placeholder="0.00" className="w-32" />
+                    <span className="text-xs text-muted-foreground">
+                      Balance: <span className="font-bold text-destructive">{fmt(grandTotal - (parseFloat(amountPaid) || 0))}</span>
+                    </span>
+                  </div>
+                )}
+              </div>
               <Button onClick={handleSave} className="w-full">
                 <Package className="h-4 w-4 mr-2" />Record Purchase — {fmt(grandTotal)}
               </Button>
@@ -234,6 +281,31 @@ export default function PurchasesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Update Payment Dialog */}
+      <Dialog open={!!editPaymentPurchase} onOpenChange={o => { if (!o) setEditPaymentPurchase(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Update Payment — {editPaymentPurchase?.supplier}</DialogTitle></DialogHeader>
+          {editPaymentPurchase && (
+            <div className="space-y-3">
+              <p className="text-sm">Total: <span className="font-bold">{fmt(Number(editPaymentPurchase.grand_total))}</span></p>
+              <p className="text-sm">Previously Paid: <span className="font-bold">{fmt(Number(editPaymentPurchase.amount_paid))}</span></p>
+              <div>
+                <Label>New Total Amount Paid</Label>
+                <Input type="number" min="0" step="0.01" value={editAmountPaid} onChange={e => setEditAmountPaid(e.target.value)} />
+              </div>
+              <p className="text-sm">New Balance: <span className="font-bold text-destructive">{fmt(Number(editPaymentPurchase.grand_total) - (parseFloat(editAmountPaid) || 0))}</span></p>
+              <Button className="w-full" onClick={async () => {
+                const amt = parseFloat(editAmountPaid) || 0;
+                await updatePurchasePayment(editPaymentPurchase.id, amt, amt >= Number(editPaymentPurchase.grand_total) ? 'paid' : amt > 0 ? 'partial' : 'unpaid');
+                setEditPaymentPurchase(null);
+              }}>
+                💰 Save Payment
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

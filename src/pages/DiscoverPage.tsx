@@ -26,6 +26,7 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedBiz, setSelectedBiz] = useState<DiscoveredBusiness | null>(null);
 
   const searchBusinesses = useCallback(async (searchQuery: string) => {
     setLoading(true);

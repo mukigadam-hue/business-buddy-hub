@@ -42,7 +42,7 @@ export default function FactoryInputStock() {
       quantity: parseFloat(form.quantity) || 0,
       unit_cost: parseFloat(form.unit_cost) || 0,
       min_stock_level: parseFloat(form.min_stock_level) || 5,
-      supplier: toSentenceCase(form.supplier.trim()),
+      supplier: toTitleCase(form.supplier.trim()),
     });
     resetForm();
     setShowAdd(false);

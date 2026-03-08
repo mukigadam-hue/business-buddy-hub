@@ -578,28 +578,127 @@ export default function OrdersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Complete Order Dialog */}
-      <Dialog open={!!completeDialog} onOpenChange={o => { if (!o) { setCompleteDialog(null); } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Complete Order & Issue Receipt</DialogTitle></DialogHeader>
-          <p className="text-xs text-muted-foreground">Both buyer and seller names are required to issue a receipt.</p>
-          <div className="space-y-3">
-            <div>
-              <Label className="text-xs font-semibold text-destructive">Buyer Name *</Label>
-              <Input value={completeBuyer} onChange={e => setCompleteBuyer(e.target.value)} onBlur={() => setCompleteBuyer(toSentenceCase(completeBuyer))} placeholder="Customer name" />
+      {/* Complete Order Dialog with Payment */}
+      <Dialog open={!!completeDialog} onOpenChange={o => { if (!o) { setCompleteDialog(null); setProofFile(null); setProofPreview(null); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Complete Order & Pay</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">Finalize the agreed order, select payment method, and issue receipt.</p>
+          
+          {completeDialog && (
+            <div className="space-y-4">
+              {/* Order summary */}
+              <div className="p-3 bg-muted/40 rounded-lg border space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Order</span>
+                  <span className="font-mono font-semibold">{completeDialog.code}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Items</span>
+                  <span>{completeDialog.items.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold">Total</span>
+                  <span className="font-bold text-success text-lg">{fmt(Number(completeDialog.grand_total))}</span>
+                </div>
+              </div>
+
+              {/* Names */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold text-destructive">Buyer Name *</Label>
+                  <Input value={completeBuyer} onChange={e => setCompleteBuyer(e.target.value)} onBlur={() => setCompleteBuyer(toSentenceCase(completeBuyer))} placeholder="Customer name" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-destructive">Seller Name *</Label>
+                  <Input value={completeSeller} onChange={e => setCompleteSeller(e.target.value)} onBlur={() => setCompleteSeller(toSentenceCase(completeSeller))} placeholder="Your name" />
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div>
+                <Label className="text-xs font-semibold mb-2 block">Payment Method</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPaymentMethod('mobile_money')}
+                    className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left ${
+                      paymentMethod === 'mobile_money'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-muted-foreground/30'
+                    }`}
+                  >
+                    <Smartphone className="h-5 w-5 text-success shrink-0" />
+                    <div>
+                      <p className="font-semibold text-xs">Mobile Money</p>
+                      <p className="text-[10px] text-muted-foreground">Upload proof</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod('card')}
+                    className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left ${
+                      paymentMethod === 'card'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-muted-foreground/30'
+                    }`}
+                  >
+                    <CreditCard className="h-5 w-5 text-info shrink-0" />
+                    <div>
+                      <p className="font-semibold text-xs">Card / Cash</p>
+                      <p className="text-[10px] text-muted-foreground">Paid directly</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile Money proof upload */}
+              {paymentMethod === 'mobile_money' && (
+                <div className="space-y-2 p-3 bg-muted/40 rounded-lg border">
+                  <div>
+                    <p className="text-xs font-medium">📱 Send payment to:</p>
+                    <p className="text-xs text-muted-foreground">
+                      {currentBusiness?.contact || 'Contact in settings'} — <span className="font-semibold">{currentBusiness?.name}</span>
+                    </p>
+                    <p className="text-base font-bold text-success mt-1">{fmt(Number(completeDialog.grand_total))}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-destructive">Upload Payment Screenshot *</Label>
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="mt-1 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    >
+                      {proofPreview ? (
+                        <img src={proofPreview} alt="Payment proof" className="max-h-32 mx-auto rounded-lg" />
+                      ) : (
+                        <div className="space-y-1">
+                          <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Tap to upload screenshot</p>
+                        </div>
+                      )}
+                    </div>
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                    {proofFile && <p className="text-xs text-success mt-1">✓ {proofFile.name}</p>}
+                  </div>
+                </div>
+              )}
+
+              {paymentMethod === 'card' && (
+                <div className="p-3 bg-info/5 rounded-lg border border-info/20">
+                  <p className="text-xs text-muted-foreground">
+                    💳 Confirm that card/cash payment of <span className="font-bold text-foreground">{fmt(Number(completeDialog.grand_total))}</span> has been received before completing.
+                  </p>
+                </div>
+              )}
+
+              <Button
+                className="w-full h-11"
+                disabled={completing || !completeBuyer.trim() || !completeSeller.trim() || (paymentMethod === 'mobile_money' && !proofFile)}
+                onClick={handleCompleteOrder}
+              >
+                {completing ? 'Processing...' : (
+                  <><CheckCircle className="h-4 w-4 mr-2" />Complete Order — {fmt(Number(completeDialog.grand_total))}</>
+                )}
+              </Button>
             </div>
-            <div>
-              <Label className="text-xs font-semibold text-destructive">Seller Name *</Label>
-              <Input value={completeSeller} onChange={e => setCompleteSeller(e.target.value)} onBlur={() => setCompleteSeller(toSentenceCase(completeSeller))} placeholder="Your name" />
-            </div>
-            <Button
-              className="w-full"
-              disabled={!completeBuyer.trim() || !completeSeller.trim()}
-              onClick={handleCompleteOrder}
-            >
-              <CheckCircle className="h-4 w-4 mr-2" />Complete & Transfer to Sale
-            </Button>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
 

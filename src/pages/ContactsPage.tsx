@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/context/BusinessContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Search, Plus, Building2, Phone, Mail, MapPin, Factory, Trash2, Edit2, UserPlus, ExternalLink } from 'lucide-react';
+import { Search, Plus, Building2, Phone, Mail, MapPin, Trash2, Edit2, UserPlus, ExternalLink, HandMetal, Clock, ArrowUpDown } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface BusinessContact {
   id: string;
@@ -29,9 +30,15 @@ interface BusinessProfile {
   logo_url: string | null;
 }
 
+interface EnrichedContact extends BusinessContact {
+  profile?: BusinessProfile;
+  lastInteraction?: string | null;
+  orderCount?: number;
+}
+
 export default function ContactsPage() {
   const { currentBusiness, userRole } = useBusiness();
-  const [contacts, setContacts] = useState<(BusinessContact & { profile?: BusinessProfile })[]>([]);
+  const [contacts, setContacts] = useState<EnrichedContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchCode, setSearchCode] = useState('');
   const [searching, setSearching] = useState(false);
@@ -43,6 +50,8 @@ export default function ContactsPage() {
   const [editNickname, setEditNickname] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [viewProfile, setViewProfile] = useState<BusinessProfile | null>(null);
+  const [pokingId, setPokingId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent');
 
   const businessId = currentBusiness?.id;
 
@@ -65,52 +74,64 @@ export default function ContactsPage() {
       return;
     }
 
-    // Fetch profiles for each contact
-    const contactsWithProfiles = await Promise.all(
-      (data || []).map(async (c: any) => {
-        const { data: profile } = await supabase
-          .rpc('lookup_business_by_code', { _code: '' })
-          // We can't lookup by code here, so query businesses directly via the contact_business_id
-          // But RLS might block this. Let's use a different approach - store info at add time
-          // For now, let's try fetching from businesses table
-        ;
-        // Actually, let's query the business directly since we have the ID
-        // The user might not have access via RLS. Let's use the lookup function differently.
-        // We'll fetch all contact business details in one go
-        return { ...c } as BusinessContact & { profile?: BusinessProfile };
-      })
-    );
-
-    // Batch fetch contact business profiles using a workaround
-    // Since we can't directly query businesses we're not members of,
-    // we'll store the profile info in the contacts or use the lookup function
-    // For now let's try a direct query (businesses table RLS requires membership)
-    // Better approach: fetch via the lookup function using business_code
-    
-    // Let's get business codes for the contact businesses
-    // Actually the cleanest way: create an edge function or just store profile data
-    // For MVP: let's query what we can and handle gracefully
-    
     const contactIds = (data || []).map((c: any) => c.contact_business_id);
+    
+    let bizMap = new Map<string, BusinessProfile>();
     if (contactIds.length > 0) {
-      // Try to get business info - this may fail for businesses we're not members of
       const { data: bizData } = await supabase
         .from('businesses')
         .select('id, name, business_type, address, contact, email, logo_url')
         .in('id', contactIds);
-      
-      const bizMap = new Map((bizData || []).map(b => [b.id, b]));
-      
-      const enriched = (data || []).map((c: any) => ({
+      bizMap = new Map((bizData || []).map(b => [b.id, b as BusinessProfile]));
+    }
+
+    // Fetch last interaction dates from shared_orders
+    let interactionMap = new Map<string, { lastDate: string; count: number }>();
+    if (contactIds.length > 0) {
+      // Orders we sent to them
+      const { data: sentOrders } = await supabase
+        .from('shared_orders')
+        .select('to_business_id, created_at')
+        .eq('from_business_id', businessId)
+        .in('to_business_id', contactIds)
+        .order('created_at', { ascending: false });
+
+      // Orders they sent to us
+      const { data: receivedOrders } = await supabase
+        .from('shared_orders')
+        .select('from_business_id, created_at')
+        .eq('to_business_id', businessId)
+        .in('from_business_id', contactIds)
+        .order('created_at', { ascending: false });
+
+      // Merge both directions
+      const allInteractions: { contactId: string; date: string }[] = [];
+      (sentOrders || []).forEach(o => allInteractions.push({ contactId: o.to_business_id, date: o.created_at }));
+      (receivedOrders || []).forEach(o => allInteractions.push({ contactId: o.from_business_id, date: o.created_at }));
+
+      // Group by contact
+      for (const item of allInteractions) {
+        const existing = interactionMap.get(item.contactId);
+        if (!existing) {
+          interactionMap.set(item.contactId, { lastDate: item.date, count: 1 });
+        } else {
+          existing.count++;
+          if (item.date > existing.lastDate) existing.lastDate = item.date;
+        }
+      }
+    }
+
+    const enriched: EnrichedContact[] = (data || []).map((c: any) => {
+      const interaction = interactionMap.get(c.contact_business_id);
+      return {
         ...c,
         profile: bizMap.get(c.contact_business_id) || undefined,
-      }));
-      
-      setContacts(enriched);
-    } else {
-      setContacts(data || []);
-    }
-    
+        lastInteraction: interaction?.lastDate || null,
+        orderCount: interaction?.count || 0,
+      };
+    });
+
+    setContacts(enriched);
     setLoading(false);
   }
 
@@ -133,8 +154,6 @@ export default function ContactsPage() {
     }
 
     const biz = data[0] as BusinessProfile;
-    
-    // Don't allow adding yourself
     if (biz.id === businessId) {
       toast.error("That's your own business code!");
       setSearching(false);
@@ -147,8 +166,6 @@ export default function ContactsPage() {
 
   async function handleAddContact() {
     if (!foundBusiness || !businessId) return;
-    
-    // Check if already a contact
     const existing = contacts.find(c => c.contact_business_id === foundBusiness.id);
     if (existing) {
       toast.error('This business is already in your contacts');
@@ -162,10 +179,7 @@ export default function ContactsPage() {
       notes: contactNotes.trim(),
     } as any);
 
-    if (error) {
-      toast.error('Failed to add contact: ' + error.message);
-      return;
-    }
+    if (error) { toast.error('Failed to add contact: ' + error.message); return; }
 
     toast.success(`${foundBusiness.name} added to contacts!`);
     setFoundBusiness(null);
@@ -181,35 +195,66 @@ export default function ContactsPage() {
       .from('business_contacts')
       .update({ nickname: editNickname.trim(), notes: editNotes.trim() } as any)
       .eq('id', contactId);
-
-    if (error) {
-      toast.error('Failed to update');
-      return;
-    }
+    if (error) { toast.error('Failed to update'); return; }
     toast.success('Contact updated');
     setEditingContact(null);
     loadContacts();
   }
 
   async function handleDeleteContact(contactId: string) {
-    const { error } = await supabase
-      .from('business_contacts')
-      .delete()
-      .eq('id', contactId);
-
-    if (error) {
-      toast.error('Failed to remove contact');
-      return;
-    }
+    const { error } = await supabase.from('business_contacts').delete().eq('id', contactId);
+    if (error) { toast.error('Failed to remove contact'); return; }
     toast.success('Contact removed');
     loadContacts();
   }
 
-  const isFactory = (currentBusiness as any)?.business_type === 'factory';
+  async function handlePoke(contact: EnrichedContact) {
+    if (!currentBusiness || !contact.contact_business_id) return;
+    setPokingId(contact.id);
+    try {
+      const res = await supabase.functions.invoke('poke-business', {
+        body: {
+          senderBusinessId: currentBusiness.id,
+          recipientBusinessId: contact.contact_business_id,
+          senderBusinessName: currentBusiness.name,
+        },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || res.error?.message || 'Failed to send poke');
+      } else {
+        toast.success(`👋 Poke sent to ${contact.nickname || contact.profile?.name || 'business'}!`);
+      }
+    } catch (err: any) {
+      toast.error('Failed to send poke');
+    } finally {
+      setPokingId(null);
+    }
+  }
+
+  function getInteractionLabel(lastDate: string | null | undefined) {
+    if (!lastDate) return { text: 'No interactions yet', color: 'text-muted-foreground', stale: true };
+    const daysDiff = Math.floor((Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24));
+    if (daysDiff <= 3) return { text: formatDistanceToNow(new Date(lastDate), { addSuffix: true }), color: 'text-success', stale: false };
+    if (daysDiff <= 14) return { text: formatDistanceToNow(new Date(lastDate), { addSuffix: true }), color: 'text-warning', stale: false };
+    return { text: formatDistanceToNow(new Date(lastDate), { addSuffix: true }), color: 'text-destructive', stale: true };
+  }
+
+  const sortedContacts = [...contacts].sort((a, b) => {
+    if (sortBy === 'recent') {
+      // Contacts with interactions first, sorted by most recent
+      if (a.lastInteraction && !b.lastInteraction) return -1;
+      if (!a.lastInteraction && b.lastInteraction) return 1;
+      if (a.lastInteraction && b.lastInteraction) return b.lastInteraction.localeCompare(a.lastInteraction);
+      return b.created_at.localeCompare(a.created_at);
+    }
+    const nameA = (a.nickname || a.profile?.name || '').toLowerCase();
+    const nameB = (b.nickname || b.profile?.name || '').toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Building2 className="h-6 w-6" /> Business Contacts
@@ -221,44 +266,23 @@ export default function ContactsPage() {
 
         <Dialog open={addDialogOpen} onOpenChange={(open) => {
           setAddDialogOpen(open);
-          if (!open) {
-            setFoundBusiness(null);
-            setSearchCode('');
-            setNickname('');
-            setContactNotes('');
-          }
+          if (!open) { setFoundBusiness(null); setSearchCode(''); setNickname(''); setContactNotes(''); }
         }}>
           <DialogTrigger asChild>
             <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Contact</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Find & Add Business</DialogTitle>
-            </DialogHeader>
-
+            <DialogHeader><DialogTitle>Find & Add Business</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              {/* Search by code */}
               <div>
                 <Label>Business Code</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input
-                    value={searchCode}
-                    onChange={e => setSearchCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. AB3XK9MN"
-                    className="font-mono tracking-widest text-center"
-                    maxLength={8}
-                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  />
-                  <Button onClick={handleSearch} disabled={searching} size="sm">
-                    <Search className="h-4 w-4" />
-                  </Button>
+                  <Input value={searchCode} onChange={e => setSearchCode(e.target.value.toUpperCase())} placeholder="e.g. AB3XK9MN" className="font-mono tracking-widest text-center" maxLength={8} onKeyDown={e => e.key === 'Enter' && handleSearch()} />
+                  <Button onClick={handleSearch} disabled={searching} size="sm"><Search className="h-4 w-4" /></Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Enter the 8-character code from another business's settings
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Enter the 8-character code from another business's settings</p>
               </div>
 
-              {/* Found business preview */}
               {foundBusiness && (
                 <Card className="border-primary/30 bg-primary/5">
                   <CardContent className="p-4 space-y-3">
@@ -272,44 +296,16 @@ export default function ContactsPage() {
                       )}
                       <div>
                         <p className="font-bold text-lg">{foundBusiness.name}</p>
-                        <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
-                          {foundBusiness.business_type === 'factory' ? 'Factory' : 'Business'}
-                        </span>
+                        <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{foundBusiness.business_type === 'factory' ? 'Factory' : 'Business'}</span>
                       </div>
                     </div>
-
-                    {foundBusiness.address && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-3.5 w-3.5" /> {foundBusiness.address}
-                      </div>
-                    )}
-                    {foundBusiness.contact && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Phone className="h-3.5 w-3.5" /> {foundBusiness.contact}
-                      </div>
-                    )}
-                    {foundBusiness.email && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Mail className="h-3.5 w-3.5" /> {foundBusiness.email}
-                      </div>
-                    )}
-
+                    {foundBusiness.address && <div className="flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="h-3.5 w-3.5" /> {foundBusiness.address}</div>}
+                    {foundBusiness.contact && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-3.5 w-3.5" /> {foundBusiness.contact}</div>}
+                    {foundBusiness.email && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="h-3.5 w-3.5" /> {foundBusiness.email}</div>}
                     <Separator />
-
-                    <div>
-                      <Label className="text-xs">Nickname (optional)</Label>
-                      <Input value={nickname} onChange={e => setNickname(e.target.value)}
-                        placeholder="e.g. My Supplier" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Notes (optional)</Label>
-                      <Input value={contactNotes} onChange={e => setContactNotes(e.target.value)}
-                        placeholder="e.g. Best prices on electronics" className="mt-1" />
-                    </div>
-
-                    <Button onClick={handleAddContact} className="w-full">
-                      <UserPlus className="h-4 w-4 mr-2" /> Save to Contacts
-                    </Button>
+                    <div><Label className="text-xs">Nickname (optional)</Label><Input value={nickname} onChange={e => setNickname(e.target.value)} placeholder="e.g. My Supplier" className="mt-1" /></div>
+                    <div><Label className="text-xs">Notes (optional)</Label><Input value={contactNotes} onChange={e => setContactNotes(e.target.value)} placeholder="e.g. Best prices on electronics" className="mt-1" /></div>
+                    <Button onClick={handleAddContact} className="w-full"><UserPlus className="h-4 w-4 mr-2" /> Save to Contacts</Button>
                   </CardContent>
                 </Card>
               )}
@@ -323,22 +319,27 @@ export default function ContactsPage() {
         <CardContent className="p-4 flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground font-medium">Your Business Code</p>
-            <p className="text-2xl font-mono font-bold tracking-[0.3em] text-primary">
-              {(currentBusiness as any)?.business_code || '—'}
-            </p>
+            <p className="text-2xl font-mono font-bold tracking-[0.3em] text-primary">{(currentBusiness as any)?.business_code || '—'}</p>
             <p className="text-xs text-muted-foreground mt-1">Share this code so others can find and connect with you</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => {
             const code = (currentBusiness as any)?.business_code;
-            if (code) {
-              navigator.clipboard.writeText(code);
-              toast.success('Code copied!');
-            }
-          }}>
-            Copy
-          </Button>
+            if (code) { navigator.clipboard.writeText(code); toast.success('Code copied!'); }
+          }}>Copy</Button>
         </CardContent>
       </Card>
+
+      {/* Sort toggle */}
+      {contacts.length > 1 && (
+        <div className="flex gap-2">
+          <Button size="sm" variant={sortBy === 'recent' ? 'default' : 'outline'} onClick={() => setSortBy('recent')}>
+            <Clock className="h-3.5 w-3.5 mr-1" /> Recent Activity
+          </Button>
+          <Button size="sm" variant={sortBy === 'name' ? 'default' : 'outline'} onClick={() => setSortBy('name')}>
+            <ArrowUpDown className="h-3.5 w-3.5 mr-1" /> Name
+          </Button>
+        </div>
+      )}
 
       {/* Contacts List */}
       {loading ? (
@@ -348,93 +349,105 @@ export default function ContactsPage() {
           <CardContent className="p-8 text-center">
             <Building2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
             <p className="font-medium text-muted-foreground">No contacts yet</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Add other businesses by entering their Business Code
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">Add other businesses by entering their Business Code</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {contacts.map(contact => (
-            <Card key={contact.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                {editingContact === contact.id ? (
-                  <div className="space-y-2">
-                    <Input value={editNickname} onChange={e => setEditNickname(e.target.value)} placeholder="Nickname" />
-                    <Input value={editNotes} onChange={e => setEditNotes(e.target.value)} placeholder="Notes" />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleUpdateContact(contact.id)}>Save</Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingContact(null)}>Cancel</Button>
+          {sortedContacts.map(contact => {
+            const interaction = getInteractionLabel(contact.lastInteraction);
+            return (
+              <Card key={contact.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  {editingContact === contact.id ? (
+                    <div className="space-y-2">
+                      <Input value={editNickname} onChange={e => setEditNickname(e.target.value)} placeholder="Nickname" />
+                      <Input value={editNotes} onChange={e => setEditNotes(e.target.value)} placeholder="Notes" />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleUpdateContact(contact.id)}>Save</Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingContact(null)}>Cancel</Button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        {contact.profile?.logo_url ? (
-                          <img src={contact.profile.logo_url} alt="" className="h-10 w-10 rounded-full object-cover border" />
-                        ) : (
-                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xl">
-                            {contact.profile?.business_type === 'factory' ? '🏭' : '🏪'}
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-semibold">
-                            {contact.nickname || contact.profile?.name || 'Unknown Business'}
-                          </p>
-                          {contact.nickname && contact.profile?.name && (
-                            <p className="text-xs text-muted-foreground">{contact.profile.name}</p>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          {contact.profile?.logo_url ? (
+                            <img src={contact.profile.logo_url} alt="" className="h-10 w-10 rounded-full object-cover border" />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xl">
+                              {contact.profile?.business_type === 'factory' ? '🏭' : '🏪'}
+                            </div>
                           )}
-                          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">
-                            {contact.profile?.business_type === 'factory' ? 'Factory' : 'Business'}
-                          </span>
+                          <div>
+                            <p className="font-semibold">{contact.nickname || contact.profile?.name || 'Unknown Business'}</p>
+                            {contact.nickname && contact.profile?.name && (
+                              <p className="text-xs text-muted-foreground">{contact.profile.name}</p>
+                            )}
+                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">
+                              {contact.profile?.business_type === 'factory' ? 'Factory' : 'Business'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (contact.profile) setViewProfile(contact.profile); }}>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingContact(contact.id); setEditNickname(contact.nickname); setEditNotes(contact.notes); }}>
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          {(userRole === 'owner' || userRole === 'admin') && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteContact(contact.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7"
-                          onClick={() => {
-                            if (contact.profile) setViewProfile(contact.profile);
-                          }}>
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7"
-                          onClick={() => {
-                            setEditingContact(contact.id);
-                            setEditNickname(contact.nickname);
-                            setEditNotes(contact.notes);
-                          }}>
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </Button>
-                        {(userRole === 'owner' || userRole === 'admin') && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"
-                            onClick={() => handleDeleteContact(contact.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
+
+                      {/* Interaction info */}
+                      <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          <span className={interaction.color}>{interaction.text}</span>
+                          {(contact.orderCount ?? 0) > 0 && (
+                            <span className="text-muted-foreground">· {contact.orderCount} order{(contact.orderCount ?? 0) !== 1 ? 's' : ''}</span>
+                          )}
+                        </div>
+                        {interaction.stale && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1"
+                            disabled={pokingId === contact.id}
+                            onClick={() => handlePoke(contact)}
+                          >
+                            <HandMetal className="h-3 w-3" />
+                            {pokingId === contact.id ? 'Sending...' : 'Poke 👋'}
                           </Button>
                         )}
                       </div>
-                    </div>
-                    {contact.notes && (
-                      <p className="text-xs text-muted-foreground mt-2 bg-muted/50 p-2 rounded">{contact.notes}</p>
-                    )}
-                    {contact.profile?.contact && (
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
-                        <Phone className="h-3 w-3" /> {contact.profile.contact}
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+
+                      {contact.notes && (
+                        <p className="text-xs text-muted-foreground mt-2 bg-muted/50 p-2 rounded">{contact.notes}</p>
+                      )}
+                      {contact.profile?.contact && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
+                          <Phone className="h-3 w-3" /> {contact.profile.contact}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
       {/* View Profile Dialog */}
       <Dialog open={!!viewProfile} onOpenChange={(open) => !open && setViewProfile(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Business Profile</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Business Profile</DialogTitle></DialogHeader>
           {viewProfile && (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -447,29 +460,13 @@ export default function ContactsPage() {
                 )}
                 <div>
                   <p className="text-xl font-bold">{viewProfile.name}</p>
-                  <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
-                    {viewProfile.business_type === 'factory' ? 'Factory' : 'Business'}
-                  </span>
+                  <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{viewProfile.business_type === 'factory' ? 'Factory' : 'Business'}</span>
                 </div>
               </div>
               <Separator />
-              {viewProfile.address && (
-                <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" /> {viewProfile.address}
-                </div>
-              )}
-              {viewProfile.contact && (
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <a href={`tel:${viewProfile.contact}`} className="text-primary underline">{viewProfile.contact}</a>
-                </div>
-              )}
-              {viewProfile.email && (
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <a href={`mailto:${viewProfile.email}`} className="text-primary underline">{viewProfile.email}</a>
-                </div>
-              )}
+              {viewProfile.address && <div className="flex items-center gap-3 text-sm"><MapPin className="h-4 w-4 text-muted-foreground" /> {viewProfile.address}</div>}
+              {viewProfile.contact && <div className="flex items-center gap-3 text-sm"><Phone className="h-4 w-4 text-muted-foreground" /><a href={`tel:${viewProfile.contact}`} className="text-primary underline">{viewProfile.contact}</a></div>}
+              {viewProfile.email && <div className="flex items-center gap-3 text-sm"><Mail className="h-4 w-4 text-muted-foreground" /><a href={`mailto:${viewProfile.email}`} className="text-primary underline">{viewProfile.email}</a></div>}
             </div>
           )}
         </DialogContent>

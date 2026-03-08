@@ -100,7 +100,13 @@ export default function Receipt({ items, grandTotal, buyerName, sellerName, cust
           </CardContent>
         </Card>
       </div>
-      <ReceiptActions receiptRef={receiptRef} fileName={fileName} />
+      <ReceiptActions
+        receiptRef={receiptRef}
+        fileName={fileName}
+        canShare={canShareReceipts}
+        canDownload={canDownloadReceipts}
+        canPrint={canPrintReceipts}
+      />
     </div>
   );
 }

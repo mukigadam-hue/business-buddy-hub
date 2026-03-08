@@ -126,7 +126,6 @@ function BusinessContent() {
   );
 }
 
-// App root
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>

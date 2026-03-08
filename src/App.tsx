@@ -113,7 +113,7 @@ function BusinessContent() {
           <Route path="/purchases" element={<PurchasesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           
-          <Route path="/payments" element={<PaymentVerificationPage />} />
+          
           <Route path="/contacts" element={<ContactsPage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/expenses" element={<BusinessExpenses />} />

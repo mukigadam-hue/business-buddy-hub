@@ -608,7 +608,7 @@ export default function SettingsPage() {
                 const role = getRoleForBusiness(b.id);
                 const isFact = (b as any).business_type === 'factory';
                 return (
-                  <button key={b.id} onClick={() => { setCurrentBusinessId(b.id); if (isFact !== ((currentBusiness as any)?.business_type === 'factory')) window.location.href = '/'; else window.location.href = '/'; }}
+                  <button key={b.id} onClick={() => { setCurrentBusinessId(b.id); window.location.href = '/'; }}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isActive ? 'bg-orange-500/10 border-2 border-orange-500' : 'bg-muted/30 border-2 border-transparent hover:border-orange-500/20'}`}>
                     <span className="text-xl">{isFact ? '🏭' : '🏪'}</span>
                     <div className="flex-1 min-w-0">

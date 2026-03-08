@@ -910,13 +910,13 @@ export default function OrdersPage() {
           {liveOrders.length === 0 ? <p className="text-sm text-muted-foreground">No live orders yet.</p> : liveOrders.map(o => <OrderCard key={o.id} order={o} />)}
         </TabsContent>
         <TabsContent value="inbox" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-2">Received orders awaiting price tagging. Auto-fill from stock, adjust if needed, then send back.</p>
+          <p className="text-xs text-muted-foreground mb-2">Orders received from other businesses. Tag prices → buyer confirms → buyer pays → you confirm payment → issue receipt.</p>
           <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
             {inboxOrders.length === 0 ? <p className="text-sm text-muted-foreground">No inbox orders.</p> : inboxOrders.map(o => <OrderCard key={o.id} order={o} showStockStatus />)}
           </div>
         </TabsContent>
         <TabsContent value="my_requests" className="space-y-3 mt-4 max-h-[500px] overflow-y-auto pr-1">
-          <p className="text-xs text-muted-foreground mb-2">Orders sent without prices. Once priced by supplier, confirm or modify based on your budget.</p>
+          <p className="text-xs text-muted-foreground mb-2">Orders you sent. Supplier prices → you confirm/reject → you pay → supplier confirms → receipt issued.</p>
           {myRequests.length === 0 ? <p className="text-sm text-muted-foreground">No requests sent yet.</p> : myRequests.map(o => <OrderCard key={o.id} order={o} />)}
         </TabsContent>
       </Tabs>

@@ -307,7 +307,13 @@ export default function TeamPage() {
           </p>
         </div>
         {isOwnerOrAdmin && (
-          <Button onClick={() => { resetWorkerForm(); setShowAddWorker(true); }}>
+          <Button onClick={() => {
+            if (activeWorkers.length >= maxWorkers) {
+              toast.info(`Free plan allows up to ${maxWorkers} workers. Upgrade to Premium ($52/month) for unlimited.`);
+              return;
+            }
+            resetWorkerForm(); setShowAddWorker(true);
+          }}>
             <Plus className="h-4 w-4 mr-1" />Add Worker
           </Button>
         )}

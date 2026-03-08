@@ -201,24 +201,20 @@ export default function StockPage() {
         <Input placeholder="Search items by name, category, quality..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      {/* Photo Gallery */}
+      {/* Photo Gallery - Horizontal Scroll */}
       {itemsWithPhotos.length > 0 && (
         <Card className="shadow-card">
-          <CardContent className="p-4">
-            <h2 className="text-base font-semibold mb-3 flex items-center gap-2"><Image className="h-4 w-4 text-primary" /> Item Photos ({itemsWithPhotos.length})</h2>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+          <CardContent className="p-3">
+            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2"><Image className="h-4 w-4 text-primary" /> Item Photos ({itemsWithPhotos.length})</h2>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
               {itemsWithPhotos.map(item => {
                 const thumb = item.image_url_1 || item.image_url_2 || item.image_url_3;
                 return (
-                  <button key={item.id} onClick={() => setViewGalleryItem(item)} className="group text-left space-y-1">
-                    <div className="aspect-square rounded-lg overflow-hidden bg-muted border-2 border-transparent group-hover:border-primary transition-colors">
+                  <button key={item.id} onClick={() => setViewGalleryItem(item)} className="group shrink-0 w-20 text-left">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted border-2 border-transparent group-hover:border-primary transition-colors">
                       <img src={thumb!} alt={item.name} className="w-full h-full object-cover" />
                     </div>
-                    <p className="text-xs font-medium truncate">{item.name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">
-                      {[item.category, item.quality].filter(Boolean).join(' · ')}
-                    </p>
-                    <p className="text-[10px] font-semibold">Qty: {item.quantity}</p>
+                    <p className="text-xs font-semibold truncate mt-1">{item.name}</p>
                   </button>
                 );
               })}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, MapPin, Phone, Mail, Building2, Factory, Store, Copy, Check } from 'lucide-react';
+import { Search, MapPin, Phone, Building2, Factory, Store, Copy, Check, Globe } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import BusinessDetailDialog from '@/components/BusinessDetailDialog';
 import AdSpace from '@/components/AdSpace';
+import { useBusiness } from '@/context/BusinessContext';
+import { getCountryFlag, getCountryByCode } from '@/lib/countries';
 
 interface DiscoveredBusiness {
   id: string;
@@ -19,15 +21,20 @@ interface DiscoveredBusiness {
   logo_url: string | null;
   business_code: string | null;
   products_description: string;
+  country_code: string;
 }
 
 export default function DiscoverPage() {
+  const { currentBusiness } = useBusiness();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<DiscoveredBusiness[]>([]);
   const [loading, setLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedBiz, setSelectedBiz] = useState<DiscoveredBusiness | null>(null);
+  const [filterCountry, setFilterCountry] = useState(true); // default: show nearby first
+
+  const myCountry = (currentBusiness as any)?.country_code || '';
 
   const searchBusinesses = useCallback(async (searchQuery: string) => {
     setLoading(true);
@@ -36,6 +43,7 @@ export default function DiscoverPage() {
         _query: searchQuery,
         _limit: 30,
         _offset: 0,
+        _country_code: filterCountry ? myCountry : '',
       });
       if (error) throw error;
       setResults((data as DiscoveredBusiness[]) || []);
@@ -46,14 +54,12 @@ export default function DiscoverPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterCountry, myCountry]);
 
-  // Load all on mount
   useEffect(() => {
     searchBusinesses('');
   }, [searchBusinesses]);
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       searchBusinesses(query.trim());
@@ -67,6 +73,8 @@ export default function DiscoverPage() {
     toast.success('Business code copied!');
     setTimeout(() => setCopiedCode(null), 2000);
   }
+
+  const myCountryData = getCountryByCode(myCountry);
 
   return (
     <div className="space-y-4">
@@ -88,6 +96,28 @@ export default function DiscoverPage() {
         />
       </div>
 
+      {/* Country filter toggle */}
+      {myCountry && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant={filterCountry ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs gap-1.5"
+            onClick={() => setFilterCountry(true)}
+          >
+            {myCountryData?.flag} Near me ({myCountryData?.name})
+          </Button>
+          <Button
+            variant={!filterCountry ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs gap-1.5"
+            onClick={() => setFilterCountry(false)}
+          >
+            <Globe className="h-3 w-3" /> All countries
+          </Button>
+        </div>
+      )}
+
       <AdSpace variant="compact" />
 
       {/* Results */}
@@ -97,7 +127,7 @@ export default function DiscoverPage() {
         <div className="text-center py-12">
           <Building2 className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
           <p className="text-muted-foreground">No businesses found for "{query}"</p>
-          <p className="text-xs text-muted-foreground mt-1">Try different keywords like product names or locations</p>
+          <p className="text-xs text-muted-foreground mt-1">Try different keywords or switch to "All countries"</p>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -115,13 +145,20 @@ export default function DiscoverPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-sm truncate">{biz.name}</h3>
-                    <Badge variant="secondary" className="text-[10px] mt-0.5">
-                      {biz.business_type === 'factory' ? (
-                        <><Factory className="h-3 w-3 mr-1" />Factory</>
-                      ) : (
-                        <><Store className="h-3 w-3 mr-1" />Business</>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <Badge variant="secondary" className="text-[10px]">
+                        {biz.business_type === 'factory' ? (
+                          <><Factory className="h-3 w-3 mr-1" />Factory</>
+                        ) : (
+                          <><Store className="h-3 w-3 mr-1" />Business</>
+                        )}
+                      </Badge>
+                      {biz.country_code && (
+                        <span className="text-sm" title={getCountryByCode(biz.country_code)?.name}>
+                          {getCountryFlag(biz.country_code)}
+                        </span>
                       )}
-                    </Badge>
+                    </div>
                   </div>
                 </div>
 

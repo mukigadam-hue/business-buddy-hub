@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine, Search, Building2 } from 'lucide-react';
+import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine, Search, Building2, Package, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
@@ -23,7 +23,7 @@ function toSentenceCase(str: string): string {
 }
 
 export default function OrdersPage() {
-  const { stock, orders, addOrder, updateOrder, completeOrderToSale, saveReceipt, currentBusiness } = useBusiness();
+  const { stock, orders, addOrder, updateOrder, completeOrderToSale, saveReceipt, currentBusiness, addStockItem, addExpense } = useBusiness();
   const { fmt } = useCurrency();
   const [tab, setTab] = useState('live_orders');
   const [customerName, setCustomerName] = useState('');
@@ -54,6 +54,17 @@ export default function OrdersPage() {
   const [recipientCode, setRecipientCode] = useState('');
   const [recipientLookup, setRecipientLookup] = useState<{ id: string; name: string } | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
+
+  // Allocation dialog state
+  const [allocateOrder, setAllocateOrder] = useState<Order | null>(null);
+  const [allocations, setAllocations] = useState<Record<number, 'stock' | 'expense'>>({});
+  const [expenseCategory, setExpenseCategory] = useState<Record<number, string>>({});
+  const [allocating, setAllocating] = useState(false);
+  const isFactory = currentBusiness?.business_type === 'factory';
+
+  const EXPENSE_CATEGORIES = isFactory
+    ? ['Electricity', 'Water', 'Gas', 'Machinery Repair', 'Building Repair', 'Lubricants', 'Cleaning Supplies', 'Safety Gear', 'Factory Rent', 'Transport Costs', 'Insurance', 'Other']
+    : ['Rent', 'Electricity', 'Water', 'Internet', 'Cleaning Equipment', 'Food for Workers', 'Transport', 'Repairs & Maintenance', 'Office Supplies', 'Security', 'Other'];
 
   const liveOrders = orders.filter(o => o.type === 'my_order');
   const inboxOrders = orders.filter(o => o.type === 'inbox');
@@ -411,8 +422,21 @@ export default function OrdersPage() {
             </>
           )}
           {(order.status === 'completed' || order.transferred_to_sale) && (
-            <Button size="sm" variant="ghost" onClick={() => setReceiptOrder(order)}>
-              <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
+            <>
+              <Button size="sm" variant="ghost" onClick={() => setReceiptOrder(order)}>
+                <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
+              </Button>
+              {order.type === 'inbox' && (
+                <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
+                  <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
+                </Button>
+              )}
+            </>
+          )}
+          {/* Allocate for confirmed but not yet completed inbox orders too */}
+          {order.type === 'inbox' && (order.status === 'priced' || order.status === 'confirmed') && !order.transferred_to_sale && (
+            <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
+              <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
             </Button>
           )}
         </div>
@@ -427,6 +451,98 @@ export default function OrdersPage() {
       toast.success(`Found: ${match.name}`);
     } else {
       toast.error(`No stock item found for barcode: ${code}`);
+    }
+  }
+  function openAllocateDialog(order: Order) {
+    setAllocateOrder(order);
+    const defaultAllocations: Record<number, 'stock' | 'expense'> = {};
+    const defaultCategories: Record<number, string> = {};
+    order.items.forEach((_, i) => {
+      defaultAllocations[i] = 'stock';
+      defaultCategories[i] = 'Other';
+    });
+    setAllocations(defaultAllocations);
+    setExpenseCategory(defaultCategories);
+  }
+
+  async function handleAllocateItems() {
+    if (!allocateOrder || !currentBusiness) return;
+    setAllocating(true);
+    try {
+      for (let i = 0; i < allocateOrder.items.length; i++) {
+        const item = allocateOrder.items[i];
+        const target = allocations[i] || 'stock';
+
+        if (target === 'stock') {
+          // Add to stock (business stock or factory input stock)
+          if (isFactory) {
+            await supabase.from('factory_raw_materials').insert({
+              business_id: currentBusiness.id,
+              name: item.item_name,
+              category: item.category || '',
+              unit_type: 'Pieces',
+              quantity: item.quantity,
+              unit_cost: Number(item.unit_price),
+              min_stock_level: 5,
+              supplier: allocateOrder.customer_name,
+            });
+          } else {
+            // Check if item already exists in stock
+            const existing = activeStock.find(s =>
+              s.name.toLowerCase() === item.item_name.toLowerCase() &&
+              s.category.toLowerCase() === (item.category || '').toLowerCase() &&
+              s.quality.toLowerCase() === (item.quality || '').toLowerCase()
+            );
+            if (existing) {
+              await supabase.from('stock_items').update({
+                quantity: existing.quantity + item.quantity,
+                buying_price: Number(item.unit_price),
+              }).eq('id', existing.id);
+            } else {
+              await supabase.from('stock_items').insert({
+                business_id: currentBusiness.id,
+                name: item.item_name,
+                category: item.category || '',
+                quality: item.quality || '',
+                buying_price: Number(item.unit_price),
+                wholesale_price: Number(item.unit_price),
+                retail_price: Number(item.unit_price),
+                quantity: item.quantity,
+                min_stock_level: 5,
+              });
+            }
+          }
+        } else {
+          // Record as expense
+          const cat = expenseCategory[i] || 'Other';
+          if (isFactory) {
+            await supabase.from('factory_expenses').insert({
+              business_id: currentBusiness.id,
+              category: cat,
+              description: `${item.item_name} × ${item.quantity} from order ${allocateOrder.code}`,
+              amount: Number(item.subtotal),
+              recorded_by: allocateOrder.customer_name || 'Order',
+              expense_date: new Date().toISOString().slice(0, 10),
+              from_order_id: allocateOrder.id,
+            });
+          } else {
+            await addExpense({
+              category: cat,
+              description: `${item.item_name} × ${item.quantity} from order ${allocateOrder.code}`,
+              amount: Number(item.subtotal),
+              recorded_by: allocateOrder.customer_name || 'Order',
+              expense_date: new Date().toISOString().slice(0, 10),
+              from_order_id: allocateOrder.id,
+            });
+          }
+        }
+      }
+      toast.success('Items allocated successfully!');
+      setAllocateOrder(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Allocation failed');
+    } finally {
+      setAllocating(false);
     }
   }
 
@@ -866,6 +982,69 @@ export default function OrdersPage() {
               type="order"
               businessInfo={currentBusiness ? { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email } : undefined}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Allocate Items Dialog */}
+      <Dialog open={!!allocateOrder} onOpenChange={o => { if (!o) setAllocateOrder(null); }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Allocate Order Items — {allocateOrder?.code}</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            Choose where each item goes: <strong>{isFactory ? 'Input Stock' : 'Stock'}</strong> or <strong>Expenses</strong>.
+          </p>
+          {allocateOrder && (
+            <div className="space-y-3">
+              {allocateOrder.items.map((item, i) => (
+                <div key={i} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-sm">{item.item_name} × {item.quantity}</p>
+                      <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')} — {fmt(Number(item.subtotal))}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setAllocations(prev => ({ ...prev, [i]: 'stock' }))}
+                      className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-lg border-2 text-xs font-medium transition-all ${
+                        allocations[i] === 'stock' ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-muted-foreground/30'
+                      }`}
+                    >
+                      <Package className="h-3.5 w-3.5" />
+                      {isFactory ? 'Input Stock' : 'Stock'}
+                    </button>
+                    <button
+                      onClick={() => setAllocations(prev => ({ ...prev, [i]: 'expense' }))}
+                      className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-lg border-2 text-xs font-medium transition-all ${
+                        allocations[i] === 'expense' ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border hover:border-muted-foreground/30'
+                      }`}
+                    >
+                      <Flame className="h-3.5 w-3.5" />
+                      Expense
+                    </button>
+                  </div>
+                  {allocations[i] === 'expense' && (
+                    <Select value={expenseCategory[i] || 'Other'} onValueChange={v => setExpenseCategory(prev => ({ ...prev, [i]: v }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Expense category..." /></SelectTrigger>
+                      <SelectContent>
+                        {EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              ))}
+
+              <div className="border-t pt-3 space-y-1.5">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>→ {isFactory ? 'Input Stock' : 'Stock'}: {Object.values(allocations).filter(v => v === 'stock').length} items</span>
+                  <span>→ Expenses: {Object.values(allocations).filter(v => v === 'expense').length} items</span>
+                </div>
+              </div>
+
+              <Button onClick={handleAllocateItems} className="w-full" disabled={allocating}>
+                {allocating ? 'Allocating...' : <><CheckCircle className="h-4 w-4 mr-2" />Confirm Allocation</>}
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>

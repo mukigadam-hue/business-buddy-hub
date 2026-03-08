@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { countries, getCountryByCode } from '@/lib/countries';
-import { useBusiness } from '@/context/BusinessContext';
-import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

@@ -73,7 +73,7 @@ export default function PurchasesPage() {
         subtotal: item.quantity * item.unit_price,
       })),
       grandTotal, supplier.trim() || 'Unknown',
-      toSentenceCase(recordedBy.trim()) || 'Staff',
+      toTitleCase(recordedBy.trim()) || 'Staff',
       paymentStatus, paidAmt
     );
     setItems([]);

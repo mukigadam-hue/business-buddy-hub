@@ -69,7 +69,7 @@ export default function FactoryPurchases() {
         quantity: item.quantity, unit_price: item.unit_price,
         subtotal: item.quantity * item.unit_price,
       })),
-      grandTotal, supplier.trim() || 'Unknown', toSentenceCase(recordedBy.trim()) || 'Staff'
+      grandTotal, supplier.trim() || 'Unknown', toTitleCase(recordedBy.trim()) || 'Staff'
     );
 
     for (const item of items) {

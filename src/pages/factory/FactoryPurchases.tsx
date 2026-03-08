@@ -7,9 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, ShoppingCart } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Plus, Trash2, ShoppingCart, ScanLine } from 'lucide-react';
 import { useBusiness } from '@/context/BusinessContext';
+import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
@@ -17,7 +17,7 @@ const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls'
 
 export default function FactoryPurchases() {
   const { rawMaterials, addRawMaterial, updateRawMaterial, refreshFactory } = useFactory();
-  const { purchases, addPurchase } = useBusiness();
+  const { purchases, addPurchase, stock } = useBusiness();
   const { fmt } = useCurrency();
 
   const [items, setItems] = useState<{
@@ -27,8 +27,10 @@ export default function FactoryPurchases() {
   const [supplier, setSupplier] = useState('');
   const [recordedBy, setRecordedBy] = useState('');
   const [form, setForm] = useState({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '' });
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const activeRM = rawMaterials.filter(r => !r.deleted_at);
+  const activeStock = stock.filter(s => !s.deleted_at);
   const suggestions = activeRM.map(r => r.name);
 
   function addItem() {
@@ -46,10 +48,20 @@ export default function FactoryPurchases() {
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
   const grandTotal = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
 
+  function handleBarcodeScan(code: string) {
+    // Try matching against stock items with barcodes
+    const match = activeStock.find(s => s.barcode && s.barcode === code);
+    if (match) {
+      setForm(f => ({ ...f, name: match.name, category: match.category }));
+      toast.success(`Found: ${match.name}`);
+    } else {
+      toast.error(`No item found for barcode: ${code}`);
+    }
+  }
+
   async function handleSave() {
     if (items.length === 0) return;
 
-    // Record purchase using the business context
     await addPurchase(
       items.map(item => ({
         item_name: item.item_name, category: item.category, quality: item.unit_type,
@@ -59,7 +71,6 @@ export default function FactoryPurchases() {
       grandTotal, supplier.trim() || 'Unknown', toSentenceCase(recordedBy.trim()) || 'Staff'
     );
 
-    // Also update or create raw materials
     for (const item of items) {
       const existing = activeRM.find(r =>
         r.name.toLowerCase() === item.item_name.toLowerCase() &&
@@ -91,6 +102,7 @@ export default function FactoryPurchases() {
 
   return (
     <div className="space-y-6">
+      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
       <h1 className="text-2xl font-bold flex items-center gap-2"><ShoppingCart className="h-6 w-6" /> Purchases</h1>
 
       <Card className="shadow-card">
@@ -104,7 +116,12 @@ export default function FactoryPurchases() {
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[150px]">
               <Label>Material Name</Label>
-              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} list="rm-suggestions" placeholder="Type or select..." />
+              <div className="flex gap-1.5">
+                <Input className="flex-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} list="rm-suggestions" placeholder="Type or select..." />
+                <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
+                  <ScanLine className="h-4 w-4" />
+                </Button>
+              </div>
               <datalist id="rm-suggestions">{suggestions.map(s => <option key={s} value={s} />)}</datalist>
             </div>
             <div className="w-28">

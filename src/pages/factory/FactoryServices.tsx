@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Trash2, Wrench, Receipt as ReceiptIcon, Package } from 'lucide-react';
+import { Plus, Trash2, Wrench, Receipt as ReceiptIcon, Package, ScanLine } from 'lucide-react';
 import Receipt from '@/components/Receipt';
+import BarcodeScanner from '@/components/BarcodeScanner';
+import { toast } from 'sonner';
 import type { ServiceRecord } from '@/context/BusinessContext';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
@@ -24,6 +26,7 @@ export default function FactoryServices() {
   const { fmt } = useCurrency();
   const [form, setForm] = useState({ service_name: '', description: '', cost: '', customer_name: '', seller_name: '' });
   const [receiptService, setReceiptService] = useState<ServiceRecord | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const [itemsUsed, setItemsUsed] = useState<{ stock_item_id: string; item_name: string; category: string; quality: string; quantity: number; unit_price: number; subtotal: number }[]>([]);
   const [selectedStock, setSelectedStock] = useState('');
@@ -42,6 +45,12 @@ export default function FactoryServices() {
       subtotal: qty * Number(stockItem.retail_price),
     }]);
     setSelectedStock(''); setItemQty('1');
+  }
+
+  function handleBarcodeScan(code: string) {
+    const match = activeStock.find(s => s.barcode && s.barcode === code);
+    if (match) { setSelectedStock(match.id); toast.success(`Found: ${match.name}`); }
+    else { toast.error(`No item found for barcode: ${code}`); }
   }
 
   const itemsTotal = itemsUsed.reduce((sum, i) => sum + i.subtotal, 0);
@@ -79,6 +88,7 @@ export default function FactoryServices() {
 
   return (
     <div className="space-y-6">
+      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
       <h1 className="text-2xl font-bold flex items-center gap-2"><Wrench className="h-6 w-6" /> Factory Services</h1>
 
       <Card className="shadow-card">
@@ -106,10 +116,15 @@ export default function FactoryServices() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Package className="h-3.5 w-3.5" /> Parts/Materials Used</p>
               <div className="flex flex-wrap gap-2 items-end">
                 <div className="flex-1 min-w-[180px]">
-                  <Select value={selectedStock} onValueChange={setSelectedStock}>
-                    <SelectTrigger><SelectValue placeholder="Choose part..." /></SelectTrigger>
-                    <SelectContent>{activeStock.map(s => <SelectItem key={s.id} value={s.id}>{s.name} (qty: {s.quantity})</SelectItem>)}</SelectContent>
-                  </Select>
+                  <div className="flex gap-1.5">
+                    <Select value={selectedStock} onValueChange={setSelectedStock}>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Choose part..." /></SelectTrigger>
+                      <SelectContent>{activeStock.map(s => <SelectItem key={s.id} value={s.id}>{s.name}{s.category ? ` · ${s.category}` : ''} (qty: {s.quantity})</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Button type="button" variant="outline" size="icon" className="shrink-0 h-9 w-9" onClick={() => setScannerOpen(true)} title="Scan barcode">
+                      <ScanLine className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="w-16"><Input type="number" min="1" value={itemQty} onChange={e => setItemQty(e.target.value)} /></div>
                 <Button type="button" size="sm" variant="outline" onClick={addUsedItem} disabled={!selectedStock}><Plus className="h-3.5 w-3.5" /></Button>

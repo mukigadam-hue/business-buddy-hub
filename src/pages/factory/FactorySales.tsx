@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, TrendingUp, Receipt as ReceiptIcon } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, Receipt as ReceiptIcon, ScanLine } from 'lucide-react';
 import Receipt from '@/components/Receipt';
+import BarcodeScanner from '@/components/BarcodeScanner';
+import { toast } from 'sonner';
 import type { Sale } from '@/context/BusinessContext';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
@@ -30,6 +32,7 @@ export default function FactorySales() {
   const [qty, setQty] = useState('1');
   const [priceType, setPriceType] = useState('retail');
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const todaySales = sales.filter(s => new Date(s.created_at).toDateString() === new Date().toDateString());
@@ -50,6 +53,12 @@ export default function FactorySales() {
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
   const grandTotal = items.reduce((sum, i) => sum + i.subtotal, 0);
+
+  function handleBarcodeScan(code: string) {
+    const match = activeProducts.find(s => s.barcode && s.barcode === code && s.quantity > 0);
+    if (match) { setSelectedProduct(match.id); toast.success(`Found: ${match.name}`); }
+    else { toast.error(`No product found for barcode: ${code}`); }
+  }
 
   async function handleSave() {
     if (!items.length || !customerName.trim() || !sellerName.trim()) return;
@@ -73,6 +82,7 @@ export default function FactorySales() {
 
   return (
     <div className="space-y-6">
+      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
       <h1 className="text-2xl font-bold flex items-center gap-2"><TrendingUp className="h-6 w-6" /> Sales</h1>
 
       <Card className="shadow-card">
@@ -92,16 +102,21 @@ export default function FactorySales() {
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[180px]">
               <Label>Product</Label>
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                <SelectTrigger><SelectValue placeholder="Choose product..." /></SelectTrigger>
-                <SelectContent>
-                  {activeProducts.filter(p => p.quantity > 0).map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}{p.category ? ` · ${p.category}` : ''}{p.quality ? ` · ${p.quality}` : ''} (qty: {p.quantity})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-1.5">
+                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Choose product..." /></SelectTrigger>
+                  <SelectContent>
+                    {activeProducts.filter(p => p.quantity > 0).map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}{p.category ? ` · ${p.category}` : ''}{p.quality ? ` · ${p.quality}` : ''} (qty: {p.quantity})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
+                  <ScanLine className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="w-20"><Label>Qty</Label><Input type="number" min="1" value={qty} onChange={e => setQty(e.target.value)} /></div>
             <div className="w-28">

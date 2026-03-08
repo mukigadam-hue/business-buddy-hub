@@ -189,6 +189,7 @@ export default function FactoryProductStock() {
               <div><Label>Wholesale</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} /></div>
               <div><Label>Retail</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} /></div>
             </div>
+            <div><Label>Barcode (Optional)</Label><Input value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Scan or type barcode..." /></div>
             <div className="space-y-2">
               <Label>Product Images (up to 3)</Label>
               <div className="grid grid-cols-3 gap-2">

@@ -1004,7 +1004,7 @@ export default function OrdersPage() {
             <div className="flex justify-between font-bold pt-2 border-t">
               <span>Total</span><span className="text-success tabular-nums">{fmt(pricingItems.reduce((s, i) => s + Number(i.subtotal), 0))}</span>
             </div>
-            <Button onClick={savePricing} className="w-full">Confirm Prices & Send Back</Button>
+            <Button onClick={savePricing} className="w-full" disabled={syncing}>{syncing ? 'Sending prices...' : 'Confirm Prices & Send to Buyer'}</Button>
           </div>
         </DialogContent>
       </Dialog>

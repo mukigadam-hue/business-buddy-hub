@@ -144,7 +144,7 @@ export default function TeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [workerCode, setWorkerCode] = useState<string | null>(null);
-  const [customerCode, setCustomerCode] = useState<string | null>(null);
+  
   const [loading, setLoading] = useState(false);
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 

@@ -150,6 +150,7 @@ export default function TeamPage() {
   const { currentBusiness, userRole, generateInviteCode, getMembers, removeMember, updateMemberRole, memberships } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
+  const { maxWorkers } = usePremium();
   const [members, setMembers] = useState<Member[]>([]);
   const [workerCode, setWorkerCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

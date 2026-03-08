@@ -1163,26 +1163,32 @@ export default function OrdersPage() {
                               <span className="font-semibold text-sm">👤 {order.customer_name}</span>
                               <span className={`text-xs px-2 py-0.5 rounded-full ${
                                 order.status === 'paid' ? 'bg-success/10 text-success' :
+                                order.status === 'payment_submitted' ? 'bg-info/10 text-info' :
                                 order.status === 'cancelled' ? 'bg-destructive/10 text-destructive' :
                                 'bg-warning/10 text-warning'
-                              }`}>{order.status}</span>
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                {order.payment_method === 'mobile_money' ? <Smartphone className="h-3 w-3" /> : <CreditCard className="h-3 w-3" />}
-                                {order.payment_method === 'mobile_money' ? 'M-Money' : 'Card'}
+                              }`}>{order.status === 'payment_submitted' ? 'awaiting verification' : order.status}</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full bg-muted`}>
+                                {order.type === 'checkout' ? '🛒 Checkout' : order.type === 'request' ? '📨 Supplier' : order.type === 'inbox' ? '📥 Customer' : '📋 Order'}
                               </span>
+                              {order.payment_method && order.payment_method !== 'pending' && (
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                  {order.payment_method === 'mobile_money' ? <Smartphone className="h-3 w-3" /> : <CreditCard className="h-3 w-3" />}
+                                  {order.payment_method === 'mobile_money' ? 'M-Money' : order.payment_method === 'card' ? 'Card/Cash' : order.payment_method}
+                                </span>
+                              )}
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">
                               Code: <span className="font-mono">{order.code}</span> · {new Date(order.created_at).toLocaleString()}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-success tabular-nums">{fmt(Number(order.grand_total))}</span>
                             {order.proof_url && (
                               <Button size="sm" variant="outline" onClick={() => setViewingProof(order.proof_url)}>
                                 <Eye className="h-3.5 w-3.5 mr-1" /> Proof
                               </Button>
                             )}
-                            {order.status === 'pending' && (
+                            {(order.status === 'pending' || order.status === 'payment_submitted') && (
                               <>
                                 <Button size="sm" onClick={() => updateCheckoutStatus(order.id, 'paid')} className="bg-success hover:bg-success/90 text-success-foreground">
                                   <CheckCircle className="h-3.5 w-3.5 mr-1" /> Verify

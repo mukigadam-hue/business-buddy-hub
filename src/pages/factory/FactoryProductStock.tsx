@@ -201,7 +201,7 @@ export default function FactoryProductStock() {
                     currentUrl={form[`image_url_${n}` as keyof typeof form] as string}
                     onUploaded={url => setForm(f => ({ ...f, [`image_url_${n}`]: url }))}
                     onRemoved={() => setForm(f => ({ ...f, [`image_url_${n}`]: '' }))}
-                    size="sm" label={`Photo ${n}`} />
+                    size="sm" label={`Photo ${n}`} premiumOnly />
                 ))}
               </div>
             </div>

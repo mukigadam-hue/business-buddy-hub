@@ -181,7 +181,7 @@ export default function FactorySales() {
           <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
             <div>
               <Label className="text-xs font-semibold text-destructive">Customer (Buyer) *</Label>
-              <Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toSentenceCase(customerName))} placeholder="Customer name" required />
+              <Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toTitleCase(customerName))} placeholder="Customer name" required />
             </div>
             <div>
               <Label className="text-xs font-semibold text-destructive">Seller *</Label>

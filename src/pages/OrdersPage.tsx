@@ -1032,7 +1032,7 @@ export default function OrdersPage() {
               </div>
             )}
 
-            <div><Label>Your Name / Customer Name</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toSentenceCase(customerName))} placeholder="Name..." /></div>
+            <div><Label>Your Name / Customer Name</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toTitleCase(customerName))} placeholder="Name..." /></div>
 
             {orderMode === 'request' && (
               <div>

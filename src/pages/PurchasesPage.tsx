@@ -150,7 +150,7 @@ export default function PurchasesPage() {
             </div>
             <div>
               <Label>Recorded By</Label>
-              <Input value={recordedBy} onChange={e => setRecordedBy(e.target.value)} onBlur={() => setRecordedBy(toSentenceCase(recordedBy))} placeholder="Your name" />
+              <Input value={recordedBy} onChange={e => setRecordedBy(e.target.value)} onBlur={() => setRecordedBy(toTitleCase(recordedBy))} placeholder="Your name" />
             </div>
           </div>
 

@@ -17,7 +17,7 @@ import type { Sale } from '@/context/BusinessContext';
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 
 export default function FactorySales() {
-  const { stock, sales, addSale, saveReceipt, currentBusiness } = useBusiness();
+  const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment } = useBusiness();
   const { fmt } = useCurrency();
 
   const activeProducts = stock.filter(s => !s.deleted_at);

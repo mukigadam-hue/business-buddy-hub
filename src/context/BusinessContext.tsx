@@ -1010,7 +1010,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       setCurrentBusinessId, createBusiness, updateBusiness,
       addStockItem, updateStockItem, deleteStockItem, restoreStockItem, permanentDeleteStockItem,
       addSale, addPurchase, addOrder, updateOrder, completeOrderToSale,
-      addService, saveReceipt, getReceipts,
+      addService, updateServicePayment, saveReceipt, getReceipts,
       addExpense, deleteExpense,
       updateSalePayment, updatePurchasePayment,
       markNotificationRead, markAllNotificationsRead,

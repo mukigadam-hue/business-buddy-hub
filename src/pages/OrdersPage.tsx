@@ -721,18 +721,22 @@ export default function OrdersPage() {
       <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
       <h1 className="text-2xl font-bold">Orders</h1>
 
-      {/* Tab selector at top */}
+      {/* Create new order */}
       <div className="flex gap-2 flex-wrap">
-        {(['my_order', 'request'] as const).map(mode => (
-          <Button
-            key={mode}
-            size="sm"
-            variant={orderMode === mode ? 'default' : 'outline'}
-            onClick={() => { setOrderMode(mode); setItems([]); setCustomerName(''); }}
-          >
-            {mode === 'my_order' ? '📋 New Order (Walk-in)' : '📨 Order from Supplier'}
-          </Button>
-        ))}
+        <Button
+          size="sm"
+          variant={orderMode === 'my_order' ? 'default' : 'outline'}
+          onClick={() => { setOrderMode('my_order'); setItems([]); setCustomerName(''); }}
+        >
+          📋 New Order (Walk-in / Inbox)
+        </Button>
+        <Button
+          size="sm"
+          variant={orderMode === 'request' ? 'default' : 'outline'}
+          onClick={() => { setOrderMode('request'); setItems([]); setCustomerName(''); }}
+        >
+          📨 Request from Supplier
+        </Button>
       </div>
 
       {/* Input section — only for my_order and request. Inbox only shows list */}

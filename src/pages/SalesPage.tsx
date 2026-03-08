@@ -20,7 +20,7 @@ function toSentenceCase(str: string): string {
 }
 
 export default function SalesPage() {
-  const { stock, sales, addSale, saveReceipt, currentBusiness } = useBusiness();
+  const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment } = useBusiness();
   const { fmt } = useCurrency();
 
   const [items, setItems] = useState<{

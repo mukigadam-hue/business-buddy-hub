@@ -88,6 +88,8 @@ export default function DiscoverPage() {
         />
       </div>
 
+      <AdSpace variant="compact" />
+
       {/* Results */}
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Searching...</div>

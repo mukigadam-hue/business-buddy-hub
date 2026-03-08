@@ -256,6 +256,8 @@ export default function CheckoutPage() {
         </CardContent>
       </Card>
 
+      <AdSpace variant="compact" />
+
       {/* Payment Method */}
       {items.length > 0 && (
         <Card className="shadow-card">

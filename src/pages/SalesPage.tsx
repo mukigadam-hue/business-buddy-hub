@@ -264,7 +264,7 @@ export default function SalesPage() {
             </div>
             <div>
               <Label className="text-xs font-semibold text-destructive">Seller Name *</Label>
-              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toSentenceCase(sellerName))} placeholder="Your name (required)" />
+              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toTitleCase(sellerName))} placeholder="Your name (required)" />
             </div>
           </div>
 

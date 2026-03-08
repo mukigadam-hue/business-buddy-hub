@@ -94,7 +94,7 @@ export default function FactoryProduction() {
       waste_unit: form.waste_unit,
       production_date: form.production_date,
       expiry_date: form.expiry_date || null,
-      recorded_by: toSentenceCase(form.recorded_by.trim()) || 'Staff',
+      recorded_by: toTitleCase(form.recorded_by.trim()) || 'Staff',
       notes: form.notes.trim(),
       batch_number: form.batch_number.trim(),
     });

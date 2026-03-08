@@ -43,7 +43,7 @@ export default function FactoryExpenses() {
       category: form.category,
       description: form.description.trim(),
       amount: parseFloat(form.amount) || 0,
-      recorded_by: toSentenceCase(form.recorded_by.trim()) || 'Staff',
+      recorded_by: toTitleCase(form.recorded_by.trim()) || 'Staff',
       expense_date: form.expense_date,
     });
     setForm({ category: '', description: '', amount: '', recorded_by: '', expense_date: new Date().toISOString().slice(0, 10) });

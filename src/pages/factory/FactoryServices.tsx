@@ -62,7 +62,7 @@ export default function FactoryServices() {
     e.preventDefault();
     if (!canSubmit) return;
     const newService = await addService(
-      { service_name: toSentenceCase(form.service_name.trim()), description: form.description.trim(), cost: totalCost, customer_name: toSentenceCase(form.customer_name.trim()), seller_name: toSentenceCase(form.seller_name.trim()), payment_status: 'paid', amount_paid: totalCost, balance: 0 },
+      { service_name: toSentenceCase(form.service_name.trim()), description: form.description.trim(), cost: totalCost, customer_name: toTitleCase(form.customer_name.trim()), seller_name: toTitleCase(form.seller_name.trim()), payment_status: 'paid', amount_paid: totalCost, balance: 0 },
       itemsUsed.length > 0 ? itemsUsed : undefined
     );
     if (newService && currentBusiness) {

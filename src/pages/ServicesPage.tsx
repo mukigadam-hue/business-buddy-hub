@@ -147,12 +147,12 @@ export default function ServicesPage() {
               <div>
                 <Label className="text-xs font-semibold text-destructive">Customer (Buyer) *</Label>
                 <Input value={form.customer_name} onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
-                  onBlur={() => setForm(f => ({ ...f, customer_name: toSentenceCase(f.customer_name) }))} placeholder="Customer name" required />
+                  onBlur={() => setForm(f => ({ ...f, customer_name: toTitleCase(f.customer_name) }))} placeholder="Customer name" required />
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">Seller *</Label>
                 <Input value={form.seller_name} onChange={e => setForm(f => ({ ...f, seller_name: e.target.value }))}
-                  onBlur={() => setForm(f => ({ ...f, seller_name: toSentenceCase(f.seller_name) }))} placeholder="Your name" required />
+                  onBlur={() => setForm(f => ({ ...f, seller_name: toTitleCase(f.seller_name) }))} placeholder="Your name" required />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

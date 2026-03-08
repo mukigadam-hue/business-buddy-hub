@@ -279,29 +279,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <SheetTitle className="text-left">Menu</SheetTitle>
             </SheetHeader>
 
-            {/* Business Switcher */}
+            {/* Business Switcher - scrollable list */}
             <div className="mt-3 mb-2">
-              <p className="text-xs text-muted-foreground font-medium mb-2 px-1">Current Business</p>
-              <Select value={currentBusiness?.id || ''} onValueChange={(val) => { setCurrentBusinessId(val); }}>
-                <SelectTrigger className="w-full text-sm h-10">
-                  <Building2 className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Select business" />
-                </SelectTrigger>
-                <SelectContent>
-                  {businesses.map(b => {
-                    const role = getRoleForBusiness(b.id);
-                    return (
-                      <SelectItem key={b.id} value={b.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{getBusinessType(b)}</span>
-                          <span>{b.name}</span>
-                          <span className="text-[10px] text-muted-foreground ml-1">({getRoleLabel(role)})</span>
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <p className="text-xs text-muted-foreground font-medium mb-2 px-1">Switch Business</p>
+              <div className="max-h-40 overflow-y-auto space-y-1.5 rounded-lg border border-border p-1.5">
+                {businesses.map(b => {
+                  const role = getRoleForBusiness(b.id);
+                  const isActive = b.id === currentBusiness?.id;
+                  const isFact = (b as any).business_type === 'factory';
+                  return (
+                    <button key={b.id} onClick={() => { setCurrentBusinessId(b.id); }}
+                      className={`w-full flex items-center gap-2.5 p-2.5 rounded-lg text-left transition-all ${
+                        isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted/60'
+                      }`}>
+                      <span className="text-lg">{isFact ? '🏭' : '🏪'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{b.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{getRoleBadge(role)} {getRoleLabel(role)}</p>
+                      </div>
+                      {isActive && <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full shrink-0">Active</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* All other nav items */}

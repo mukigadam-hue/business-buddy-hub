@@ -198,7 +198,7 @@ function DiscoverVisibilityCard({ businessId }: { businessId: string }) {
 }
 
 export default function SettingsPage() {
-  const { currentBusiness, updateBusiness, stock, sales, purchases, services, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, restoreStockItem, permanentDeleteStockItem } = useBusiness();
+  const { currentBusiness, updateBusiness, stock, sales, purchases, services, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, restoreStockItem, permanentDeleteStockItem, deleteBusiness } = useBusiness();
   const { currency, setCurrency, fmt } = useCurrency();
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 

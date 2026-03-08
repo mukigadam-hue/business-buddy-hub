@@ -143,7 +143,7 @@ export default function FactoryProduction() {
                 <Select value={form.product_stock_id} onValueChange={v => setForm(f => ({ ...f, product_stock_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Optional..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">New Product</SelectItem>
+                    <SelectItem value="__new__">New Product</SelectItem>
                     {activeProducts.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                   </SelectContent>
                 </Select>

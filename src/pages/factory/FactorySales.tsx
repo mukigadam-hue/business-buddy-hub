@@ -165,7 +165,7 @@ export default function FactorySales() {
       });
       setReceiptSale(sale);
     }
-    setItems([]); setServiceItems([]); setServiceParts([]); setCustomerName(''); setSellerName('');
+    setItems([]); setServiceItems([]); setServiceParts([]); setCustomerName(''); setSellerName(''); setPaymentStatus('paid'); setAmountPaid('');
   }
 
   return (

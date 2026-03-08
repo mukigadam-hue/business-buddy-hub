@@ -244,7 +244,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="px-3 pt-3">
-            <Select value={currentBusiness?.id || ''} onValueChange={v => { setCurrentBusinessId(v); navigate('/'); }}>
+            <Select value={currentBusiness?.id || ''} onValueChange={v => { window.history.replaceState(null, '', '/'); setCurrentBusinessId(v); }}>
               <SelectTrigger className="w-full bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground text-xs h-9">
                 <Building2 className="h-3 w-3 mr-1" />
                 <SelectValue placeholder={t('nav.switchBusiness')} />

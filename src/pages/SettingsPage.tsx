@@ -251,37 +251,83 @@ export default function SettingsPage() {
 
   const activeStock = stock.filter(s => !s.deleted_at);
   const deletedStock = stock.filter(s => s.deleted_at);
+  const today = new Date().toDateString();
 
-  // ====== REVENUE CALCULATIONS ======
-  const todayStockSalesRevenue = sales
-    .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
-    .reduce((sum, s) => {
-      const stockItemsTotal = s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
-      return sum + stockItemsTotal;
-    }, 0);
-
-  const todayServiceRevenue = services
-    .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
-    .reduce((sum, s) => sum + Number(s.cost), 0);
-
-  const todaySaleServiceRevenue = sales
-    .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
-    .reduce((sum, s) => s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0) + sum, 0);
-
-  const todayTotalServiceRevenue = todayServiceRevenue + todaySaleServiceRevenue;
-  const todayRevenue = todayStockSalesRevenue + todayTotalServiceRevenue;
-
-  const totalStockSalesRevenue = sales.reduce((sum, s) => sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0), 0);
-  const totalServiceRevenue = services.reduce((sum, s) => sum + Number(s.cost), 0) + sales.reduce((sum, s) => sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0), 0);
-  const totalRevenue = totalStockSalesRevenue + totalServiceRevenue;
-
+  // ====== 1. TOTAL CAPITAL (Shopping/Buying Price of all stock) ======
   let buyingCapital = 0, wholesaleCapital = 0, retailCapital = 0;
   activeStock.forEach(item => {
     buyingCapital += item.quantity * Number(item.buying_price);
     wholesaleCapital += item.quantity * Number(item.wholesale_price);
     retailCapital += item.quantity * Number(item.retail_price);
   });
+
+  // ====== 2. PURCHASES ======
+  const todayPurchases = purchases.filter(p => new Date(p.created_at).toDateString() === today);
+  const todayPurchaseTotal = todayPurchases.reduce((sum, p) => sum + Number(p.grand_total), 0);
   const totalPurchases = purchases.reduce((sum, p) => sum + Number(p.grand_total), 0);
+
+  // ====== 3 & 4. STOCK VALUE (Wholesale & Retail) - calculated above ======
+
+  // ====== 5. TODAY'S REVENUE (Sales + Orders paid/partial/credit) ======
+  const todaySales = sales.filter(s => new Date(s.created_at).toDateString() === today);
+  const todaySalesFull = todaySales.filter(s => s.payment_status === 'paid');
+  const todaySalesPartial = todaySales.filter(s => s.payment_status === 'partial');
+  const todaySalesCredit = todaySales.filter(s => s.payment_status === 'credit');
+
+  const todaySalesFullTotal = todaySalesFull.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  const todaySalesPartialTotal = todaySalesPartial.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  const todaySalesPartialPaid = todaySalesPartial.reduce((sum, s) => sum + Number(s.amount_paid), 0);
+  const todaySalesCreditTotal = todaySalesCredit.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  const todaySalesGrandTotal = todaySales.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  const todaySalesCashCollected = todaySales.reduce((sum, s) => sum + Number(s.amount_paid), 0);
+
+  // Orders completed today (paid)
+  const todayOrders = orders.filter(o => new Date(o.created_at).toDateString() === today);
+  const todayOrdersPaid = todayOrders.filter(o => o.status === 'paid' || o.status === 'completed');
+  const todayOrdersTotal = todayOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
+
+  // Stock sales revenue from sale items (excluding service items)
+  const todayStockSalesRevenue = todaySales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+
+  // ====== 6. SERVICE FEE (service cost minus parts from stock) ======
+  const todayServices = services.filter(s => new Date(s.created_at).toDateString() === today);
+  const todayServiceFeeTotal = todayServices.reduce((sum, s) => sum + Number(s.cost), 0);
+  // Parts used in services (from sale items with price_type 'service' in sales - these are service fees added to sales)
+  const todaySaleServiceFees = todaySales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+  const todayTotalServiceFees = todayServiceFeeTotal + todaySaleServiceFees;
+  // Service items used from stock (parts) - these are tracked in service_items table
+  // For display, we show the service fee (labor) separately
+  const todayServiceCashCollected = todayServices.reduce((sum, s) => sum + Number(s.amount_paid), 0);
+
+  // All-time service revenue
+  const totalServiceFeeRevenue = services.reduce((sum, s) => sum + Number(s.cost), 0);
+  const totalSaleServiceFees = sales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+  const totalServiceRevenue = totalServiceFeeRevenue + totalSaleServiceFees;
+
+  // All-time stock sales
+  const totalStockSalesRevenue = sales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+  const totalRevenue = totalStockSalesRevenue + totalServiceRevenue;
+
+  // ====== 7. EXPENSES ======
+  const todayExpenses = expenses.filter(e => new Date(e.created_at).toDateString() === today);
+  const todayExpenseTotal = todayExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+
+  // Today's total cash collected
+  const todayTotalCashCollected = todaySalesCashCollected + todayServiceCashCollected;
+  // Today's total revenue (grand totals regardless of payment)
+  const todayTotalRevenue = todaySalesGrandTotal + todayServiceFeeTotal + todaySaleServiceFees;
+
+  // Net position today
+  const todayNetPosition = todayTotalCashCollected - todayExpenseTotal - todayPurchaseTotal;
 
   function getRoleForBusiness(businessId: string) {
     return memberships.find(m => m.business_id === businessId)?.role || 'worker';

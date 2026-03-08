@@ -150,8 +150,8 @@ export default function SalesPage() {
         business_id: currentBusiness.id,
         receipt_type: 'sale',
         transaction_id: newSale.id,
-        buyer_name: toSentenceCase(buyerName.trim()),
-        seller_name: toSentenceCase(sellerName.trim()),
+        buyer_name: toTitleCase(buyerName.trim()),
+        seller_name: toTitleCase(sellerName.trim()),
         grand_total: grandTotal,
         items: allItems.map(i => ({
           itemName: i.item_name, category: i.category, quality: i.quality,

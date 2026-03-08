@@ -502,20 +502,51 @@ export default function OrdersPage() {
           })}
         </div>
         <div className="flex gap-2 pt-1 flex-wrap">
-          {!order.transferred_to_sale && order.status !== 'completed' && order.status !== 'cancelled' && (
+          {!order.transferred_to_sale && order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'paid' && (
             <>
-              <Button size="sm" variant="outline" onClick={() => openEditOrder(order)}><Pencil className="h-3.5 w-3.5 mr-1" />Edit</Button>
+              {/* Edit: only when pending */}
+              {order.status === 'pending' && (
+                <Button size="sm" variant="outline" onClick={() => openEditOrder(order)}><Pencil className="h-3.5 w-3.5 mr-1" />Edit</Button>
+              )}
+
+              {/* INBOX ORDER ACTIONS (Supplier side) */}
               {order.type === 'inbox' && order.status === 'pending' && (
                 <Button size="sm" variant="outline" onClick={() => openPricing(order)}>💰 Tag Prices</Button>
               )}
-              {(order.status === 'priced' || order.status === 'confirmed') && (
+              {order.type === 'inbox' && order.status === 'payment_submitted' && (
+                <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => confirmPaymentReceived(order)} disabled={syncing}>
+                  <CheckCircle className="h-3.5 w-3.5 mr-1" />{syncing ? 'Confirming...' : 'Confirm Payment Received'}
+                </Button>
+              )}
+
+              {/* REQUEST ORDER ACTIONS (Buyer side) */}
+              {order.type === 'request' && order.status === 'priced' && (
+                <>
+                  <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => confirmPrices(order)} disabled={syncing}>
+                    <CheckCircle className="h-3.5 w-3.5 mr-1" />{syncing ? 'Confirming...' : 'Confirm Prices'}
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => { setRejectingOrder(order); setRejectComment(''); }} disabled={syncing}>
+                    🔄 Reject & Re-price
+                  </Button>
+                </>
+              )}
+              {order.type === 'request' && order.status === 'confirmed' && (
+                <Button size="sm" onClick={() => { setCompleteDialog(order); setCompleteBuyer(order.customer_name); setCompleteSeller(''); }}>
+                  <CreditCard className="h-3.5 w-3.5 mr-1" />Submit Payment
+                </Button>
+              )}
+
+              {/* LIVE ORDER ACTIONS (no B2B) */}
+              {order.type === 'my_order' && (order.status === 'confirmed' || order.status === 'priced') && (
                 <Button size="sm" onClick={() => { setCompleteDialog(order); setCompleteBuyer(order.customer_name); setCompleteSeller(''); }}>
                   <CheckCircle className="h-3.5 w-3.5 mr-1" />Complete & Give Receipt
                 </Button>
               )}
             </>
           )}
-          {(order.status === 'completed' || order.transferred_to_sale) && (
+
+          {/* Completed/Paid actions */}
+          {(order.status === 'completed' || order.status === 'paid' || order.transferred_to_sale) && (
             <>
               <Button size="sm" variant="ghost" onClick={() => setReceiptOrder(order)}>
                 <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
@@ -527,8 +558,16 @@ export default function OrdersPage() {
               )}
             </>
           )}
-          {/* Allocate for confirmed but not yet completed inbox orders too */}
-          {order.type === 'inbox' && (order.status === 'priced' || order.status === 'confirmed') && !order.transferred_to_sale && (
+
+          {/* Supplier can complete receipt after payment confirmed */}
+          {order.type === 'inbox' && order.status === 'paid' && !order.transferred_to_sale && (
+            <Button size="sm" onClick={() => { setCompleteDialog(order); setCompleteBuyer(order.customer_name); setCompleteSeller(''); }}>
+              <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Issue Receipt
+            </Button>
+          )}
+
+          {/* Allocate for confirmed/priced inbox orders */}
+          {order.type === 'inbox' && (order.status === 'priced' || order.status === 'confirmed' || order.status === 'payment_submitted') && !order.transferred_to_sale && (
             <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
               <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
             </Button>

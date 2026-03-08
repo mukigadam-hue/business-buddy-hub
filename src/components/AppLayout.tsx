@@ -244,7 +244,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="px-3 pt-3">
-            <Select value={currentBusiness?.id || ''} onValueChange={v => { setCurrentBusinessId(v); const target = businesses.find(b => b.id === v); const isFact = (target as any)?.business_type === 'factory'; const wasFact = (currentBusiness as any)?.business_type === 'factory'; if (isFact !== wasFact) window.location.href = '/'; else navigate('/'); }}>
+            <Select value={currentBusiness?.id || ''} onValueChange={v => { setCurrentBusinessId(v); navigate('/'); }}>
               <SelectTrigger className="w-full bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground text-xs h-9">
                 <Building2 className="h-3 w-3 mr-1" />
                 <SelectValue placeholder={t('nav.switchBusiness')} />

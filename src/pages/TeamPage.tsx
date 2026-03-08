@@ -382,75 +382,96 @@ export default function TeamPage() {
             </Card>
           )}
 
-          {/* App Members */}
+          {/* Unified All Workers List */}
           <Card className="shadow-card">
             <CardContent className="p-4">
               <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
-                <Shield className="h-4 w-4" /> App Members
+                <Users className="h-4 w-4" /> All Workers ({members.filter(m => m.role !== 'owner').length + activeWorkers.length})
               </h2>
-              {members.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No app members yet.</p>
+              {members.filter(m => m.role !== 'owner').length === 0 && activeWorkers.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No workers yet. Add manually or invite via code.</p>
               ) : (
                 <div className="space-y-2">
-                  {members.map(member => (
-                    <div key={member.user_id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        {getRoleIcon(member.role)}
-                        <div>
-                          <p className="font-medium text-sm">{member.full_name || 'Unknown'}</p>
-                          <p className="text-xs text-muted-foreground">{member.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isOwnerOrAdmin && member.role !== 'owner' ? (
-                          <>
-                            <Select value={member.role} onValueChange={v => handleRoleChange(member.user_id, v)}>
-                              <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="worker">Worker</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button variant="ghost" size="icon" onClick={() => handleRemove(member.user_id)}>
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
-                          </>
-                        ) : (
-                          <span className="text-xs font-medium capitalize px-2 py-1 rounded-full bg-muted">{member.role}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Team Workers List */}
-          {activeWorkers.length > 0 && (
-            <Card className="shadow-card">
-              <CardContent className="p-4">
-                <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
-                  <Users className="h-4 w-4" /> Workers ({activeWorkers.length})
-                </h2>
-                <div className="space-y-2">
-                  {activeWorkers.map(w => {
-                    const bal = workerBalances[w.id] || { totalOwed: 0, totalAdvances: 0 };
+                  {/* App Users (from business_memberships) */}
+                  {members.map(member => {
+                    // Find matching team record for balance info
+                    const matchedWorker = activeWorkers.find(w => w.full_name.toLowerCase() === (member.full_name || '').toLowerCase());
+                    const bal = matchedWorker ? (workerBalances[matchedWorker.id] || { totalOwed: 0, totalAdvances: 0 }) : { totalOwed: 0, totalAdvances: 0 };
                     return (
-                      <div key={w.id} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div key={member.user_id} className="flex items-center justify-between p-3 rounded-lg border">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">{w.full_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {w.rank} · {w.phone && `📞 ${w.phone} · `}Hired: {new Date(w.hire_date).toLocaleDateString()}
+                          <div className="flex items-center gap-2">
+                            {getRoleIcon(member.role)}
+                            <p className="font-medium text-sm">{member.full_name || 'Unknown'}</p>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
+                              📱 App User
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground ml-6">
+                            {member.email}{member.role !== 'owner' && ` · ${member.role}`}
                           </p>
                           {bal.totalOwed > 0 && (
-                            <p className="text-xs text-destructive mt-0.5">
+                            <p className="text-xs text-destructive mt-0.5 ml-6">
                               <AlertTriangle className="inline h-3 w-3 mr-1" />
                               Business owes: {fmt(bal.totalOwed)}
                             </p>
                           )}
                           {bal.totalAdvances > 0 && (
-                            <p className="text-xs text-warning mt-0.5">
+                            <p className="text-xs text-warning mt-0.5 ml-6">
+                              <ArrowDownCircle className="inline h-3 w-3 mr-1" />
+                              Advance given: {fmt(bal.totalAdvances)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isOwnerOrAdmin && member.role !== 'owner' ? (
+                            <>
+                              <Select value={member.role} onValueChange={v => handleRoleChange(member.user_id, v)}>
+                                <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                  <SelectItem value="worker">Worker</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button variant="ghost" size="icon" onClick={() => handleRemove(member.user_id)}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            </>
+                          ) : (
+                            member.role === 'owner' && <span className="text-xs font-medium capitalize px-2 py-1 rounded-full bg-muted">{member.role}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Manual Workers (from business_team_members) */}
+                  {activeWorkers.map(w => {
+                    const bal = workerBalances[w.id] || { totalOwed: 0, totalAdvances: 0 };
+                    // Check if this worker is also an app user (matched by name)
+                    const isAlsoAppUser = members.some(m => m.full_name?.toLowerCase() === w.full_name.toLowerCase());
+                    if (isAlsoAppUser) return null; // Already shown above
+                    return (
+                      <div key={w.id} className="flex items-center justify-between p-3 rounded-lg border">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-sm font-medium">{w.full_name}</p>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-muted/50 text-muted-foreground">
+                              📝 Manual
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground ml-6">
+                            {w.rank}{w.phone && ` · 📞 ${w.phone}`} · Hired: {new Date(w.hire_date).toLocaleDateString()}
+                          </p>
+                          {bal.totalOwed > 0 && (
+                            <p className="text-xs text-destructive mt-0.5 ml-6">
+                              <AlertTriangle className="inline h-3 w-3 mr-1" />
+                              Business owes: {fmt(bal.totalOwed)}
+                            </p>
+                          )}
+                          {bal.totalAdvances > 0 && (
+                            <p className="text-xs text-warning mt-0.5 ml-6">
                               <ArrowDownCircle className="inline h-3 w-3 mr-1" />
                               Advance given: {fmt(bal.totalAdvances)}
                             </p>
@@ -469,9 +490,9 @@ export default function TeamPage() {
                     );
                   })}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
 
           {/* Inactive Workers */}
           {inactiveWorkers.length > 0 && (

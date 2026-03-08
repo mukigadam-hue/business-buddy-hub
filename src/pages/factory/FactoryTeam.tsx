@@ -1,26 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useFactory } from '@/context/FactoryContext';
 import { useBusiness } from '@/context/BusinessContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/hooks/useCurrency';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit2, Trash2, Users, UserPlus, Send, Calendar, Clock, User, Wallet } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, UserPlus, Send, Calendar, Clock, User, Wallet, Shield, Crown, AlertTriangle, ArrowDownCircle } from 'lucide-react';
 import WorkerPaymentManager from '@/components/factory/WorkerPaymentManager';
 import AdSpace from '@/components/AdSpace';
-
 import { toTitleCase } from '@/lib/utils';
+
+interface AppMember {
+  user_id: string;
+  role: string;
+  email: string;
+  full_name: string;
+}
 
 const RANKS = ['Supervisor', 'Inspector', 'Maintenance', 'Security', 'Worker', 'Operator', 'Quality Control', 'Driver'];
 
 export default function FactoryTeam() {
   const { teamMembers, addTeamMember, updateTeamMember, deleteTeamMember } = useFactory();
-  const { currentBusiness, userRole, memberships, generateInviteCode, redeemInviteCode } = useBusiness();
+  const { currentBusiness, userRole, memberships, generateInviteCode, redeemInviteCode, getMembers, removeMember, updateMemberRole } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
   const [showAdd, setShowAdd] = useState(false);
@@ -30,20 +38,52 @@ export default function FactoryTeam() {
   const [workerCode, setWorkerCode] = useState<string | null>(null);
   const [redeemCode, setRedeemCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [appMembers, setAppMembers] = useState<AppMember[]>([]);
+  const [workerBalances, setWorkerBalances] = useState<Record<string, { totalOwed: number; totalAdvances: number }>>({});
 
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
+  const businessId = currentBusiness?.id;
 
   const activeMembers = teamMembers.filter(t => t.is_active);
   const inactiveMembers = teamMembers.filter(t => !t.is_active);
   const totalSalary = activeMembers.reduce((sum, t) => sum + Number(t.salary), 0);
 
-  // Group by rank
-  const rankGroups: Record<string, typeof activeMembers> = {};
-  activeMembers.forEach(m => {
-    const rank = m.rank || 'Worker';
-    if (!rankGroups[rank]) rankGroups[rank] = [];
-    rankGroups[rank].push(m);
-  });
+  const loadAppMembers = useCallback(async () => {
+    const data = await getMembers();
+    setAppMembers(data);
+  }, [getMembers]);
+
+  const loadBalances = useCallback(async () => {
+    if (!businessId) return;
+    const [paymentsRes, advancesRes] = await Promise.all([
+      supabase.from('factory_worker_payments').select('*').eq('business_id', businessId),
+      supabase.from('factory_worker_advances').select('*').eq('business_id', businessId),
+    ]);
+    const payments = paymentsRes.data || [];
+    const advances = advancesRes.data || [];
+    const balances: Record<string, { totalOwed: number; totalAdvances: number }> = {};
+    teamMembers.forEach(w => {
+      const pendingPayments = payments.filter((p: any) => p.worker_id === w.id && p.status !== 'completed');
+      const totalOwed = pendingPayments.reduce((sum: number, p: any) => sum + (p.amount_due - p.amount_paid), 0);
+      const activeAdvances = advances.filter((a: any) => a.worker_id === w.id && a.status === 'active');
+      const totalAdvances = activeAdvances.reduce((sum: number, a: any) => sum + a.remaining_balance, 0);
+      balances[w.id] = { totalOwed, totalAdvances };
+    });
+    setWorkerBalances(balances);
+  }, [businessId, teamMembers]);
+
+  useEffect(() => {
+    loadAppMembers();
+    loadBalances();
+  }, [loadAppMembers, loadBalances]);
+
+  function getRoleIcon(role: string) {
+    switch (role) {
+      case 'owner': return <Crown className="h-4 w-4 text-warning" />;
+      case 'admin': return <Shield className="h-4 w-4 text-primary" />;
+      default: return <User className="h-4 w-4 text-muted-foreground" />;
+    }
+  }
 
   function resetForm() { setForm({ full_name: '', rank: 'Worker', salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10) }); }
 
@@ -110,7 +150,6 @@ export default function FactoryTeam() {
 
       <AdSpace variant="banner" />
 
-      {/* Main Tabs: Team / Payments */}
       <Tabs defaultValue="team" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="team" className="flex items-center gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>
@@ -180,31 +219,94 @@ export default function FactoryTeam() {
             </Card>
           </div>
 
-          {/* Team by Rank */}
-          {Object.keys(rankGroups).length === 0 ? (
-            <Card className="shadow-card">
-              <CardContent className="p-4 text-center py-8">
-                <p className="text-sm text-muted-foreground">No team members yet. Add your first worker above.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            Object.entries(rankGroups).sort(([a], [b]) => a.localeCompare(b)).map(([rank, members]) => (
-              <Card key={rank} className="shadow-card">
-                <CardContent className="p-4">
-                  <h2 className="text-sm font-semibold mb-3 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
-                    {rank === 'Supervisor' && '👔'} {rank === 'Inspector' && '🔍'} {rank === 'Maintenance' && '🔧'}
-                    {rank === 'Security' && '🛡️'} {rank === 'Worker' && '👷'} {rank}
-                    <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{members.length}</span>
-                  </h2>
-                  <div className="space-y-2">
-                    {members.map(m => (
-                      <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border">
-                        <div>
-                          <p className="text-sm font-medium">{m.full_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {m.phone && `📞 ${m.phone} · `}
-                            Hired: {new Date(m.hire_date).toLocaleDateString()}
+          {/* Unified All Workers List */}
+          <Card className="shadow-card">
+            <CardContent className="p-4">
+              <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
+                <Users className="h-4 w-4" /> All Workers ({appMembers.filter(m => m.role !== 'owner').length + activeMembers.filter(w => !appMembers.some(m => m.full_name?.toLowerCase() === w.full_name.toLowerCase())).length})
+              </h2>
+              {appMembers.length === 0 && activeMembers.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No workers yet. Add manually or invite via code.</p>
+              ) : (
+                <div className="space-y-2">
+                  {/* App Users */}
+                  {appMembers.map(member => {
+                    const matchedWorker = activeMembers.find(w => w.full_name.toLowerCase() === (member.full_name || '').toLowerCase());
+                    const bal = matchedWorker ? (workerBalances[matchedWorker.id] || { totalOwed: 0, totalAdvances: 0 }) : { totalOwed: 0, totalAdvances: 0 };
+                    return (
+                      <div key={member.user_id} className="flex items-center justify-between p-3 rounded-lg border">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            {getRoleIcon(member.role)}
+                            <p className="font-medium text-sm">{member.full_name || 'Unknown'}</p>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
+                              📱 App User
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground ml-6">
+                            {member.email}{member.role !== 'owner' && ` · ${member.role}`}
                           </p>
+                          {bal.totalOwed > 0 && (
+                            <p className="text-xs text-destructive mt-0.5 ml-6">
+                              <AlertTriangle className="inline h-3 w-3 mr-1" />Business owes: {fmt(bal.totalOwed)}
+                            </p>
+                          )}
+                          {bal.totalAdvances > 0 && (
+                            <p className="text-xs text-warning mt-0.5 ml-6">
+                              <ArrowDownCircle className="inline h-3 w-3 mr-1" />Advance given: {fmt(bal.totalAdvances)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isOwnerOrAdmin && member.role !== 'owner' ? (
+                            <>
+                              <Select value={member.role} onValueChange={v => updateMemberRole(member.user_id, v).then(loadAppMembers)}>
+                                <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                  <SelectItem value="worker">Worker</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button variant="ghost" size="icon" onClick={() => removeMember(member.user_id).then(loadAppMembers)}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            </>
+                          ) : (
+                            member.role === 'owner' && <span className="text-xs font-medium capitalize px-2 py-1 rounded-full bg-muted">{member.role}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Manual Workers */}
+                  {activeMembers.map(m => {
+                    const bal = workerBalances[m.id] || { totalOwed: 0, totalAdvances: 0 };
+                    const isAlsoAppUser = appMembers.some(am => am.full_name?.toLowerCase() === m.full_name.toLowerCase());
+                    if (isAlsoAppUser) return null;
+                    return (
+                      <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-sm font-medium">{m.full_name}</p>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-muted/50 text-muted-foreground">
+                              📝 Manual
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground ml-6">
+                            {m.rank}{m.phone && ` · 📞 ${m.phone}`} · Hired: {new Date(m.hire_date).toLocaleDateString()}
+                          </p>
+                          {bal.totalOwed > 0 && (
+                            <p className="text-xs text-destructive mt-0.5 ml-6">
+                              <AlertTriangle className="inline h-3 w-3 mr-1" />Business owes: {fmt(bal.totalOwed)}
+                            </p>
+                          )}
+                          {bal.totalAdvances > 0 && (
+                            <p className="text-xs text-warning mt-0.5 ml-6">
+                              <ArrowDownCircle className="inline h-3 w-3 mr-1" />Advance given: {fmt(bal.totalAdvances)}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           {isOwnerOrAdmin && <span className="text-sm font-semibold text-success tabular-nums">{fmt(Number(m.salary))}/mo</span>}
@@ -212,12 +314,12 @@ export default function FactoryTeam() {
                           {isOwnerOrAdmin && <Button variant="ghost" size="icon" onClick={() => updateTeamMember(m.id, { is_active: false })}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {inactiveMembers.length > 0 && (
             <Card className="shadow-card border-destructive/20">
@@ -247,7 +349,7 @@ export default function FactoryTeam() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editId ? 'Edit Team Member' : 'Add Team Member'}</DialogTitle></DialogHeader>
           <form onSubmit={editId ? handleEdit : handleAdd} className="space-y-3">
-            <div><Label>Full Name *</Label><Input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} required /></div>
+            <div><Label>Full Name *</Label><Input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} onBlur={e => setForm(f => ({ ...f, full_name: toTitleCase(e.target.value) }))} required /></div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Rank</Label>

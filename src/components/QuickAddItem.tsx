@@ -11,6 +11,7 @@ import { Camera, Upload, Plus, X, Loader2, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
+import { compressImage } from '@/lib/compressImage';
 
 interface QuickAddItemProps {
   open: boolean;
@@ -38,14 +39,13 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
 
   async function handleFile(file: File) {
     if (!file.type.startsWith('image/')) { toast.error('Select an image'); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
     if (images.length >= 3) { toast.error('Max 3 images'); return; }
 
     setUploading(true);
-    const ext = file.name.split('.').pop() || 'jpg';
-    const fileName = `${currentBusiness?.id || 'item'}/${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
     try {
-      const { error } = await supabase.storage.from('item-images').upload(fileName, file, { upsert: true });
+      const compressed = await compressImage(file);
+      const fileName = `${currentBusiness?.id || 'item'}/${Date.now()}-${Math.random().toString(36).slice(2, 6)}.jpg`;
+      const { error } = await supabase.storage.from('item-images').upload(fileName, compressed, { upsert: true });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('item-images').getPublicUrl(fileName);
       setImages(prev => [...prev, publicUrl]);

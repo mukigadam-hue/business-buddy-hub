@@ -5,6 +5,7 @@ import { Camera, Upload, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
+import { compressImage } from '@/lib/compressImage';
 
 interface ImageUploadProps {
   bucket: string;
@@ -33,17 +34,13 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
       toast.error('Please select an image file');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be under 5MB');
-      return;
-    }
 
     setUploading(true);
-    const ext = file.name.split('.').pop() || 'jpg';
-    const fileName = `${path}/${Date.now()}.${ext}`;
-
     try {
-      const { error } = await supabase.storage.from(bucket).upload(fileName, file, { upsert: true });
+      const compressed = await compressImage(file);
+      const fileName = `${path}/${Date.now()}.jpg`;
+
+      const { error } = await supabase.storage.from(bucket).upload(fileName, compressed, { upsert: true });
       if (error) throw error;
 
       const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);

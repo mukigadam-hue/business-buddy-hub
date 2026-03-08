@@ -32,6 +32,7 @@ export default function FactoryTeam() {
   const { currentBusiness, userRole, memberships, generateInviteCode, redeemInviteCode, getMembers, removeMember, updateMemberRole } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
+  const { maxWorkers } = usePremium();
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ full_name: '', rank: 'Worker', salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10) });

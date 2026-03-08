@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Plus, Trash2, Package, ScanLine } from 'lucide-react';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string): string {
   if (!str) return str;

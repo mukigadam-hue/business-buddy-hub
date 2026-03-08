@@ -725,7 +725,17 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, [currentBusinessId]);
 
   const completeOrderToSale = useCallback(async (orderId: string, buyerName: string, sellerName: string) => {
-    const order = orders.find(o => o.id === orderId);
+    let order = orders.find(o => o.id === orderId);
+    
+    // If not in local state, fetch from DB (e.g. checkout orders)
+    if (!order) {
+      const { data: orderData } = await supabase.from('orders').select('*').eq('id', orderId).single();
+      if (orderData) {
+        const { data: itemsData } = await supabase.from('order_items').select('*').eq('order_id', orderId);
+        order = { ...orderData, items: itemsData || [] } as Order;
+      }
+    }
+    
     if (!order || order.transferred_to_sale) return;
 
     await supabase.from('orders').update({ status: 'completed', transferred_to_sale: true }).eq('id', orderId);

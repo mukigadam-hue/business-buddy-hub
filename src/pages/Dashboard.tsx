@@ -19,21 +19,7 @@ export default function Dashboard() {
 
   const activeStock = stock.filter(s => !s.deleted_at);
 
-  const todaySales = sales.filter(s => {
-    const d = new Date(s.created_at);
-    return d.toDateString() === new Date().toDateString();
-  });
-  const todayStockSalesRevenue = todaySales.reduce((sum, s) => {
-    return sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
-  }, 0);
 
-  const todayServices = services.filter(s => new Date(s.created_at).toDateString() === new Date().toDateString());
-  const todayServiceRevenue = todayServices.reduce((sum, s) => sum + Number(s.cost), 0);
-  const todaySaleServiceRevenue = todaySales.reduce((sum, s) => {
-    return sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0);
-  }, 0);
-  const todayTotalServiceRevenue = todayServiceRevenue + todaySaleServiceRevenue;
-  const todayRevenue = todayStockSalesRevenue + todayTotalServiceRevenue;
 
   const lowStock = activeStock.filter(item => item.quantity > 0 && item.quantity <= item.min_stock_level);
   const outOfStock = activeStock.filter(item => item.quantity === 0);

@@ -17,9 +17,8 @@ export default function FactoryDashboard() {
   const activeProducts = stock.filter(s => !s.deleted_at);
   const activeRawMaterials = rawMaterials.filter(r => !r.deleted_at);
 
-  // Revenue
-  const todaySales = sales.filter(s => new Date(s.created_at).toDateString() === new Date().toDateString());
-  const todayRevenue = todaySales.reduce((sum, s) => sum + Number(s.grand_total), 0);
+
+
 
   // Stock alerts
   const lowProducts = activeProducts.filter(i => i.quantity > 0 && i.quantity <= i.min_stock_level);

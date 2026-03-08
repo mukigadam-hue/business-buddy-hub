@@ -37,8 +37,16 @@ export default function Dashboard() {
   // Debt tracking
   const salesDebts = sales.filter(s => s.payment_status !== 'paid' && Number(s.balance) > 0);
   const purchaseDebts = purchases.filter(p => p.payment_status !== 'paid' && Number(p.balance) > 0);
-  const totalOwedToYou = salesDebts.reduce((sum, s) => sum + Number(s.balance), 0);
+  const serviceDebts = services.filter(s => s.payment_status !== 'paid' && Number(s.balance) > 0);
+  const totalOwedToYou = salesDebts.reduce((sum, s) => sum + Number(s.balance), 0) + serviceDebts.reduce((sum, s) => sum + Number(s.balance), 0);
   const totalYouOwe = purchaseDebts.reduce((sum, p) => sum + Number(p.balance), 0);
+
+  // Overdue debts (older than 3 days)
+  const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+  const overdueSales = salesDebts.filter(s => (Date.now() - new Date(s.created_at).getTime()) > THREE_DAYS);
+  const overduePurchases = purchaseDebts.filter(p => (Date.now() - new Date(p.created_at).getTime()) > THREE_DAYS);
+  const overdueServices = serviceDebts.filter(s => (Date.now() - new Date(s.created_at).getTime()) > THREE_DAYS);
+  const hasOverdue = overdueSales.length > 0 || overduePurchases.length > 0 || overdueServices.length > 0;
 
   // Top selling — combine same name+category+quality
   const itemCounts: Record<string, { name: string; category: string; quality: string; totalSold: number }> = {};

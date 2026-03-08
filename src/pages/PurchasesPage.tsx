@@ -104,8 +104,19 @@ export default function PurchasesPage() {
     );
   }
 
+  function handleBarcodeScan(code: string) {
+    const match = activeStock.find(s => s.barcode && s.barcode === code);
+    if (match) {
+      setForm(f => ({ ...f, name: match.name, category: match.category, quality: match.quality }));
+      toast.success(`Found: ${match.name}`);
+    } else {
+      toast.error(`No stock item found for barcode: ${code}`);
+    }
+  }
+
   return (
     <div className="space-y-6">
+      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
       <h1 className="text-2xl font-bold">Purchases</h1>
 
       <Card className="shadow-card">

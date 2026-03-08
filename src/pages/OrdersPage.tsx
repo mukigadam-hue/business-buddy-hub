@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import type { Order, OrderItem } from '@/context/BusinessContext';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string): string {
   if (!str) return str;

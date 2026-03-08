@@ -227,6 +227,8 @@ interface BusinessContextType {
   getMembers: () => Promise<{ user_id: string; role: string; email: string; full_name: string }[]>;
   removeMember: (userId: string) => Promise<void>;
   updateMemberRole: (userId: string, role: string) => Promise<void>;
+  addExpense: (expense: { category: string; description: string; amount: number; recorded_by: string; expense_date: string; from_order_id?: string }) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 

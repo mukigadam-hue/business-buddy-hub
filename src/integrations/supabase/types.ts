@@ -388,6 +388,7 @@ export type Database = {
           created_at: string
           description: string
           expense_date: string
+          from_order_id: string | null
           id: string
           recorded_by: string
         }
@@ -398,6 +399,7 @@ export type Database = {
           created_at?: string
           description?: string
           expense_date?: string
+          from_order_id?: string | null
           id?: string
           recorded_by?: string
         }
@@ -408,6 +410,7 @@ export type Database = {
           created_at?: string
           description?: string
           expense_date?: string
+          from_order_id?: string | null
           id?: string
           recorded_by?: string
         }
@@ -417,6 +420,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factory_expenses_from_order_id_fkey"
+            columns: ["from_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]

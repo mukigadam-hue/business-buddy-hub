@@ -317,12 +317,13 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   async function loadBusinessData() {
     if (!currentBusinessId) return;
     
-    const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes, notifRes] = await Promise.all([
+    const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes, expensesRes, notifRes] = await Promise.all([
       supabase.from('stock_items').select('*').eq('business_id', currentBusinessId).order('name'),
       supabase.from('sales').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }),
       supabase.from('purchases').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }),
       supabase.from('orders').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }),
       supabase.from('services').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }),
+      supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }),
       supabase.from('notifications').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(50),
     ]);
 

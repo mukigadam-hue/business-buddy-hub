@@ -689,7 +689,7 @@ export default function OrdersPage() {
                     <TableHeader>
                        <TableRow>
                         <TableHead>Item</TableHead><TableHead>Category</TableHead><TableHead>Quality</TableHead>
-                        {orderMode !== 'request' && <TableHead>Type</TableHead>}
+                        <TableHead>Type</TableHead>
                         <TableHead className="text-right">Qty</TableHead>
                         {orderMode !== 'request' && <TableHead className="text-right">Price</TableHead>}
                         {orderMode !== 'request' && <TableHead className="text-right">Subtotal</TableHead>}

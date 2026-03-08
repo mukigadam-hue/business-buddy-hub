@@ -66,6 +66,7 @@ export default function PurchasesPage() {
 
   async function handleSave() {
     if (items.length === 0) return;
+    const paidAmt = paymentStatus === 'paid' ? grandTotal : (parseFloat(amountPaid) || 0);
     await addPurchase(
       items.map(item => ({
         item_name: item.item_name, category: item.category, quality: item.quality,
@@ -74,11 +75,14 @@ export default function PurchasesPage() {
         subtotal: item.quantity * item.unit_price,
       })),
       grandTotal, supplier.trim() || 'Unknown',
-      toSentenceCase(recordedBy.trim()) || 'Staff'
+      toSentenceCase(recordedBy.trim()) || 'Staff',
+      paymentStatus, paidAmt
     );
     setItems([]);
     setSupplier('');
     setRecordedBy('');
+    setPaymentStatus('paid');
+    setAmountPaid('');
   }
 
   function PurchaseCard({ p }: { p: typeof purchases[0] }) {

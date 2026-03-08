@@ -170,6 +170,8 @@ export default function SalesPage() {
     setServiceParts([]);
     setBuyerName('');
     setSellerName('');
+    setPaymentStatus('paid');
+    setAmountPaid('');
   }
 
   function MoneyBadge({ value, className = 'text-success' }: { value: number; className?: string }) {

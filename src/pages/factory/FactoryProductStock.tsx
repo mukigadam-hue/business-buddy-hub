@@ -78,9 +78,17 @@ export default function FactoryProductStock() {
 
   return (
     <div className="space-y-6">
+      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={(code) => {
+        const match = active.find(s => s.barcode && s.barcode === code);
+        if (match) { toast.success(`Found: ${match.name}`); }
+        else { toast.error(`No product found for barcode: ${code}`); }
+      }} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2"><Package className="h-6 w-6" /> Product Stock</h1>
-        <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Product</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => setScannerOpen(true)} title="Scan barcode"><ScanLine className="h-4 w-4" /></Button>
+          <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Product</Button>
+        </div>
       </div>
 
       <Card className="shadow-card">

@@ -193,6 +193,7 @@ function NotificationsPanel({ onNavigate, variant = 'desktop' }: { onNavigate?: 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { signOut } = useAuth();
   const { businesses, currentBusiness, setCurrentBusinessId, userRole, memberships, notifications } = useBusiness();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -243,7 +244,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="px-3 pt-3">
-            <Select value={currentBusiness?.id || ''} onValueChange={setCurrentBusinessId}>
+            <Select value={currentBusiness?.id || ''} onValueChange={v => { setCurrentBusinessId(v); const target = businesses.find(b => b.id === v); const isFact = (target as any)?.business_type === 'factory'; const wasFact = (currentBusiness as any)?.business_type === 'factory'; if (isFact !== wasFact) window.location.href = '/'; else navigate('/'); }}>
               <SelectTrigger className="w-full bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground text-xs h-9">
                 <Building2 className="h-3 w-3 mr-1" />
                 <SelectValue placeholder={t('nav.switchBusiness')} />
@@ -324,7 +325,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   const isActive = b.id === currentBusiness?.id;
                   const isFact = (b as any).business_type === 'factory';
                   return (
-                    <button key={b.id} onClick={() => { setCurrentBusinessId(b.id); }}
+                    <button key={b.id} onClick={() => { setCurrentBusinessId(b.id); const wasFact = (currentBusiness as any)?.business_type === 'factory'; if (isFact !== wasFact) window.location.href = '/'; else navigate('/'); setSheetOpen(false); }}
                       className={`w-full flex items-center gap-2.5 p-2.5 rounded-lg text-left transition-all ${
                         isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted/60'
                       }`}>

@@ -347,6 +347,7 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_id: string
+          products_description: string
           settings_password: string | null
           total_capital: number
         }
@@ -361,6 +362,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_id: string
+          products_description?: string
           settings_password?: string | null
           total_capital?: number
         }
@@ -375,6 +377,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_id?: string
+          products_description?: string
           settings_password?: string | null
           total_capital?: number
         }
@@ -1358,6 +1361,20 @@ export type Database = {
           id: string
           logo_url: string
           name: string
+        }[]
+      }
+      search_businesses: {
+        Args: { _limit?: number; _offset?: number; _query?: string }
+        Returns: {
+          address: string
+          business_code: string
+          business_type: string
+          contact: string
+          email: string
+          id: string
+          logo_url: string
+          name: string
+          products_description: string
         }[]
       }
     }

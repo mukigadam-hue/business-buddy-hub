@@ -92,6 +92,8 @@ export default function FactoryProductStock() {
         </div>
       </div>
 
+      <AdSpace variant="banner" />
+
       <Card className="shadow-card">
         <CardContent className="p-4">
           <p className="text-sm text-muted-foreground mb-3">Finished goods — {active.length} products</p>

@@ -108,6 +108,8 @@ export default function FactoryTeam() {
         {isOwnerOrAdmin && <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Worker</Button>}
       </div>
 
+      <AdSpace variant="banner" />
+
       {/* Main Tabs: Team / Payments */}
       <Tabs defaultValue="team" className="w-full">
         <TabsList className="grid w-full grid-cols-2">

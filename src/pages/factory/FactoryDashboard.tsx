@@ -248,6 +248,8 @@ export default function FactoryDashboard() {
           )}
         </CardContent>
       </Card>
+
+      <AdSpace variant="banner" />
     </div>
   );
 }

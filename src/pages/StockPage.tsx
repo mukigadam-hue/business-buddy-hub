@@ -149,16 +149,16 @@ export default function StockPage() {
 
   return (
     <div className="space-y-4">
-      <div className="sticky top-0 space-y-3 pb-3 bg-background z-20 -mx-3 px-3 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6 -mt-3 pt-3 sm:-mt-4 sm:pt-4 md:-mt-6 md:pt-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <h1 className="text-xl sm:text-2xl font-bold">My Stock</h1>
-          <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => setShowBuyingPrice(v => !v)}>
-              {showBuyingPrice ? '← Hide' : '💰 Show'} Buying Price
+      <div className="sticky top-0 space-y-1.5 pb-2 bg-background z-20 -mx-3 px-3 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6 -mt-3 pt-2 sm:-mt-4 sm:pt-3 md:-mt-6 md:pt-4 border-b border-border/40">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-lg font-bold">My Stock</h1>
+          <div className="flex gap-1.5 flex-wrap">
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowBuyingPrice(v => !v)}>
+              {showBuyingPrice ? '← Hide' : '💰'} Buy Price
             </Button>
             <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Item</Button>
+                <Button size="sm" className="h-7 text-xs"><Plus className="h-3.5 w-3.5 mr-1" /> Add</Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader><DialogTitle>{editItem ? 'Edit Item' : 'Add New Item'}</DialogTitle></DialogHeader>
@@ -198,30 +198,26 @@ export default function StockPage() {
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search items by name, category, quality..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input placeholder="Search by name, category, quality..." className="pl-8 h-8 text-sm" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
 
-        {/* Photo Gallery - Horizontal Scroll */}
+        {/* Photo Gallery - Compact Horizontal Scroll */}
         {itemsWithPhotos.length > 0 && (
-          <Card className="shadow-card">
-            <CardContent className="p-3">
-              <h2 className="text-sm font-semibold mb-2 flex items-center gap-2"><Image className="h-4 w-4 text-primary" /> Item Photos ({itemsWithPhotos.length})</h2>
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
-                {itemsWithPhotos.map(item => {
-                  const thumb = item.image_url_1 || item.image_url_2 || item.image_url_3;
-                  return (
-                    <button key={item.id} onClick={() => setViewGalleryItem(item)} className="group shrink-0 w-20 text-left">
-                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted border-2 border-transparent group-hover:border-primary transition-colors">
-                        <img src={thumb!} alt={item.name} className="w-full h-full object-cover" />
-                      </div>
-                      <p className="text-xs font-semibold truncate mt-1">{item.name}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
+            {itemsWithPhotos.map(item => {
+              const thumb = item.image_url_1 || item.image_url_2 || item.image_url_3;
+              return (
+                <button key={item.id} onClick={() => setViewGalleryItem(item)} className="group shrink-0 w-14 text-left">
+                  <div className="w-14 h-14 rounded-md overflow-hidden bg-muted border border-border group-hover:border-primary transition-colors">
+                    <img src={thumb!} alt={item.name} className="w-full h-full object-cover" />
+                  </div>
+                  <p className="text-[10px] font-semibold truncate mt-0.5 leading-tight">{item.name}</p>
+                  <p className="text-[9px] text-muted-foreground truncate leading-tight">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
 

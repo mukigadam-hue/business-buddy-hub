@@ -15,9 +15,7 @@ import Receipt from '@/components/Receipt';
 import type { Order } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string) {
-  return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;
-}
+import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
 export default function CheckoutPage() {
   const { stock, addOrder, saveReceipt, currentBusiness } = useBusiness();
@@ -108,7 +106,7 @@ export default function CheckoutPage() {
       const { data: orderData, error: orderError } = await supabase.from('orders').insert({
         business_id: currentBusiness.id,
         type: 'checkout',
-        customer_name: toSentenceCase(customerName.trim()),
+        customer_name: toTitleCase(customerName.trim()),
         grand_total: grandTotal,
         status: paymentMethod === 'card' ? 'paid' : 'pending',
         code,
@@ -137,7 +135,7 @@ export default function CheckoutPage() {
           business_id: currentBusiness.id,
           receipt_type: 'checkout',
           transaction_id: (orderData as any).id,
-          buyer_name: toSentenceCase(customerName.trim()),
+          buyer_name: toTitleCase(customerName.trim()),
           seller_name: currentBusiness.name,
           grand_total: grandTotal,
           items: orderItems.map(i => ({
@@ -152,7 +150,7 @@ export default function CheckoutPage() {
           id: (orderData as any).id,
           business_id: currentBusiness.id,
           type: 'checkout',
-          customer_name: toSentenceCase(customerName.trim()),
+          customer_name: toTitleCase(customerName.trim()),
           grand_total: grandTotal,
           status: paymentMethod === 'card' ? 'paid' : 'pending',
           code,

@@ -18,10 +18,7 @@ import BarcodeScanner from '@/components/BarcodeScanner';
 import type { Order, OrderItem } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string): string {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
+import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
 export default function OrdersPage() {
   const { stock, orders, addOrder, updateOrder, completeOrderToSale, saveReceipt, currentBusiness, addStockItem, addExpense, refreshData, notifications, userRole } = useBusiness();
@@ -540,15 +537,15 @@ export default function OrdersPage() {
         toast.success('Payment submitted! Waiting for supplier to confirm.');
       } else if (isB2BInbox) {
         // Supplier issuing receipt after payment confirmed
-        await completeOrderToSale(completeDialog.id, toSentenceCase(completeBuyer.trim()), toSentenceCase(completeSeller.trim()));
+        await completeOrderToSale(completeDialog.id, toTitleCase(completeBuyer.trim()), toTitleCase(completeSeller.trim()));
         
         if (currentBusiness) {
           await saveReceipt({
             business_id: currentBusiness.id,
             receipt_type: 'order',
             transaction_id: completeDialog.id,
-            buyer_name: toSentenceCase(completeBuyer.trim()),
-            seller_name: toSentenceCase(completeSeller.trim()),
+            buyer_name: toTitleCase(completeBuyer.trim()),
+            seller_name: toTitleCase(completeSeller.trim()),
             grand_total: completeDialog.grand_total,
             items: completeDialog.items.map(i => ({
               itemName: i.item_name, category: i.category, quality: i.quality,
@@ -567,15 +564,15 @@ export default function OrdersPage() {
           status: paymentMethod === 'card' ? 'paid' : 'pending',
         } as any).eq('id', completeDialog.id);
 
-        await completeOrderToSale(completeDialog.id, toSentenceCase(completeBuyer.trim()), toSentenceCase(completeSeller.trim()));
+        await completeOrderToSale(completeDialog.id, toTitleCase(completeBuyer.trim()), toTitleCase(completeSeller.trim()));
         
         if (currentBusiness) {
           await saveReceipt({
             business_id: currentBusiness.id,
             receipt_type: 'order',
             transaction_id: completeDialog.id,
-            buyer_name: toSentenceCase(completeBuyer.trim()),
-            seller_name: toSentenceCase(completeSeller.trim()),
+            buyer_name: toTitleCase(completeBuyer.trim()),
+            seller_name: toTitleCase(completeSeller.trim()),
             grand_total: completeDialog.grand_total,
             items: completeDialog.items.map(i => ({
               itemName: i.item_name, category: i.category, quality: i.quality,
@@ -1035,7 +1032,7 @@ export default function OrdersPage() {
               </div>
             )}
 
-            <div><Label>Your Name / Customer Name</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toSentenceCase(customerName))} placeholder="Name..." /></div>
+            <div><Label>Your Name / Customer Name</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toTitleCase(customerName))} placeholder="Name..." /></div>
 
             {orderMode === 'request' && (
               <div>
@@ -1399,11 +1396,11 @@ export default function OrdersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs font-semibold text-destructive">Buyer Name *</Label>
-                  <Input value={completeBuyer} onChange={e => setCompleteBuyer(e.target.value)} onBlur={() => setCompleteBuyer(toSentenceCase(completeBuyer))} placeholder="Customer name" />
+                  <Input value={completeBuyer} onChange={e => setCompleteBuyer(e.target.value)} onBlur={() => setCompleteBuyer(toTitleCase(completeBuyer))} placeholder="Customer name" />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold text-destructive">Seller Name *</Label>
-                  <Input value={completeSeller} onChange={e => setCompleteSeller(e.target.value)} onBlur={() => setCompleteSeller(toSentenceCase(completeSeller))} placeholder="Seller name" />
+                  <Input value={completeSeller} onChange={e => setCompleteSeller(e.target.value)} onBlur={() => setCompleteSeller(toTitleCase(completeSeller))} placeholder="Seller name" />
                 </div>
               </div>
 

@@ -12,10 +12,7 @@ import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string): string {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
+import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
 export default function PurchasesPage() {
   const { stock, purchases, addPurchase, updatePurchasePayment } = useBusiness();
@@ -76,7 +73,7 @@ export default function PurchasesPage() {
         subtotal: item.quantity * item.unit_price,
       })),
       grandTotal, supplier.trim() || 'Unknown',
-      toSentenceCase(recordedBy.trim()) || 'Staff',
+      toTitleCase(recordedBy.trim()) || 'Staff',
       paymentStatus, paidAmt
     );
     setItems([]);
@@ -153,7 +150,7 @@ export default function PurchasesPage() {
             </div>
             <div>
               <Label>Recorded By</Label>
-              <Input value={recordedBy} onChange={e => setRecordedBy(e.target.value)} onBlur={() => setRecordedBy(toSentenceCase(recordedBy))} placeholder="Your name" />
+              <Input value={recordedBy} onChange={e => setRecordedBy(e.target.value)} onBlur={() => setRecordedBy(toTitleCase(recordedBy))} placeholder="Your name" />
             </div>
           </div>
 

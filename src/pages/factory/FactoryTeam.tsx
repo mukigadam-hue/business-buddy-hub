@@ -14,7 +14,7 @@ import { Plus, Edit2, Trash2, Users, UserPlus, Send, Calendar, Clock, User, Wall
 import WorkerPaymentManager from '@/components/factory/WorkerPaymentManager';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
+import { toTitleCase } from '@/lib/utils';
 
 const RANKS = ['Supervisor', 'Inspector', 'Maintenance', 'Security', 'Worker', 'Operator', 'Quality Control', 'Driver'];
 
@@ -51,7 +51,7 @@ export default function FactoryTeam() {
     e.preventDefault();
     if (!form.full_name.trim()) return;
     await addTeamMember({
-      full_name: toSentenceCase(form.full_name.trim()),
+      full_name: toTitleCase(form.full_name.trim()),
       rank: form.rank,
       salary: parseFloat(form.salary) || 0,
       phone: form.phone.trim(),
@@ -67,7 +67,7 @@ export default function FactoryTeam() {
     e.preventDefault();
     if (!editId) return;
     await updateTeamMember(editId, {
-      full_name: toSentenceCase(form.full_name.trim()),
+      full_name: toTitleCase(form.full_name.trim()),
       rank: form.rank,
       salary: parseFloat(form.salary) || 0,
       phone: form.phone.trim(),

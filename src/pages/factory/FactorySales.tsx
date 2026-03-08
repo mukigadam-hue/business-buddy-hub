@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import type { Sale } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
+import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
 export default function FactorySales() {
   const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment } = useBusiness();
@@ -151,7 +151,7 @@ export default function FactorySales() {
     ];
 
     const paidAmt = paymentStatus === 'paid' ? grandTotal : (parseFloat(amountPaid) || 0);
-    const sale = await addSale(allItems, grandTotal, toSentenceCase(sellerName.trim()), toSentenceCase(customerName.trim()), undefined, undefined, paymentStatus, paidAmt);
+    const sale = await addSale(allItems, grandTotal, toTitleCase(sellerName.trim()), toTitleCase(customerName.trim()), undefined, undefined, paymentStatus, paidAmt);
     if (sale && currentBusiness) {
       const receiptItems = allItems.map(i => ({
         itemName: i.item_name, category: i.category, quality: i.quality,
@@ -159,7 +159,7 @@ export default function FactorySales() {
       }));
       await saveReceipt({
         business_id: currentBusiness.id, receipt_type: 'sale', transaction_id: sale.id,
-        buyer_name: toSentenceCase(customerName.trim()), seller_name: toSentenceCase(sellerName.trim()),
+        buyer_name: toTitleCase(customerName.trim()), seller_name: toTitleCase(sellerName.trim()),
         grand_total: grandTotal, items: receiptItems,
         business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
         code: null,
@@ -181,11 +181,11 @@ export default function FactorySales() {
           <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
             <div>
               <Label className="text-xs font-semibold text-destructive">Customer (Buyer) *</Label>
-              <Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toSentenceCase(customerName))} placeholder="Customer name" required />
+              <Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toTitleCase(customerName))} placeholder="Customer name" required />
             </div>
             <div>
               <Label className="text-xs font-semibold text-destructive">Seller *</Label>
-              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toSentenceCase(sellerName))} placeholder="Your name" required />
+              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toTitleCase(sellerName))} placeholder="Your name" required />
             </div>
           </div>
 

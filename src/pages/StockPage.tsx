@@ -12,10 +12,7 @@ import BarcodeScanner from '@/components/BarcodeScanner';
 import type { StockItem } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string): string {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
+import { toSentenceCase } from '@/lib/utils';
 
 function ItemGalleryDialog({ item, open, onOpenChange }: { item: StockItem; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { fmt } = useCurrency();

@@ -12,7 +12,7 @@ import { Plus, Edit2, Trash2, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
+import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
 const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls'];
 const CATEGORIES = ['Chemicals', 'Fabrics', 'Metals', 'Plastics', 'Wood', 'Electronics', 'Agricultural', 'Packaging', 'Other'];
@@ -42,7 +42,7 @@ export default function FactoryInputStock() {
       quantity: parseFloat(form.quantity) || 0,
       unit_cost: parseFloat(form.unit_cost) || 0,
       min_stock_level: parseFloat(form.min_stock_level) || 5,
-      supplier: toSentenceCase(form.supplier.trim()),
+      supplier: toTitleCase(form.supplier.trim()),
     });
     resetForm();
     setShowAdd(false);
@@ -58,7 +58,7 @@ export default function FactoryInputStock() {
       quantity: parseFloat(form.quantity) || 0,
       unit_cost: parseFloat(form.unit_cost) || 0,
       min_stock_level: parseFloat(form.min_stock_level) || 5,
-      supplier: toSentenceCase(form.supplier.trim()),
+      supplier: toTitleCase(form.supplier.trim()),
     });
     resetForm();
     setEditItem(null);

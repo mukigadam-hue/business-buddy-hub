@@ -12,10 +12,7 @@ import Receipt from '@/components/Receipt';
 import type { ServiceRecord } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string): string {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
+import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
 export default function ServicesPage() {
   const { services, stock, addService, saveReceipt, currentBusiness, updateServicePayment } = useBusiness();
@@ -66,10 +63,10 @@ export default function ServicesPage() {
     const newService = await addService(
       {
         service_name: toSentenceCase(form.service_name.trim()),
-        description: form.description.trim(),
+        description: toSentenceCase(form.description.trim()),
         cost: totalCost,
-        customer_name: toSentenceCase(form.customer_name.trim()),
-        seller_name: toSentenceCase(form.seller_name.trim()),
+        customer_name: toTitleCase(form.customer_name.trim()),
+        seller_name: toTitleCase(form.seller_name.trim()),
         payment_status: status,
         amount_paid: paid,
         balance: bal,
@@ -150,12 +147,12 @@ export default function ServicesPage() {
               <div>
                 <Label className="text-xs font-semibold text-destructive">Customer (Buyer) *</Label>
                 <Input value={form.customer_name} onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
-                  onBlur={() => setForm(f => ({ ...f, customer_name: toSentenceCase(f.customer_name) }))} placeholder="Customer name" required />
+                  onBlur={() => setForm(f => ({ ...f, customer_name: toTitleCase(f.customer_name) }))} placeholder="Customer name" required />
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">Seller *</Label>
                 <Input value={form.seller_name} onChange={e => setForm(f => ({ ...f, seller_name: e.target.value }))}
-                  onBlur={() => setForm(f => ({ ...f, seller_name: toSentenceCase(f.seller_name) }))} placeholder="Your name" required />
+                  onBlur={() => setForm(f => ({ ...f, seller_name: toTitleCase(f.seller_name) }))} placeholder="Your name" required />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

@@ -13,7 +13,7 @@ import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
+import { toSentenceCase } from '@/lib/utils';
 
 export default function FactoryProductStock() {
   const { stock, addStockItem, updateStockItem, deleteStockItem, restoreStockItem } = useBusiness();

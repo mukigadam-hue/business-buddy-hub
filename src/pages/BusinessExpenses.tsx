@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Trash2, Plus, Flame } from 'lucide-react';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
+import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
 const EXPENSE_CATEGORIES = [
   'Rent', 'Electricity', 'Water', 'Internet', 'Cleaning Equipment',
@@ -40,9 +40,9 @@ export default function BusinessExpenses() {
     if (!form.category || !form.amount) return;
     await addExpense({
       category: form.category,
-      description: form.description.trim(),
+      description: toSentenceCase(form.description.trim()),
       amount: parseFloat(form.amount) || 0,
-      recorded_by: toSentenceCase(form.recorded_by.trim()) || 'Staff',
+      recorded_by: toTitleCase(form.recorded_by.trim()) || 'Staff',
       expense_date: form.expense_date,
     });
     setForm({ category: '', description: '', amount: '', recorded_by: '', expense_date: new Date().toISOString().slice(0, 10) });

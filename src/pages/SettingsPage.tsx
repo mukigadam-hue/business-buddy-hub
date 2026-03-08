@@ -16,10 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AdSpace from '@/components/AdSpace';
 import LanguageSelector from '@/components/LanguageSelector';
 
-function toSentenceCase(str: string): string {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
+import { toSentenceCase } from '@/lib/utils';
 
 function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' }) {
   const { createBusiness } = useBusiness();

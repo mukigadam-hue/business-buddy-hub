@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Trash2, Factory, AlertTriangle } from 'lucide-react';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
+import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
 const WASTE_UNITS = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls'];
 
@@ -94,7 +94,7 @@ export default function FactoryProduction() {
       waste_unit: form.waste_unit,
       production_date: form.production_date,
       expiry_date: form.expiry_date || null,
-      recorded_by: toSentenceCase(form.recorded_by.trim()) || 'Staff',
+      recorded_by: toTitleCase(form.recorded_by.trim()) || 'Staff',
       notes: form.notes.trim(),
       batch_number: form.batch_number.trim(),
     });

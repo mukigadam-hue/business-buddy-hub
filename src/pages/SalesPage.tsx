@@ -15,10 +15,7 @@ import { toast } from 'sonner';
 import type { Sale } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 
-function toSentenceCase(str: string): string {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
+import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
 export default function SalesPage() {
   const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment } = useBusiness();
@@ -145,7 +142,7 @@ export default function SalesPage() {
     ];
 
     const paidAmt = paymentStatus === 'paid' ? grandTotal : (parseFloat(amountPaid) || 0);
-    const newSale = await addSale(allItems, grandTotal, toSentenceCase(sellerName.trim()), toSentenceCase(buyerName.trim()), undefined, undefined, paymentStatus, paidAmt);
+    const newSale = await addSale(allItems, grandTotal, toTitleCase(sellerName.trim()), toTitleCase(buyerName.trim()), undefined, undefined, paymentStatus, paidAmt);
     
     // Auto-save receipt
     if (newSale && currentBusiness) {
@@ -153,8 +150,8 @@ export default function SalesPage() {
         business_id: currentBusiness.id,
         receipt_type: 'sale',
         transaction_id: newSale.id,
-        buyer_name: toSentenceCase(buyerName.trim()),
-        seller_name: toSentenceCase(sellerName.trim()),
+        buyer_name: toTitleCase(buyerName.trim()),
+        seller_name: toTitleCase(sellerName.trim()),
         grand_total: grandTotal,
         items: allItems.map(i => ({
           itemName: i.item_name, category: i.category, quality: i.quality,
@@ -263,11 +260,11 @@ export default function SalesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
             <div>
               <Label className="text-xs font-semibold text-destructive">Buyer Name *</Label>
-              <Input value={buyerName} onChange={e => setBuyerName(e.target.value)} onBlur={() => setBuyerName(toSentenceCase(buyerName))} placeholder="Customer name (required)" />
+              <Input value={buyerName} onChange={e => setBuyerName(e.target.value)} onBlur={() => setBuyerName(toTitleCase(buyerName))} placeholder="Customer name (required)" />
             </div>
             <div>
               <Label className="text-xs font-semibold text-destructive">Seller Name *</Label>
-              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toSentenceCase(sellerName))} placeholder="Your name (required)" />
+              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toTitleCase(sellerName))} placeholder="Your name (required)" />
             </div>
           </div>
 

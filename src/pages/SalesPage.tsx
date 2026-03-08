@@ -364,62 +364,6 @@ export default function SalesPage() {
             </div>
           </div>
 
-          {/* Parts Used from Stock for Services */}
-          {(serviceItems.length > 0 || serviceParts.length > 0) && (
-            <div className="border rounded-lg p-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                <Package className="h-3.5 w-3.5" /> Items/Parts Used from Stock (for services)
-              </p>
-              <div className="flex flex-wrap gap-2 items-end">
-                <div className="flex-1 min-w-[180px]">
-                  <Label className="text-xs">Select Part</Label>
-                  <div className="flex gap-1.5">
-                    <Select value={selectedPartStock} onValueChange={setSelectedPartStock}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Choose from stock..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availablePartsStock.map(s => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button type="button" variant="outline" size="icon" className="shrink-0 h-9 w-9" onClick={() => setPartScannerOpen(true)} title="Scan barcode">
-                      <ScanLine className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="w-16">
-                  <Label className="text-xs">Qty</Label>
-                  <Input type="number" min="1" value={partQty} onChange={e => setPartQty(e.target.value)} />
-                </div>
-                <Button size="sm" variant="outline" onClick={addServicePart} disabled={!selectedPartStock}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />Add Part
-                </Button>
-              </div>
-              {serviceParts.length > 0 && (
-                <div className="space-y-1 mt-2">
-                  {serviceParts.map((part, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
-                      <span>
-                        {part.item_name} × {part.quantity}
-                        {part.category && <span className="text-xs text-muted-foreground ml-1">· {part.category}</span>}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="tabular-nums font-medium text-xs">{fmt(part.subtotal)}</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeServicePart(i)}>
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="text-xs text-muted-foreground text-right">Parts total: {fmt(partsTotal)}</div>
-                </div>
-              )}
-            </div>
-          )}
 
           {(items.length > 0 || serviceItems.length > 0 || serviceParts.length > 0) && (
             <>

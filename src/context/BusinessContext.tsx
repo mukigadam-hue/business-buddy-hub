@@ -531,9 +531,14 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     recordedBy: string,
     customerName: string,
     fromOrderId?: string,
-    fromOrderCode?: string
+    fromOrderCode?: string,
+    paymentStatus: string = 'paid',
+    amountPaid?: number
   ): Promise<Sale | null> => {
     if (!currentBusinessId) return null;
+    const paid = amountPaid ?? grandTotal;
+    const bal = Math.max(0, grandTotal - paid);
+    const status = bal <= 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
     const { data: saleData, error: saleError } = await supabase.from('sales').insert({
       business_id: currentBusinessId,
       grand_total: grandTotal,
@@ -541,6 +546,9 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       customer_name: customerName,
       from_order_id: fromOrderId || null,
       from_order_code: fromOrderCode || null,
+      payment_status: paymentStatus === 'paid' ? status : paymentStatus,
+      amount_paid: paid,
+      balance: bal,
     } as any).select().single();
     if (saleError || !saleData) { toast.error(saleError?.message || 'Failed'); return null; }
 

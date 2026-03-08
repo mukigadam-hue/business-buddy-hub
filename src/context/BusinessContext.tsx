@@ -620,6 +620,28 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Auto-add recipient to contacts if not already saved
+      const { data: existingContact } = await supabase
+        .from('business_contacts')
+        .select('id')
+        .eq('business_id', currentBusinessId)
+        .eq('contact_business_id', recipientBusinessId)
+        .maybeSingle();
+      if (!existingContact) {
+        // Fetch recipient business name for nickname
+        const { data: recipientBiz } = await supabase
+          .from('businesses')
+          .select('name')
+          .eq('id', recipientBusinessId)
+          .maybeSingle();
+        await supabase.from('business_contacts').insert({
+          business_id: currentBusinessId,
+          contact_business_id: recipientBusinessId,
+          nickname: recipientBiz?.name || '',
+          notes: 'Auto-added from order request',
+        });
+      }
+
       toast.success('Request sent to supplier!');
       await loadBusinessData();
       return;

@@ -23,7 +23,7 @@ function toSentenceCase(str: string): string {
 }
 
 export default function OrdersPage() {
-  const { stock, orders, addOrder, updateOrder, completeOrderToSale, saveReceipt, currentBusiness, addStockItem, addExpense } = useBusiness();
+  const { stock, orders, addOrder, updateOrder, completeOrderToSale, saveReceipt, currentBusiness, addStockItem, addExpense, refreshData } = useBusiness();
   const { fmt } = useCurrency();
   const [tab, setTab] = useState('live_orders');
   const [customerName, setCustomerName] = useState('');
@@ -234,6 +234,11 @@ export default function OrdersPage() {
     setEditNewItem({ name: '', category: '', quality: '', quantity: '1', price: '' });
   }
 
+  // Reject dialog state
+  const [rejectComment, setRejectComment] = useState('');
+  const [rejectingOrder, setRejectingOrder] = useState<Order | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
   function openPricing(order: Order) {
     setPricingOrder(order);
     setPricingComment('');
@@ -258,11 +263,98 @@ export default function OrdersPage() {
 
   async function savePricing() {
     if (!pricingOrder) return;
-    const newTotal = pricingItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
-    await updateOrder(pricingOrder.id, pricingItems, newTotal, 'priced');
-    setPricingOrder(null);
-    setPricingItems([]);
-    setPricingComment('');
+    setSyncing(true);
+    try {
+      const newTotal = pricingItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
+      const itemsPayload = pricingItems.map(item => ({
+        item_name: item.item_name,
+        category: item.category,
+        quality: item.quality,
+        quantity: item.quantity,
+        price_type: item.price_type,
+        unit_price: Number(item.unit_price),
+        subtotal: Number(item.subtotal),
+      }));
+
+      // Use edge function to sync prices to requester's order
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: {
+          inboxOrderId: pricingOrder.id,
+          action: 'send_prices',
+          items: itemsPayload,
+          grandTotal: newTotal,
+          comment: pricingComment || '',
+        },
+      });
+
+      if (res.error || res.data?.error) {
+        // Fallback: just update locally if sync fails (e.g. not a B2B order)
+        await updateOrder(pricingOrder.id, pricingItems, newTotal, 'priced');
+      } else {
+        toast.success('Prices sent to buyer for confirmation!');
+        await refreshData();
+      }
+      setPricingOrder(null);
+      setPricingItems([]);
+      setPricingComment('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save pricing');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function confirmPrices(order: Order) {
+    setSyncing(true);
+    try {
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: { inboxOrderId: order.id, action: 'confirm_prices' },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Failed to confirm');
+      } else {
+        toast.success('Prices confirmed! You can now submit payment.');
+        await refreshData();
+      }
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function rejectPrices(order: Order) {
+    setSyncing(true);
+    try {
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: { inboxOrderId: order.id, action: 'reject_prices', comment: rejectComment },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Failed to reject');
+      } else {
+        toast.success('Prices rejected. Supplier will re-price.');
+        setRejectingOrder(null);
+        setRejectComment('');
+        await refreshData();
+      }
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function confirmPaymentReceived(order: Order) {
+    setSyncing(true);
+    try {
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: { inboxOrderId: order.id, action: 'confirm_payment' },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Failed to confirm payment');
+      } else {
+        toast.success('Payment confirmed!');
+        await refreshData();
+      }
+    } finally {
+      setSyncing(false);
+    }
   }
 
   function getStockStatus(itemName: string, category: string, quality: string) {
@@ -283,6 +375,8 @@ export default function OrdersPage() {
       case 'priced': return <CheckCircle className="h-3.5 w-3.5 text-accent" />;
       case 'confirmed': return <CheckCircle className="h-3.5 w-3.5 text-success" />;
       case 'completed': return <CheckCircle className="h-3.5 w-3.5 text-primary" />;
+      case 'paid': return <CheckCircle className="h-3.5 w-3.5 text-success" />;
+      case 'payment_submitted': return <Clock className="h-3.5 w-3.5 text-info" />;
       default: return <Clock className="h-3.5 w-3.5 text-muted-foreground" />;
     }
   }
@@ -300,7 +394,12 @@ export default function OrdersPage() {
 
   async function handleCompleteOrder() {
     if (!completeDialog || !completeBuyer.trim() || !completeSeller.trim()) return;
-    if (paymentMethod === 'mobile_money' && !proofFile) {
+
+    const isB2BRequest = completeDialog.type === 'request';
+    const isB2BInbox = completeDialog.type === 'inbox';
+    
+    // For request orders (buyer), require payment proof for mobile money
+    if (isB2BRequest && paymentMethod === 'mobile_money' && !proofFile) {
       toast.error('Please upload payment proof screenshot');
       return;
     }
@@ -309,7 +408,7 @@ export default function OrdersPage() {
     try {
       let proofUrl: string | null = null;
 
-      // Upload proof if mobile money
+      // Upload proof if mobile money (only for buyer/request orders or live orders)
       if (paymentMethod === 'mobile_money' && proofFile) {
         const ext = proofFile.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
@@ -324,44 +423,76 @@ export default function OrdersPage() {
         proofUrl = urlData.publicUrl;
       }
 
-      // Update order with payment info
-      await supabase.from('orders').update({
-        payment_method: paymentMethod,
-        proof_url: proofUrl,
-        status: paymentMethod === 'card' ? 'paid' : 'pending',
-      } as any).eq('id', completeDialog.id);
+      if (isB2BRequest) {
+        // Buyer submitting payment → update order and notify supplier
+        await supabase.from('orders').update({
+          payment_method: paymentMethod,
+          proof_url: proofUrl,
+          status: 'payment_submitted',
+        } as any).eq('id', completeDialog.id);
 
-      // Complete order to sale
-      await completeOrderToSale(completeDialog.id, toSentenceCase(completeBuyer.trim()), toSentenceCase(completeSeller.trim()));
-      
-      // Save receipt
-      if (currentBusiness) {
-        await saveReceipt({
-          business_id: currentBusiness.id,
-          receipt_type: 'order',
-          transaction_id: completeDialog.id,
-          buyer_name: toSentenceCase(completeBuyer.trim()),
-          seller_name: toSentenceCase(completeSeller.trim()),
-          grand_total: completeDialog.grand_total,
-          items: completeDialog.items.map(i => ({
-            itemName: i.item_name, category: i.category, quality: i.quality,
-            quantity: i.quantity, priceType: i.price_type, unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal),
-          })),
-          business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
-          code: completeDialog.code,
+        // Sync status to supplier's inbox order
+        await supabase.functions.invoke('sync-order-prices', {
+          body: { inboxOrderId: completeDialog.id, action: 'submit_payment', paymentMethod, proofUrl },
         });
+
+        toast.success('Payment submitted! Waiting for supplier to confirm.');
+      } else if (isB2BInbox) {
+        // Supplier issuing receipt after payment confirmed
+        await completeOrderToSale(completeDialog.id, toSentenceCase(completeBuyer.trim()), toSentenceCase(completeSeller.trim()));
+        
+        if (currentBusiness) {
+          await saveReceipt({
+            business_id: currentBusiness.id,
+            receipt_type: 'order',
+            transaction_id: completeDialog.id,
+            buyer_name: toSentenceCase(completeBuyer.trim()),
+            seller_name: toSentenceCase(completeSeller.trim()),
+            grand_total: completeDialog.grand_total,
+            items: completeDialog.items.map(i => ({
+              itemName: i.item_name, category: i.category, quality: i.quality,
+              quantity: i.quantity, priceType: i.price_type, unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal),
+            })),
+            business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
+            code: completeDialog.code,
+          });
+        }
+        toast.success('Receipt issued!');
+      } else {
+        // Live order — original flow
+        await supabase.from('orders').update({
+          payment_method: paymentMethod,
+          proof_url: proofUrl,
+          status: paymentMethod === 'card' ? 'paid' : 'pending',
+        } as any).eq('id', completeDialog.id);
+
+        await completeOrderToSale(completeDialog.id, toSentenceCase(completeBuyer.trim()), toSentenceCase(completeSeller.trim()));
+        
+        if (currentBusiness) {
+          await saveReceipt({
+            business_id: currentBusiness.id,
+            receipt_type: 'order',
+            transaction_id: completeDialog.id,
+            buyer_name: toSentenceCase(completeBuyer.trim()),
+            seller_name: toSentenceCase(completeSeller.trim()),
+            grand_total: completeDialog.grand_total,
+            items: completeDialog.items.map(i => ({
+              itemName: i.item_name, category: i.category, quality: i.quality,
+              quantity: i.quantity, priceType: i.price_type, unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal),
+            })),
+            business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
+            code: completeDialog.code,
+          });
+        }
+        toast.success(paymentMethod === 'mobile_money' ? 'Order completed! Payment proof submitted.' : 'Order completed and paid!');
       }
 
-      toast.success(
-        paymentMethod === 'mobile_money'
-          ? 'Order completed! Payment proof submitted for verification.'
-          : 'Order completed and paid!'
-      );
       setCompleteDialog(null);
       setCompleteBuyer('');
       setCompleteSeller('');
       setProofFile(null);
       setProofPreview(null);
+      await refreshData();
     } catch (err: any) {
       toast.error(err.message || 'Failed to complete order');
     } finally {
@@ -408,20 +539,51 @@ export default function OrdersPage() {
           })}
         </div>
         <div className="flex gap-2 pt-1 flex-wrap">
-          {!order.transferred_to_sale && order.status !== 'completed' && order.status !== 'cancelled' && (
+          {!order.transferred_to_sale && order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'paid' && (
             <>
-              <Button size="sm" variant="outline" onClick={() => openEditOrder(order)}><Pencil className="h-3.5 w-3.5 mr-1" />Edit</Button>
+              {/* Edit: only when pending */}
+              {order.status === 'pending' && (
+                <Button size="sm" variant="outline" onClick={() => openEditOrder(order)}><Pencil className="h-3.5 w-3.5 mr-1" />Edit</Button>
+              )}
+
+              {/* INBOX ORDER ACTIONS (Supplier side) */}
               {order.type === 'inbox' && order.status === 'pending' && (
                 <Button size="sm" variant="outline" onClick={() => openPricing(order)}>💰 Tag Prices</Button>
               )}
-              {(order.status === 'priced' || order.status === 'confirmed') && (
+              {order.type === 'inbox' && order.status === 'payment_submitted' && (
+                <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => confirmPaymentReceived(order)} disabled={syncing}>
+                  <CheckCircle className="h-3.5 w-3.5 mr-1" />{syncing ? 'Confirming...' : 'Confirm Payment Received'}
+                </Button>
+              )}
+
+              {/* REQUEST ORDER ACTIONS (Buyer side) */}
+              {order.type === 'request' && order.status === 'priced' && (
+                <>
+                  <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => confirmPrices(order)} disabled={syncing}>
+                    <CheckCircle className="h-3.5 w-3.5 mr-1" />{syncing ? 'Confirming...' : 'Confirm Prices'}
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => { setRejectingOrder(order); setRejectComment(''); }} disabled={syncing}>
+                    🔄 Reject & Re-price
+                  </Button>
+                </>
+              )}
+              {order.type === 'request' && order.status === 'confirmed' && (
+                <Button size="sm" onClick={() => { setCompleteDialog(order); setCompleteBuyer(order.customer_name); setCompleteSeller(''); }}>
+                  <CreditCard className="h-3.5 w-3.5 mr-1" />Submit Payment
+                </Button>
+              )}
+
+              {/* LIVE ORDER ACTIONS (no B2B) */}
+              {order.type === 'my_order' && (order.status === 'confirmed' || order.status === 'priced') && (
                 <Button size="sm" onClick={() => { setCompleteDialog(order); setCompleteBuyer(order.customer_name); setCompleteSeller(''); }}>
                   <CheckCircle className="h-3.5 w-3.5 mr-1" />Complete & Give Receipt
                 </Button>
               )}
             </>
           )}
-          {(order.status === 'completed' || order.transferred_to_sale) && (
+
+          {/* Completed/Paid actions */}
+          {(order.status === 'completed' || order.status === 'paid' || order.transferred_to_sale) && (
             <>
               <Button size="sm" variant="ghost" onClick={() => setReceiptOrder(order)}>
                 <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
@@ -433,8 +595,16 @@ export default function OrdersPage() {
               )}
             </>
           )}
-          {/* Allocate for confirmed but not yet completed inbox orders too */}
-          {order.type === 'inbox' && (order.status === 'priced' || order.status === 'confirmed') && !order.transferred_to_sale && (
+
+          {/* Supplier can complete receipt after payment confirmed */}
+          {order.type === 'inbox' && order.status === 'paid' && !order.transferred_to_sale && (
+            <Button size="sm" onClick={() => { setCompleteDialog(order); setCompleteBuyer(order.customer_name); setCompleteSeller(''); }}>
+              <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Issue Receipt
+            </Button>
+          )}
+
+          {/* Allocate for confirmed/priced inbox orders */}
+          {order.type === 'inbox' && (order.status === 'priced' || order.status === 'confirmed' || order.status === 'payment_submitted') && !order.transferred_to_sale && (
             <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
               <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
             </Button>
@@ -740,13 +910,13 @@ export default function OrdersPage() {
           {liveOrders.length === 0 ? <p className="text-sm text-muted-foreground">No live orders yet.</p> : liveOrders.map(o => <OrderCard key={o.id} order={o} />)}
         </TabsContent>
         <TabsContent value="inbox" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-2">Received orders awaiting price tagging. Auto-fill from stock, adjust if needed, then send back.</p>
+          <p className="text-xs text-muted-foreground mb-2">Orders received from other businesses. Tag prices → buyer confirms → buyer pays → you confirm payment → issue receipt.</p>
           <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
             {inboxOrders.length === 0 ? <p className="text-sm text-muted-foreground">No inbox orders.</p> : inboxOrders.map(o => <OrderCard key={o.id} order={o} showStockStatus />)}
           </div>
         </TabsContent>
         <TabsContent value="my_requests" className="space-y-3 mt-4 max-h-[500px] overflow-y-auto pr-1">
-          <p className="text-xs text-muted-foreground mb-2">Orders sent without prices. Once priced by supplier, confirm or modify based on your budget.</p>
+          <p className="text-xs text-muted-foreground mb-2">Orders you sent. Supplier prices → you confirm/reject → you pay → supplier confirms → receipt issued.</p>
           {myRequests.length === 0 ? <p className="text-sm text-muted-foreground">No requests sent yet.</p> : myRequests.map(o => <OrderCard key={o.id} order={o} />)}
         </TabsContent>
       </Tabs>
@@ -834,16 +1004,27 @@ export default function OrdersPage() {
             <div className="flex justify-between font-bold pt-2 border-t">
               <span>Total</span><span className="text-success tabular-nums">{fmt(pricingItems.reduce((s, i) => s + Number(i.subtotal), 0))}</span>
             </div>
-            <Button onClick={savePricing} className="w-full">Confirm Prices & Send Back</Button>
+            <Button onClick={savePricing} className="w-full" disabled={syncing}>{syncing ? 'Sending prices...' : 'Confirm Prices & Send to Buyer'}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Complete Order Dialog with Payment */}
+      {/* Complete Order Dialog — adapts based on order type */}
       <Dialog open={!!completeDialog} onOpenChange={o => { if (!o) { setCompleteDialog(null); setProofFile(null); setProofPreview(null); } }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Complete Order & Pay</DialogTitle></DialogHeader>
-          <p className="text-xs text-muted-foreground">Finalize the agreed order, select payment method, and issue receipt.</p>
+          <DialogHeader>
+            <DialogTitle>
+              {completeDialog?.type === 'request' ? 'Submit Payment' : completeDialog?.type === 'inbox' ? 'Issue Receipt' : 'Complete Order & Pay'}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            {completeDialog?.type === 'request'
+              ? 'Submit payment to the supplier. They will confirm receipt and issue a receipt.'
+              : completeDialog?.type === 'inbox'
+              ? 'Payment has been confirmed. Enter names and issue the receipt.'
+              : 'Finalize the order, select payment method, and issue receipt.'
+            }
+          </p>
           
           {completeDialog && (
             <div className="space-y-4">
@@ -871,95 +1052,123 @@ export default function OrdersPage() {
                 </div>
                 <div>
                   <Label className="text-xs font-semibold text-destructive">Seller Name *</Label>
-                  <Input value={completeSeller} onChange={e => setCompleteSeller(e.target.value)} onBlur={() => setCompleteSeller(toSentenceCase(completeSeller))} placeholder="Your name" />
+                  <Input value={completeSeller} onChange={e => setCompleteSeller(e.target.value)} onBlur={() => setCompleteSeller(toSentenceCase(completeSeller))} placeholder="Seller name" />
                 </div>
               </div>
 
-              {/* Payment Method */}
-              <div>
-                <Label className="text-xs font-semibold mb-2 block">Payment Method</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setPaymentMethod('mobile_money')}
-                    className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left ${
-                      paymentMethod === 'mobile_money'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-muted-foreground/30'
-                    }`}
-                  >
-                    <Smartphone className="h-5 w-5 text-success shrink-0" />
-                    <div>
-                      <p className="font-semibold text-xs">Mobile Money</p>
-                      <p className="text-[10px] text-muted-foreground">Upload proof</p>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setPaymentMethod('card')}
-                    className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left ${
-                      paymentMethod === 'card'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-muted-foreground/30'
-                    }`}
-                  >
-                    <CreditCard className="h-5 w-5 text-info shrink-0" />
-                    <div>
-                      <p className="font-semibold text-xs">Card / Cash</p>
-                      <p className="text-[10px] text-muted-foreground">Paid directly</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Mobile Money proof upload */}
-              {paymentMethod === 'mobile_money' && (
-                <div className="space-y-2 p-3 bg-muted/40 rounded-lg border">
+              {/* Payment Method — only for request (buyer) and live orders */}
+              {(completeDialog.type === 'request' || completeDialog.type === 'my_order') && (
+                <>
                   <div>
-                    <p className="text-xs font-medium">📱 Send payment to:</p>
-                    <p className="text-xs text-muted-foreground">
-                      {currentBusiness?.contact || 'Contact in settings'} — <span className="font-semibold">{currentBusiness?.name}</span>
-                    </p>
-                    <p className="text-base font-bold text-success mt-1">{fmt(Number(completeDialog.grand_total))}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs font-semibold text-destructive">Upload Payment Screenshot *</Label>
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="mt-1 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                    >
-                      {proofPreview ? (
-                        <img src={proofPreview} alt="Payment proof" className="max-h-32 mx-auto rounded-lg" />
-                      ) : (
-                        <div className="space-y-1">
-                          <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground">Tap to upload screenshot</p>
+                    <Label className="text-xs font-semibold mb-2 block">Payment Method</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setPaymentMethod('mobile_money')}
+                        className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left ${
+                          paymentMethod === 'mobile_money'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-muted-foreground/30'
+                        }`}
+                      >
+                        <Smartphone className="h-5 w-5 text-success shrink-0" />
+                        <div>
+                          <p className="font-semibold text-xs">Mobile Money</p>
+                          <p className="text-[10px] text-muted-foreground">Upload proof</p>
                         </div>
-                      )}
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod('card')}
+                        className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left ${
+                          paymentMethod === 'card'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-muted-foreground/30'
+                        }`}
+                      >
+                        <CreditCard className="h-5 w-5 text-info shrink-0" />
+                        <div>
+                          <p className="font-semibold text-xs">Card / Cash</p>
+                          <p className="text-[10px] text-muted-foreground">Paid directly</p>
+                        </div>
+                      </button>
                     </div>
-                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                    {proofFile && <p className="text-xs text-success mt-1">✓ {proofFile.name}</p>}
                   </div>
-                </div>
+
+                  {paymentMethod === 'mobile_money' && (
+                    <div className="space-y-2 p-3 bg-muted/40 rounded-lg border">
+                      <div>
+                        <p className="text-xs font-medium">📱 Send payment to:</p>
+                        <p className="text-xs text-muted-foreground">
+                          {currentBusiness?.contact || 'Contact in settings'} — <span className="font-semibold">{currentBusiness?.name}</span>
+                        </p>
+                        <p className="text-base font-bold text-success mt-1">{fmt(Number(completeDialog.grand_total))}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-destructive">Upload Payment Screenshot *</Label>
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          className="mt-1 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                        >
+                          {proofPreview ? (
+                            <img src={proofPreview} alt="Payment proof" className="max-h-32 mx-auto rounded-lg" />
+                          ) : (
+                            <div className="space-y-1">
+                              <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+                              <p className="text-xs text-muted-foreground">Tap to upload screenshot</p>
+                            </div>
+                          )}
+                        </div>
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                        {proofFile && <p className="text-xs text-success mt-1">✓ {proofFile.name}</p>}
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod === 'card' && (
+                    <div className="p-3 bg-info/5 rounded-lg border border-info/20">
+                      <p className="text-xs text-muted-foreground">
+                        💳 Confirm that card/cash payment of <span className="font-bold text-foreground">{fmt(Number(completeDialog.grand_total))}</span> has been made.
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
 
-              {paymentMethod === 'card' && (
-                <div className="p-3 bg-info/5 rounded-lg border border-info/20">
+              {/* Inbox (supplier) — no payment section, just receipt */}
+              {completeDialog.type === 'inbox' && (
+                <div className="p-3 bg-success/5 rounded-lg border border-success/20">
                   <p className="text-xs text-muted-foreground">
-                    💳 Confirm that card/cash payment of <span className="font-bold text-foreground">{fmt(Number(completeDialog.grand_total))}</span> has been received before completing.
+                    ✅ Payment has been confirmed. Fill in the names above and issue the receipt to complete this order.
                   </p>
                 </div>
               )}
 
               <Button
                 className="w-full h-11"
-                disabled={completing || !completeBuyer.trim() || !completeSeller.trim() || (paymentMethod === 'mobile_money' && !proofFile)}
+                disabled={completing || !completeBuyer.trim() || !completeSeller.trim() || (completeDialog.type !== 'inbox' && paymentMethod === 'mobile_money' && !proofFile)}
                 onClick={handleCompleteOrder}
               >
                 {completing ? 'Processing...' : (
-                  <><CheckCircle className="h-4 w-4 mr-2" />Complete Order — {fmt(Number(completeDialog.grand_total))}</>
+                  completeDialog.type === 'request'
+                    ? <><Send className="h-4 w-4 mr-2" />Submit Payment — {fmt(Number(completeDialog.grand_total))}</>
+                    : completeDialog.type === 'inbox'
+                    ? <><ReceiptIcon className="h-4 w-4 mr-2" />Issue Receipt — {fmt(Number(completeDialog.grand_total))}</>
+                    : <><CheckCircle className="h-4 w-4 mr-2" />Complete Order — {fmt(Number(completeDialog.grand_total))}</>
                 )}
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Prices Dialog */}
+      <Dialog open={!!rejectingOrder} onOpenChange={o => { if (!o) setRejectingOrder(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Reject Prices</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">Tell the supplier why you're rejecting the prices so they can adjust.</p>
+          <Textarea value={rejectComment} onChange={e => setRejectComment(e.target.value)} placeholder="e.g. Prices too high, I expected wholesale rates..." className="min-h-[80px]" />
+          <Button variant="destructive" onClick={() => rejectingOrder && rejectPrices(rejectingOrder)} disabled={syncing} className="w-full">
+            {syncing ? 'Sending...' : '🔄 Reject & Request Re-pricing'}
+          </Button>
         </DialogContent>
       </Dialog>
 

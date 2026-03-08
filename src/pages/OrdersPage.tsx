@@ -180,7 +180,7 @@ export default function OrdersPage() {
       type, name,
       items.map(item => ({ ...item, subtotal: item.quantity * item.unit_price })),
       grandTotal, type === 'request' ? 'pending' : 'confirmed',
-      recipientBusinessId
+      recipientBusinessId, comment
     );
     setItems([]);
     setCustomerName('');

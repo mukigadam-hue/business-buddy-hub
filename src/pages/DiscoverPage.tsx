@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import BusinessDetailDialog from '@/components/BusinessDetailDialog';
 
 interface DiscoveredBusiness {
   id: string;
@@ -25,6 +26,7 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedBiz, setSelectedBiz] = useState<DiscoveredBusiness | null>(null);
 
   const searchBusinesses = useCallback(async (searchQuery: string) => {
     setLoading(true);
@@ -97,7 +99,7 @@ export default function DiscoverPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {results.map(biz => (
-            <Card key={biz.id} className="overflow-hidden hover:shadow-md transition-shadow">
+            <Card key={biz.id} className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedBiz(biz)}>
               <CardContent className="p-4 space-y-3">
                 {/* Header */}
                 <div className="flex items-start gap-3">
@@ -120,12 +122,10 @@ export default function DiscoverPage() {
                   </div>
                 </div>
 
-                {/* Description */}
                 {biz.products_description && (
                   <p className="text-xs text-muted-foreground line-clamp-2">{biz.products_description}</p>
                 )}
 
-                {/* Details */}
                 <div className="space-y-1.5 text-xs text-muted-foreground">
                   {biz.address && (
                     <div className="flex items-center gap-1.5">
@@ -139,21 +139,14 @@ export default function DiscoverPage() {
                       <span>{biz.contact}</span>
                     </div>
                   )}
-                  {biz.email && (
-                    <div className="flex items-center gap-1.5">
-                      <Mail className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{biz.email}</span>
-                    </div>
-                  )}
                 </div>
 
-                {/* Business Code */}
                 {biz.business_code && (
                   <Button
                     variant="outline"
                     size="sm"
                     className="w-full text-xs font-mono gap-2"
-                    onClick={() => copyCode(biz.business_code!)}
+                    onClick={(e) => { e.stopPropagation(); copyCode(biz.business_code!); }}
                   >
                     {copiedCode === biz.business_code ? (
                       <><Check className="h-3 w-3 text-primary" />Copied!</>
@@ -167,6 +160,12 @@ export default function DiscoverPage() {
           ))}
         </div>
       )}
+
+      <BusinessDetailDialog
+        business={selectedBiz}
+        open={!!selectedBiz}
+        onOpenChange={(open) => { if (!open) setSelectedBiz(null); }}
+      />
     </div>
   );
 }

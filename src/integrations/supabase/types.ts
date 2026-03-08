@@ -174,6 +174,44 @@ export type Database = {
           },
         ]
       }
+      business_reviews: {
+        Row: {
+          business_id: string
+          comment: string
+          created_at: string
+          id: string
+          likes_count: number
+          rating: number
+          reviewer_id: string
+        }
+        Insert: {
+          business_id: string
+          comment?: string
+          created_at?: string
+          id?: string
+          likes_count?: number
+          rating?: number
+          reviewer_id: string
+        }
+        Update: {
+          business_id?: string
+          comment?: string
+          created_at?: string
+          id?: string
+          likes_count?: number
+          rating?: number
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_reviews_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_team_members: {
         Row: {
           business_id: string
@@ -1024,6 +1062,35 @@ export type Database = {
         }
         Relationships: []
       }
+      review_likes: {
+        Row: {
+          created_at: string
+          id: string
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_likes_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "business_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_items: {
         Row: {
           category: string
@@ -1339,6 +1406,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_business_public_products: {
+        Args: { _business_id: string; _limit?: number }
+        Returns: {
+          category: string
+          id: string
+          image_url_1: string
+          name: string
+          quality: string
+          quantity: number
+          retail_price: number
+        }[]
+      }
+      get_business_reviews: {
+        Args: { _business_id: string; _limit?: number; _offset?: number }
+        Returns: {
+          comment: string
+          created_at: string
+          id: string
+          likes_count: number
+          rating: number
+          reviewer_id: string
+          reviewer_name: string
+        }[]
+      }
       get_user_role_in_business: {
         Args: { _business_id: string; _user_id: string }
         Returns: string

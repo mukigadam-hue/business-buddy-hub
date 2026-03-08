@@ -304,18 +304,23 @@ export default function SalesPage() {
               <div className="flex flex-wrap gap-2 items-end">
                 <div className="flex-1 min-w-[180px]">
                   <Label className="text-xs">Select Part</Label>
-                  <Select value={selectedPartStock} onValueChange={setSelectedPartStock}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose from stock..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availablePartsStock.map(s => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-1.5">
+                    <Select value={selectedPartStock} onValueChange={setSelectedPartStock}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Choose from stock..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availablePartsStock.map(s => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" variant="outline" size="icon" className="shrink-0 h-9 w-9" onClick={() => setPartScannerOpen(true)} title="Scan barcode">
+                      <ScanLine className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="w-16">
                   <Label className="text-xs">Qty</Label>

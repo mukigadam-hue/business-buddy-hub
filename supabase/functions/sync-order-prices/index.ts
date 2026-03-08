@@ -181,8 +181,6 @@ Deno.serve(async (req) => {
 
     if (action === "submit_payment") {
       // Buyer submits payment proof → update request order + notify supplier
-      const { paymentMethod, proofUrl } = await req.json().catch(() => ({}));
-      
       await admin.from("orders").update({ 
         payment_method: paymentMethod || "mobile_money",
         proof_url: proofUrl || null,

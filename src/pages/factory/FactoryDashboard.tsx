@@ -43,28 +43,28 @@ export default function FactoryDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="gradient-primary rounded-xl p-6 text-primary-foreground">
-        <div className="flex items-start gap-4">
+      <div className="gradient-primary rounded-xl p-4 sm:p-6 text-primary-foreground">
+        <div className="flex items-start gap-3 sm:gap-4">
           <div className="shrink-0">
             {currentBusiness?.logo_url ? (
               <div className="relative cursor-pointer" onClick={() => setShowLogoUpload(v => !v)}>
-                <img src={currentBusiness.logo_url} alt="Logo" className="h-16 w-16 rounded-xl object-cover border-2 border-primary-foreground/30" />
+                <img src={currentBusiness.logo_url} alt="Logo" className="h-12 w-12 sm:h-16 sm:w-16 rounded-xl object-cover border-2 border-primary-foreground/30" />
               </div>
             ) : (
               <button onClick={() => setShowLogoUpload(v => !v)}
-                className="h-16 w-16 rounded-xl border-2 border-dashed border-primary-foreground/40 flex items-center justify-center hover:border-primary-foreground/70 transition-colors">
-                <Camera className="h-6 w-6 opacity-60" />
+                className="h-12 w-12 sm:h-16 sm:w-16 rounded-xl border-2 border-dashed border-primary-foreground/40 flex items-center justify-center hover:border-primary-foreground/70 transition-colors">
+                <Camera className="h-5 w-5 sm:h-6 sm:w-6 opacity-60" />
               </button>
             )}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <Factory className="h-6 w-6" />
-              <h1 className="text-2xl font-bold">{currentBusiness?.name || 'My Factory'}</h1>
+              <Factory className="h-5 w-5 sm:h-6 sm:w-6" />
+              <h1 className="text-lg sm:text-2xl font-bold truncate">{currentBusiness?.name || 'My Factory'}</h1>
             </div>
-            <p className="text-sm opacity-80 mt-1">Factory Manager</p>
-            <div className="flex flex-wrap gap-4 mt-2 text-sm opacity-90">
-              {currentBusiness?.address && <span>📍 {currentBusiness.address}</span>}
+            <p className="text-xs sm:text-sm opacity-80 mt-1">Factory Manager</p>
+            <div className="flex flex-wrap gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm opacity-90">
+              {currentBusiness?.address && <span className="truncate max-w-[150px] sm:max-w-none">📍 {currentBusiness.address}</span>}
               {currentBusiness?.contact && <span>📞 {currentBusiness.contact}</span>}
             </div>
           </div>
@@ -85,42 +85,42 @@ export default function FactoryDashboard() {
       <QuickAddItem open={showQuickAdd} onOpenChange={setShowQuickAdd} />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10"><Package className="h-5 w-5 text-primary" /></div>
-              <div><p className="text-xs text-muted-foreground">Raw Materials</p><p className="text-xl font-bold">{activeRawMaterials.length}</p></div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10"><Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /></div>
+              <div><p className="text-[10px] sm:text-xs text-muted-foreground">Raw Materials</p><p className="text-lg sm:text-xl font-bold">{activeRawMaterials.length}</p></div>
             </div>
           </CardContent>
         </Card>
         <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/10"><Package className="h-5 w-5 text-accent" /></div>
-              <div><p className="text-xs text-muted-foreground">Products</p><p className="text-xl font-bold">{activeProducts.length}</p></div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-accent/10"><Package className="h-4 w-4 sm:h-5 sm:w-5 text-accent" /></div>
+              <div><p className="text-[10px] sm:text-xs text-muted-foreground">Products</p><p className="text-lg sm:text-xl font-bold">{activeProducts.length}</p></div>
             </div>
           </CardContent>
         </Card>
         <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10"><DollarSign className="h-5 w-5 text-success" /></div>
-              <div><p className="text-xs text-muted-foreground">Today's Revenue</p><p className="text-xl font-bold text-success">{fmt(todayRevenue)}</p></div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-success/10"><DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-success" /></div>
+              <div className="min-w-0"><p className="text-[10px] sm:text-xs text-muted-foreground">Today's Revenue</p><p className="text-base sm:text-xl font-bold text-success truncate">{fmt(todayRevenue)}</p></div>
             </div>
           </CardContent>
         </Card>
         <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/10"><Flame className="h-5 w-5 text-destructive" /></div>
-              <div><p className="text-xs text-muted-foreground">Today's Expenses</p><p className="text-xl font-bold text-destructive">{fmt(todayExpenseTotal)}</p></div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-destructive/10"><Flame className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" /></div>
+              <div className="min-w-0"><p className="text-[10px] sm:text-xs text-muted-foreground">Today's Expenses</p><p className="text-base sm:text-xl font-bold text-destructive truncate">{fmt(todayExpenseTotal)}</p></div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         <Card className="shadow-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">

@@ -218,7 +218,7 @@ export default function SalesPage() {
           <h2 className="text-base font-semibold">Record New Sale</h2>
 
           {/* Buyer & Seller names — required */}
-          <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
             <div>
               <Label className="text-xs font-semibold text-destructive">Buyer Name *</Label>
               <Input value={buyerName} onChange={e => setBuyerName(e.target.value)} onBlur={() => setBuyerName(toSentenceCase(buyerName))} placeholder="Customer name (required)" />
@@ -232,8 +232,8 @@ export default function SalesPage() {
           {/* Stock Items */}
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">📦 Stock Items</p>
-            <div className="flex flex-wrap gap-3 items-end">
-              <div className="flex-1 min-w-[200px]">
+            <div className="space-y-3 sm:space-y-0 sm:flex sm:flex-wrap sm:gap-3 sm:items-end">
+              <div className="w-full sm:flex-1 sm:min-w-[200px]">
                 <Label>Item</Label>
                 <Select value={selectedStock} onValueChange={setSelectedStock}>
                   <SelectTrigger>
@@ -248,18 +248,20 @@ export default function SalesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="w-20"><Label>Qty</Label><Input type="number" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} /></div>
-              <div className="w-32">
-                <Label>Price Type</Label>
-                <Select value={priceType} onValueChange={v => setPriceType(v as 'wholesale' | 'retail')}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="retail">Retail</SelectItem>
-                    <SelectItem value="wholesale">Wholesale</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-2 sm:contents">
+                <div className="sm:w-20"><Label>Qty</Label><Input type="number" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} /></div>
+                <div className="sm:w-32">
+                  <Label>Price Type</Label>
+                  <Select value={priceType} onValueChange={v => setPriceType(v as 'wholesale' | 'retail')}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="retail">Retail</SelectItem>
+                      <SelectItem value="wholesale">Wholesale</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <Button onClick={addItem} disabled={!selectedStock}><Plus className="h-4 w-4 mr-1" />Add Item</Button>
+              <Button onClick={addItem} disabled={!selectedStock} className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
             </div>
           </div>
 

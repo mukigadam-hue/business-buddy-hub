@@ -1,0 +1,1 @@
+ALTER TABLE public.factory_production ADD COLUMN batch_number text NOT NULL DEFAULT '';

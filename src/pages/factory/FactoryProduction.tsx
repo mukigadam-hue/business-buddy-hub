@@ -23,12 +23,18 @@ export default function FactoryProduction() {
   const activeRM = rawMaterials.filter(r => !r.deleted_at);
   const activeProducts = stock.filter(s => !s.deleted_at);
 
+  const generateBatchNumber = () => {
+    const date = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `B${date}-${rand}`;
+  };
+
   const [form, setForm] = useState({
     product_name: '', product_stock_id: '', quantity_produced: '',
     waste_quantity: '0', waste_unit: 'Pieces',
     production_date: new Date().toISOString().slice(0, 10),
     expiry_date: '',
-    recorded_by: '', notes: '',
+    recorded_by: '', notes: '', batch_number: generateBatchNumber(),
   });
 
   // Materials used in this production
@@ -90,13 +96,14 @@ export default function FactoryProduction() {
       expiry_date: form.expiry_date || null,
       recorded_by: toSentenceCase(form.recorded_by.trim()) || 'Staff',
       notes: form.notes.trim(),
+      batch_number: form.batch_number.trim(),
     });
 
     setForm({
       product_name: '', product_stock_id: '', quantity_produced: '',
       waste_quantity: '0', waste_unit: 'Pieces',
       production_date: new Date().toISOString().slice(0, 10),
-      expiry_date: '', recorded_by: '', notes: '',
+      expiry_date: '', recorded_by: '', notes: '', batch_number: generateBatchNumber(),
     });
     setMaterialsUsed([]);
     refreshFactory();
@@ -164,7 +171,8 @@ export default function FactoryProduction() {
               <div><Label>Recorded By</Label><Input value={form.recorded_by} onChange={e => setForm(f => ({ ...f, recorded_by: e.target.value }))} placeholder="Name" /></div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label>Batch Number *</Label><Input value={form.batch_number} onChange={e => setForm(f => ({ ...f, batch_number: e.target.value }))} placeholder="B240308-XK2A" required /></div>
               <div><Label>Production Date *</Label><Input type="date" value={form.production_date} onChange={e => setForm(f => ({ ...f, production_date: e.target.value }))} required /></div>
               <div><Label>Expiry Date</Label><Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} /></div>
             </div>
@@ -224,7 +232,14 @@ export default function FactoryProduction() {
                 <div key={p.id} className="border rounded-lg p-3">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-sm font-medium">{p.product_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{p.product_name}</p>
+                        {p.batch_number && (
+                          <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                            {p.batch_number}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         📅 Produced: {new Date(p.production_date).toLocaleDateString()}
                         {p.expiry_date && ` · Expires: ${new Date(p.expiry_date).toLocaleDateString()}`}

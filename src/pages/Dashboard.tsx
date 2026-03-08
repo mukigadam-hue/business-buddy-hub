@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Package, TrendingUp, AlertTriangle, XCircle, DollarSign, ShoppingCart, Wrench, Camera } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import QuickAddItem from '@/components/QuickAddItem';
+import AdSpace from '@/components/AdSpace';
 
 export default function Dashboard() {
   const { currentBusiness, updateBusiness, stock, sales, services, purchases } = useBusiness();

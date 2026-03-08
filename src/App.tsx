@@ -21,7 +21,7 @@ import NotFound from "./pages/NotFound";
 import ContactsPage from "./pages/ContactsPage";
 import BusinessExpenses from "./pages/BusinessExpenses";
 import DiscoverPage from "./pages/DiscoverPage";
-
+import CheckoutPage from "./pages/CheckoutPage";
 
 
 // Factory pages
@@ -118,6 +118,7 @@ function BusinessContent() {
         <Route path="/discover" element={<DiscoverPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/expenses" element={<BusinessExpenses />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/team" element={<TeamPage />} />
         <Route path="*" element={<NotFound />} />

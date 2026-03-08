@@ -23,7 +23,7 @@ interface ReceiptProps {
   customerName?: string;
   code?: string;
   date: string;
-  type: 'sale' | 'order' | 'service' | 'checkout';
+  type: 'sale' | 'order' | 'service' | 'checkout' | 'purchase';
   businessInfo?: { name: string; address: string; contact: string; email: string };
 }
 

@@ -208,7 +208,7 @@ function DiscoverVisibilityCard({ businessId }: { businessId: string }) {
           </p>
           <div className="flex gap-2">
             <Input placeholder="Enter business code..." value={blockCode} onChange={e => setBlockCode(e.target.value.toUpperCase())}
-              className="font-mono text-sm" maxLength={8}
+              className="font-mono text-sm" maxLength={14}
               onKeyDown={e => e.key === 'Enter' && addBlock()} />
             <Button size="sm" onClick={addBlock} disabled={loading || !blockCode.trim()}>
               <ShieldBan className="h-3.5 w-3.5 mr-1" />Block

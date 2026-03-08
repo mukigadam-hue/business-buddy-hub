@@ -985,6 +985,69 @@ export default function OrdersPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Allocate Items Dialog */}
+      <Dialog open={!!allocateOrder} onOpenChange={o => { if (!o) setAllocateOrder(null); }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Allocate Order Items — {allocateOrder?.code}</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            Choose where each item goes: <strong>{isFactory ? 'Input Stock' : 'Stock'}</strong> or <strong>Expenses</strong>.
+          </p>
+          {allocateOrder && (
+            <div className="space-y-3">
+              {allocateOrder.items.map((item, i) => (
+                <div key={i} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-sm">{item.item_name} × {item.quantity}</p>
+                      <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')} — {fmt(Number(item.subtotal))}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setAllocations(prev => ({ ...prev, [i]: 'stock' }))}
+                      className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-lg border-2 text-xs font-medium transition-all ${
+                        allocations[i] === 'stock' ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-muted-foreground/30'
+                      }`}
+                    >
+                      <Package className="h-3.5 w-3.5" />
+                      {isFactory ? 'Input Stock' : 'Stock'}
+                    </button>
+                    <button
+                      onClick={() => setAllocations(prev => ({ ...prev, [i]: 'expense' }))}
+                      className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-lg border-2 text-xs font-medium transition-all ${
+                        allocations[i] === 'expense' ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border hover:border-muted-foreground/30'
+                      }`}
+                    >
+                      <Flame className="h-3.5 w-3.5" />
+                      Expense
+                    </button>
+                  </div>
+                  {allocations[i] === 'expense' && (
+                    <Select value={expenseCategory[i] || 'Other'} onValueChange={v => setExpenseCategory(prev => ({ ...prev, [i]: v }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Expense category..." /></SelectTrigger>
+                      <SelectContent>
+                        {EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              ))}
+
+              <div className="border-t pt-3 space-y-1.5">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>→ {isFactory ? 'Input Stock' : 'Stock'}: {Object.values(allocations).filter(v => v === 'stock').length} items</span>
+                  <span>→ Expenses: {Object.values(allocations).filter(v => v === 'expense').length} items</span>
+                </div>
+              </div>
+
+              <Button onClick={handleAllocateItems} className="w-full" disabled={allocating}>
+                {allocating ? 'Allocating...' : <><CheckCircle className="h-4 w-4 mr-2" />Confirm Allocation</>}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

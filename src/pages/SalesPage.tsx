@@ -142,7 +142,7 @@ export default function SalesPage() {
     ];
 
     const paidAmt = paymentStatus === 'paid' ? grandTotal : (parseFloat(amountPaid) || 0);
-    const newSale = await addSale(allItems, grandTotal, toSentenceCase(sellerName.trim()), toSentenceCase(buyerName.trim()), undefined, undefined, paymentStatus, paidAmt);
+    const newSale = await addSale(allItems, grandTotal, toTitleCase(sellerName.trim()), toTitleCase(buyerName.trim()), undefined, undefined, paymentStatus, paidAmt);
     
     // Auto-save receipt
     if (newSale && currentBusiness) {

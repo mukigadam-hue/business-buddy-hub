@@ -354,6 +354,9 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Discovery Visibility */}
+      <DiscoverVisibilityCard businessId={currentBusiness?.id || ''} />
+
       {/* Currency Setting */}
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-3">

@@ -723,14 +723,14 @@ export default function OrdersPage() {
 
       {/* Tab selector at top */}
       <div className="flex gap-2 flex-wrap">
-        {(['my_order', 'inbox', 'request'] as const).map(mode => (
+        {(['my_order', 'request'] as const).map(mode => (
           <Button
             key={mode}
             size="sm"
             variant={orderMode === mode ? 'default' : 'outline'}
             onClick={() => { setOrderMode(mode); setItems([]); setCustomerName(''); }}
           >
-            {mode === 'my_order' ? '📋 Live Order' : mode === 'inbox' ? '📥 Inbox' : '📨 My Request'}
+            {mode === 'my_order' ? '📋 New Order (Walk-in)' : '📨 Order from Supplier'}
           </Button>
         ))}
       </div>
@@ -740,12 +740,12 @@ export default function OrdersPage() {
         <Card className="shadow-card">
           <CardContent className="p-4 space-y-4">
             <h2 className="text-base font-semibold">
-              {orderMode === 'my_order' ? 'Create Live Order' : 'Send Request Order'}
+              {orderMode === 'my_order' ? 'Create Order for Walk-in Customer' : 'Order Items from a Supplier'}
             </h2>
 
             {orderMode === 'request' && (
               <div className="p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground border">
-                <strong>My Request:</strong> You are ordering without setting prices. The supplier will fill in prices and send back for your approval.
+                <strong>How it works:</strong> List the items you need and send to your supplier. They will set the prices and send back for you to review. Once you approve, you make payment and they confirm receipt.
               </div>
             )}
 
@@ -902,22 +902,27 @@ export default function OrdersPage() {
       {/* Orders Lists */}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="live_orders">Live Orders ({liveOrders.length})</TabsTrigger>
-          <TabsTrigger value="inbox">Inbox ({inboxOrders.length})</TabsTrigger>
-          <TabsTrigger value="my_requests">My Requests ({myRequests.length})</TabsTrigger>
+          <TabsTrigger value="live_orders">My Orders ({liveOrders.length})</TabsTrigger>
+          <TabsTrigger value="inbox">Customer Orders ({inboxOrders.length})</TabsTrigger>
+          <TabsTrigger value="my_requests">Sent to Supplier ({myRequests.length})</TabsTrigger>
         </TabsList>
-        <TabsContent value="live_orders" className="space-y-3 mt-4 max-h-[500px] overflow-y-auto pr-1">
-          {liveOrders.length === 0 ? <p className="text-sm text-muted-foreground">No live orders yet.</p> : liveOrders.map(o => <OrderCard key={o.id} order={o} />)}
-        </TabsContent>
-        <TabsContent value="inbox" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-2">Orders received from other businesses. Tag prices → buyer confirms → buyer pays → you confirm payment → issue receipt.</p>
+        <TabsContent value="live_orders" className="space-y-3 mt-4">
+          <p className="text-xs text-muted-foreground mb-2">Orders you created yourself for walk-in customers or internal use.</p>
           <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
-            {inboxOrders.length === 0 ? <p className="text-sm text-muted-foreground">No inbox orders.</p> : inboxOrders.map(o => <OrderCard key={o.id} order={o} showStockStatus />)}
+            {liveOrders.length === 0 ? <p className="text-sm text-muted-foreground">No orders yet.</p> : liveOrders.map(o => <OrderCard key={o.id} order={o} />)}
           </div>
         </TabsContent>
-        <TabsContent value="my_requests" className="space-y-3 mt-4 max-h-[500px] overflow-y-auto pr-1">
-          <p className="text-xs text-muted-foreground mb-2">Orders you sent. Supplier prices → you confirm/reject → you pay → supplier confirms → receipt issued.</p>
-          {myRequests.length === 0 ? <p className="text-sm text-muted-foreground">No requests sent yet.</p> : myRequests.map(o => <OrderCard key={o.id} order={o} />)}
+        <TabsContent value="inbox" className="space-y-3 mt-4">
+          <p className="text-xs text-muted-foreground mb-2">📥 Orders placed by other businesses who want to buy from you. You set the prices → they review & pay → you confirm payment → give receipt.</p>
+          <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
+            {inboxOrders.length === 0 ? <p className="text-sm text-muted-foreground">No customer orders received yet.</p> : inboxOrders.map(o => <OrderCard key={o.id} order={o} showStockStatus />)}
+          </div>
+        </TabsContent>
+        <TabsContent value="my_requests" className="space-y-3 mt-4">
+          <p className="text-xs text-muted-foreground mb-2">📨 Orders you sent to your suppliers. They set the prices → you review & pay → they confirm payment → you get a receipt.</p>
+          <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
+            {myRequests.length === 0 ? <p className="text-sm text-muted-foreground">No orders sent to suppliers yet.</p> : myRequests.map(o => <OrderCard key={o.id} order={o} />)}
+          </div>
         </TabsContent>
       </Tabs>
 

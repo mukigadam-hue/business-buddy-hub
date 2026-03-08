@@ -159,7 +159,7 @@ export default function FactorySales() {
       }));
       await saveReceipt({
         business_id: currentBusiness.id, receipt_type: 'sale', transaction_id: sale.id,
-        buyer_name: toSentenceCase(customerName.trim()), seller_name: toSentenceCase(sellerName.trim()),
+        buyer_name: toTitleCase(customerName.trim()), seller_name: toTitleCase(sellerName.trim()),
         grand_total: grandTotal, items: receiptItems,
         business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
         code: null,

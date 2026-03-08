@@ -1,0 +1,2 @@
+ALTER PUBLICATION supabase_realtime ADD TABLE public.factory_worker_payments;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.factory_worker_advances;

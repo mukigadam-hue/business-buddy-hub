@@ -10,8 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit2, Trash2, Users, UserPlus, Send, Share2, MessageCircle, Calendar, Clock, User } from 'lucide-react';
-import { toast } from 'sonner';
+import { Plus, Edit2, Trash2, Users, UserPlus, Send, Calendar, Clock, User, Wallet } from 'lucide-react';
+import WorkerPaymentManager from '@/components/factory/WorkerPaymentManager';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 
@@ -56,6 +56,8 @@ export default function FactoryTeam() {
       phone: form.phone.trim(),
       hire_date: form.hire_date,
       is_active: true,
+      payment_frequency: 'monthly',
+      next_payment_due: new Date().toISOString().slice(0, 10),
     });
     resetForm(); setShowAdd(false);
   }
@@ -105,123 +107,137 @@ export default function FactoryTeam() {
         {isOwnerOrAdmin && <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Worker</Button>}
       </div>
 
-      {/* Worker's own profile (when not owner/admin) */}
-      {!isOwnerOrAdmin && (() => {
-        const myMembership = memberships.find((m: any) => m.business_id === currentBusiness?.id && m.user_id === user?.id);
-        const myTeamRecord = teamMembers.find(t => t.full_name.toLowerCase() === (user?.user_metadata?.full_name || '').toLowerCase());
-        const joinDate = myMembership?.created_at;
-        const tenure = joinDate ? Math.floor((Date.now() - new Date(joinDate).getTime()) / (1000 * 60 * 60 * 24)) : 0;
-        const tenureLabel = tenure < 30 ? `${tenure} days` : tenure < 365 ? `${Math.floor(tenure / 30)} months` : `${Math.floor(tenure / 365)} yr ${Math.floor((tenure % 365) / 30)} mo`;
-        return (
-          <Card className="shadow-card border-primary/20">
-            <CardContent className="p-4">
-              <h2 className="text-base font-semibold flex items-center gap-2 mb-3"><User className="h-4 w-4" /> My Employment Details</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                  <p className="text-xs text-muted-foreground">Role</p>
-                  <p className="text-sm font-semibold capitalize">{myMembership?.role || 'worker'}</p>
-                </div>
-                {myTeamRecord && (
-                  <div className="p-3 rounded-lg bg-success/5 border border-success/20">
-                    <p className="text-xs text-muted-foreground">Salary</p>
-                    <p className="text-sm font-semibold text-success">{fmt(Number(myTeamRecord.salary))}/mo</p>
+      {/* Main Tabs: Team / Payments */}
+      <Tabs defaultValue="team" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="team" className="flex items-center gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>
+          <TabsTrigger value="payments" className="flex items-center gap-2"><Wallet className="h-4 w-4" /> Payments</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="team" className="space-y-6 mt-4">
+          {/* Worker's own profile (when not owner/admin) */}
+          {!isOwnerOrAdmin && (() => {
+            const myMembership = memberships.find((m: any) => m.business_id === currentBusiness?.id && m.user_id === user?.id);
+            const myTeamRecord = teamMembers.find(t => t.full_name.toLowerCase() === (user?.user_metadata?.full_name || '').toLowerCase());
+            const joinDate = myMembership?.created_at;
+            const tenure = joinDate ? Math.floor((Date.now() - new Date(joinDate).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+            const tenureLabel = tenure < 30 ? `${tenure} days` : tenure < 365 ? `${Math.floor(tenure / 30)} months` : `${Math.floor(tenure / 365)} yr ${Math.floor((tenure % 365) / 30)} mo`;
+            return (
+              <Card className="shadow-card border-primary/20">
+                <CardContent className="p-4">
+                  <h2 className="text-base font-semibold flex items-center gap-2 mb-3"><User className="h-4 w-4" /> My Employment Details</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                      <p className="text-xs text-muted-foreground">Role</p>
+                      <p className="text-sm font-semibold capitalize">{myMembership?.role || 'worker'}</p>
+                    </div>
+                    {myTeamRecord && (
+                      <div className="p-3 rounded-lg bg-success/5 border border-success/20">
+                        <p className="text-xs text-muted-foreground">Salary</p>
+                        <p className="text-sm font-semibold text-success">{fmt(Number(myTeamRecord.salary))}/mo</p>
+                      </div>
+                    )}
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Hired</p>
+                      <p className="text-sm font-semibold">{myTeamRecord?.hire_date ? new Date(myTeamRecord.hire_date).toLocaleDateString() : joinDate ? new Date(joinDate).toLocaleDateString() : 'N/A'}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Tenure</p>
+                      <p className="text-sm font-semibold">{tenureLabel}</p>
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Invite Section */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card className="shadow-card border-dashed">
+              <CardContent className="p-4 space-y-3">
+                <h2 className="text-sm font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite App Users</h2>
+                {workerCode ? (
+                  <div className="rounded-lg p-3 text-center bg-primary/5">
+                    <span className="text-2xl font-mono font-bold tracking-widest">{workerCode}</span>
+                    <p className="text-xs text-muted-foreground mt-1">🔐 Worker Code — Expires in 7 days</p>
+                  </div>
+                ) : (
+                  <Button onClick={handleGenCode} disabled={loading} size="sm">Generate Invite Code</Button>
                 )}
-                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Hired</p>
-                  <p className="text-sm font-semibold">{myTeamRecord?.hire_date ? new Date(myTeamRecord.hire_date).toLocaleDateString() : joinDate ? new Date(joinDate).toLocaleDateString() : 'N/A'}</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-card border-dashed">
+              <CardContent className="p-4 space-y-3">
+                <h2 className="text-sm font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Redeem Invite Code</h2>
+                <div className="flex gap-2">
+                  <Input placeholder="Enter code" value={redeemCode} onChange={e => setRedeemCode(e.target.value.toUpperCase())} className="font-mono" maxLength={10} />
+                  <Button onClick={handleRedeem} disabled={loading || !redeemCode.trim()} size="sm">Join</Button>
                 </div>
-                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Tenure</p>
-                  <p className="text-sm font-semibold">{tenureLabel}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Invite Section */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <Card className="shadow-card border-dashed">
-          <CardContent className="p-4 space-y-3">
-            <h2 className="text-sm font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite App Users</h2>
-            {workerCode ? (
-              <div className="rounded-lg p-3 text-center bg-primary/5">
-                <span className="text-2xl font-mono font-bold tracking-widest">{workerCode}</span>
-                <p className="text-xs text-muted-foreground mt-1">🔐 Worker Code — Expires in 7 days</p>
-              </div>
-            ) : (
-              <Button onClick={handleGenCode} disabled={loading} size="sm">Generate Invite Code</Button>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="shadow-card border-dashed">
-          <CardContent className="p-4 space-y-3">
-            <h2 className="text-sm font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Redeem Invite Code</h2>
-            <div className="flex gap-2">
-              <Input placeholder="Enter code" value={redeemCode} onChange={e => setRedeemCode(e.target.value.toUpperCase())} className="font-mono" maxLength={10} />
-              <Button onClick={handleRedeem} disabled={loading || !redeemCode.trim()} size="sm">Join</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Team by Rank */}
+          {Object.keys(rankGroups).length === 0 ? (
+            <Card className="shadow-card">
+              <CardContent className="p-4 text-center py-8">
+                <p className="text-sm text-muted-foreground">No team members yet. Add your first worker above.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            Object.entries(rankGroups).sort(([a], [b]) => a.localeCompare(b)).map(([rank, members]) => (
+              <Card key={rank} className="shadow-card">
+                <CardContent className="p-4">
+                  <h2 className="text-sm font-semibold mb-3 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+                    {rank === 'Supervisor' && '👔'} {rank === 'Inspector' && '🔍'} {rank === 'Maintenance' && '🔧'}
+                    {rank === 'Security' && '🛡️'} {rank === 'Worker' && '👷'} {rank}
+                    <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{members.length}</span>
+                  </h2>
+                  <div className="space-y-2">
+                    {members.map(m => (
+                      <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border">
+                        <div>
+                          <p className="text-sm font-medium">{m.full_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {m.phone && `📞 ${m.phone} · `}
+                            Hired: {new Date(m.hire_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isOwnerOrAdmin && <span className="text-sm font-semibold text-success tabular-nums">{fmt(Number(m.salary))}/mo</span>}
+                          {isOwnerOrAdmin && <Button variant="ghost" size="icon" onClick={() => openEdit(m)}><Edit2 className="h-3.5 w-3.5" /></Button>}
+                          {isOwnerOrAdmin && <Button variant="ghost" size="icon" onClick={() => updateTeamMember(m.id, { is_active: false })}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
 
-      {/* Team by Rank */}
-      {Object.keys(rankGroups).length === 0 ? (
-        <Card className="shadow-card">
-          <CardContent className="p-4 text-center py-8">
-            <p className="text-sm text-muted-foreground">No team members yet. Add your first worker above.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        Object.entries(rankGroups).sort(([a], [b]) => a.localeCompare(b)).map(([rank, members]) => (
-          <Card key={rank} className="shadow-card">
-            <CardContent className="p-4">
-              <h2 className="text-sm font-semibold mb-3 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
-                {rank === 'Supervisor' && '👔'} {rank === 'Inspector' && '🔍'} {rank === 'Maintenance' && '🔧'}
-                {rank === 'Security' && '🛡️'} {rank === 'Worker' && '👷'} {rank}
-                <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{members.length}</span>
-              </h2>
-              <div className="space-y-2">
-                {members.map(m => (
-                   <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border">
-                     <div>
-                       <p className="text-sm font-medium">{m.full_name}</p>
-                       <p className="text-xs text-muted-foreground">
-                         {m.phone && `📞 ${m.phone} · `}
-                         Hired: {new Date(m.hire_date).toLocaleDateString()}
-                       </p>
-                     </div>
-                     <div className="flex items-center gap-2">
-                       {isOwnerOrAdmin && <span className="text-sm font-semibold text-success tabular-nums">{fmt(Number(m.salary))}/mo</span>}
-                       {isOwnerOrAdmin && <Button variant="ghost" size="icon" onClick={() => openEdit(m)}><Edit2 className="h-3.5 w-3.5" /></Button>}
-                       {isOwnerOrAdmin && <Button variant="ghost" size="icon" onClick={() => updateTeamMember(m.id, { is_active: false })}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>}
-                     </div>
-                   </div>
-                 ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      )}
+          {inactiveMembers.length > 0 && (
+            <Card className="shadow-card border-destructive/20">
+              <CardContent className="p-4">
+                <h2 className="text-sm font-semibold text-destructive mb-2">Inactive Members ({inactiveMembers.length})</h2>
+                {inactiveMembers.map(m => (
+                  <div key={m.id} className="flex items-center justify-between p-2 rounded border mb-1">
+                    <span className="text-sm text-muted-foreground">{m.full_name} — {m.rank}</span>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" onClick={() => updateTeamMember(m.id, { is_active: true })}>Reactivate</Button>
+                      <Button size="sm" variant="destructive" onClick={() => deleteTeamMember(m.id)}>Remove</Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-      {inactiveMembers.length > 0 && (
-        <Card className="shadow-card border-destructive/20">
-          <CardContent className="p-4">
-            <h2 className="text-sm font-semibold text-destructive mb-2">Inactive Members ({inactiveMembers.length})</h2>
-            {inactiveMembers.map(m => (
-              <div key={m.id} className="flex items-center justify-between p-2 rounded border mb-1">
-                <span className="text-sm text-muted-foreground">{m.full_name} — {m.rank}</span>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => updateTeamMember(m.id, { is_active: true })}>Reactivate</Button>
-                  <Button size="sm" variant="destructive" onClick={() => deleteTeamMember(m.id)}>Remove</Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="payments" className="mt-4">
+          <WorkerPaymentManager isOwnerOrAdmin={isOwnerOrAdmin} />
+        </TabsContent>
+      </Tabs>
 
       {/* Add/Edit Dialog */}
       <Dialog open={showAdd || !!editId} onOpenChange={o => { if (!o) { setShowAdd(false); setEditId(null); resetForm(); } }}>

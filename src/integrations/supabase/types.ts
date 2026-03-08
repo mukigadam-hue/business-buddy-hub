@@ -333,6 +333,8 @@ export type Database = {
           hire_date: string
           id: string
           is_active: boolean
+          next_payment_due: string | null
+          payment_frequency: string
           phone: string
           rank: string
           salary: number
@@ -344,6 +346,8 @@ export type Database = {
           hire_date?: string
           id?: string
           is_active?: boolean
+          next_payment_due?: string | null
+          payment_frequency?: string
           phone?: string
           rank?: string
           salary?: number
@@ -355,6 +359,8 @@ export type Database = {
           hire_date?: string
           id?: string
           is_active?: boolean
+          next_payment_due?: string | null
+          payment_frequency?: string
           phone?: string
           rank?: string
           salary?: number
@@ -365,6 +371,117 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factory_worker_advances: {
+        Row: {
+          amount: number
+          business_id: string
+          created_at: string
+          date_given: string
+          id: string
+          reason: string | null
+          remaining_balance: number
+          status: string
+          worker_id: string
+        }
+        Insert: {
+          amount?: number
+          business_id: string
+          created_at?: string
+          date_given?: string
+          id?: string
+          reason?: string | null
+          remaining_balance?: number
+          status?: string
+          worker_id: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string
+          created_at?: string
+          date_given?: string
+          id?: string
+          reason?: string | null
+          remaining_balance?: number
+          status?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_worker_advances_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factory_worker_advances_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "factory_team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factory_worker_payments: {
+        Row: {
+          advance_deducted: number
+          amount_due: number
+          amount_paid: number
+          business_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          status: string
+          worker_id: string
+        }
+        Insert: {
+          advance_deducted?: number
+          amount_due?: number
+          amount_paid?: number
+          business_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          worker_id: string
+        }
+        Update: {
+          advance_deducted?: number
+          amount_due?: number
+          amount_paid?: number
+          business_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_worker_payments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factory_worker_payments_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "factory_team_members"
             referencedColumns: ["id"]
           },
         ]

@@ -154,11 +154,11 @@ export default function StockPage() {
           <h1 className="text-lg font-bold">My Stock</h1>
           <div className="flex gap-1.5 flex-wrap">
             <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowBuyingPrice(v => !v)}>
-              {showBuyingPrice ? '← Hide' : '💰'} Buy Price
+              {showBuyingPrice ? '← Hide' : '💰 Show'} Buying Price
             </Button>
             <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button size="sm" className="h-7 text-xs"><Plus className="h-3.5 w-3.5 mr-1" /> Add</Button>
+                <Button size="sm" className="h-7 text-xs"><Plus className="h-3.5 w-3.5 mr-1" /> Add Item</Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader><DialogTitle>{editItem ? 'Edit Item' : 'Add New Item'}</DialogTitle></DialogHeader>

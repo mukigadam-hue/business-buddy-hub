@@ -646,21 +646,33 @@ export default function SettingsPage() {
       </Card>
 
       {/* Delete Business */}
-      {userRole === 'owner' && (
-        <Card className="shadow-card border-destructive/30">
-          <CardContent className="p-4 space-y-3">
-            <h2 className="text-base font-semibold text-destructive flex items-center gap-2">
-              <Trash2 className="h-4 w-4" /> Delete Business
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Permanently delete <strong>{currentBusiness?.name}</strong> and all its data. This action cannot be undone.
-            </p>
-            <Button variant="destructive" className="w-full" onClick={() => setShowDeleteDialog(true)}>
-              <Trash2 className="h-4 w-4 mr-2" /> Delete This Business
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {userRole === 'owner' && (() => {
+        const ownedBusinesses = businesses.filter(b => memberships.find(m => m.business_id === b.id && m.role === 'owner'));
+        const isLastOwned = ownedBusinesses.length <= 1;
+        return (
+          <Card className="shadow-card border-destructive/30">
+            <CardContent className="p-4 space-y-3">
+              <h2 className="text-base font-semibold text-destructive flex items-center gap-2">
+                <Trash2 className="h-4 w-4" /> Delete Business
+              </h2>
+              {isLastOwned ? (
+                <p className="text-xs text-muted-foreground bg-destructive/5 border border-destructive/20 rounded-lg p-3">
+                  ⚠️ This is your only business. You must have at least one business to use BizTrack. Create another business first before deleting this one.
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Permanently delete <strong>{currentBusiness?.name}</strong> and all its data. This action cannot be undone.
+                  </p>
+                  <Button variant="destructive" className="w-full" onClick={() => setShowDeleteDialog(true)}>
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete This Business
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Delete Business Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={o => { if (!o) { setDeleteReason(''); setDeleteConfirmName(''); } setShowDeleteDialog(o); }}>

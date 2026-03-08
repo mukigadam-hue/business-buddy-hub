@@ -972,6 +972,33 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     toast.success('Payment updated!');
   }, [purchases]);
 
+  const updateServicePayment = useCallback(async (serviceId: string, amountPaid: number, paymentStatus: string) => {
+    const service = services.find(s => s.id === serviceId);
+    if (!service) return;
+    const bal = Math.max(0, Number(service.cost) - amountPaid);
+    const status = bal <= 0 ? 'paid' : (amountPaid > 0 ? 'partial' : 'unpaid');
+    const { error } = await supabase.from('services').update({
+      amount_paid: amountPaid, balance: bal, payment_status: status,
+    }).eq('id', serviceId);
+    if (error) { toast.error(error.message); return; }
+    setServices(prev => prev.map(s => s.id === serviceId ? { ...s, amount_paid: amountPaid, balance: bal, payment_status: status } : s));
+    // Auto-archive receipt when fully settled
+    if (status === 'paid' && currentBusiness) {
+      await saveReceipt({
+        business_id: currentBusiness.id,
+        receipt_type: 'service',
+        transaction_id: serviceId,
+        buyer_name: service.customer_name,
+        seller_name: service.seller_name,
+        grand_total: Number(service.cost),
+        items: [{ itemName: service.service_name, category: 'Service', quality: service.description || '-', quantity: 1, priceType: 'service', unitPrice: Number(service.cost), subtotal: Number(service.cost) }],
+        business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
+        code: null,
+      });
+    }
+    toast.success('Service payment updated!');
+  }, [services, currentBusiness]);
+
   const refreshData = useCallback(async () => {
     await loadBusinessData();
   }, [currentBusinessId]);

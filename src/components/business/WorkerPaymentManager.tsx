@@ -128,6 +128,8 @@ export default function WorkerPaymentManager({ isOwnerOrAdmin }: Props) {
     const amountPaid = parseFloat(payForm.amount) || 0;
     if (amountPaid <= 0) { toast.error('Enter a valid amount'); return; }
     
+    const balance = getWorkerBalance(selectedWorker.id);
+    const advanceDeduction = Math.min(balance.totalAdvances, selectedWorker.salary);
     const period = getPaymentPeriod(selectedWorker.payment_frequency || 'monthly');
     const existingPayment = workerPayments.find(p => p.worker_id === selectedWorker.id && p.status !== 'completed');
     
@@ -136,13 +138,15 @@ export default function WorkerPaymentManager({ isOwnerOrAdmin }: Props) {
       const newStatus = newPaid >= existingPayment.amount_due ? 'completed' : 'partial';
       await supabase.from('business_worker_payments').update({
         amount_paid: newPaid,
+        advance_deducted: existingPayment.advance_deducted + advanceDeduction,
         status: newStatus,
         paid_at: newStatus === 'completed' ? new Date().toISOString() : null,
         notes: payForm.notes || existingPayment.notes,
       }).eq('id', existingPayment.id);
     } else {
       const amountDue = selectedWorker.salary;
-      const status = amountPaid >= amountDue ? 'completed' : 'partial';
+      const totalSettled = amountPaid + advanceDeduction;
+      const status = totalSettled >= amountDue ? 'completed' : 'partial';
       await supabase.from('business_worker_payments').insert({
         business_id: businessId,
         worker_id: selectedWorker.id,
@@ -150,18 +154,33 @@ export default function WorkerPaymentManager({ isOwnerOrAdmin }: Props) {
         period_end: period.end,
         amount_due: amountDue,
         amount_paid: amountPaid,
-        advance_deducted: 0,
+        advance_deducted: advanceDeduction,
         status,
         paid_at: status === 'completed' ? new Date().toISOString() : null,
-        notes: payForm.notes,
+        notes: payForm.notes || (advanceDeduction > 0 ? `Advance deducted: ${advanceDeduction}` : ''),
       } as any);
+    }
+
+    // Auto-deduct from active advances
+    if (advanceDeduction > 0) {
+      let remaining = advanceDeduction;
+      for (const adv of balance.activeAdvances) {
+        if (remaining <= 0) break;
+        const deductFromThis = Math.min(remaining, adv.remaining_balance);
+        const newBalance = adv.remaining_balance - deductFromThis;
+        await supabase.from('business_worker_advances').update({
+          remaining_balance: newBalance,
+          status: newBalance <= 0 ? 'fully_deducted' : 'active',
+        }).eq('id', adv.id);
+        remaining -= deductFromThis;
+      }
     }
     
     await supabase.from('business_team_members').update({
       next_payment_due: getNextPaymentDate(selectedWorker.payment_frequency || 'monthly'),
     }).eq('id', selectedWorker.id);
     
-    toast.success('Payment recorded!');
+    toast.success(`Payment recorded!${advanceDeduction > 0 ? ` (${fmt(advanceDeduction)} deducted from advance)` : ''}`);
     setShowPayDialog(false);
     setPayForm({ amount: '', notes: '' });
     setSelectedWorker(null);

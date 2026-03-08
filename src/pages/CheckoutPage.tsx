@@ -135,7 +135,7 @@ export default function CheckoutPage() {
           business_id: currentBusiness.id,
           receipt_type: 'checkout',
           transaction_id: (orderData as any).id,
-          buyer_name: toSentenceCase(customerName.trim()),
+          buyer_name: toTitleCase(customerName.trim()),
           seller_name: currentBusiness.name,
           grand_total: grandTotal,
           items: orderItems.map(i => ({

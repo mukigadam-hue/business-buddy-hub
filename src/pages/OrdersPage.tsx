@@ -234,6 +234,11 @@ export default function OrdersPage() {
     setEditNewItem({ name: '', category: '', quality: '', quantity: '1', price: '' });
   }
 
+  // Reject dialog state
+  const [rejectComment, setRejectComment] = useState('');
+  const [rejectingOrder, setRejectingOrder] = useState<Order | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
   function openPricing(order: Order) {
     setPricingOrder(order);
     setPricingComment('');
@@ -258,11 +263,98 @@ export default function OrdersPage() {
 
   async function savePricing() {
     if (!pricingOrder) return;
-    const newTotal = pricingItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
-    await updateOrder(pricingOrder.id, pricingItems, newTotal, 'priced');
-    setPricingOrder(null);
-    setPricingItems([]);
-    setPricingComment('');
+    setSyncing(true);
+    try {
+      const newTotal = pricingItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
+      const itemsPayload = pricingItems.map(item => ({
+        item_name: item.item_name,
+        category: item.category,
+        quality: item.quality,
+        quantity: item.quantity,
+        price_type: item.price_type,
+        unit_price: Number(item.unit_price),
+        subtotal: Number(item.subtotal),
+      }));
+
+      // Use edge function to sync prices to requester's order
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: {
+          inboxOrderId: pricingOrder.id,
+          action: 'send_prices',
+          items: itemsPayload,
+          grandTotal: newTotal,
+          comment: pricingComment || '',
+        },
+      });
+
+      if (res.error || res.data?.error) {
+        // Fallback: just update locally if sync fails (e.g. not a B2B order)
+        await updateOrder(pricingOrder.id, pricingItems, newTotal, 'priced');
+      } else {
+        toast.success('Prices sent to buyer for confirmation!');
+        await refreshData();
+      }
+      setPricingOrder(null);
+      setPricingItems([]);
+      setPricingComment('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save pricing');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function confirmPrices(order: Order) {
+    setSyncing(true);
+    try {
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: { inboxOrderId: order.id, action: 'confirm_prices' },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Failed to confirm');
+      } else {
+        toast.success('Prices confirmed! You can now submit payment.');
+        await refreshData();
+      }
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function rejectPrices(order: Order) {
+    setSyncing(true);
+    try {
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: { inboxOrderId: order.id, action: 'reject_prices', comment: rejectComment },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Failed to reject');
+      } else {
+        toast.success('Prices rejected. Supplier will re-price.');
+        setRejectingOrder(null);
+        setRejectComment('');
+        await refreshData();
+      }
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function confirmPaymentReceived(order: Order) {
+    setSyncing(true);
+    try {
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: { inboxOrderId: order.id, action: 'confirm_payment' },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Failed to confirm payment');
+      } else {
+        toast.success('Payment confirmed!');
+        await refreshData();
+      }
+    } finally {
+      setSyncing(false);
+    }
   }
 
   function getStockStatus(itemName: string, category: string, quality: string) {

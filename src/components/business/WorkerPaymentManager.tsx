@@ -348,7 +348,12 @@ export default function WorkerPaymentManager({ isOwnerOrAdmin }: Props) {
                           <Button size="sm" variant="outline" className="h-7 text-xs flex-1" onClick={() => { setSelectedWorker(worker); setShowAdvanceDialog(true); }}>
                             <ArrowDownCircle className="h-3 w-3 mr-1" />Adv
                           </Button>
-                          <Button size="sm" className="h-7 text-xs flex-1" onClick={() => { setSelectedWorker(worker); setPayForm({ amount: String(worker.salary), notes: '' }); setShowPayDialog(true); }}>
+                          <Button size="sm" className="h-7 text-xs flex-1" onClick={() => { 
+                            setSelectedWorker(worker); 
+                            const netPay = Math.max(0, worker.salary - balance.totalAdvances);
+                            setPayForm({ amount: String(netPay), notes: '' });
+                            setShowPayDialog(true); 
+                          }}>
                             <Wallet className="h-3 w-3 mr-1" />Pay
                           </Button>
                         </div>

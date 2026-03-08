@@ -96,13 +96,14 @@ export default function FactoryProduction() {
       expiry_date: form.expiry_date || null,
       recorded_by: toSentenceCase(form.recorded_by.trim()) || 'Staff',
       notes: form.notes.trim(),
+      batch_number: form.batch_number.trim(),
     });
 
     setForm({
       product_name: '', product_stock_id: '', quantity_produced: '',
       waste_quantity: '0', waste_unit: 'Pieces',
       production_date: new Date().toISOString().slice(0, 10),
-      expiry_date: '', recorded_by: '', notes: '',
+      expiry_date: '', recorded_by: '', notes: '', batch_number: generateBatchNumber(),
     });
     setMaterialsUsed([]);
     refreshFactory();

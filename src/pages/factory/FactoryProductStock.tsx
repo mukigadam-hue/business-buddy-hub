@@ -65,6 +65,7 @@ export default function FactoryProductStock() {
   function openEdit(item: typeof active[0]) {
     setForm({
       name: item.name, category: item.category, quality: item.quality, quantity: String(item.quantity),
+      barcode: item.barcode || '',
       buying_price: String(item.buying_price), wholesale_price: String(item.wholesale_price),
       retail_price: String(item.retail_price), min_stock_level: String(item.min_stock_level),
       image_url_1: item.image_url_1 || '', image_url_2: item.image_url_2 || '', image_url_3: item.image_url_3 || '',

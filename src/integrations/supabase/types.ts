@@ -513,6 +513,7 @@ export type Database = {
       }
       factory_production: {
         Row: {
+          batch_number: string
           business_id: string
           created_at: string
           expiry_date: string | null
@@ -528,6 +529,7 @@ export type Database = {
           waste_unit: string
         }
         Insert: {
+          batch_number?: string
           business_id: string
           created_at?: string
           expiry_date?: string | null
@@ -543,6 +545,7 @@ export type Database = {
           waste_unit?: string
         }
         Update: {
+          batch_number?: string
           business_id?: string
           created_at?: string
           expiry_date?: string | null

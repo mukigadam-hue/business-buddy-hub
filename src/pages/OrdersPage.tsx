@@ -557,13 +557,13 @@ export default function OrdersPage() {
         )}
         {isRequest && order.status === 'priced' && (
           <div className="bg-accent/10 border border-accent/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
-            <span>💰 Supplier has priced your order! Review the prices below and <strong>Confirm</strong> or <strong>Reject</strong>.</span>
+            <span>💰 Supplier has priced your order! Review the prices below, then <strong>Accept & Pay</strong> or <strong>Reject & Re-price</strong>.</span>
           </div>
         )}
         {isRequest && order.status === 'confirmed' && (
           <div className="bg-primary/10 border border-primary/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
             <CreditCard className="h-3.5 w-3.5 text-primary shrink-0" />
-            <span>✅ Prices confirmed! Now <strong>Submit Payment</strong> to complete the order.</span>
+            <span>✅ Prices confirmed! Click <strong>Submit Payment</strong> to complete.</span>
           </div>
         )}
 

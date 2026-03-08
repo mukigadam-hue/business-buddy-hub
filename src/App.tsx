@@ -114,6 +114,7 @@ function BusinessContent() {
           <Route path="/orders" element={<OrdersPage />} />
           
           <Route path="/payments" element={<PaymentVerificationPage />} />
+          <Route path="/contacts" element={<ContactsPage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/team" element={<TeamPage />} />

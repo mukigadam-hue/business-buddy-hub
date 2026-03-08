@@ -42,6 +42,10 @@ export default function FactorySales() {
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [partScannerOpen, setPartScannerOpen] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');
+  const [amountPaid, setAmountPaid] = useState('');
+  const [editPaymentSale, setEditPaymentSale] = useState<Sale | null>(null);
+  const [editAmountPaid, setEditAmountPaid] = useState('');
 
   const [svcForm, setSvcForm] = useState({ service_name: '', description: '', cost: '' });
   const [selectedPartStock, setSelectedPartStock] = useState('');

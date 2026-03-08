@@ -84,6 +84,22 @@ export default function Dashboard() {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg sm:text-2xl font-bold truncate">{currentBusiness?.name || 'My Business'}</h1>
+            {currentBusiness?.business_code && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs sm:text-sm font-mono bg-primary-foreground/20 px-2 py-0.5 rounded">
+                  🔗 Code: {currentBusiness.business_code}
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(currentBusiness.business_code || '');
+                    import('sonner').then(m => m.toast.success('Business code copied!'));
+                  }}
+                  className="text-xs bg-primary-foreground/20 hover:bg-primary-foreground/30 px-2 py-0.5 rounded transition-colors"
+                >
+                  📋 Copy
+                </button>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm opacity-90">
               {currentBusiness?.address && <span className="truncate max-w-[150px] sm:max-w-none">📍 {currentBusiness.address}</span>}
               {currentBusiness?.contact && <span>📞 {currentBusiness.contact}</span>}

@@ -235,6 +235,10 @@ export default function SettingsPage() {
   const [viewingReceipt, setViewingReceipt] = useState<ReceiptRecord | null>(null);
   const [receiptsLoaded, setReceiptsLoaded] = useState(false);
   const [showRecycleBin, setShowRecycleBin] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setForm({

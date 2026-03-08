@@ -23,12 +23,18 @@ export default function FactoryProduction() {
   const activeRM = rawMaterials.filter(r => !r.deleted_at);
   const activeProducts = stock.filter(s => !s.deleted_at);
 
+  const generateBatchNumber = () => {
+    const date = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `B${date}-${rand}`;
+  };
+
   const [form, setForm] = useState({
     product_name: '', product_stock_id: '', quantity_produced: '',
     waste_quantity: '0', waste_unit: 'Pieces',
     production_date: new Date().toISOString().slice(0, 10),
     expiry_date: '',
-    recorded_by: '', notes: '',
+    recorded_by: '', notes: '', batch_number: generateBatchNumber(),
   });
 
   // Materials used in this production

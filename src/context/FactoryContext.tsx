@@ -56,6 +56,7 @@ export interface ProductionRecord {
   expiry_date: string | null;
   recorded_by: string;
   notes: string;
+  batch_number: string;
   created_at: string;
 }
 

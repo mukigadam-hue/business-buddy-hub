@@ -5,6 +5,7 @@ import { Camera, Upload, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
+import { compressImage } from '@/lib/compressImage';
 
 interface ImageUploadProps {
   bucket: string;

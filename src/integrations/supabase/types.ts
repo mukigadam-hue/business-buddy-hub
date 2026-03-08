@@ -1302,32 +1302,41 @@ export type Database = {
       }
       services: {
         Row: {
+          amount_paid: number
+          balance: number
           business_id: string
           cost: number
           created_at: string
           customer_name: string
           description: string
           id: string
+          payment_status: string
           seller_name: string
           service_name: string
         }
         Insert: {
+          amount_paid?: number
+          balance?: number
           business_id: string
           cost?: number
           created_at?: string
           customer_name?: string
           description?: string
           id?: string
+          payment_status?: string
           seller_name?: string
           service_name: string
         }
         Update: {
+          amount_paid?: number
+          balance?: number
           business_id?: string
           cost?: number
           created_at?: string
           customer_name?: string
           description?: string
           id?: string
+          payment_status?: string
           seller_name?: string
           service_name?: string
         }

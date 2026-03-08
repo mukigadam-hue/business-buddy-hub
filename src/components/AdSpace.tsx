@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { usePremium } from '@/hooks/usePremium';
 
 interface AdSpaceProps {
   variant?: 'banner' | 'inline' | 'compact';
@@ -6,12 +7,11 @@ interface AdSpaceProps {
 }
 
 /**
- * Native ad placeholder. Replace the inner content with your ad network's component.
- * - banner: Full-width, taller — for between sections
- * - inline: Full-width, medium — for between list items  
- * - compact: Smaller — for sidebar or tight spaces
+ * Native ad placeholder. Hidden for premium users.
  */
 export default function AdSpace({ variant = 'banner', className }: AdSpaceProps) {
+  const { showAds } = usePremium();
+  if (!showAds) return null;
   return (
     <div
       className={cn(

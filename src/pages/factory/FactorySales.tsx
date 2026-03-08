@@ -149,7 +149,8 @@ export default function FactorySales() {
       })),
     ];
 
-    const sale = await addSale(allItems, grandTotal, toSentenceCase(sellerName.trim()), toSentenceCase(customerName.trim()));
+    const paidAmt = paymentStatus === 'paid' ? grandTotal : (parseFloat(amountPaid) || 0);
+    const sale = await addSale(allItems, grandTotal, toSentenceCase(sellerName.trim()), toSentenceCase(customerName.trim()), undefined, undefined, paymentStatus, paidAmt);
     if (sale && currentBusiness) {
       const receiptItems = allItems.map(i => ({
         itemName: i.item_name, category: i.category, quality: i.quality,

@@ -633,8 +633,8 @@ export default function OrdersPage() {
               {/* REQUEST ORDER ACTIONS (Buyer side) */}
               {order.type === 'request' && order.status === 'priced' && (
                 <>
-                  <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => confirmPrices(order)} disabled={syncing}>
-                    <CheckCircle className="h-3.5 w-3.5 mr-1" />{syncing ? 'Confirming...' : 'Confirm Prices'}
+                  <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => confirmPricesAndPay(order)} disabled={syncing}>
+                    <CheckCircle className="h-3.5 w-3.5 mr-1" />{syncing ? 'Processing...' : 'Accept & Pay'}
                   </Button>
                   <Button size="sm" variant="destructive" onClick={() => { setRejectingOrder(order); setRejectComment(''); }} disabled={syncing}>
                     🔄 Reject & Re-price

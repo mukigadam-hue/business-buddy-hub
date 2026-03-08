@@ -45,7 +45,7 @@ function AppContent() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-3">
           <div className="text-4xl">📦</div>
-          <p className="text-muted-foreground">Loading BizTrack...</p>
+          <p className="text-muted-foreground">Loading Business Manager...</p>
         </div>
       </div>
     );

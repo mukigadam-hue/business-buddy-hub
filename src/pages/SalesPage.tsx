@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Plus, Trash2, ShoppingCart, Receipt as ReceiptIcon, Wrench, Package, ScanLine } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
+import { toast } from 'sonner';
+import BarcodeScanner from '@/components/BarcodeScanner';
 import type { Sale } from '@/context/BusinessContext';
 
 function toSentenceCase(str: string): string {

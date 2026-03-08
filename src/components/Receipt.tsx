@@ -69,7 +69,11 @@ export default function Receipt({ items, grandTotal, buyerName, sellerName, cust
           {items.map((item, i) => (
             <div key={i} className="space-y-0.5">
               <div className="flex justify-between">
-                <span className="font-medium">{item.itemName} × {item.quantity}{item.priceType && item.priceType !== 'service' ? ` (${item.priceType})` : ''}</span>
+                <span className="font-medium">
+                  {item.itemName} × {item.quantity}
+                  {item.priceType && item.priceType !== 'service' && item.priceType !== 'part' ? ` (${item.priceType})` : ''}
+                  {item.priceType === 'part' && <span className="text-xs text-accent ml-1">(part used)</span>}
+                </span>
                 <span className="font-medium tabular-nums ml-2">{fmt(item.subtotal)}</span>
               </div>
               {(item.category || item.quality) && item.category !== 'Service' && (

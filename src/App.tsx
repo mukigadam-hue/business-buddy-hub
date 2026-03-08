@@ -94,6 +94,7 @@ function BusinessContent() {
               <Route path="/services" element={<FactoryServices />} />
               <Route path="/expenses" element={<FactoryExpenses />} />
               <Route path="/contacts" element={<ContactsPage />} />
+              <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/team" element={<FactoryTeam />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFound />} />

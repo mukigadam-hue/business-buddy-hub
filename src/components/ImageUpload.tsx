@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import WebcamCapture from '@/components/WebcamCapture';
 
 interface ImageUploadProps {
   bucket: string;
@@ -18,6 +20,8 @@ interface ImageUploadProps {
 export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRemoved, className = '', size = 'md', label }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [webcamOpen, setWebcamOpen] = useState(false);
+  const isMobile = useIsMobile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,42 +62,54 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
     onRemoved?.();
   }
 
+  function handleCameraClick() {
+    if (isMobile) {
+      cameraInputRef.current?.click();
+    } else {
+      setWebcamOpen(true);
+    }
+  }
+
   return (
-    <div className={`flex flex-col items-center gap-2 ${className}`}>
-      {label && <p className="text-xs text-muted-foreground font-medium">{label}</p>}
-      <div className={`relative ${dimensions} rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center overflow-hidden bg-muted/20`}>
-        {uploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          </div>
-        )}
-        {displayUrl ? (
-          <>
-            <img src={displayUrl} alt="Upload" className="h-full w-full object-cover" />
-            {onRemoved && (
-              <button onClick={handleRemove} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 z-10">
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </>
-        ) : (
-          <Camera className="h-6 w-6 text-muted-foreground/50" />
-        )}
+    <>
+      <div className={`flex flex-col items-center gap-2 ${className}`}>
+        {label && <p className="text-xs text-muted-foreground font-medium">{label}</p>}
+        <div className={`relative ${dimensions} rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center overflow-hidden bg-muted/20`}>
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          )}
+          {displayUrl ? (
+            <>
+              <img src={displayUrl} alt="Upload" className="h-full w-full object-cover" />
+              {onRemoved && (
+                <button onClick={handleRemove} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 z-10">
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </>
+          ) : (
+            <Camera className="h-6 w-6 text-muted-foreground/50" />
+          )}
+        </div>
+        <div className="flex gap-1.5">
+          <Button type="button" size="sm" variant="outline" className="text-xs h-7 px-2" disabled={uploading}
+            onClick={handleCameraClick}>
+            <Camera className="h-3 w-3 mr-1" />Photo
+          </Button>
+          <Button type="button" size="sm" variant="outline" className="text-xs h-7 px-2" disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}>
+            <Upload className="h-3 w-3 mr-1" />Upload
+          </Button>
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+          onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
+        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+          onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
       </div>
-      <div className="flex gap-1.5">
-        <Button type="button" size="sm" variant="outline" className="text-xs h-7 px-2" disabled={uploading}
-          onClick={() => cameraInputRef.current?.click()}>
-          <Camera className="h-3 w-3 mr-1" />Photo
-        </Button>
-        <Button type="button" size="sm" variant="outline" className="text-xs h-7 px-2" disabled={uploading}
-          onClick={() => fileInputRef.current?.click()}>
-          <Upload className="h-3 w-3 mr-1" />Upload
-        </Button>
-      </div>
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
-        onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
-        onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
-    </div>
+
+      <WebcamCapture open={webcamOpen} onOpenChange={setWebcamOpen} onCapture={handleFile} />
+    </>
   );
 }

@@ -5,37 +5,57 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Building2, KeyRound, Plus, Factory } from 'lucide-react';
+import { Building2, KeyRound, Plus, Factory, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { countries, getCountryByCode } from '@/lib/countries';
+import { useCurrency } from '@/hooks/useCurrency';
+import i18n from '@/i18n';
 
 export default function BusinessSetupPage() {
   const { createBusiness, redeemInviteCode } = useBusiness();
+  const { setCurrency } = useCurrency();
   const [tab, setTab] = useState<'create' | 'join'>('create');
   const [businessType, setBusinessType] = useState<'business' | 'factory'>('business');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [contact, setContact] = useState('');
   const [email, setEmail] = useState('');
+  const [countryCode, setCountryCode] = useState('');
+  const [countrySearch, setCountrySearch] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const filteredCountries = countrySearch
+    ? countries.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.toLowerCase().includes(countrySearch.toLowerCase()))
+    : countries;
+
+  function handleCountrySelect(code: string) {
+    setCountryCode(code);
+    setCountrySearch('');
+    const country = getCountryByCode(code);
+    if (country) {
+      // Auto-set currency and language
+      setCurrency(country.currencySymbol);
+      if (i18n.language !== country.language) {
+        i18n.changeLanguage(country.language);
+      }
+    }
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
+    if (!countryCode) { toast.error('Please select your country'); return; }
     setLoading(true);
-    await createBusiness(name.trim(), address.trim(), contact.trim(), email.trim());
-    // Update business_type after creation
-    // The createBusiness function creates it with default 'business', we need to update if factory
+    await createBusiness(name.trim(), address.trim(), contact.trim(), email.trim(), countryCode);
     if (businessType === 'factory') {
-      // Get the latest business and update its type
       const { data } = await supabase.from('businesses').select('id').order('created_at', { ascending: false }).limit(1).single();
       if (data) {
         await supabase.from('businesses').update({ business_type: 'factory' } as any).eq('id', data.id);
       }
     }
     setLoading(false);
-    // Force reload to pick up the business_type
     window.location.reload();
   }
 
@@ -49,6 +69,8 @@ export default function BusinessSetupPage() {
     }
     setLoading(false);
   }
+
+  const selectedCountry = getCountryByCode(countryCode);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -72,6 +94,47 @@ export default function BusinessSetupPage() {
 
           {tab === 'create' ? (
             <form onSubmit={handleCreate} className="space-y-4">
+              {/* Country Selection */}
+              <div>
+                <Label className="text-sm font-semibold flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" /> Your Country *
+                </Label>
+                {selectedCountry ? (
+                  <button type="button" onClick={() => setCountryCode('')}
+                    className="w-full mt-1.5 flex items-center gap-3 p-3 rounded-xl border-2 border-primary bg-primary/5 text-left">
+                    <span className="text-2xl">{selectedCountry.flag}</span>
+                    <div>
+                      <p className="font-semibold text-sm">{selectedCountry.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Currency: {selectedCountry.currencySymbol} · Code prefix: {selectedCountry.code}-XXXXXX
+                      </p>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="mt-1.5 space-y-2">
+                    <Input
+                      placeholder="Search country..."
+                      value={countrySearch}
+                      onChange={e => setCountrySearch(e.target.value)}
+                      className="h-9"
+                    />
+                    <div className="max-h-40 overflow-y-auto rounded-lg border border-border">
+                      {filteredCountries.map(c => (
+                        <button key={c.code} type="button" onClick={() => handleCountrySelect(c.code)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-muted/60 text-sm border-b border-border last:border-0">
+                          <span className="text-lg">{c.flag}</span>
+                          <span className="flex-1">{c.name}</span>
+                          <span className="text-xs text-muted-foreground">{c.currencySymbol}</span>
+                        </button>
+                      ))}
+                      {filteredCountries.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-3">No countries found</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Type Selection */}
               <div>
                 <Label className="text-sm font-semibold">What are you managing?</Label>
@@ -101,7 +164,11 @@ export default function BusinessSetupPage() {
                   placeholder={businessType === 'factory' ? 'My Factory' : 'My Shop'} />
               </div>
               <div><Label>Address</Label><Input value={address} onChange={e => setAddress(e.target.value)} placeholder="123 Main St" /></div>
-              <div><Label>Contact</Label><Input value={contact} onChange={e => setContact(e.target.value)} placeholder="+1 234 567 890" /></div>
+              <div>
+                <Label>Contact</Label>
+                <Input value={contact} onChange={e => setContact(e.target.value)} 
+                  placeholder={selectedCountry ? `${selectedCountry.phonePrefix} ...` : '+1 234 567 890'} />
+              </div>
               <div><Label>Email</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" /></div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {businessType === 'factory' ? <Factory className="h-4 w-4 mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
@@ -113,7 +180,7 @@ export default function BusinessSetupPage() {
               <div>
                 <Label>Invite Code</Label>
                 <Input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())}
-                  required placeholder="Enter 6-character code" maxLength={6}
+                  required placeholder="Enter invite code" maxLength={6}
                   className="text-center text-lg tracking-widest font-mono" />
                 <p className="text-xs text-muted-foreground mt-1">
                   Ask your business/factory owner for the invite code.

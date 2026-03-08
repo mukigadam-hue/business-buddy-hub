@@ -753,7 +753,12 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
-      <h1 className="text-2xl font-bold">Orders</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Orders</h1>
+        <Button size="sm" variant="outline" onClick={() => refreshData()} title="Refresh orders">
+          <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
+        </Button>
+      </div>
 
       {/* Create new order */}
       <div className="flex gap-2 flex-wrap">

@@ -436,6 +436,30 @@ export default function SalesPage() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Payment Status */}
+              <div className="p-3 bg-muted/40 rounded-lg border space-y-2">
+                <Label className="text-xs font-semibold">💰 Payment Status</Label>
+                <div className="flex gap-2">
+                  {(['paid', 'partial', 'unpaid'] as const).map(s => (
+                    <button key={s} onClick={() => setPaymentStatus(s)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${paymentStatus === s
+                        ? s === 'paid' ? 'bg-success text-success-foreground' : s === 'partial' ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'
+                        : 'bg-muted text-muted-foreground'}`}>
+                      {s === 'paid' ? '✅ Paid Full' : s === 'partial' ? '⚠️ Paid Partial' : '❌ Not Paid (Credit)'}
+                    </button>
+                  ))}
+                </div>
+                {paymentStatus !== 'paid' && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs whitespace-nowrap">Amount Paid:</Label>
+                    <Input type="number" min="0" step="0.01" value={amountPaid} onChange={e => setAmountPaid(e.target.value)}
+                      placeholder="0.00" className="w-32" />
+                    <span className="text-xs text-muted-foreground">
+                      Balance: <span className="font-bold text-destructive">{fmt(grandTotal - (parseFloat(amountPaid) || 0))}</span>
+                    </span>
+                  </div>
+                )}
+              </div>
               {!buyerName.trim() || !sellerName.trim() ? (
                 <p className="text-xs text-destructive text-center">⚠️ Buyer name and Seller name are required before saving.</p>
               ) : null}

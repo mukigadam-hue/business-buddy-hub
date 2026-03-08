@@ -29,7 +29,7 @@ export default function PremiumGate({ allowed, featureName, children, hideComple
           size="sm"
           variant="outline"
           className="mt-2 h-7 text-xs border-amber-500/50 text-amber-600"
-          onClick={() => toast.info('Premium plan coming soon! $52/month for unlimited features.')}
+          onClick={() => toast.info('Premium plan coming soon! $52/year for unlimited features.')}
         >
           Upgrade
         </Button>

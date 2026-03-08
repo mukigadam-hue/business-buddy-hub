@@ -212,7 +212,7 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     { id: 'email', label: 'Email', icon: Mail, color: 'bg-amber-500 hover:bg-amber-600 text-white' },
   ];
 
-  const premiumToast = () => toast.info('Premium feature — upgrade for $52/month to unlock.');
+  const premiumToast = () => toast.info('Premium feature — upgrade for $52/year to unlock.');
 
   return (
     <>

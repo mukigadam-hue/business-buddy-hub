@@ -151,7 +151,7 @@ export default function FactoryTeam() {
         {isOwnerOrAdmin && <Button onClick={() => {
           const activeCount = teamMembers.filter(w => w.is_active).length;
           if (activeCount >= maxWorkers) {
-            toast.info(`Free plan allows up to ${maxWorkers} workers. Upgrade to Premium ($52/month) for unlimited.`);
+            toast.info(`Free plan allows up to ${maxWorkers} workers. Upgrade to Premium ($52/year) for unlimited.`);
             return;
           }
           resetForm(); setShowAdd(true);

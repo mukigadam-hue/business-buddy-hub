@@ -309,7 +309,7 @@ export default function TeamPage() {
         {isOwnerOrAdmin && (
           <Button onClick={() => {
             if (activeWorkers.length >= maxWorkers) {
-              toast.info(`Free plan allows up to ${maxWorkers} workers. Upgrade to Premium ($52/month) for unlimited.`);
+              toast.info(`Free plan allows up to ${maxWorkers} workers. Upgrade to Premium ($52/year) for unlimited.`);
               return;
             }
             resetWorkerForm(); setShowAddWorker(true);

@@ -1080,23 +1080,27 @@ export default function OrdersPage() {
 
       {/* Orders Lists */}
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="w-full grid grid-cols-3 h-12 rounded-xl bg-muted/60 p-1">
+        <TabsList className="w-full grid grid-cols-4 h-12 rounded-xl bg-muted/60 p-1">
           <TabsTrigger value="live_orders" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1">
             🛒 My Orders
             {liveOrders.length > 0 && <span className="ml-0.5 bg-primary-foreground/20 text-[10px] px-1.5 py-0.5 rounded-full">{liveOrders.length}</span>}
           </TabsTrigger>
           <TabsTrigger value="inbox" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1">
-            📥 From Customers
+            📥 Customers
             {inboxOrders.length > 0 && <span className="ml-0.5 bg-warning text-warning-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">{inboxOrders.length}</span>}
           </TabsTrigger>
           <TabsTrigger value="my_requests" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1 relative">
-            📨 To Suppliers
+            📨 Suppliers
             {myRequests.length > 0 && <span className="ml-0.5 bg-primary-foreground/20 text-[10px] px-1.5 py-0.5 rounded-full">{myRequests.length}</span>}
             {requestsNeedingAction > 0 && (
               <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full animate-pulse">
                 {requestsNeedingAction}
               </span>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="verify_payments" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Verify</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="live_orders" className="space-y-3 mt-4">
@@ -1117,7 +1121,88 @@ export default function OrdersPage() {
             {myRequests.length === 0 ? <p className="text-sm text-muted-foreground">No requests sent yet. Use "Order from Supplier" above to order items.</p> : myRequests.map(o => <OrderCard key={o.id} order={o} />)}
           </div>
         </TabsContent>
+        <TabsContent value="verify_payments" className="space-y-3 mt-4">
+          {!isAdmin ? (
+            <Card><CardContent className="p-8 text-center text-muted-foreground">
+              Only business owners and admins can verify payments.
+            </CardContent></Card>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground mb-2">🛡️ Review and verify checkout payments. Approve or reject mobile money payments after checking proof screenshots.</p>
+              <div className="flex gap-2 flex-wrap">
+                {(['pending', 'paid', 'all'] as const).map(f => (
+                  <Button key={f} size="sm" variant={verifyFilter === f ? 'default' : 'outline'} onClick={() => setVerifyFilter(f)}>
+                    {f === 'pending' && <Clock className="h-3.5 w-3.5 mr-1" />}
+                    {f === 'paid' && <CheckCircle className="h-3.5 w-3.5 mr-1" />}
+                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                  </Button>
+                ))}
+              </div>
+              {loadingCheckout ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : checkoutOrders.length === 0 ? (
+                <Card><CardContent className="p-8 text-center text-muted-foreground">No {verifyFilter} checkout orders found.</CardContent></Card>
+              ) : (
+                <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
+                  {checkoutOrders.map(order => (
+                    <Card key={order.id} className="shadow-card">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-sm">👤 {order.customer_name}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                order.status === 'paid' ? 'bg-success/10 text-success' :
+                                order.status === 'cancelled' ? 'bg-destructive/10 text-destructive' :
+                                'bg-warning/10 text-warning'
+                              }`}>{order.status}</span>
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                {order.payment_method === 'mobile_money' ? <Smartphone className="h-3 w-3" /> : <CreditCard className="h-3 w-3" />}
+                                {order.payment_method === 'mobile_money' ? 'M-Money' : 'Card'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Code: <span className="font-mono">{order.code}</span> · {new Date(order.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-success tabular-nums">{fmt(Number(order.grand_total))}</span>
+                            {order.proof_url && (
+                              <Button size="sm" variant="outline" onClick={() => setViewingProof(order.proof_url)}>
+                                <Eye className="h-3.5 w-3.5 mr-1" /> Proof
+                              </Button>
+                            )}
+                            {order.status === 'pending' && (
+                              <>
+                                <Button size="sm" onClick={() => updateCheckoutStatus(order.id, 'paid')} className="bg-success hover:bg-success/90 text-success-foreground">
+                                  <CheckCircle className="h-3.5 w-3.5 mr-1" /> Verify
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => updateCheckoutStatus(order.id, 'cancelled')}>
+                                  <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </TabsContent>
       </Tabs>
+
+      {/* Proof viewer dialog */}
+      <Dialog open={!!viewingProof} onOpenChange={o => { if (!o) setViewingProof(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Payment Proof</DialogTitle></DialogHeader>
+          {viewingProof && (
+            <img src={viewingProof} alt="Payment proof" className="w-full rounded-lg" />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Order Dialog — allows adding items + changing qty/price */}
       <Dialog open={!!editingOrder} onOpenChange={o => { if (!o) setEditingOrder(null); }}>

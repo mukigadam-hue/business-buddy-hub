@@ -406,14 +406,20 @@ export default function FactorySales() {
           ) : (
             <div className="space-y-3 max-h-[500px] overflow-y-auto">
               {(activeTab === 'today' ? todaySales : prevSales).map(s => (
-                <div key={s.id} className="border rounded-lg p-3">
+                <div key={s.id} className={`border rounded-lg p-3 ${s.payment_status === 'unpaid' ? 'border-destructive/40 bg-destructive/5' : s.payment_status === 'partial' ? 'border-warning/40 bg-warning/5' : ''}`}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium">👤 {s.customer_name}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium">👤 {s.customer_name}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${s.payment_status === 'paid' ? 'bg-success/10 text-success' : s.payment_status === 'partial' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
+                        {s.payment_status === 'paid' ? '✅ Paid' : s.payment_status === 'partial' ? `⚠️ Partial (${fmt(Number(s.amount_paid))})` : '❌ Unpaid'}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-success bg-success/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(s.grand_total))}</span>
                       <Button size="sm" variant="ghost" onClick={() => setReceiptSale(s)}><ReceiptIcon className="h-3.5 w-3.5" /></Button>
                     </div>
                   </div>
+                  {s.payment_status !== 'paid' && <p className="text-xs font-semibold text-destructive">Balance: {fmt(Number(s.balance))}</p>}
                   <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString()}</p>
                   <div className="text-sm text-muted-foreground space-y-1 mt-1">
                     {s.items.map((item, i) => (
@@ -427,6 +433,11 @@ export default function FactorySales() {
                       </div>
                     ))}
                   </div>
+                  {s.payment_status !== 'paid' && (
+                    <Button size="sm" variant="outline" className="mt-2" onClick={() => { setEditPaymentSale(s); setEditAmountPaid(String(s.amount_paid || 0)); }}>
+                      💰 Update Payment
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>

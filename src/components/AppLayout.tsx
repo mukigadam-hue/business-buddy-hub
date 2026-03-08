@@ -325,7 +325,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   const isActive = b.id === currentBusiness?.id;
                   const isFact = (b as any).business_type === 'factory';
                   return (
-                    <button key={b.id} onClick={() => { window.history.replaceState(null, '', '/'); setCurrentBusinessId(b.id); setSheetOpen(false); }}
+                    <button key={b.id} onClick={() => { navigate('/'); setCurrentBusinessId(b.id); setMoreOpen(false); }}
                       className={`w-full flex items-center gap-2.5 p-2.5 rounded-lg text-left transition-all ${
                         isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted/60'
                       }`}>

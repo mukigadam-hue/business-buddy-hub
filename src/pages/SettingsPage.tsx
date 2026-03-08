@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Save, DollarSign, TrendingUp, Wallet, Building2, Plus, Crown, User, ChevronRight, Receipt as ReceiptIcon, Search, ShoppingCart, Trash2, RotateCcw, Wrench, Lock, Copy, Factory, KeyRound, Eye, EyeOff, ShieldBan, X } from 'lucide-react';
+import { Save, DollarSign, TrendingUp, Wallet, Building2, Plus, Crown, User, ChevronRight, Receipt as ReceiptIcon, Search, ShoppingCart, Trash2, RotateCcw, Wrench, Lock, Copy, Factory, KeyRound, Eye, EyeOff, ShieldBan, X, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import type { ReceiptRecord } from '@/context/BusinessContext';
@@ -197,7 +197,7 @@ function DiscoverVisibilityCard({ businessId }: { businessId: string }) {
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { currentBusiness, updateBusiness, stock, sales, purchases, services, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, restoreStockItem, permanentDeleteStockItem, deleteBusiness } = useBusiness();
+  const { currentBusiness, updateBusiness, stock, sales, purchases, services, expenses, orders, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, restoreStockItem, permanentDeleteStockItem, deleteBusiness } = useBusiness();
   const { currency, setCurrency, fmt } = useCurrency();
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 
@@ -251,37 +251,83 @@ export default function SettingsPage() {
 
   const activeStock = stock.filter(s => !s.deleted_at);
   const deletedStock = stock.filter(s => s.deleted_at);
+  const today = new Date().toDateString();
 
-  // ====== REVENUE CALCULATIONS ======
-  const todayStockSalesRevenue = sales
-    .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
-    .reduce((sum, s) => {
-      const stockItemsTotal = s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
-      return sum + stockItemsTotal;
-    }, 0);
-
-  const todayServiceRevenue = services
-    .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
-    .reduce((sum, s) => sum + Number(s.cost), 0);
-
-  const todaySaleServiceRevenue = sales
-    .filter(s => new Date(s.created_at).toDateString() === new Date().toDateString())
-    .reduce((sum, s) => s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0) + sum, 0);
-
-  const todayTotalServiceRevenue = todayServiceRevenue + todaySaleServiceRevenue;
-  const todayRevenue = todayStockSalesRevenue + todayTotalServiceRevenue;
-
-  const totalStockSalesRevenue = sales.reduce((sum, s) => sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0), 0);
-  const totalServiceRevenue = services.reduce((sum, s) => sum + Number(s.cost), 0) + sales.reduce((sum, s) => sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0), 0);
-  const totalRevenue = totalStockSalesRevenue + totalServiceRevenue;
-
+  // ====== 1. TOTAL CAPITAL (Shopping/Buying Price of all stock) ======
   let buyingCapital = 0, wholesaleCapital = 0, retailCapital = 0;
   activeStock.forEach(item => {
     buyingCapital += item.quantity * Number(item.buying_price);
     wholesaleCapital += item.quantity * Number(item.wholesale_price);
     retailCapital += item.quantity * Number(item.retail_price);
   });
+
+  // ====== 2. PURCHASES ======
+  const todayPurchases = purchases.filter(p => new Date(p.created_at).toDateString() === today);
+  const todayPurchaseTotal = todayPurchases.reduce((sum, p) => sum + Number(p.grand_total), 0);
   const totalPurchases = purchases.reduce((sum, p) => sum + Number(p.grand_total), 0);
+
+  // ====== 3 & 4. STOCK VALUE (Wholesale & Retail) - calculated above ======
+
+  // ====== 5. TODAY'S REVENUE (Sales + Orders paid/partial/credit) ======
+  const todaySales = sales.filter(s => new Date(s.created_at).toDateString() === today);
+  const todaySalesFull = todaySales.filter(s => s.payment_status === 'paid');
+  const todaySalesPartial = todaySales.filter(s => s.payment_status === 'partial');
+  const todaySalesCredit = todaySales.filter(s => s.payment_status === 'credit');
+
+  const todaySalesFullTotal = todaySalesFull.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  const todaySalesPartialTotal = todaySalesPartial.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  const todaySalesPartialPaid = todaySalesPartial.reduce((sum, s) => sum + Number(s.amount_paid), 0);
+  const todaySalesCreditTotal = todaySalesCredit.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  const todaySalesGrandTotal = todaySales.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  const todaySalesCashCollected = todaySales.reduce((sum, s) => sum + Number(s.amount_paid), 0);
+
+  // Orders completed today (paid)
+  const todayOrders = orders.filter(o => new Date(o.created_at).toDateString() === today);
+  const todayOrdersPaid = todayOrders.filter(o => o.status === 'paid' || o.status === 'completed');
+  const todayOrdersTotal = todayOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
+
+  // Stock sales revenue from sale items (excluding service items)
+  const todayStockSalesRevenue = todaySales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+
+  // ====== 6. SERVICE FEE (service cost minus parts from stock) ======
+  const todayServices = services.filter(s => new Date(s.created_at).toDateString() === today);
+  const todayServiceFeeTotal = todayServices.reduce((sum, s) => sum + Number(s.cost), 0);
+  // Parts used in services (from sale items with price_type 'service' in sales - these are service fees added to sales)
+  const todaySaleServiceFees = todaySales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+  const todayTotalServiceFees = todayServiceFeeTotal + todaySaleServiceFees;
+  // Service items used from stock (parts) - these are tracked in service_items table
+  // For display, we show the service fee (labor) separately
+  const todayServiceCashCollected = todayServices.reduce((sum, s) => sum + Number(s.amount_paid), 0);
+
+  // All-time service revenue
+  const totalServiceFeeRevenue = services.reduce((sum, s) => sum + Number(s.cost), 0);
+  const totalSaleServiceFees = sales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+  const totalServiceRevenue = totalServiceFeeRevenue + totalSaleServiceFees;
+
+  // All-time stock sales
+  const totalStockSalesRevenue = sales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type !== 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+  const totalRevenue = totalStockSalesRevenue + totalServiceRevenue;
+
+  // ====== 7. EXPENSES ======
+  const todayExpenses = expenses.filter(e => new Date(e.created_at).toDateString() === today);
+  const todayExpenseTotal = todayExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+
+  // Today's total cash collected
+  const todayTotalCashCollected = todaySalesCashCollected + todayServiceCashCollected;
+  // Today's total revenue (grand totals regardless of payment)
+  const todayTotalRevenue = todaySalesGrandTotal + todayServiceFeeTotal + todaySaleServiceFees;
+
+  // Net position today
+  const todayNetPosition = todayTotalCashCollected - todayExpenseTotal - todayPurchaseTotal;
 
   function getRoleForBusiness(businessId: string) {
     return memberships.find(m => m.business_id === businessId)?.role || 'worker';
@@ -390,77 +436,156 @@ export default function SettingsPage() {
 
       <AdSpace variant="inline" />
 
-      {/* Financial Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10"><DollarSign className="h-5 w-5 text-success" /></div>
+      {/* ===== COMPREHENSIVE FINANCIAL SUMMARY ===== */}
+      <Card className="shadow-card border-primary/20">
+        <CardContent className="p-4 space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2">📊 Financial Summary</h2>
+
+          {/* 1. Total Capital */}
+          <div className="p-3 rounded-lg bg-info/5 border border-info/20">
+            <div className="flex items-center gap-2 mb-1"><Wallet className="h-4 w-4 text-info" /><p className="text-sm font-semibold">1. Total Capital (Shopping Price)</p></div>
+            <p className="text-xs text-muted-foreground mb-1">Sum of (Buying Price × Quantity) for all active stock items</p>
+            <p className="text-2xl font-bold text-info tabular-nums">{fmt(buyingCapital)}</p>
+            <p className="text-xs text-muted-foreground">{activeStock.length} items in stock</p>
+          </div>
+
+          {/* 2. Purchases */}
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-2 mb-1"><ShoppingCart className="h-4 w-4 text-primary" /><p className="text-sm font-semibold">2. Purchases</p></div>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-xs text-muted-foreground">Today's Revenue</p>
-                <p className="text-base font-bold text-success tabular-nums">{fmt(todayRevenue)}</p>
-                <p className="text-[10px] text-muted-foreground">Stock: {fmt(todayStockSalesRevenue)} · Services: {fmt(todayTotalServiceRevenue)}</p>
+                <p className="text-xs text-muted-foreground">Today's Purchases</p>
+                <p className="text-lg font-bold tabular-nums">{fmt(todayPurchaseTotal)}</p>
+                <p className="text-[10px] text-muted-foreground">{todayPurchases.length} purchase(s)</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">All-Time Purchases</p>
+                <p className="text-lg font-bold tabular-nums">{fmt(totalPurchases)}</p>
+                <p className="text-[10px] text-muted-foreground">{purchases.length} total</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-info/10"><Wallet className="h-5 w-5 text-info" /></div>
-              <div><p className="text-xs text-muted-foreground">Total Capital (Shopping Price)</p><p className="text-base font-bold text-info tabular-nums">{fmt(buyingCapital)}</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10"><ShoppingCart className="h-5 w-5 text-primary" /></div>
-              <div><p className="text-xs text-muted-foreground">Total Purchases</p><p className="text-base font-bold tabular-nums">{fmt(totalPurchases)}</p></div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/10"><TrendingUp className="h-5 w-5 text-accent" /></div>
-              <div><p className="text-xs text-muted-foreground">Stock Value (Wholesale)</p><p className="text-base font-bold tabular-nums">{fmt(wholesaleCapital)}</p></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10"><TrendingUp className="h-5 w-5 text-success" /></div>
-              <div><p className="text-xs text-muted-foreground">Stock Value (Retail)</p><p className="text-base font-bold text-success tabular-nums">{fmt(retailCapital)}</p></div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          {/* 3. Stock Value (Wholesale) */}
+          <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+            <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-accent" /><p className="text-sm font-semibold">3. Expected Stock Value (Wholesale)</p></div>
+            <p className="text-xs text-muted-foreground mb-1">Sum of (Wholesale Price × Quantity) for all active stock</p>
+            <p className="text-2xl font-bold tabular-nums">{fmt(wholesaleCapital)}</p>
+          </div>
 
-      {/* Revenue summary */}
-      <Card className="shadow-card">
-        <CardContent className="p-4">
-          <h2 className="text-base font-semibold mb-2">Revenue Overview</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-3 rounded-lg bg-success/5 border border-success/20">
-              <p className="text-xs text-muted-foreground">Total Revenue (All Time)</p>
-              <p className="text-lg font-bold text-success tabular-nums">{fmt(totalRevenue)}</p>
+          {/* 4. Stock Value (Retail) */}
+          <div className="p-3 rounded-lg bg-success/5 border border-success/20">
+            <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-success" /><p className="text-sm font-semibold">4. Expected Stock Value (Retail)</p></div>
+            <p className="text-xs text-muted-foreground mb-1">Sum of (Retail Price × Quantity) for all active stock</p>
+            <p className="text-2xl font-bold text-success tabular-nums">{fmt(retailCapital)}</p>
+            <p className="text-xs text-muted-foreground">Expected Profit (Retail − Buying): <span className="font-bold text-success">{fmt(retailCapital - buyingCapital)}</span></p>
+          </div>
+
+          {/* 5. Today's Revenue */}
+          <div className="p-3 rounded-lg bg-success/5 border border-success/20">
+            <div className="flex items-center gap-2 mb-1"><DollarSign className="h-4 w-4 text-success" /><p className="text-sm font-semibold">5. Today's Revenue</p></div>
+            <p className="text-2xl font-bold text-success tabular-nums">{fmt(todayTotalRevenue)}</p>
+            <p className="text-xs text-muted-foreground mb-2">Cash collected today: <span className="font-bold text-success">{fmt(todayTotalCashCollected)}</span></p>
+
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between items-center p-2 rounded bg-background/80">
+                <span className="text-xs">📦 Stock Sales ({todaySales.length})</span>
+                <span className="font-bold tabular-nums">{fmt(todayStockSalesRevenue)}</span>
+              </div>
+              {todaySalesFull.length > 0 && (
+                <div className="flex justify-between items-center p-1.5 rounded bg-success/5 ml-4">
+                  <span className="text-xs text-success">✅ Paid Full ({todaySalesFull.length})</span>
+                  <span className="font-semibold tabular-nums text-success">{fmt(todaySalesFullTotal)}</span>
+                </div>
+              )}
+              {todaySalesPartial.length > 0 && (
+                <div className="flex justify-between items-center p-1.5 rounded bg-warning/5 ml-4">
+                  <span className="text-xs text-warning">⚠️ Partial ({todaySalesPartial.length}) — Paid: {fmt(todaySalesPartialPaid)}</span>
+                  <span className="font-semibold tabular-nums">{fmt(todaySalesPartialTotal)}</span>
+                </div>
+              )}
+              {todaySalesCredit.length > 0 && (
+                <div className="flex justify-between items-center p-1.5 rounded bg-destructive/5 ml-4">
+                  <span className="text-xs text-destructive">🔴 Credit ({todaySalesCredit.length})</span>
+                  <span className="font-semibold tabular-nums text-destructive">{fmt(todaySalesCreditTotal)}</span>
+                </div>
+              )}
+              {todayOrders.length > 0 && (
+                <div className="flex justify-between items-center p-2 rounded bg-background/80">
+                  <span className="text-xs">📋 Orders ({todayOrders.length})</span>
+                  <span className="font-bold tabular-nums">{fmt(todayOrdersTotal)}</span>
+                </div>
+              )}
             </div>
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <div className="flex items-center gap-1 mb-1"><ShoppingCart className="h-3 w-3 text-primary" /><p className="text-xs text-muted-foreground">Stock Sales Revenue</p></div>
-              <p className="text-lg font-bold text-primary tabular-nums">{fmt(totalStockSalesRevenue)}</p>
+          </div>
+
+          {/* 6. Service Fee Revenue */}
+          <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+            <div className="flex items-center gap-2 mb-1"><Wrench className="h-4 w-4 text-accent" /><p className="text-sm font-semibold">6. Service Fee Revenue</p></div>
+            <p className="text-xs text-muted-foreground mb-1">Service labor fees only (parts used from stock are NOT included here)</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Today's Service Fees</p>
+                <p className="text-lg font-bold tabular-nums">{fmt(todayTotalServiceFees)}</p>
+                <p className="text-[10px] text-muted-foreground">{todayServices.length} service(s) · Cash: {fmt(todayServiceCashCollected)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">All-Time Service Fees</p>
+                <p className="text-lg font-bold tabular-nums">{fmt(totalServiceRevenue)}</p>
+                <p className="text-[10px] text-muted-foreground">{services.length} total services</p>
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
-              <div className="flex items-center gap-1 mb-1"><Wrench className="h-3 w-3 text-accent" /><p className="text-xs text-muted-foreground">Service Fee Revenue</p></div>
-              <p className="text-lg font-bold text-accent tabular-nums">{fmt(totalServiceRevenue)}</p>
+          </div>
+
+          {/* 7. Expenses */}
+          <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+            <div className="flex items-center gap-2 mb-1"><Flame className="h-4 w-4 text-destructive" /><p className="text-sm font-semibold">7. Non-Production Expenses</p></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Today's Expenses</p>
+                <p className="text-lg font-bold text-destructive tabular-nums">{fmt(todayExpenseTotal)}</p>
+                <p className="text-[10px] text-muted-foreground">{todayExpenses.length} expense(s)</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">All-Time Expenses</p>
+                <p className="text-lg font-bold text-destructive tabular-nums">{fmt(totalExpenses)}</p>
+                <p className="text-[10px] text-muted-foreground">{expenses.length} total</p>
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-info/5 border border-info/20">
-              <p className="text-xs text-muted-foreground">Expected Profit (Retail - Buying)</p>
-              <p className="text-lg font-bold text-info tabular-nums">{fmt(retailCapital - buyingCapital)}</p>
+          </div>
+
+          {/* Net Position Today */}
+          <div className={`p-3 rounded-lg border ${todayNetPosition >= 0 ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20'}`}>
+            <p className="text-sm font-semibold mb-1">📈 Today's Net Position</p>
+            <p className="text-xs text-muted-foreground">Cash Collected − Expenses − Purchases</p>
+            <p className={`text-2xl font-bold tabular-nums ${todayNetPosition >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(todayNetPosition)}</p>
+            <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
+              <p>+ Cash Collected: {fmt(todayTotalCashCollected)}</p>
+              <p>− Expenses: {fmt(todayExpenseTotal)}</p>
+              <p>− Purchases: {fmt(todayPurchaseTotal)}</p>
+            </div>
+          </div>
+
+          {/* All-time Revenue Overview */}
+          <div className="p-3 rounded-lg bg-muted/30 border">
+            <p className="text-sm font-semibold mb-2">📊 All-Time Revenue Overview</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Revenue</p>
+                <p className="text-lg font-bold text-success tabular-nums">{fmt(totalRevenue)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Stock Sales</p>
+                <p className="text-lg font-bold tabular-nums">{fmt(totalStockSalesRevenue)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Service Fees</p>
+                <p className="text-lg font-bold tabular-nums">{fmt(totalServiceRevenue)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total Expenses</p>
+                <p className="text-lg font-bold text-destructive tabular-nums">{fmt(totalExpenses)}</p>
+              </div>
             </div>
           </div>
         </CardContent>

@@ -85,14 +85,23 @@ export default function PurchasesPage() {
   }
 
   function PurchaseCard({ p }: { p: typeof purchases[0] }) {
+    const isPaid = p.payment_status === 'paid';
+    const isPartial = p.payment_status === 'partial';
+    const isUnpaid = p.payment_status === 'unpaid';
     return (
-      <div className="border rounded-lg p-3">
+      <div className={`border rounded-lg p-3 ${isUnpaid ? 'border-destructive/40 bg-destructive/5' : isPartial ? 'border-warning/40 bg-warning/5' : ''}`}>
         <div className="flex justify-between items-center mb-1">
           <div>
             <span className="font-medium text-sm">{p.supplier}</span>
             {p.recorded_by && <span className="text-xs text-muted-foreground ml-2">by {p.recorded_by}</span>}
           </div>
           <span className="font-bold text-success bg-success/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(p.grand_total))}</span>
+        </div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${isPaid ? 'bg-success/10 text-success' : isPartial ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
+            {isPaid ? '✅ Paid' : isPartial ? `⚠️ Partial (${fmt(Number(p.amount_paid))})` : '❌ Unpaid'}
+          </span>
+          {!isPaid && <span className="text-xs font-semibold text-destructive">Balance: {fmt(Number(p.balance))}</span>}
         </div>
         <p className="text-xs text-muted-foreground mb-2">{new Date(p.created_at).toLocaleString()}</p>
         <div className="text-sm text-muted-foreground space-y-1 max-h-40 overflow-y-auto">
@@ -108,6 +117,11 @@ export default function PurchasesPage() {
             </div>
           ))}
         </div>
+        {!isPaid && (
+          <Button size="sm" variant="outline" className="mt-2" onClick={() => { setEditPaymentPurchase(p); setEditAmountPaid(String(p.amount_paid || 0)); }}>
+            💰 Update Payment
+          </Button>
+        )}
       </div>
     );
   }

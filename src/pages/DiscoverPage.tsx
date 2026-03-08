@@ -39,7 +39,7 @@ export default function DiscoverPage() {
   const searchBusinesses = useCallback(async (searchQuery: string) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('search_businesses', {
+      const { data, error } = await (supabase.rpc as any)('search_businesses', {
         _query: searchQuery,
         _limit: 30,
         _offset: 0,

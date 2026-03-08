@@ -106,7 +106,7 @@ export default function CheckoutPage() {
       const { data: orderData, error: orderError } = await supabase.from('orders').insert({
         business_id: currentBusiness.id,
         type: 'checkout',
-        customer_name: toSentenceCase(customerName.trim()),
+        customer_name: toTitleCase(customerName.trim()),
         grand_total: grandTotal,
         status: paymentMethod === 'card' ? 'paid' : 'pending',
         code,

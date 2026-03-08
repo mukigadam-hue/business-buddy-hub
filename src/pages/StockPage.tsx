@@ -149,79 +149,81 @@ export default function StockPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold">My Stock</h1>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => setShowBuyingPrice(v => !v)}>
-            {showBuyingPrice ? '← Hide' : '💰 Show'} Buying Price
-          </Button>
-          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Item</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>{editItem ? 'Edit Item' : 'Add New Item'}</DialogTitle></DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div>
-                  <Label>Item Name</Label>
-                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => setForm(f => ({ ...f, name: toSentenceCase(f.name) }))} required />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
+      <div className="sticky top-0 space-y-3 pb-3 bg-background z-20 -mx-3 px-3 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6 -mt-3 pt-3 sm:-mt-4 sm:pt-4 md:-mt-6 md:pt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold">My Stock</h1>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => setShowBuyingPrice(v => !v)}>
+              {showBuyingPrice ? '← Hide' : '💰 Show'} Buying Price
+            </Button>
+            <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
+              <DialogTrigger asChild>
+                <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Item</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader><DialogTitle>{editItem ? 'Edit Item' : 'Add New Item'}</DialogTitle></DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-3">
                   <div>
-                    <Label>Category</Label>
-                    <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} onBlur={() => setForm(f => ({ ...f, category: toSentenceCase(f.category) }))} list="stock-cat-suggestions" />
-                    <datalist id="stock-cat-suggestions">{existingCategories.map(c => <option key={c} value={c} />)}</datalist>
+                    <Label>Item Name</Label>
+                    <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => setForm(f => ({ ...f, name: toSentenceCase(f.name) }))} required />
                   </div>
-                  <div>
-                    <Label>Quality</Label>
-                    <Input value={form.quality} onChange={e => setForm(f => ({ ...f, quality: e.target.value }))} onBlur={() => setForm(f => ({ ...f, quality: toSentenceCase(f.quality) }))} placeholder="e.g. New, Grade A..." />
-                  </div>
-                </div>
-                <div>
-                  <Label>Buying/Shopping Price (Cost from supplier)</Label>
-                  <Input type="number" min="0" step="0.01" value={form.buying_price} onChange={e => setForm(f => ({ ...f, buying_price: e.target.value }))} required placeholder="Price you buy at" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Wholesale Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} required placeholder="Sell to wholesalers" /></div>
-                  <div><Label>Retail Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} required placeholder="Sell to customers" /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Quantity</Label><Input type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} required /></div>
-                  <div><Label>Min Stock Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
-                </div>
-                <Button type="submit" className="w-full">{editItem ? 'Update Item' : 'Add Item'}</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search items by name, category, quality..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
-      </div>
-
-      {/* Photo Gallery - Horizontal Scroll */}
-      {itemsWithPhotos.length > 0 && (
-        <Card className="shadow-card">
-          <CardContent className="p-3">
-            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2"><Image className="h-4 w-4 text-primary" /> Item Photos ({itemsWithPhotos.length})</h2>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
-              {itemsWithPhotos.map(item => {
-                const thumb = item.image_url_1 || item.image_url_2 || item.image_url_3;
-                return (
-                  <button key={item.id} onClick={() => setViewGalleryItem(item)} className="group shrink-0 w-20 text-left">
-                    <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted border-2 border-transparent group-hover:border-primary transition-colors">
-                      <img src={thumb!} alt={item.name} className="w-full h-full object-cover" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Category</Label>
+                      <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} onBlur={() => setForm(f => ({ ...f, category: toSentenceCase(f.category) }))} list="stock-cat-suggestions" />
+                      <datalist id="stock-cat-suggestions">{existingCategories.map(c => <option key={c} value={c} />)}</datalist>
                     </div>
-                    <p className="text-xs font-semibold truncate mt-1">{item.name}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                    <div>
+                      <Label>Quality</Label>
+                      <Input value={form.quality} onChange={e => setForm(f => ({ ...f, quality: e.target.value }))} onBlur={() => setForm(f => ({ ...f, quality: toSentenceCase(f.quality) }))} placeholder="e.g. New, Grade A..." />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Buying/Shopping Price (Cost from supplier)</Label>
+                    <Input type="number" min="0" step="0.01" value={form.buying_price} onChange={e => setForm(f => ({ ...f, buying_price: e.target.value }))} required placeholder="Price you buy at" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Wholesale Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} required placeholder="Sell to wholesalers" /></div>
+                    <div><Label>Retail Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} required placeholder="Sell to customers" /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Quantity</Label><Input type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} required /></div>
+                    <div><Label>Min Stock Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
+                  </div>
+                  <Button type="submit" className="w-full">{editItem ? 'Update Item' : 'Add Item'}</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search items by name, category, quality..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+
+        {/* Photo Gallery - Horizontal Scroll */}
+        {itemsWithPhotos.length > 0 && (
+          <Card className="shadow-card">
+            <CardContent className="p-3">
+              <h2 className="text-sm font-semibold mb-2 flex items-center gap-2"><Image className="h-4 w-4 text-primary" /> Item Photos ({itemsWithPhotos.length})</h2>
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
+                {itemsWithPhotos.map(item => {
+                  const thumb = item.image_url_1 || item.image_url_2 || item.image_url_3;
+                  return (
+                    <button key={item.id} onClick={() => setViewGalleryItem(item)} className="group shrink-0 w-20 text-left">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted border-2 border-transparent group-hover:border-primary transition-colors">
+                        <img src={thumb!} alt={item.name} className="w-full h-full object-cover" />
+                      </div>
+                      <p className="text-xs font-semibold truncate mt-1">{item.name}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Gallery Dialog */}
       {viewGalleryItem && (
@@ -239,6 +241,8 @@ export default function StockPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-3">

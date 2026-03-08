@@ -10,8 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit2, Trash2, Users, UserPlus, Send, Share2, MessageCircle, Calendar, Clock, User } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, UserPlus, Send, Calendar, Clock, User, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
+import WorkerPaymentManager from '@/components/factory/WorkerPaymentManager';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 

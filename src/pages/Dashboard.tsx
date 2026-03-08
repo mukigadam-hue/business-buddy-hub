@@ -177,6 +177,40 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Overdue Debt Alert */}
+      {hasOverdue && (
+        <Card className="shadow-card border-destructive/50 bg-destructive/5 animate-pulse-slow">
+          <CardContent className="p-4 space-y-2">
+            <h3 className="text-base font-bold flex items-center gap-2 text-destructive">🚨 Overdue Debts — Action Required!</h3>
+            <p className="text-xs text-muted-foreground">These debts are more than 3 days old and need attention.</p>
+            {overdueSales.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase text-destructive">Customers who owe you (Sales):</p>
+                {overdueSales.map(s => (
+                  <div key={s.id} className="flex justify-between text-sm"><span>👤 {s.customer_name} — {new Date(s.created_at).toLocaleDateString()}</span><span className="font-bold text-destructive tabular-nums">{fmt(Number(s.balance))}</span></div>
+                ))}
+              </div>
+            )}
+            {overdueServices.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase text-destructive">Customers who owe you (Services):</p>
+                {overdueServices.map(s => (
+                  <div key={s.id} className="flex justify-between text-sm"><span>👤 {s.customer_name} — {s.service_name} — {new Date(s.created_at).toLocaleDateString()}</span><span className="font-bold text-destructive tabular-nums">{fmt(Number(s.balance))}</span></div>
+                ))}
+              </div>
+            )}
+            {overduePurchases.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase text-destructive">What you owe suppliers (Purchases):</p>
+                {overduePurchases.map(p => (
+                  <div key={p.id} className="flex justify-between text-sm"><span>🏪 {p.supplier} — {new Date(p.created_at).toLocaleDateString()}</span><span className="font-bold text-destructive tabular-nums">{fmt(Number(p.balance))}</span></div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Debt Summary */}
       {(totalOwedToYou > 0 || totalYouOwe > 0) && (
         <Card className="shadow-card border-warning/30 bg-warning/5">
@@ -186,7 +220,7 @@ export default function Dashboard() {
               <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                 <p className="text-xs text-muted-foreground">Others Owe You</p>
                 <p className="text-lg font-bold text-success">{fmt(totalOwedToYou)}</p>
-                <p className="text-xs text-muted-foreground">{salesDebts.length} unpaid sale(s)</p>
+                <p className="text-xs text-muted-foreground">{salesDebts.length} sale(s), {serviceDebts.length} service(s)</p>
               </div>
               <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                 <p className="text-xs text-muted-foreground">You Owe Suppliers</p>
@@ -196,13 +230,20 @@ export default function Dashboard() {
             </div>
             {salesDebts.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">🔴 Customers who owe you:</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">🔴 Customers who owe you (Sales):</p>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {salesDebts.map(s => (
-                    <div key={s.id} className="flex justify-between text-sm">
-                      <span>👤 {s.customer_name}</span>
-                      <span className="font-bold text-destructive tabular-nums">{fmt(Number(s.balance))}</span>
-                    </div>
+                    <div key={s.id} className="flex justify-between text-sm"><span>👤 {s.customer_name}</span><span className="font-bold text-destructive tabular-nums">{fmt(Number(s.balance))}</span></div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {serviceDebts.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">🔴 Customers who owe you (Services):</p>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {serviceDebts.map(s => (
+                    <div key={s.id} className="flex justify-between text-sm"><span>👤 {s.customer_name} — {s.service_name}</span><span className="font-bold text-destructive tabular-nums">{fmt(Number(s.balance))}</span></div>
                   ))}
                 </div>
               </div>
@@ -212,10 +253,7 @@ export default function Dashboard() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">🔴 What you owe suppliers:</p>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {purchaseDebts.map(p => (
-                    <div key={p.id} className="flex justify-between text-sm">
-                      <span>🏪 {p.supplier}</span>
-                      <span className="font-bold text-destructive tabular-nums">{fmt(Number(p.balance))}</span>
-                    </div>
+                    <div key={p.id} className="flex justify-between text-sm"><span>🏪 {p.supplier}</span><span className="font-bold text-destructive tabular-nums">{fmt(Number(p.balance))}</span></div>
                   ))}
                 </div>
               </div>

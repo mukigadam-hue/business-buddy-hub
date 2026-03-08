@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, ShoppingBag, ShieldCheck, Menu, Contact } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useBusiness } from '@/context/BusinessContext';
@@ -96,24 +96,65 @@ function BusinessRoleBanner({ userRole, businessName, isFactory }: { userRole: s
   );
 }
 
-function NotificationsPanel() {
+function getNotificationRoute(type: string): string {
+  switch (type) {
+    case 'new_order': return '/orders';
+    case 'order_priced': return '/orders';
+    case 'order_confirmed': return '/orders';
+    case 'order_rejected': return '/orders';
+    case 'new_purchase': return '/purchases';
+    case 'payment_submitted': return '/payments';
+    case 'payment_confirmed': return '/payments';
+    case 'poke': return '/contacts';
+    case 'low_stock': return '/stock';
+    case 'empty_stock': return '/stock';
+    case 'new_sale': return '/sales';
+    case 'new_expense': return '/expenses';
+    case 'new_service': return '/services';
+    case 'team': return '/team';
+    default: return '/';
+  }
+}
+
+function NotificationsPanel({ onNavigate, variant = 'desktop' }: { onNavigate?: () => void; variant?: 'desktop' | 'mobile' }) {
   const { notifications, markNotificationRead, markAllNotificationsRead } = useBusiness();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const unread = notifications.filter(n => !n.is_read).length;
+
+  function handleNotificationClick(n: { id: string; type: string; is_read: boolean }) {
+    if (!n.is_read) markNotificationRead(n.id);
+    const route = getNotificationRoute(n.type);
+    setOpen(false);
+    onNavigate?.();
+    navigate(route);
+  }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button className="relative p-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors">
-          {unread > 0 ? <BellDot className="h-5 w-5 text-warning" /> : <Bell className="h-5 w-5 text-sidebar-foreground" />}
-          {unread > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-warning text-warning-foreground text-[10px] flex items-center justify-center font-bold">
-              {unread > 9 ? '9+' : unread}
-            </span>
-          )}
-        </button>
+        {variant === 'mobile' ? (
+          <button className="relative flex flex-col items-center justify-center gap-0.5 text-[11px] text-muted-foreground min-h-[44px] min-w-[44px]">
+            {unread > 0 ? <BellDot className="h-5 w-5 text-warning" /> : <Bell className="h-5 w-5" />}
+            <span>Alerts</span>
+            {unread > 0 && (
+              <span className="absolute top-0 right-0 h-3.5 w-3.5 rounded-full bg-warning text-warning-foreground text-[9px] flex items-center justify-center font-bold">
+                {unread > 9 ? '9+' : unread}
+              </span>
+            )}
+          </button>
+        ) : (
+          <button className="relative p-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors">
+            {unread > 0 ? <BellDot className="h-5 w-5 text-warning" /> : <Bell className="h-5 w-5 text-sidebar-foreground" />}
+            {unread > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-warning text-warning-foreground text-[10px] flex items-center justify-center font-bold">
+                {unread > 9 ? '9+' : unread}
+              </span>
+            )}
+          </button>
+        )}
       </SheetTrigger>
-      <SheetContent side="right" className="w-80 max-h-screen overflow-y-auto">
+      <SheetContent side={variant === 'mobile' ? 'bottom' : 'right'} className={variant === 'mobile' ? 'rounded-t-2xl max-h-[70vh] overflow-y-auto' : 'w-80 max-h-screen overflow-y-auto'}>
         <SheetHeader className="flex flex-row items-center justify-between">
           <SheetTitle>Notifications {unread > 0 && `(${unread} new)`}</SheetTitle>
           {unread > 0 && <Button size="sm" variant="ghost" onClick={markAllNotificationsRead} className="text-xs">Mark all read</Button>}
@@ -123,11 +164,14 @@ function NotificationsPanel() {
             <p className="text-sm text-muted-foreground text-center py-8">No notifications yet.</p>
           ) : (
             notifications.map(n => (
-              <button key={n.id} onClick={() => markNotificationRead(n.id)}
+              <button key={n.id} onClick={() => handleNotificationClick(n)}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${n.is_read ? 'bg-muted/30 border-border' : 'bg-warning/5 border-warning/30'}`}>
                 <p className={`text-sm font-medium ${n.is_read ? 'text-muted-foreground' : 'text-foreground'}`}>{n.title}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
-                <p className="text-xs text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString()}</p>
+                  <span className="text-[10px] text-primary underline">View →</span>
+                </div>
                 {!n.is_read && <span className="inline-block mt-1 text-[10px] bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full">NEW</span>}
               </button>
             ))
@@ -250,24 +294,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           );
         })}
 
-        {/* Alerts */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <button className="relative flex flex-col items-center justify-center gap-0.5 text-[11px] text-muted-foreground min-h-[44px] min-w-[44px]">
-              {unreadCount > 0 ? <BellDot className="h-5 w-5 text-warning" /> : <Bell className="h-5 w-5" />}
-              <span>Alerts</span>
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 h-3.5 w-3.5 rounded-full bg-warning text-warning-foreground text-[9px] flex items-center justify-center font-bold">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] overflow-y-auto">
-            <SheetHeader><SheetTitle>Notifications</SheetTitle></SheetHeader>
-            <NotificationsPanel />
-          </SheetContent>
-        </Sheet>
+        {/* Alerts - reuse NotificationsPanel which has its own Sheet */}
+        <NotificationsPanel variant="mobile" />
 
         {/* More Menu - contains all other pages + business switcher */}
         <Sheet open={moreOpen} onOpenChange={setMoreOpen}>

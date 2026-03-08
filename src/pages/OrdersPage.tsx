@@ -422,8 +422,21 @@ export default function OrdersPage() {
             </>
           )}
           {(order.status === 'completed' || order.transferred_to_sale) && (
-            <Button size="sm" variant="ghost" onClick={() => setReceiptOrder(order)}>
-              <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
+            <>
+              <Button size="sm" variant="ghost" onClick={() => setReceiptOrder(order)}>
+                <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
+              </Button>
+              {order.type === 'inbox' && (
+                <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
+                  <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
+                </Button>
+              )}
+            </>
+          )}
+          {/* Allocate for confirmed but not yet completed inbox orders too */}
+          {order.type === 'inbox' && (order.status === 'priced' || order.status === 'confirmed') && !order.transferred_to_sale && (
+            <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
+              <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
             </Button>
           )}
         </div>

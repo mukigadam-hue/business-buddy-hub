@@ -212,8 +212,21 @@ export default function SalesPage() {
 
   const availablePartsStock = activeStock.filter(s => s.quantity > 0);
 
+  function handleBarcodeScan(code: string) {
+    const match = activeStock.find(s => s.barcode && s.barcode === code && s.quantity > 0);
+    if (match) { setSelectedStock(match.id); toast.success(`Found: ${match.name}`); }
+    else { toast.error(`No stock item found for barcode: ${code}`); }
+  }
+  function handlePartBarcodeScan(code: string) {
+    const match = availablePartsStock.find(s => s.barcode && s.barcode === code);
+    if (match) { setSelectedPartStock(match.id); toast.success(`Found: ${match.name}`); }
+    else { toast.error(`No stock item found for barcode: ${code}`); }
+  }
+
   return (
     <div className="space-y-6">
+      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
+      <BarcodeScanner open={partScannerOpen} onOpenChange={setPartScannerOpen} onScan={handlePartBarcodeScan} />
       <h1 className="text-2xl font-bold">Sales</h1>
 
       <Card className="shadow-card">

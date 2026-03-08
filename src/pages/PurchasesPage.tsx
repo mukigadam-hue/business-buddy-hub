@@ -136,7 +136,12 @@ export default function PurchasesPage() {
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[150px]">
               <Label>Item Name</Label>
-              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => applyCase('name')} list="stock-suggestions" placeholder="Type or select..." />
+              <div className="flex gap-1.5">
+                <Input className="flex-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => applyCase('name')} list="stock-suggestions" placeholder="Type or select..." />
+                <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
+                  <ScanLine className="h-4 w-4" />
+                </Button>
+              </div>
               <datalist id="stock-suggestions">{suggestions.map(s => <option key={s} value={s} />)}</datalist>
             </div>
             <div className="w-28">

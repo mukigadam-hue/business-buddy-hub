@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, ShoppingBag, ShieldCheck, Menu, Contact } from 'lucide-react';
+import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, ShoppingBag, Menu, Contact } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useBusiness } from '@/context/BusinessContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +13,6 @@ const businessNavItems = [
   { to: '/sales', label: 'Sales', icon: TrendingUp },
   { to: '/purchases', label: 'Purchases', icon: ShoppingCart },
   { to: '/orders', label: 'Orders', icon: ClipboardList },
-  { to: '/payments', label: 'Verify Payments', icon: ShieldCheck },
   { to: '/services', label: 'Services', icon: Wrench },
   { to: '/expenses', label: 'Expenses', icon: Flame },
   { to: '/contacts', label: 'Contacts', icon: Contact },
@@ -29,7 +28,6 @@ const factoryNavItems = [
   { to: '/sales', label: 'Sales', icon: TrendingUp },
   { to: '/purchases', label: 'Purchases', icon: ShoppingCart },
   { to: '/orders', label: 'Orders', icon: ClipboardList },
-  { to: '/payments', label: 'Verify Payments', icon: ShieldCheck },
   { to: '/services', label: 'Services', icon: Wrench },
   { to: '/expenses', label: 'Expenses', icon: Flame },
   { to: '/contacts', label: 'Contacts', icon: Contact },
@@ -46,7 +44,6 @@ const businessMobileNav = [
 const businessMoreNav = [
   { to: '/purchases', label: 'Purchases', icon: ShoppingCart },
   { to: '/orders', label: 'Orders', icon: ClipboardList },
-  { to: '/payments', label: 'Verify Payments', icon: ShieldCheck },
   { to: '/services', label: 'Services', icon: Wrench },
   { to: '/expenses', label: 'Expenses', icon: Flame },
   { to: '/contacts', label: 'Contacts', icon: Contact },
@@ -66,7 +63,7 @@ const factoryMoreNav = [
   { to: '/purchases', label: 'Purchases', icon: ShoppingCart },
   { to: '/orders', label: 'Orders', icon: ClipboardList },
   
-  { to: '/payments', label: 'Verify Payments', icon: ShieldCheck },
+  
   { to: '/services', label: 'Services', icon: Wrench },
   { to: '/expenses', label: 'Expenses', icon: Flame },
   { to: '/contacts', label: 'Contacts', icon: Contact },
@@ -103,8 +100,8 @@ function getNotificationRoute(type: string): string {
     case 'order_confirmed': return '/orders';
     case 'order_rejected': return '/orders';
     case 'new_purchase': return '/purchases';
-    case 'payment_submitted': return '/payments';
-    case 'payment_confirmed': return '/payments';
+    case 'payment_submitted': return '/orders';
+    case 'payment_confirmed': return '/orders';
     case 'poke': return '/contacts';
     case 'low_stock': return '/stock';
     case 'empty_stock': return '/stock';

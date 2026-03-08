@@ -21,7 +21,7 @@ import NotFound from "./pages/NotFound";
 import ContactsPage from "./pages/ContactsPage";
 import BusinessExpenses from "./pages/BusinessExpenses";
 
-import PaymentVerificationPage from "./pages/PaymentVerificationPage";
+
 
 // Factory pages
 import FactoryDashboard from "./pages/factory/FactoryDashboard";
@@ -90,7 +90,6 @@ function BusinessContent() {
               <Route path="/sales" element={<FactorySales />} />
               <Route path="/purchases" element={<FactoryPurchases />} />
               <Route path="/orders" element={<OrdersPage />} />
-              <Route path="/payments" element={<PaymentVerificationPage />} />
               <Route path="/services" element={<FactoryServices />} />
               <Route path="/expenses" element={<FactoryExpenses />} />
               <Route path="/contacts" element={<ContactsPage />} />
@@ -114,7 +113,7 @@ function BusinessContent() {
           <Route path="/purchases" element={<PurchasesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           
-          <Route path="/payments" element={<PaymentVerificationPage />} />
+          
           <Route path="/contacts" element={<ContactsPage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/expenses" element={<BusinessExpenses />} />

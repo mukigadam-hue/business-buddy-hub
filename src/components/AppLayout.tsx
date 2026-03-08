@@ -244,7 +244,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="px-3 pt-3">
-            <Select value={currentBusiness?.id || ''} onValueChange={v => { window.history.replaceState(null, '', '/'); setCurrentBusinessId(v); }}>
+            <Select value={currentBusiness?.id || ''} onValueChange={v => { navigate('/'); setCurrentBusinessId(v); }}>
               <SelectTrigger className="w-full bg-sidebar-accent/30 border-sidebar-border text-sidebar-foreground text-xs h-9">
                 <Building2 className="h-3 w-3 mr-1" />
                 <SelectValue placeholder={t('nav.switchBusiness')} />
@@ -325,7 +325,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   const isActive = b.id === currentBusiness?.id;
                   const isFact = (b as any).business_type === 'factory';
                   return (
-                    <button key={b.id} onClick={() => { window.history.replaceState(null, '', '/'); setCurrentBusinessId(b.id); setSheetOpen(false); }}
+                    <button key={b.id} onClick={() => { navigate('/'); setCurrentBusinessId(b.id); setMoreOpen(false); }}
                       className={`w-full flex items-center gap-2.5 p-2.5 rounded-lg text-left transition-all ${
                         isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted/60'
                       }`}>

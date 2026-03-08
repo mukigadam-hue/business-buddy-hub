@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Trash2, Factory, AlertTriangle } from 'lucide-react';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 
@@ -208,6 +209,8 @@ export default function FactoryProduction() {
           </form>
         </CardContent>
       </Card>
+
+      <AdSpace variant="banner" />
 
       {/* Production History */}
       <Card className="shadow-card">

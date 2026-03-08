@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Edit2, Trash2, Package } from 'lucide-react';
 import { toast } from 'sonner';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 
@@ -78,6 +79,8 @@ export default function FactoryInputStock() {
         <h1 className="text-2xl font-bold flex items-center gap-2"><Package className="h-6 w-6" /> Input Stock</h1>
         <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Material</Button>
       </div>
+
+      <AdSpace variant="banner" />
 
       <Card className="shadow-card">
         <CardContent className="p-4">

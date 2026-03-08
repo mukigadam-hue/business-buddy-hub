@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Package, TrendingUp, AlertTriangle, XCircle, DollarSign, Factory, Wrench, Camera, Users, Flame } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import QuickAddItem from '@/components/QuickAddItem';
+import AdSpace from '@/components/AdSpace';
 
 export default function FactoryDashboard() {
   const { currentBusiness, updateBusiness, stock, sales, services } = useBusiness();
@@ -247,6 +248,8 @@ export default function FactoryDashboard() {
           )}
         </CardContent>
       </Card>
+
+      <AdSpace variant="banner" />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit2, Trash2, Users, UserPlus, Send, Calendar, Clock, User, Wallet } from 'lucide-react';
 import WorkerPaymentManager from '@/components/factory/WorkerPaymentManager';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 
@@ -106,6 +107,8 @@ export default function FactoryTeam() {
         </div>
         {isOwnerOrAdmin && <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Worker</Button>}
       </div>
+
+      <AdSpace variant="banner" />
 
       {/* Main Tabs: Team / Payments */}
       <Tabs defaultValue="team" className="w-full">

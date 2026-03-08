@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import BusinessDetailDialog from '@/components/BusinessDetailDialog';
+import AdSpace from '@/components/AdSpace';
 
 interface DiscoveredBusiness {
   id: string;
@@ -86,6 +87,8 @@ export default function DiscoverPage() {
           className="pl-10 h-11"
         />
       </div>
+
+      <AdSpace variant="compact" />
 
       {/* Results */}
       {loading ? (

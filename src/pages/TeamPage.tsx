@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserPlus, Trash2, Shield, Crown, User, Users, ShoppingBag, MessageCircle, Share2, Send, Calendar, Clock, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import WorkerPaymentManager from '@/components/business/WorkerPaymentManager';
+import AdSpace from '@/components/AdSpace';
 
 interface Member {
   user_id: string;
@@ -274,6 +275,8 @@ export default function TeamPage() {
 
       {/* Redeem Code Section — always visible */}
       <RedeemCodeSection onRedeemed={() => { loadMembers(); loadCustomers(); }} />
+
+      <AdSpace variant="banner" />
 
       <Tabs defaultValue="workers" className="w-full">
         <TabsList className="grid w-full grid-cols-3">

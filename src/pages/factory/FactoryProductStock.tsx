@@ -11,6 +11,7 @@ import { Plus, Edit2, Trash2, RotateCcw, Package, Image as ImageIcon, ScanLine }
 import ImageUpload from '@/components/ImageUpload';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 
@@ -90,6 +91,8 @@ export default function FactoryProductStock() {
           <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Product</Button>
         </div>
       </div>
+
+      <AdSpace variant="banner" />
 
       <Card className="shadow-card">
         <CardContent className="p-4">

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Package, TrendingUp, AlertTriangle, XCircle, DollarSign, ShoppingCart, Wrench, Camera } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import QuickAddItem from '@/components/QuickAddItem';
+import AdSpace from '@/components/AdSpace';
 
 export default function Dashboard() {
   const { currentBusiness, updateBusiness, stock, sales, services, purchases } = useBusiness();
@@ -141,6 +142,8 @@ export default function Dashboard() {
         <Camera className="h-5 w-5 mr-2" /> Add Item with Photos
       </Button>
       <QuickAddItem open={showQuickAdd} onOpenChange={setShowQuickAdd} />
+
+      <AdSpace variant="banner" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card className="shadow-card">
@@ -395,6 +398,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <AdSpace variant="banner" />
     </div>
   );
 }

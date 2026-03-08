@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import type { ReceiptRecord } from '@/context/BusinessContext';
 import { supabase } from '@/integrations/supabase/client';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string): string {
   if (!str) return str;
@@ -525,6 +526,8 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <AdSpace variant="banner" />
 
       {/* Recycle Bin */}
       {deletedStock.length > 0 && (

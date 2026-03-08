@@ -11,6 +11,7 @@ import { Plus, Trash2, ShoppingCart, ScanLine } from 'lucide-react';
 import { useBusiness } from '@/context/BusinessContext';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls'];
@@ -178,6 +179,8 @@ export default function FactoryPurchases() {
           )}
         </CardContent>
       </Card>
+
+      <AdSpace variant="banner" />
 
       {/* History */}
       <div className="flex gap-2">

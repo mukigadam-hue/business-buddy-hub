@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2, Plus, Flame } from 'lucide-react';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 
@@ -110,6 +111,8 @@ export default function BusinessExpenses() {
           </form>
         </CardContent>
       </Card>
+
+      <AdSpace variant="banner" />
 
       {/* History */}
       <div className="flex gap-2">

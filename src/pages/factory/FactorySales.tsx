@@ -13,6 +13,7 @@ import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
 import type { Sale } from '@/context/BusinessContext';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string) { return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str; }
 
@@ -388,6 +389,8 @@ export default function FactorySales() {
           )}
         </CardContent>
       </Card>
+
+      <AdSpace variant="banner" />
 
       {/* History */}
       <div className="flex gap-2">

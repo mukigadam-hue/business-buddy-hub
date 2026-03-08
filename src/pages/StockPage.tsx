@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Search, Pencil, Trash2, RotateCcw, AlertTriangle, Image, X, ScanLine } from 'lucide-react';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import type { StockItem } from '@/context/BusinessContext';
+import AdSpace from '@/components/AdSpace';
 
 function toSentenceCase(str: string): string {
   if (!str) return str;
@@ -252,52 +253,55 @@ export default function StockPage() {
         {filtered.length === 0 ? (
           <Card className="shadow-card"><CardContent className="p-6 text-center text-muted-foreground">No items found. Add your first stock item.</CardContent></Card>
         ) : (
-          filtered.map(item => {
+          filtered.map((item, idx) => {
             const thumb = item.image_url_1 || item.image_url_2 || item.image_url_3;
             return (
-              <Card key={item.id} className="shadow-card">
-                <CardContent className="p-3">
-                  <div className="flex gap-3">
-                    {thumb ? (
-                      <button onClick={() => setViewGalleryItem(item)} className="w-14 h-14 rounded-lg overflow-hidden bg-muted shrink-0">
-                        <img src={thumb} alt="" className="w-full h-full object-cover" />
-                      </button>
-                    ) : (
-                      <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <Image className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-sm truncate">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>
+              <div key={item.id}>
+                {idx > 0 && idx % 8 === 0 && <AdSpace variant="inline" className="mb-3" />}
+                <Card className="shadow-card">
+                  <CardContent className="p-3">
+                    <div className="flex gap-3">
+                      {thumb ? (
+                        <button onClick={() => setViewGalleryItem(item)} className="w-14 h-14 rounded-lg overflow-hidden bg-muted shrink-0">
+                          <img src={thumb} alt="" className="w-full h-full object-cover" />
+                        </button>
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <Image className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        {item.quantity === 0 ? (
-                          <span className="text-[10px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full shrink-0">Out</span>
-                        ) : item.quantity <= item.min_stock_level ? (
-                          <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full shrink-0">Low</span>
-                        ) : (
-                          <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full shrink-0">OK</span>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-semibold text-sm truncate">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>
+                          </div>
+                          {item.quantity === 0 ? (
+                            <span className="text-[10px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full shrink-0">Out</span>
+                          ) : item.quantity <= item.min_stock_level ? (
+                            <span className="text-[10px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full shrink-0">Low</span>
+                          ) : (
+                            <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full shrink-0">OK</span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex gap-3 text-xs">
+                            <span className="tabular-nums"><span className="text-muted-foreground">Retail:</span> <span className="font-semibold">{fmt(Number(item.retail_price))}</span></span>
+                            <span className="tabular-nums"><span className="text-muted-foreground">Qty:</span> <span className="font-bold">{item.quantity}</span></span>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setConfirmDelete(item.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          </div>
+                        </div>
+                        {showBuyingPrice && (
+                          <p className="text-xs mt-1"><span className="text-info font-medium">💰 Buy: {fmt(Number(item.buying_price))}</span> · <span className="text-muted-foreground">Wholesale: {fmt(Number(item.wholesale_price))}</span></p>
                         )}
                       </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex gap-3 text-xs">
-                          <span className="tabular-nums"><span className="text-muted-foreground">Retail:</span> <span className="font-semibold">{fmt(Number(item.retail_price))}</span></span>
-                          <span className="tabular-nums"><span className="text-muted-foreground">Qty:</span> <span className="font-bold">{item.quantity}</span></span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setConfirmDelete(item.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                        </div>
-                      </div>
-                      {showBuyingPrice && (
-                        <p className="text-xs mt-1"><span className="text-info font-medium">💰 Buy: {fmt(Number(item.buying_price))}</span> · <span className="text-muted-foreground">Wholesale: {fmt(Number(item.wholesale_price))}</span></p>
-                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             );
           })
         )}

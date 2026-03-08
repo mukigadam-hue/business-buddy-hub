@@ -112,36 +112,36 @@ export default function Dashboard() {
       </Button>
       <QuickAddItem open={showQuickAdd} onOpenChange={setShowQuickAdd} />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10"><Package className="h-5 w-5 text-primary" /></div>
-              <div><p className="text-xs text-muted-foreground">Total Items</p><p className="text-xl font-bold">{activeStock.length}</p></div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10"><Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /></div>
+              <div><p className="text-[10px] sm:text-xs text-muted-foreground">Total Items</p><p className="text-lg sm:text-xl font-bold">{activeStock.length}</p></div>
             </div>
           </CardContent>
         </Card>
         <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10"><DollarSign className="h-5 w-5 text-success" /></div>
-              <div><p className="text-xs text-muted-foreground">Today's Revenue</p><p className="text-xl font-bold text-success">{fmt(todayRevenue)}</p></div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-success/10"><DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-success" /></div>
+              <div className="min-w-0"><p className="text-[10px] sm:text-xs text-muted-foreground">Today's Revenue</p><p className="text-base sm:text-xl font-bold text-success truncate">{fmt(todayRevenue)}</p></div>
             </div>
           </CardContent>
         </Card>
         <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/10"><AlertTriangle className="h-5 w-5 text-warning" /></div>
-              <div><p className="text-xs text-muted-foreground">Low Stock</p><p className="text-xl font-bold">{lowStock.length}</p></div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-warning/10"><AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-warning" /></div>
+              <div><p className="text-[10px] sm:text-xs text-muted-foreground">Low Stock</p><p className="text-lg sm:text-xl font-bold">{lowStock.length}</p></div>
             </div>
           </CardContent>
         </Card>
         <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/10"><XCircle className="h-5 w-5 text-destructive" /></div>
-              <div><p className="text-xs text-muted-foreground">Out of Stock</p><p className="text-xl font-bold">{outOfStock.length}</p></div>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-destructive/10"><XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" /></div>
+              <div><p className="text-[10px] sm:text-xs text-muted-foreground">Out of Stock</p><p className="text-lg sm:text-xl font-bold">{outOfStock.length}</p></div>
             </div>
           </CardContent>
         </Card>

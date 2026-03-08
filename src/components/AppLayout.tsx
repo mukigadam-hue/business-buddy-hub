@@ -282,24 +282,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           );
         })}
 
-        {/* Alerts */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <button className="relative flex flex-col items-center justify-center gap-0.5 text-[11px] text-muted-foreground min-h-[44px] min-w-[44px]">
-              {unreadCount > 0 ? <BellDot className="h-5 w-5 text-warning" /> : <Bell className="h-5 w-5" />}
-              <span>Alerts</span>
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 h-3.5 w-3.5 rounded-full bg-warning text-warning-foreground text-[9px] flex items-center justify-center font-bold">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] overflow-y-auto">
-            <SheetHeader><SheetTitle>Notifications</SheetTitle></SheetHeader>
-            <NotificationsPanel />
-          </SheetContent>
-        </Sheet>
+        {/* Alerts - reuse NotificationsPanel which has its own Sheet */}
+        <NotificationsPanel onNavigate={() => {}} />
 
         {/* More Menu - contains all other pages + business switcher */}
         <Sheet open={moreOpen} onOpenChange={setMoreOpen}>

@@ -1218,7 +1218,13 @@ export default function OrdersPage() {
               <DialogTitle>Payment Proof</DialogTitle>
               <p className="text-sm text-muted-foreground">Screenshot submitted by the customer</p>
             </DialogHeader>
-            <img src={viewingProof} alt="Payment proof" className="w-full rounded-lg border" />
+            <img
+              src={viewingProof}
+              alt="Payment proof"
+              className="w-full rounded-lg border"
+              loading="eager"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+            />
           </DialogContent>
         </Dialog>
       )}

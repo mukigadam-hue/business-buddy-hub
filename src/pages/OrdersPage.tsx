@@ -11,9 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload } from 'lucide-react';
+import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine } from 'lucide-react';
 import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
+import BarcodeScanner from '@/components/BarcodeScanner';
 import type { Order, OrderItem } from '@/context/BusinessContext';
 
 function toSentenceCase(str: string): string {
@@ -55,6 +56,7 @@ export default function OrdersPage() {
   const existingCategories = [...new Set(activeStock.map(s => s.category).filter(Boolean))];
   const existingQualities = [...new Set(activeStock.map(s => s.quality).filter(Boolean))];
 
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [orderMode, setOrderMode] = useState<'my_order' | 'inbox' | 'request'>('my_order');
 
   function applyCase(field: 'name' | 'category' | 'quality') {
@@ -345,8 +347,19 @@ export default function OrdersPage() {
     );
   }
 
+  function handleBarcodeScan(code: string) {
+    const match = activeStock.find(s => s.barcode && s.barcode === code);
+    if (match) {
+      setForm(f => ({ ...f, name: match.name, category: match.category, quality: match.quality }));
+      toast.success(`Found: ${match.name}`);
+    } else {
+      toast.error(`No stock item found for barcode: ${code}`);
+    }
+  }
+
   return (
     <div className="space-y-6">
+      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
       <h1 className="text-2xl font-bold">Orders</h1>
 
       {/* Tab selector at top */}
@@ -389,7 +402,12 @@ export default function OrdersPage() {
             <div className="flex flex-wrap gap-3 items-end">
               <div className="flex-1 min-w-[150px]">
                 <Label>Item</Label>
-                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => applyCase('name')} list="order-suggestions" placeholder="Item name..." />
+                <div className="flex gap-1.5">
+                  <Input className="flex-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => applyCase('name')} list="order-suggestions" placeholder="Item name..." />
+                  <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
+                    <ScanLine className="h-4 w-4" />
+                  </Button>
+                </div>
                 <datalist id="order-suggestions">{suggestions.map(s => <option key={s} value={s} />)}</datalist>
               </div>
               <div className="w-28">

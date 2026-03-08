@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Trash2, ShoppingCart, Receipt as ReceiptIcon, Wrench, Package } from 'lucide-react';
+import { Plus, Trash2, ShoppingCart, Receipt as ReceiptIcon, Wrench, Package, ScanLine } from 'lucide-react';
 import Receipt from '@/components/Receipt';
+import BarcodeScanner from '@/components/BarcodeScanner';
+import { toast } from 'sonner';
 import type { Sale } from '@/context/BusinessContext';
 
 function toSentenceCase(str: string): string {
@@ -47,6 +49,8 @@ export default function SalesPage() {
   const [selectedPartStock, setSelectedPartStock] = useState('');
   const [partQty, setPartQty] = useState('1');
 
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [partScannerOpen, setPartScannerOpen] = useState(false);
   const activeStock = stock.filter(s => !s.deleted_at);
   const todaySales = sales.filter(s => new Date(s.created_at).toDateString() === new Date().toDateString());
   const previousSales = sales.filter(s => new Date(s.created_at).toDateString() !== new Date().toDateString());
@@ -209,8 +213,21 @@ export default function SalesPage() {
 
   const availablePartsStock = activeStock.filter(s => s.quantity > 0);
 
+  function handleBarcodeScan(code: string) {
+    const match = activeStock.find(s => s.barcode && s.barcode === code && s.quantity > 0);
+    if (match) { setSelectedStock(match.id); toast.success(`Found: ${match.name}`); }
+    else { toast.error(`No stock item found for barcode: ${code}`); }
+  }
+  function handlePartBarcodeScan(code: string) {
+    const match = availablePartsStock.find(s => s.barcode && s.barcode === code);
+    if (match) { setSelectedPartStock(match.id); toast.success(`Found: ${match.name}`); }
+    else { toast.error(`No stock item found for barcode: ${code}`); }
+  }
+
   return (
     <div className="space-y-6">
+      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
+      <BarcodeScanner open={partScannerOpen} onOpenChange={setPartScannerOpen} onScan={handlePartBarcodeScan} />
       <h1 className="text-2xl font-bold">Sales</h1>
 
       <Card className="shadow-card">
@@ -235,18 +252,23 @@ export default function SalesPage() {
             <div className="space-y-3 sm:space-y-0 sm:flex sm:flex-wrap sm:gap-3 sm:items-end">
               <div className="w-full sm:flex-1 sm:min-w-[200px]">
                 <Label>Item</Label>
-                <Select value={selectedStock} onValueChange={setSelectedStock}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select item..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeStock.filter(s => s.quantity > 0).map(s => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-1.5">
+                  <Select value={selectedStock} onValueChange={setSelectedStock}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select item..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeStock.filter(s => s.quantity > 0).map(s => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
+                    <ScanLine className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:contents">
                 <div className="sm:w-20"><Label>Qty</Label><Input type="number" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} /></div>
@@ -296,18 +318,23 @@ export default function SalesPage() {
               <div className="flex flex-wrap gap-2 items-end">
                 <div className="flex-1 min-w-[180px]">
                   <Label className="text-xs">Select Part</Label>
-                  <Select value={selectedPartStock} onValueChange={setSelectedPartStock}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose from stock..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availablePartsStock.map(s => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-1.5">
+                    <Select value={selectedPartStock} onValueChange={setSelectedPartStock}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Choose from stock..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availablePartsStock.map(s => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" variant="outline" size="icon" className="shrink-0 h-9 w-9" onClick={() => setPartScannerOpen(true)} title="Scan barcode">
+                      <ScanLine className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="w-16">
                   <Label className="text-xs">Qty</Label>

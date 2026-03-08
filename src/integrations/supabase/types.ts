@@ -926,6 +926,7 @@ export type Database = {
       }
       stock_items: {
         Row: {
+          barcode: string
           business_id: string
           buying_price: number
           category: string
@@ -944,6 +945,7 @@ export type Database = {
           wholesale_price: number
         }
         Insert: {
+          barcode?: string
           business_id: string
           buying_price?: number
           category?: string
@@ -962,6 +964,7 @@ export type Database = {
           wholesale_price?: number
         }
         Update: {
+          barcode?: string
           business_id?: string
           buying_price?: number
           category?: string

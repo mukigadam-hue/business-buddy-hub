@@ -14,6 +14,7 @@ export interface StockItem {
   retail_price: number;
   quantity: number;
   min_stock_level: number;
+  barcode: string;
   image_url_1: string;
   image_url_2: string;
   image_url_3: string;

@@ -72,7 +72,7 @@ export default function FactoryProduction() {
         category: '', quality: '',
         quantity: qtyProduced,
         buying_price: 0, wholesale_price: 0, retail_price: 0,
-        min_stock_level: 5,
+        min_stock_level: 5, barcode: '',
         image_url_1: '', image_url_2: '', image_url_3: '',
       });
     }

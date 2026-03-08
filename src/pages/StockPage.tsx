@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Pencil, Trash2, RotateCcw, AlertTriangle, Image, X } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, RotateCcw, AlertTriangle, Image, X, ScanLine } from 'lucide-react';
+import BarcodeScanner from '@/components/BarcodeScanner';
 import type { StockItem } from '@/context/BusinessContext';
 
 function toSentenceCase(str: string): string {
@@ -85,7 +86,7 @@ export default function StockPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [viewGalleryItem, setViewGalleryItem] = useState<StockItem | null>(null);
   const [form, setForm] = useState({
-    name: '', category: '', quality: '',
+    name: '', category: '', quality: '', barcode: '',
     buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5',
   });
 
@@ -95,7 +96,8 @@ export default function StockPage() {
   const filtered = activeStock.filter(item =>
     item.name.toLowerCase().includes(search.toLowerCase()) ||
     item.category.toLowerCase().includes(search.toLowerCase()) ||
-    item.quality.toLowerCase().includes(search.toLowerCase())
+    item.quality.toLowerCase().includes(search.toLowerCase()) ||
+    (item.barcode && item.barcode.toLowerCase().includes(search.toLowerCase()))
   );
 
   // Items with photos for gallery view
@@ -104,7 +106,7 @@ export default function StockPage() {
   const existingCategories = [...new Set(stock.map(s => s.category).filter(Boolean))];
 
   function resetForm() {
-    setForm({ name: '', category: '', quality: '', buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5' });
+    setForm({ name: '', category: '', quality: '', barcode: '', buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5' });
     setEditItem(null);
   }
 
@@ -114,6 +116,7 @@ export default function StockPage() {
       name: toSentenceCase(form.name.trim()),
       category: toSentenceCase(form.category.trim()),
       quality: toSentenceCase(form.quality.trim()),
+      barcode: form.barcode.trim(),
       buying_price: parseFloat(form.buying_price) || 0,
       wholesale_price: parseFloat(form.wholesale_price) || 0,
       retail_price: parseFloat(form.retail_price) || 0,
@@ -135,7 +138,7 @@ export default function StockPage() {
   function openEdit(item: StockItem) {
     setEditItem(item);
     setForm({
-      name: item.name, category: item.category, quality: item.quality,
+      name: item.name, category: item.category, quality: item.quality, barcode: item.barcode || '',
       buying_price: String(item.buying_price), wholesale_price: String(item.wholesale_price), retail_price: String(item.retail_price),
       quantity: String(item.quantity), min_stock_level: String(item.min_stock_level),
     });
@@ -189,6 +192,10 @@ export default function StockPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label>Quantity</Label><Input type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} required /></div>
                     <div><Label>Min Stock Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
+                  </div>
+                  <div>
+                    <Label>Barcode (Optional)</Label>
+                    <Input value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Scan or type barcode..." />
                   </div>
                   <Button type="submit" className="w-full">{editItem ? 'Update Item' : 'Add Item'}</Button>
                 </form>

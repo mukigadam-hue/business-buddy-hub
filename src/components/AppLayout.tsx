@@ -193,6 +193,7 @@ function NotificationsPanel({ onNavigate, variant = 'desktop' }: { onNavigate?: 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { signOut } = useAuth();
   const { businesses, currentBusiness, setCurrentBusinessId, userRole, memberships, notifications } = useBusiness();
   const [sheetOpen, setSheetOpen] = useState(false);

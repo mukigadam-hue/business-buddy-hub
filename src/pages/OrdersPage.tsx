@@ -40,6 +40,11 @@ export default function OrdersPage() {
   const [completeDialog, setCompleteDialog] = useState<Order | null>(null);
   const [completeBuyer, setCompleteBuyer] = useState('');
   const [completeSeller, setCompleteSeller] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'card'>('mobile_money');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const liveOrders = orders.filter(o => o.type === 'my_order');
   const inboxOrders = orders.filter(o => o.type === 'inbox');

@@ -108,7 +108,14 @@ export default function FactoryTeam() {
         {isOwnerOrAdmin && <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Worker</Button>}
       </div>
 
-      {/* Worker's own profile (when not owner/admin) */}
+      {/* Main Tabs: Team / Payments */}
+      <Tabs defaultValue="team" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="team" className="flex items-center gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>
+          <TabsTrigger value="payments" className="flex items-center gap-2"><Wallet className="h-4 w-4" /> Payments</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="team" className="space-y-6 mt-4">
       {!isOwnerOrAdmin && (() => {
         const myMembership = memberships.find((m: any) => m.business_id === currentBusiness?.id && m.user_id === user?.id);
         const myTeamRecord = teamMembers.find(t => t.full_name.toLowerCase() === (user?.user_metadata?.full_name || '').toLowerCase());

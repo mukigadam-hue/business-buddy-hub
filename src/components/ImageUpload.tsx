@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Camera, Upload, X, Loader2 } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
 import { compressImage } from '@/lib/compressImage';
+import { usePremium } from '@/hooks/usePremium';
 
 interface ImageUploadProps {
   bucket: string;
@@ -16,15 +17,20 @@ interface ImageUploadProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   label?: string;
+  /** If true, gates this behind premium. Used for product/item photos. */
+  premiumOnly?: boolean;
 }
 
-export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRemoved, className = '', size = 'md', label }: ImageUploadProps) {
+export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRemoved, className = '', size = 'md', label, premiumOnly = false }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [webcamOpen, setWebcamOpen] = useState(false);
   const isMobile = useIsMobile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const { canUploadItemPhotos } = usePremium();
+
+  const blocked = premiumOnly && !canUploadItemPhotos;
 
   const dimensions = size === 'sm' ? 'h-20 w-20' : size === 'lg' ? 'h-40 w-40' : 'h-28 w-28';
   const displayUrl = preview || currentUrl;
@@ -65,6 +71,18 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
     } else {
       setWebcamOpen(true);
     }
+  }
+
+  if (blocked) {
+    return (
+      <div className={`flex flex-col items-center gap-2 ${className}`}>
+        {label && <p className="text-xs text-muted-foreground font-medium">{label}</p>}
+        <div className={`relative ${dimensions} rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center bg-muted/20`}>
+          <Lock className="h-5 w-5 text-amber-500" />
+          <p className="text-[9px] text-muted-foreground mt-1">Premium</p>
+        </div>
+      </div>
+    );
   }
 
   return (

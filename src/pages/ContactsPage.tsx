@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/context/BusinessContext';
+import { usePremium } from '@/hooks/usePremium';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ interface EnrichedContact extends BusinessContact {
 
 export default function ContactsPage() {
   const { currentBusiness, userRole } = useBusiness();
+  const { maxContacts } = usePremium();
   const [contacts, setContacts] = useState<EnrichedContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchCode, setSearchCode] = useState('');
@@ -271,7 +273,12 @@ export default function ContactsPage() {
           if (!open) { setFoundBusiness(null); setSearchCode(''); setNickname(''); setContactNotes(''); }
         }}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Contact</Button>
+            <Button size="sm" onClick={(e) => {
+              if (contacts.length >= maxContacts) {
+                e.preventDefault();
+                toast.info(`Free plan allows up to ${maxContacts} contacts. Upgrade to Premium ($52/month) for unlimited.`);
+              }
+            }}><Plus className="h-4 w-4 mr-1" /> Add Contact</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>Find & Add Business</DialogTitle></DialogHeader>

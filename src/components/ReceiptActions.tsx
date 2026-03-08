@@ -22,9 +22,12 @@ import {
 interface ReceiptActionsProps {
   receiptRef: React.RefObject<HTMLDivElement>;
   fileName?: string;
+  canShare?: boolean;
+  canDownload?: boolean;
+  canPrint?: boolean;
 }
 
-export default function ReceiptActions({ receiptRef, fileName = 'receipt' }: ReceiptActionsProps) {
+export default function ReceiptActions({ receiptRef, fileName = 'receipt', canShare = true, canDownload = true, canPrint = true }: ReceiptActionsProps) {
   const [busy, setBusy] = useState(false);
   const [shareDialog, setShareDialog] = useState<{ blob: Blob; name: string; type: 'image' | 'pdf' } | null>(null);
 
@@ -209,47 +212,67 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt' }: Rec
     { id: 'email', label: 'Email', icon: Mail, color: 'bg-amber-500 hover:bg-amber-600 text-white' },
   ];
 
+  const premiumToast = () => toast.info('Premium feature — upgrade for $52/month to unlock.');
+
   return (
     <>
       <div className="flex gap-2 justify-center pt-3 flex-wrap">
         {/* Share dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline" className="gap-1.5" disabled={busy}>
-              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />} Share
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="center">
-            <DropdownMenuItem onClick={handleShareAsImage} className="gap-2">
-              <Image className="h-4 w-4" /> Share as Image
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleShareAsPDF} className="gap-2">
-              <FileText className="h-4 w-4" /> Share as PDF
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {canShare ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1.5" disabled={busy}>
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />} Share
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              <DropdownMenuItem onClick={handleShareAsImage} className="gap-2">
+                <Image className="h-4 w-4" /> Share as Image
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleShareAsPDF} className="gap-2">
+                <FileText className="h-4 w-4" /> Share as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button size="sm" variant="outline" className="gap-1.5 opacity-60" onClick={premiumToast}>
+            <Share2 className="h-3.5 w-3.5" /> Share 🔒
+          </Button>
+        )}
 
         {/* Save dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline" className="gap-1.5" disabled={busy}>
-              <Download className="h-3.5 w-3.5" /> Save
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="center">
-            <DropdownMenuItem onClick={handleSaveImage} className="gap-2">
-              <Image className="h-4 w-4" /> Save as Image
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleSavePDF} className="gap-2">
-              <FileText className="h-4 w-4" /> Save as PDF
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {canDownload ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1.5" disabled={busy}>
+                <Download className="h-3.5 w-3.5" /> Save
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              <DropdownMenuItem onClick={handleSaveImage} className="gap-2">
+                <Image className="h-4 w-4" /> Save as Image
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSavePDF} className="gap-2">
+                <FileText className="h-4 w-4" /> Save as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button size="sm" variant="outline" className="gap-1.5 opacity-60" onClick={premiumToast}>
+            <Download className="h-3.5 w-3.5" /> Save 🔒
+          </Button>
+        )}
 
         {/* Print */}
-        <Button size="sm" variant="outline" onClick={handlePrint} className="gap-1.5" disabled={busy}>
-          <Printer className="h-3.5 w-3.5" /> Print
-        </Button>
+        {canPrint ? (
+          <Button size="sm" variant="outline" onClick={handlePrint} className="gap-1.5" disabled={busy}>
+            <Printer className="h-3.5 w-3.5" /> Print
+          </Button>
+        ) : (
+          <Button size="sm" variant="outline" className="gap-1.5 opacity-60" onClick={premiumToast}>
+            <Printer className="h-3.5 w-3.5" /> Print 🔒
+          </Button>
+        )}
       </div>
 
       {/* Social media share dialog (fallback when native share isn't available) */}

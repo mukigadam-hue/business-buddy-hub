@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useCurrency } from '@/hooks/useCurrency';
 import ReceiptActions from '@/components/ReceiptActions';
+import { usePremium } from '@/hooks/usePremium';
 
 interface ReceiptItem {
   itemName: string;
@@ -28,6 +29,7 @@ interface ReceiptProps {
 
 export default function Receipt({ items, grandTotal, buyerName, sellerName, customerName, code, date, type, businessInfo }: ReceiptProps) {
   const { fmt } = useCurrency();
+  const { canShareReceipts, canDownloadReceipts, canPrintReceipts } = usePremium();
   const buyer = buyerName || customerName || '';
   const receiptRef = useRef<HTMLDivElement>(null);
   const fileName = `receipt-${type}-${code || new Date(date).toISOString().slice(0, 10)}`;
@@ -98,7 +100,13 @@ export default function Receipt({ items, grandTotal, buyerName, sellerName, cust
           </CardContent>
         </Card>
       </div>
-      <ReceiptActions receiptRef={receiptRef} fileName={fileName} />
+      <ReceiptActions
+        receiptRef={receiptRef}
+        fileName={fileName}
+        canShare={canShareReceipts}
+        canDownload={canDownloadReceipts}
+        canPrint={canPrintReceipts}
+      />
     </div>
   );
 }

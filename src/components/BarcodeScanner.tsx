@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ScanLine, X, FlashlightOff, Flashlight } from 'lucide-react';
+import { ScanLine, X, FlashlightOff, Flashlight, Lock } from 'lucide-react';
+import { usePremium } from '@/hooks/usePremium';
+import { toast } from 'sonner';
 
 interface BarcodeScannerProps {
   open: boolean;
@@ -11,6 +13,7 @@ interface BarcodeScannerProps {
 }
 
 export default function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeScannerProps) {
+  const { canUseScanner } = usePremium();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -69,6 +72,21 @@ export default function BarcodeScanner({ open, onOpenChange, onScan }: BarcodeSc
       stopScanner();
     };
   }, [open]);
+
+  if (!canUseScanner && open) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-xs text-center">
+          <div className="py-6 space-y-3">
+            <Lock className="h-8 w-8 mx-auto text-amber-500" />
+            <p className="font-semibold">Premium Feature</p>
+            <p className="text-sm text-muted-foreground">Barcode scanning is available on the Premium plan ($52/month).</p>
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) stopScanner(); onOpenChange(o); }}>

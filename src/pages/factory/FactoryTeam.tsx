@@ -3,6 +3,7 @@ import { useFactory } from '@/context/FactoryContext';
 import { useBusiness } from '@/context/BusinessContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/hooks/useCurrency';
+import { usePremium } from '@/hooks/usePremium';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import { Plus, Edit2, Trash2, Users, UserPlus, Send, Calendar, Clock, User, Wall
 import WorkerPaymentManager from '@/components/factory/WorkerPaymentManager';
 import AdSpace from '@/components/AdSpace';
 import { toTitleCase } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface AppMember {
   user_id: string;
@@ -31,6 +33,7 @@ export default function FactoryTeam() {
   const { currentBusiness, userRole, memberships, generateInviteCode, redeemInviteCode, getMembers, removeMember, updateMemberRole } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
+  const { maxWorkers } = usePremium();
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ full_name: '', rank: 'Worker', salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10) });
@@ -145,7 +148,14 @@ export default function FactoryTeam() {
             {activeMembers.length} active members{isOwnerOrAdmin && ` · Monthly salary: ${fmt(totalSalary)}`}
           </p>
         </div>
-        {isOwnerOrAdmin && <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Worker</Button>}
+        {isOwnerOrAdmin && <Button onClick={() => {
+          const activeCount = teamMembers.filter(w => w.is_active).length;
+          if (activeCount >= maxWorkers) {
+            toast.info(`Free plan allows up to ${maxWorkers} workers. Upgrade to Premium ($52/month) for unlimited.`);
+            return;
+          }
+          resetForm(); setShowAdd(true);
+        }}><Plus className="h-4 w-4 mr-1" />Add Worker</Button>}
       </div>
 
       <AdSpace variant="banner" />

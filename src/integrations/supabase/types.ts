@@ -1473,6 +1473,56 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          business_id: string
+          cancelled_at: string | null
+          created_at: string
+          currency: string
+          expires_at: string | null
+          id: string
+          plan: string
+          price: number
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          plan?: string
+          price?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          plan?: string
+          price?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1514,6 +1564,7 @@ export type Database = {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean
       }
+      is_premium: { Args: { _business_id: string }; Returns: boolean }
       lookup_business_by_code: {
         Args: { _code: string }
         Returns: {

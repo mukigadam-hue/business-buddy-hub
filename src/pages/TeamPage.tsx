@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/hooks/useCurrency';
+import { usePremium } from '@/hooks/usePremium';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -149,6 +150,7 @@ export default function TeamPage() {
   const { currentBusiness, userRole, generateInviteCode, getMembers, removeMember, updateMemberRole, memberships } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
+  const { maxWorkers } = usePremium();
   const [members, setMembers] = useState<Member[]>([]);
   const [workerCode, setWorkerCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -305,7 +307,13 @@ export default function TeamPage() {
           </p>
         </div>
         {isOwnerOrAdmin && (
-          <Button onClick={() => { resetWorkerForm(); setShowAddWorker(true); }}>
+          <Button onClick={() => {
+            if (activeWorkers.length >= maxWorkers) {
+              toast.info(`Free plan allows up to ${maxWorkers} workers. Upgrade to Premium ($52/month) for unlimited.`);
+              return;
+            }
+            resetWorkerForm(); setShowAddWorker(true);
+          }}>
             <Plus className="h-4 w-4 mr-1" />Add Worker
           </Button>
         )}

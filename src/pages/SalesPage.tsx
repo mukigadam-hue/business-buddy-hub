@@ -290,25 +290,24 @@ export default function SalesPage() {
           {/* Service Items */}
           <div className="border rounded-lg p-3 space-y-3">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">🔧 Services (Optional)</p>
-            <div className="flex flex-wrap gap-3 items-end">
-              <div className="flex-1 min-w-[150px]">
+            
+            {/* Service Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
                 <Label>Service Name</Label>
                 <Input value={svcForm.service_name} onChange={e => setSvcForm(f => ({ ...f, service_name: e.target.value }))} onBlur={() => setSvcForm(f => ({ ...f, service_name: toSentenceCase(f.service_name) }))} placeholder="e.g. Repair..." />
               </div>
-              <div className="flex-1 min-w-[120px]">
+              <div>
                 <Label>Description</Label>
                 <Input value={svcForm.description} onChange={e => setSvcForm(f => ({ ...f, description: e.target.value }))} placeholder="Details..." />
               </div>
-              <div className="w-24">
+              <div>
                 <Label>Cost</Label>
                 <Input type="number" min="0" step="0.01" value={svcForm.cost} onChange={e => setSvcForm(f => ({ ...f, cost: e.target.value }))} placeholder="0.00" />
               </div>
-              <Button onClick={addServiceItem} disabled={!svcForm.service_name.trim()} variant="outline">
-                <Wrench className="h-4 w-4 mr-1" />Add Service
-              </Button>
             </div>
 
-            {/* Parts Used from Stock - always visible */}
+            {/* Parts Used from Stock */}
             <div className="bg-muted/30 rounded-lg p-3 space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                 <Package className="h-3.5 w-3.5" /> Items/Parts Used from Stock
@@ -362,6 +361,11 @@ export default function SalesPage() {
                 </div>
               )}
             </div>
+
+            {/* Add Service Button - at the bottom */}
+            <Button onClick={addServiceItem} disabled={!svcForm.service_name.trim()} variant="outline" className="w-full">
+              <Wrench className="h-4 w-4 mr-1" />Add Service
+            </Button>
           </div>
 
 

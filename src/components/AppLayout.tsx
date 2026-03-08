@@ -116,7 +116,7 @@ function getNotificationRoute(type: string): string {
   }
 }
 
-function NotificationsPanel({ onNavigate }: { onNavigate?: () => void }) {
+function NotificationsPanel({ onNavigate, variant = 'desktop' }: { onNavigate?: () => void; variant?: 'desktop' | 'mobile' }) {
   const { notifications, markNotificationRead, markAllNotificationsRead } = useBusiness();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -133,16 +133,28 @@ function NotificationsPanel({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button className="relative p-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors">
-          {unread > 0 ? <BellDot className="h-5 w-5 text-warning" /> : <Bell className="h-5 w-5 text-sidebar-foreground" />}
-          {unread > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-warning text-warning-foreground text-[10px] flex items-center justify-center font-bold">
-              {unread > 9 ? '9+' : unread}
-            </span>
-          )}
-        </button>
+        {variant === 'mobile' ? (
+          <button className="relative flex flex-col items-center justify-center gap-0.5 text-[11px] text-muted-foreground min-h-[44px] min-w-[44px]">
+            {unread > 0 ? <BellDot className="h-5 w-5 text-warning" /> : <Bell className="h-5 w-5" />}
+            <span>Alerts</span>
+            {unread > 0 && (
+              <span className="absolute top-0 right-0 h-3.5 w-3.5 rounded-full bg-warning text-warning-foreground text-[9px] flex items-center justify-center font-bold">
+                {unread > 9 ? '9+' : unread}
+              </span>
+            )}
+          </button>
+        ) : (
+          <button className="relative p-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors">
+            {unread > 0 ? <BellDot className="h-5 w-5 text-warning" /> : <Bell className="h-5 w-5 text-sidebar-foreground" />}
+            {unread > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-warning text-warning-foreground text-[10px] flex items-center justify-center font-bold">
+                {unread > 9 ? '9+' : unread}
+              </span>
+            )}
+          </button>
+        )}
       </SheetTrigger>
-      <SheetContent side="right" className="w-80 max-h-screen overflow-y-auto">
+      <SheetContent side={variant === 'mobile' ? 'bottom' : 'right'} className={variant === 'mobile' ? 'rounded-t-2xl max-h-[70vh] overflow-y-auto' : 'w-80 max-h-screen overflow-y-auto'}>
         <SheetHeader className="flex flex-row items-center justify-between">
           <SheetTitle>Notifications {unread > 0 && `(${unread} new)`}</SheetTitle>
           {unread > 0 && <Button size="sm" variant="ghost" onClick={markAllNotificationsRead} className="text-xs">Mark all read</Button>}

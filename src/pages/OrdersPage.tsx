@@ -1129,6 +1129,8 @@ export default function OrdersPage() {
         </Card>
       )}
 
+      <AdSpace variant="banner" />
+
       {/* Orders Lists */}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="w-full grid grid-cols-4 h-12 rounded-xl bg-muted/60 p-1">

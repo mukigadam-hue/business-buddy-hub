@@ -78,7 +78,7 @@ export default function OrdersPage() {
   const myRequests = orders.filter(o => o.type === 'request');
   const requestsNeedingAction = myRequests.filter(o => o.status === 'priced' || o.status === 'confirmed').length;
 
-  // Load checkout orders for payment verification tab
+  // Load orders for payment verification tab (all types with payment activity)
   async function loadCheckoutOrders() {
     if (!currentBusiness) return;
     setLoadingCheckout(true);
@@ -86,13 +86,23 @@ export default function OrdersPage() {
       .from('orders')
       .select('*')
       .eq('business_id', currentBusiness.id)
-      .eq('type', 'checkout')
       .order('created_at', { ascending: false });
-    if (verifyFilter !== 'all') {
-      query = query.eq('status', verifyFilter);
+
+    if (verifyFilter === 'pending') {
+      // Show orders awaiting payment verification
+      query = query.in('status', ['pending', 'payment_submitted']);
+      query = query.neq('payment_method', 'pending');
+    } else if (verifyFilter === 'paid') {
+      query = query.eq('status', 'paid');
     }
+    // 'all' → no extra filter, shows everything
+
     const { data } = await query;
-    setCheckoutOrders(data || []);
+    // For 'all', filter to only show orders that have payment activity (not raw pending orders with no payment)
+    const filtered = verifyFilter === 'all'
+      ? (data || []).filter((o: any) => o.payment_method !== 'pending' || o.status === 'paid' || o.status === 'payment_submitted' || o.status === 'cancelled')
+      : (data || []);
+    setCheckoutOrders(filtered);
     setLoadingCheckout(false);
   }
 

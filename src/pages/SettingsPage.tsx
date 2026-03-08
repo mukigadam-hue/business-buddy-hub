@@ -13,6 +13,7 @@ import Receipt from '@/components/Receipt';
 import type { ReceiptRecord } from '@/context/BusinessContext';
 import { supabase } from '@/integrations/supabase/client';
 import AdSpace from '@/components/AdSpace';
+import LanguageSelector from '@/components/LanguageSelector';
 
 function toSentenceCase(str: string): string {
   if (!str) return str;

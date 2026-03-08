@@ -78,34 +78,42 @@ export default function OrdersPage() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [orderMode, setOrderMode] = useState<'my_order' | 'inbox' | 'request'>('my_order');
 
+  const [contactSearch, setContactSearch] = useState('');
+  const [contactPickerOpen, setContactPickerOpen] = useState(false);
+
   // Load contacts for recipient selection
-  useEffect(() => {
+  async function loadOrderContacts() {
     if (!currentBusiness) return;
-    async function loadContacts() {
-      const { data } = await supabase
-        .from('business_contacts')
-        .select('id, contact_business_id, nickname')
-        .eq('business_id', currentBusiness!.id);
-      if (data) {
-        // Fetch business names for contacts
-        const contactIds = data.map(c => c.contact_business_id);
-        if (contactIds.length > 0) {
-          const { data: bizData } = await supabase
-            .from('businesses')
-            .select('id, name, business_code')
-            .in('id', contactIds);
-          const enriched = data.map(c => {
-            const biz = bizData?.find(b => b.id === c.contact_business_id);
-            return { ...c, business_name: biz?.name || '', business_code: biz?.business_code || '' };
-          });
-          setContacts(enriched);
-        } else {
-          setContacts(data.map(c => ({ ...c, business_name: '', business_code: '' })));
-        }
+    const { data } = await supabase
+      .from('business_contacts')
+      .select('id, contact_business_id, nickname')
+      .eq('business_id', currentBusiness.id);
+    if (data) {
+      const contactIds = data.map(c => c.contact_business_id);
+      if (contactIds.length > 0) {
+        const { data: bizData } = await supabase
+          .from('businesses')
+          .select('id, name, business_code')
+          .in('id', contactIds);
+        const enriched = data.map(c => {
+          const biz = bizData?.find(b => b.id === c.contact_business_id);
+          return { ...c, business_name: biz?.name || '', business_code: biz?.business_code || '' };
+        });
+        setContacts(enriched);
+      } else {
+        setContacts(data.map(c => ({ ...c, business_name: '', business_code: '' })));
       }
     }
-    loadContacts();
+  }
+
+  useEffect(() => {
+    if (currentBusiness) loadOrderContacts();
   }, [currentBusiness]);
+
+  // Reload contacts when switching to request mode
+  useEffect(() => {
+    if (orderMode === 'request' && currentBusiness) loadOrderContacts();
+  }, [orderMode]);
 
   async function lookupRecipientByCode() {
     if (!recipientCode.trim()) return;

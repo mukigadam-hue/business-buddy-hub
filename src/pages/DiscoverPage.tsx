@@ -156,7 +156,7 @@ export default function DiscoverPage() {
                     onClick={() => copyCode(biz.business_code!)}
                   >
                     {copiedCode === biz.business_code ? (
-                      <><Check className="h-3 w-3 text-green-500" />Copied!</>
+                      <><Check className="h-3 w-3 text-primary" />Copied!</>
                     ) : (
                       <><Copy className="h-3 w-3" />Code: {biz.business_code}</>
                     )}

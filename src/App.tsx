@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { BusinessProvider, useBusiness } from "@/context/BusinessContext";
 import { FactoryProvider } from "@/context/FactoryContext";
@@ -55,13 +55,16 @@ function AppContent() {
 
   return (
     <BusinessProvider>
-      <BusinessContent />
+      <BrowserRouter>
+        <BusinessContent />
+      </BrowserRouter>
     </BusinessProvider>
   );
 }
 
 function BusinessContent() {
   const { currentBusiness, loading } = useBusiness();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -76,20 +79,11 @@ function BusinessContent() {
 
   if (!currentBusiness) return <BusinessSetupPage />;
 
-  return (
-    <BrowserRouter>
-      <BusinessRoutes />
-    </BrowserRouter>
-  );
-}
-
-function BusinessRoutes() {
-  const { currentBusiness } = useBusiness();
-  const isFactory = (currentBusiness as any)?.business_type === 'factory';
+  const isFactory = currentBusiness.business_type === 'factory';
 
   if (isFactory) {
     return (
-      <FactoryProvider>
+      <FactoryProvider key={currentBusiness.id}>
         <AppLayout>
           <Routes>
             <Route path="/" element={<FactoryDashboard />} />
@@ -113,7 +107,7 @@ function BusinessRoutes() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout key={currentBusiness.id}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/stock" element={<StockPage />} />

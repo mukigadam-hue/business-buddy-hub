@@ -100,8 +100,8 @@ function getNotificationRoute(type: string): string {
     case 'order_confirmed': return '/orders';
     case 'order_rejected': return '/orders';
     case 'new_purchase': return '/purchases';
-    case 'payment_submitted': return '/payments';
-    case 'payment_confirmed': return '/payments';
+    case 'payment_submitted': return '/orders';
+    case 'payment_confirmed': return '/orders';
     case 'poke': return '/contacts';
     case 'low_stock': return '/stock';
     case 'empty_stock': return '/stock';

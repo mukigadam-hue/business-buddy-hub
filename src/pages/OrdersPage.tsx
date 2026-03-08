@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine, Search, Building2, Package, Flame } from 'lucide-react';
+import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine, Search, Building2, Package, Flame, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
@@ -543,6 +543,48 @@ export default function OrdersPage() {
           </div>
         )}
 
+        {/* B2B Status guidance banner for request orders */}
+        {isRequest && order.status === 'pending' && (
+          <div className="bg-warning/10 border border-warning/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
+            <Clock className="h-3.5 w-3.5 text-warning shrink-0" />
+            <span>⏳ Waiting for supplier to tag prices on your order...</span>
+          </div>
+        )}
+        {isRequest && order.status === 'priced' && (
+          <div className="bg-accent/10 border border-accent/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
+            <span>💰 Supplier has priced your order! Review the prices below and <strong>Confirm</strong> or <strong>Reject</strong>.</span>
+          </div>
+        )}
+        {isRequest && order.status === 'confirmed' && (
+          <div className="bg-primary/10 border border-primary/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
+            <CreditCard className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span>✅ Prices confirmed! Now <strong>Submit Payment</strong> to complete the order.</span>
+          </div>
+        )}
+
+        {/* B2B Status guidance for inbox orders (supplier side) */}
+        {order.type === 'inbox' && order.status === 'pending' && (
+          <div className="bg-warning/10 border border-warning/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
+            <span>📋 New order from buyer. <strong>Tag Prices</strong> on each item and send back.</span>
+          </div>
+        )}
+        {order.type === 'inbox' && order.status === 'priced' && (
+          <div className="bg-accent/10 border border-accent/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
+            <Clock className="h-3.5 w-3.5 text-accent shrink-0" />
+            <span>💰 Prices sent. Waiting for buyer to confirm or reject...</span>
+          </div>
+        )}
+        {order.type === 'inbox' && order.status === 'confirmed' && (
+          <div className="bg-primary/10 border border-primary/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
+            <span>✅ Buyer confirmed prices. Waiting for payment submission...</span>
+          </div>
+        )}
+        {order.type === 'inbox' && order.status === 'payment_submitted' && (
+          <div className="bg-success/10 border border-success/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
+            <span>💳 Buyer submitted payment! Review and <strong>Confirm Payment Received</strong>.</span>
+          </div>
+        )}
+
         <div className="text-sm text-muted-foreground space-y-1 max-h-40 overflow-y-auto">
           {order.items.map((item, i) => {
             const status = showStockStatus ? getStockStatus(item.item_name, item.category, item.quality) : 'ok';
@@ -753,7 +795,12 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
-      <h1 className="text-2xl font-bold">Orders</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Orders</h1>
+        <Button size="sm" variant="outline" onClick={() => refreshData()} title="Refresh orders">
+          <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
+        </Button>
+      </div>
 
       {/* Create new order */}
       <div className="flex gap-2 flex-wrap">

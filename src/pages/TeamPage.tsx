@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserPlus, Trash2, Shield, Crown, User, Users, ShoppingBag, MessageCircle, Share2, Send, Calendar, Clock } from 'lucide-react';
+import { UserPlus, Trash2, Shield, Crown, User, Users, ShoppingBag, MessageCircle, Share2, Send, Calendar, Clock, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
+import WorkerPaymentManager from '@/components/business/WorkerPaymentManager';
 
 interface Member {
   user_id: string;

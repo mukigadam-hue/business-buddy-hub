@@ -313,7 +313,7 @@ export default function OrdersPage() {
     }
   }
 
-  async function confirmPrices(order: Order) {
+  async function confirmPricesAndPay(order: Order) {
     setSyncing(true);
     try {
       const res = await supabase.functions.invoke('sync-order-prices', {
@@ -322,8 +322,12 @@ export default function OrdersPage() {
       if (res.error || res.data?.error) {
         toast.error(res.data?.error || 'Failed to confirm');
       } else {
-        toast.success('Prices confirmed! You can now submit payment.');
+        toast.success('Prices confirmed! Now submit your payment.');
         await refreshData();
+        // Immediately open payment dialog
+        setCompleteDialog({ ...order, status: 'confirmed' });
+        setCompleteBuyer(order.customer_name);
+        setCompleteSeller('');
       }
     } finally {
       setSyncing(false);

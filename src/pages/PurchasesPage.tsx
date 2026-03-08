@@ -18,7 +18,6 @@ function toSentenceCase(str: string): string {
 export default function PurchasesPage() {
   const { stock, purchases, addPurchase, updatePurchasePayment } = useBusiness();
   const { fmt } = useCurrency();
-  const { fmt } = useCurrency();
   const [items, setItems] = useState<{
     item_name: string; category: string; quality: string;
     quantity: number; unit_price: number; wholesale_price: number; retail_price: number;

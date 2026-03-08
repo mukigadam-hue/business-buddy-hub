@@ -96,7 +96,8 @@ export default function StockPage() {
   const filtered = activeStock.filter(item =>
     item.name.toLowerCase().includes(search.toLowerCase()) ||
     item.category.toLowerCase().includes(search.toLowerCase()) ||
-    item.quality.toLowerCase().includes(search.toLowerCase())
+    item.quality.toLowerCase().includes(search.toLowerCase()) ||
+    (item.barcode && item.barcode.toLowerCase().includes(search.toLowerCase()))
   );
 
   // Items with photos for gallery view

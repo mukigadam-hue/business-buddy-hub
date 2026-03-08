@@ -113,8 +113,48 @@ export default function OrdersPage() {
   async function updateCheckoutStatus(orderId: string, status: 'paid' | 'cancelled') {
     const { error } = await supabase.from('orders').update({ status } as any).eq('id', orderId);
     if (error) { toast.error(error.message); return; }
-    toast.success(status === 'paid' ? 'Payment verified ✓' : 'Order cancelled');
     setCheckoutOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+
+    if (status === 'paid') {
+      // Auto-transfer to sales and save receipt
+      const order = orders.find(o => o.id === orderId);
+      // If not in local orders, fetch from DB with items
+      let orderToTransfer = order;
+      if (!orderToTransfer) {
+        const { data: orderData } = await supabase.from('orders').select('*').eq('id', orderId).single();
+        if (orderData) {
+          const { data: itemsData } = await supabase.from('order_items').select('*').eq('order_id', orderId);
+          orderToTransfer = { ...orderData, items: itemsData || [] } as Order;
+        }
+      }
+
+      if (orderToTransfer && !orderToTransfer.transferred_to_sale) {
+        // Transfer to sale
+        await completeOrderToSale(orderId, orderToTransfer.customer_name, currentBusiness?.name || 'Seller');
+
+        // Save receipt to archive
+        if (currentBusiness) {
+          const receiptItems = orderToTransfer.items.map(i => ({
+            itemName: i.item_name, category: i.category, quality: i.quality,
+            quantity: i.quantity, priceType: i.price_type, unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal),
+          }));
+          await saveReceipt({
+            business_id: currentBusiness.id,
+            receipt_type: 'sale',
+            transaction_id: orderId,
+            buyer_name: orderToTransfer.customer_name,
+            seller_name: currentBusiness.name,
+            grand_total: Number(orderToTransfer.grand_total),
+            items: receiptItems,
+            business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
+            code: orderToTransfer.code,
+          });
+        }
+      }
+      toast.success('Payment verified ✓ — Sale recorded & receipt saved!');
+    } else {
+      toast.success('Order cancelled');
+    }
   }
 
   const activeStock = stock.filter(s => !s.deleted_at);

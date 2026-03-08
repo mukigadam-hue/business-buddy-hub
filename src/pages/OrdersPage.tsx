@@ -909,26 +909,26 @@ export default function OrdersPage() {
       {/* Orders Lists */}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="live_orders">My Orders ({liveOrders.length})</TabsTrigger>
-          <TabsTrigger value="inbox">Customer Orders ({inboxOrders.length})</TabsTrigger>
-          <TabsTrigger value="my_requests">Sent to Supplier ({myRequests.length})</TabsTrigger>
+          <TabsTrigger value="live_orders">🛒 My Orders ({liveOrders.length})</TabsTrigger>
+          <TabsTrigger value="inbox">📥 Inbox ({inboxOrders.length})</TabsTrigger>
+          <TabsTrigger value="my_requests">📨 Sent to Supplier ({myRequests.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="live_orders" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-2">Orders you created yourself for walk-in customers or internal use.</p>
+          <p className="text-xs text-muted-foreground mb-2">Orders from walk-in customers, phone calls, or messages received via WhatsApp/SMS. You pack the items → customer pays you → you give a receipt.</p>
           <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
-            {liveOrders.length === 0 ? <p className="text-sm text-muted-foreground">No orders yet.</p> : liveOrders.map(o => <OrderCard key={o.id} order={o} />)}
+            {liveOrders.length === 0 ? <p className="text-sm text-muted-foreground">No orders yet. Create one using the "New Order" button above.</p> : liveOrders.map(o => <OrderCard key={o.id} order={o} />)}
           </div>
         </TabsContent>
         <TabsContent value="inbox" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-2">📥 Orders placed by other businesses who want to buy from you. You set the prices → they review & pay → you confirm payment → give receipt.</p>
+          <p className="text-xs text-muted-foreground mb-2">📥 Orders sent to you by other businesses using this app. You set prices → they review & pay → you confirm you received the money → give receipt.</p>
           <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
-            {inboxOrders.length === 0 ? <p className="text-sm text-muted-foreground">No customer orders received yet.</p> : inboxOrders.map(o => <OrderCard key={o.id} order={o} showStockStatus />)}
+            {inboxOrders.length === 0 ? <p className="text-sm text-muted-foreground">No orders received yet. When another business sends you an order, it will appear here.</p> : inboxOrders.map(o => <OrderCard key={o.id} order={o} showStockStatus />)}
           </div>
         </TabsContent>
         <TabsContent value="my_requests" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-2">📨 Orders you sent to your suppliers. They set the prices → you review & pay → they confirm payment → you get a receipt.</p>
+          <p className="text-xs text-muted-foreground mb-2">📨 Orders you sent to your suppliers using this app. They set prices → you review & approve → you pay → they confirm → you get a receipt.</p>
           <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
-            {myRequests.length === 0 ? <p className="text-sm text-muted-foreground">No orders sent to suppliers yet.</p> : myRequests.map(o => <OrderCard key={o.id} order={o} />)}
+            {myRequests.length === 0 ? <p className="text-sm text-muted-foreground">No requests sent yet. Use "Request from Supplier" above to order items.</p> : myRequests.map(o => <OrderCard key={o.id} order={o} />)}
           </div>
         </TabsContent>
       </Tabs>

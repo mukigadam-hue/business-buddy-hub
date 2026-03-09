@@ -46,29 +46,8 @@ const PREMIUM_LIMITS: PremiumLimits = {
 };
 
 export function usePremium(): PremiumLimits {
-  const { currentBusiness } = useBusiness();
-  const [isPremium, setIsPremium] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!currentBusiness?.id) { setLoading(false); return; }
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .rpc('is_premium', { _business_id: currentBusiness.id });
-        if (!cancelled) setIsPremium(!!data && !error);
-      } catch {
-        if (!cancelled) setIsPremium(false);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [currentBusiness?.id]);
-
-  if (loading) return { ...FREE_LIMITS, loading: true };
-  return isPremium ? PREMIUM_LIMITS : FREE_LIMITS;
+  // Premium enforcement is disabled for now — all users get full access.
+  // The subscription table still exists in the database for future use.
+  // To re-enable, restore the original logic that checks is_premium RPC.
+  return PREMIUM_LIMITS;
 }

@@ -747,7 +747,30 @@ export default function PropertyTeam() {
                 <Badge variant="secondary" className="text-[10px]">{tenants.length}</Badge>
               </div>
 
-              {tenants.length === 0 ? (
+              {/* App members who joined via code but don't have a tenant record */}
+              {isOwnerOrAdmin && members.filter(m => m.role !== 'owner' && !activeWorkers.some(w => w.full_name.toLowerCase() === (m.full_name || '').toLowerCase())).length > 0 && (
+                <div className="space-y-2 mb-3">
+                  <p className="text-xs text-warning font-medium">⚠️ These app users joined but need their tenant details completed:</p>
+                  {members.filter(m => m.role !== 'owner' && !activeWorkers.some(w => w.full_name.toLowerCase() === (m.full_name || '').toLowerCase())).map(member => (
+                    <Card key={member.user_id} className="border-warning/40 bg-warning/5">
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">📱 App User</Badge>
+                          <span className="text-sm font-medium">{member.full_name || 'Unknown'}</span>
+                        </div>
+                        <Button size="sm" variant="outline" className="h-7 text-xs border-warning text-warning hover:bg-warning/10 w-full" onClick={() => {
+                          openAddDialog('tenant');
+                          setTimeout(() => setWorkerForm(f => ({ ...f, full_name: member.full_name || '' })), 0);
+                        }}>
+                          <Edit2 className="h-3 w-3 mr-1" /> Complete Tenant Profile (Agreed Amount, Occupation, etc.)
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {tenants.length === 0 && members.filter(m => m.role !== 'owner' && !activeWorkers.some(w => w.full_name.toLowerCase() === (m.full_name || '').toLowerCase())).length === 0 ? (
                 <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">
                   <Home className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
                   No tenants registered yet

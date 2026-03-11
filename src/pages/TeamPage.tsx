@@ -101,7 +101,7 @@ function ShareButtons({ code, type }: { code: string; type: 'worker' }) {
   );
 }
 
-function ReceivedInviteCodeSection({ onJoined }: { onJoined: () => void }) {
+function ReceivedInviteCodeSection({ onJoined }: { onJoined: () => Promise<void> | void }) {
   const { redeemInviteCode } = useBusiness();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);

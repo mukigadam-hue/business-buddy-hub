@@ -195,7 +195,7 @@ export default function TeamPage() {
     loadTeamWorkers();
   }, [currentBusiness, loadTeamWorkers]);
 
-  async function loadMembers() {
+async function loadMembers() {
     const data = await getMembers();
     setMembers(data);
   }

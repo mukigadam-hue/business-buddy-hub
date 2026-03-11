@@ -654,7 +654,7 @@ export default function PropertyTeam() {
               <Card className="shadow-card border-dashed">
                 <CardContent className="p-4 space-y-3">
                   <h2 className="text-base font-semibold flex items-center gap-2"><Share2 className="h-4 w-4" /> Share My Code</h2>
-                  <p className="text-sm text-muted-foreground">Generate a code and give it to your landlord so they can add you as a tenant.</p>
+                  <p className="text-sm text-muted-foreground">Generate a code and give it to the asset owner so they can add you as a tenant.</p>
                   {workerCode ? (
                     <div className="space-y-2">
                       <div className="rounded-lg p-3 text-center bg-primary/5">

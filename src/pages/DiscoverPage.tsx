@@ -98,27 +98,35 @@ export default function DiscoverPage() {
         />
       </div>
 
-      {/* Country filter toggle */}
-      {myCountry && (
-        <div className="flex items-center gap-2">
-          <Button
-            variant={filterCountry ? 'default' : 'outline'}
-            size="sm"
-            className="text-xs gap-1.5"
-            onClick={() => setFilterCountry(true)}
-          >
-            {myCountryData?.flag} Near me ({myCountryData?.name})
-          </Button>
-          <Button
-            variant={!filterCountry ? 'default' : 'outline'}
-            size="sm"
-            className="text-xs gap-1.5"
-            onClick={() => setFilterCountry(false)}
-          >
-            <Globe className="h-3 w-3" /> All countries
-          </Button>
+      {/* Filters */}
+      <div className="space-y-2">
+        {/* Entity type filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {([
+            { key: 'all', label: 'All', icon: '🌐' },
+            { key: 'business', label: 'Business', icon: '🏪' },
+            { key: 'factory', label: 'Factory', icon: '🏭' },
+            { key: 'property', label: 'FlexRent', icon: '🏠' },
+          ] as const).map(t => (
+            <Button key={t.key} variant={filterType === t.key ? 'default' : 'outline'} size="sm" className="text-xs gap-1.5"
+              onClick={() => setFilterType(t.key)}>
+              <span>{t.icon}</span> {t.label}
+            </Button>
+          ))}
         </div>
-      )}
+
+        {/* Country filter */}
+        {myCountry && (
+          <div className="flex items-center gap-2">
+            <Button variant={filterCountry ? 'default' : 'outline'} size="sm" className="text-xs gap-1.5" onClick={() => setFilterCountry(true)}>
+              {myCountryData?.flag} Near me ({myCountryData?.name})
+            </Button>
+            <Button variant={!filterCountry ? 'default' : 'outline'} size="sm" className="text-xs gap-1.5" onClick={() => setFilterCountry(false)}>
+              <Globe className="h-3 w-3" /> All countries
+            </Button>
+          </div>
+        )}
+      </div>
 
       <AdSpace variant="compact" />
 

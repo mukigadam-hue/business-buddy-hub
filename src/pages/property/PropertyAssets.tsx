@@ -111,7 +111,7 @@ function AssetForm({ asset, onSave, onClose }: { asset?: PropertyAsset; onSave: 
       </div>
 
       <div className="border-t pt-3">
-        <p className="text-xs font-semibold mb-2">{t('property.pricing', 'Pricing')} ({symbol})</p>
+        <p className="text-xs font-semibold mb-2">{t('property.pricing', 'Pricing')} ({currency})</p>
         <div className="grid grid-cols-3 gap-2">
           <div>
             <Label className="text-xs">{t('property.hourly', 'Hourly')}</Label>

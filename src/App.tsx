@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { BusinessProvider, useBusiness } from "@/context/BusinessContext";
 import { FactoryProvider } from "@/context/FactoryContext";
+import { PropertyProvider } from "@/context/PropertyContext";
 import AppLayout from "@/components/AppLayout";
 import AuthPage from "./pages/AuthPage";
 import BusinessSetupPage from "./pages/BusinessSetupPage";
@@ -36,6 +37,13 @@ const FactoryTeam = lazy(() => import("./pages/factory/FactoryTeam"));
 const FactoryExpenses = lazy(() => import("./pages/factory/FactoryExpenses"));
 const FactoryServices = lazy(() => import("./pages/factory/FactoryServices"));
 const FactoryProduction = lazy(() => import("./pages/factory/FactoryProduction"));
+
+// Property pages
+const PropertyDashboard = lazy(() => import("./pages/property/PropertyDashboard"));
+const PropertyAssets = lazy(() => import("./pages/property/PropertyAssets"));
+const PropertyBookings = lazy(() => import("./pages/property/PropertyBookings"));
+const PropertyMessages = lazy(() => import("./pages/property/PropertyMessages"));
+const PropertyBrowse = lazy(() => import("./pages/property/PropertyBrowse"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -102,6 +110,30 @@ function BusinessContent() {
   if (!currentBusiness) return <BusinessSetupPage />;
 
   const isFactory = currentBusiness.business_type === 'factory';
+  const isProperty = currentBusiness.business_type === 'property';
+
+  if (isProperty) {
+    return (
+      <PropertyProvider key={currentBusiness.id}>
+        <AppLayout>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<PropertyDashboard />} />
+              <Route path="/assets" element={<PropertyAssets />} />
+              <Route path="/bookings" element={<PropertyBookings />} />
+              <Route path="/messages" element={<PropertyMessages />} />
+              <Route path="/browse" element={<PropertyBrowse />} />
+              <Route path="/contacts" element={<ContactsPage />} />
+              <Route path="/discover" element={<DiscoverPage />} />
+              <Route path="/team" element={<TeamPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </AppLayout>
+      </PropertyProvider>
+    );
+  }
 
   if (isFactory) {
     return (

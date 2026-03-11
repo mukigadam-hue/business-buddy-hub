@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Building2, KeyRound, Plus, Factory, MapPin } from 'lucide-react';
+import { Building2, KeyRound, Plus, Factory, MapPin, Home } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { countries, getCountryByCode } from '@/lib/countries';
@@ -16,7 +16,7 @@ export default function BusinessSetupPage() {
   const { createBusiness, redeemInviteCode } = useBusiness();
   const { setCurrency } = useCurrency();
   const [tab, setTab] = useState<'create' | 'join'>('create');
-  const [businessType, setBusinessType] = useState<'business' | 'factory'>('business');
+  const [businessType, setBusinessType] = useState<'business' | 'factory' | 'property'>('business');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [contact, setContact] = useState('');
@@ -49,10 +49,10 @@ export default function BusinessSetupPage() {
     if (!countryCode) { toast.error('Please select your country'); return; }
     setLoading(true);
     await createBusiness(name.trim(), address.trim(), contact.trim(), email.trim(), countryCode);
-    if (businessType === 'factory') {
+    if (businessType !== 'business') {
       const { data } = await supabase.from('businesses').select('id').order('created_at', { ascending: false }).limit(1).single();
       if (data) {
-        await supabase.from('businesses').update({ business_type: 'factory' } as any).eq('id', data.id);
+        await supabase.from('businesses').update({ business_type: businessType } as any).eq('id', data.id);
       }
     }
     setLoading(false);
@@ -78,7 +78,7 @@ export default function BusinessSetupPage() {
         <CardContent className="p-6 space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">📦 BizTrack</h1>
-            <p className="text-sm text-muted-foreground">Set up your business or factory, or join an existing one</p>
+            <p className="text-sm text-muted-foreground">Set up your business, factory, or property — or join an existing one</p>
           </div>
 
           <div className="flex gap-2">
@@ -135,25 +135,32 @@ export default function BusinessSetupPage() {
                 )}
               </div>
 
-              {/* Type Selection */}
               <div>
                 <Label className="text-sm font-semibold">What are you managing?</Label>
-                <div className="grid grid-cols-2 gap-3 mt-2">
+                <div className="grid grid-cols-3 gap-2 mt-2">
                   <button type="button" onClick={() => setBusinessType('business')}
-                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
                       businessType === 'business' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
                     }`}>
-                    <span className="text-3xl">🏪</span>
-                    <p className="text-sm font-semibold mt-2">Business</p>
-                    <p className="text-xs text-muted-foreground">Shops, wholesale, retail</p>
+                    <span className="text-2xl">🏪</span>
+                    <p className="text-xs font-semibold mt-1">Business</p>
+                    <p className="text-[10px] text-muted-foreground">Shops, retail</p>
                   </button>
                   <button type="button" onClick={() => setBusinessType('factory')}
-                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
                       businessType === 'factory' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
                     }`}>
-                    <span className="text-3xl">🏭</span>
-                    <p className="text-sm font-semibold mt-2">Factory</p>
-                    <p className="text-xs text-muted-foreground">Manufacturing, production</p>
+                    <span className="text-2xl">🏭</span>
+                    <p className="text-xs font-semibold mt-1">Factory</p>
+                    <p className="text-[10px] text-muted-foreground">Manufacturing</p>
+                  </button>
+                  <button type="button" onClick={() => setBusinessType('property')}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
+                      businessType === 'property' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
+                    }`}>
+                    <span className="text-2xl">🏠</span>
+                    <p className="text-xs font-semibold mt-1">Property</p>
+                    <p className="text-[10px] text-muted-foreground">Rentals</p>
                   </button>
                 </div>
               </div>
@@ -171,8 +178,8 @@ export default function BusinessSetupPage() {
               </div>
               <div><Label>Email</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" /></div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {businessType === 'factory' ? <Factory className="h-4 w-4 mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
-                Create {businessType === 'factory' ? 'Factory' : 'Business'}
+                {businessType === 'factory' ? <Factory className="h-4 w-4 mr-2" /> : businessType === 'property' ? <Home className="h-4 w-4 mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
+                Create {businessType === 'factory' ? 'Factory' : businessType === 'property' ? 'Property' : 'Business'}
               </Button>
             </form>
           ) : (

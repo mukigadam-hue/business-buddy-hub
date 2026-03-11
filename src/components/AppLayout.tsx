@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe } from 'lucide-react';
+import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { APP_VERSION } from '@/version';
 import { useBusiness } from '@/context/BusinessContext';
@@ -78,15 +78,42 @@ function useNavItems() {
     { to: '/settings', label: t('nav.settings'), icon: Settings },
   ];
 
-  return { businessNavItems, factoryNavItems, businessMobileNav, businessMoreNav, factoryMobileNav, factoryMoreNav };
+  const propertyNavItems = [
+    { to: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { to: '/assets', label: t('property.assets', 'My Assets'), icon: Home },
+    { to: '/bookings', label: t('property.bookings', 'Bookings'), icon: CalendarCheck },
+    { to: '/browse', label: t('property.browse', 'Browse'), icon: Search },
+    { to: '/messages', label: t('property.messages', 'Messages'), icon: MessageSquare },
+    { to: '/contacts', label: t('nav.contacts'), icon: Contact },
+    { to: '/discover', label: t('nav.discover'), icon: Globe },
+    { to: '/team', label: t('nav.team'), icon: Users },
+    { to: '/settings', label: t('nav.settings'), icon: Settings },
+  ];
+
+  const propertyMobileNav = [
+    { to: '/', label: t('nav.home'), icon: LayoutDashboard },
+    { to: '/assets', label: t('property.assets', 'Assets'), icon: Home },
+    { to: '/bookings', label: t('property.bookings', 'Bookings'), icon: CalendarCheck },
+  ];
+
+  const propertyMoreNav = [
+    { to: '/browse', label: t('property.browse', 'Browse'), icon: Search },
+    { to: '/messages', label: t('property.messages', 'Messages'), icon: MessageSquare },
+    { to: '/contacts', label: t('nav.contacts'), icon: Contact },
+    { to: '/discover', label: t('nav.discover'), icon: Globe },
+    { to: '/team', label: t('nav.team'), icon: Users },
+    { to: '/settings', label: t('nav.settings'), icon: Settings },
+  ];
+
+  return { businessNavItems, factoryNavItems, propertyNavItems, businessMobileNav, businessMoreNav, factoryMobileNav, factoryMoreNav, propertyMobileNav, propertyMoreNav };
 }
 
-function BusinessRoleBanner({ userRole, businessName, isFactory }: { userRole: string | null; businessName: string; isFactory: boolean }) {
+function BusinessRoleBanner({ userRole, businessName, businessType }: { userRole: string | null; businessName: string; businessType: string }) {
   const { t } = useTranslation();
   if (!userRole) return null;
   const isOwner = userRole === 'owner';
   const isAdmin = userRole === 'admin';
-  const typeLabel = isFactory ? 'Factory' : 'Business';
+  const typeLabel = businessType === 'factory' ? 'Factory' : businessType === 'property' ? 'Property' : 'Business';
 
   return (
     <div className={`px-4 py-1.5 text-xs font-medium flex items-center gap-2 ${
@@ -94,7 +121,8 @@ function BusinessRoleBanner({ userRole, businessName, isFactory }: { userRole: s
         : isAdmin ? 'bg-accent/20 text-accent-foreground border-b border-accent/30'
         : 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-b border-orange-500/20'
     }`}>
-      {isFactory && <Factory className="h-3.5 w-3.5" />}
+      {businessType === 'factory' && <Factory className="h-3.5 w-3.5" />}
+      {businessType === 'property' && <Home className="h-3.5 w-3.5" />}
       {isOwner ? (
         <><Crown className="h-3.5 w-3.5" /> 👔 {t('nav.owner')} — <span className="font-bold">{businessName}</span> <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full ml-1">{typeLabel}</span></>
       ) : (
@@ -200,10 +228,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const isFactory = (currentBusiness as any)?.business_type === 'factory';
-  const { businessNavItems, factoryNavItems, businessMobileNav, factoryMobileNav, businessMoreNav, factoryMoreNav } = useNavItems();
-  const navItems = isFactory ? factoryNavItems : businessNavItems;
-  const mobileMainNav = isFactory ? factoryMobileNav : businessMobileNav;
-  const mobileMoreNav = isFactory ? factoryMoreNav : businessMoreNav;
+  const isProperty = (currentBusiness as any)?.business_type === 'property';
+  const { businessNavItems, factoryNavItems, propertyNavItems, businessMobileNav, factoryMobileNav, propertyMobileNav, businessMoreNav, factoryMoreNav, propertyMoreNav } = useNavItems();
+  const navItems = isProperty ? propertyNavItems : isFactory ? factoryNavItems : businessNavItems;
+  const mobileMainNav = isProperty ? propertyMobileNav : isFactory ? factoryMobileNav : businessMobileNav;
+  const mobileMoreNav = isProperty ? propertyMoreNav : isFactory ? factoryMoreNav : businessMoreNav;
   const unreadCount = notifications.filter(n => !n.is_read).length;
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -212,7 +241,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   function getBusinessType(b: any) {
-    return b.business_type === 'factory' ? '🏭' : '🏪';
+    return b.business_type === 'factory' ? '🏭' : b.business_type === 'property' ? '🏠' : '🏪';
   }
 
   function getRoleBadge(role: string) {
@@ -229,7 +258,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden flex-col">
-      {currentBusiness && <BusinessRoleBanner userRole={userRole} businessName={currentBusiness.name} isFactory={isFactory} />}
+      {currentBusiness && <BusinessRoleBanner userRole={userRole!} businessName={currentBusiness.name} businessType={(currentBusiness as any).business_type || 'business'} />}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Sidebar */}
@@ -237,9 +266,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="p-5 border-b border-sidebar-border flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold text-sidebar-accent-foreground tracking-tight">
-                {isFactory ? '🏭 BizTrack' : '📦 BizTrack'}
+                {isProperty ? '🏠 FlexRent' : isFactory ? '🏭 BizTrack' : '📦 BizTrack'}
               </h1>
-              <p className="text-xs text-sidebar-muted mt-1">{isFactory ? t('nav.factoryManager') : t('nav.businessManager')}</p>
+              <p className="text-xs text-sidebar-muted mt-1">{isProperty ? t('nav.propertyManager', 'Property Manager') : isFactory ? t('nav.factoryManager') : t('nav.businessManager')}</p>
             </div>
             <NotificationsPanel />
           </div>

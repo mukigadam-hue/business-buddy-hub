@@ -986,6 +986,286 @@ export type Database = {
         }
         Relationships: []
       }
+      property_assets: {
+        Row: {
+          area_size: number
+          area_unit: string
+          business_id: string
+          category: string
+          created_at: string
+          daily_price: number
+          deleted_at: string | null
+          description: string
+          features: string
+          hourly_price: number
+          id: string
+          image_url_1: string | null
+          image_url_2: string | null
+          image_url_3: string | null
+          is_available: boolean
+          location: string
+          monthly_price: number
+          name: string
+          owner_contact: string
+          owner_name: string
+          rules: string
+          sub_category: string
+          updated_at: string
+        }
+        Insert: {
+          area_size?: number
+          area_unit?: string
+          business_id: string
+          category?: string
+          created_at?: string
+          daily_price?: number
+          deleted_at?: string | null
+          description?: string
+          features?: string
+          hourly_price?: number
+          id?: string
+          image_url_1?: string | null
+          image_url_2?: string | null
+          image_url_3?: string | null
+          is_available?: boolean
+          location?: string
+          monthly_price?: number
+          name: string
+          owner_contact?: string
+          owner_name?: string
+          rules?: string
+          sub_category?: string
+          updated_at?: string
+        }
+        Update: {
+          area_size?: number
+          area_unit?: string
+          business_id?: string
+          category?: string
+          created_at?: string
+          daily_price?: number
+          deleted_at?: string | null
+          description?: string
+          features?: string
+          hourly_price?: number
+          id?: string
+          image_url_1?: string | null
+          image_url_2?: string | null
+          image_url_3?: string | null
+          is_available?: boolean
+          location?: string
+          monthly_price?: number
+          name?: string
+          owner_contact?: string
+          owner_name?: string
+          rules?: string
+          sub_category?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_assets_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_bookings: {
+        Row: {
+          amount_paid: number
+          asset_id: string
+          business_id: string
+          created_at: string
+          duration_type: string
+          end_date: string
+          id: string
+          notes: string
+          payment_status: string
+          renter_contact: string
+          renter_id: string
+          renter_name: string
+          start_date: string
+          status: string
+          total_price: number
+        }
+        Insert: {
+          amount_paid?: number
+          asset_id: string
+          business_id: string
+          created_at?: string
+          duration_type?: string
+          end_date: string
+          id?: string
+          notes?: string
+          payment_status?: string
+          renter_contact?: string
+          renter_id: string
+          renter_name?: string
+          start_date: string
+          status?: string
+          total_price?: number
+        }
+        Update: {
+          amount_paid?: number
+          asset_id?: string
+          business_id?: string
+          created_at?: string
+          duration_type?: string
+          end_date?: string
+          id?: string
+          notes?: string
+          payment_status?: string
+          renter_contact?: string
+          renter_id?: string
+          renter_name?: string
+          start_date?: string
+          status?: string
+          total_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_bookings_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "property_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_bookings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_check_ins: {
+        Row: {
+          booking_id: string
+          business_id: string
+          check_type: string
+          created_at: string
+          id: string
+          notes: string
+          photo_urls: Json
+          recorded_by: string
+        }
+        Insert: {
+          booking_id: string
+          business_id: string
+          check_type?: string
+          created_at?: string
+          id?: string
+          notes?: string
+          photo_urls?: Json
+          recorded_by: string
+        }
+        Update: {
+          booking_id?: string
+          business_id?: string
+          check_type?: string
+          created_at?: string
+          id?: string
+          notes?: string
+          photo_urls?: Json
+          recorded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_check_ins_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "property_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_check_ins_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_conversations: {
+        Row: {
+          asset_id: string | null
+          business_id: string
+          created_at: string
+          id: string
+          last_message_at: string
+          renter_id: string
+        }
+        Insert: {
+          asset_id?: string | null
+          business_id: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          renter_id: string
+        }
+        Update: {
+          asset_id?: string | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          renter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_conversations_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "property_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_conversations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          sender_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          sender_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "property_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_items: {
         Row: {
           category: string
@@ -1528,6 +1808,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_booking_conflict: {
+        Args: {
+          _asset_id: string
+          _end: string
+          _exclude_booking_id?: string
+          _start: string
+        }
+        Returns: boolean
+      }
       get_business_public_products: {
         Args: { _business_id: string; _limit?: number }
         Returns: {
@@ -1612,6 +1901,39 @@ export type Database = {
               products_description: string
             }[]
           }
+      search_property_assets: {
+        Args: {
+          _category?: string
+          _end_date?: string
+          _limit?: number
+          _location?: string
+          _max_price?: number
+          _min_price?: number
+          _offset?: number
+          _query?: string
+          _start_date?: string
+        }
+        Returns: {
+          area_size: number
+          area_unit: string
+          business_contact: string
+          business_id: string
+          business_name: string
+          category: string
+          daily_price: number
+          description: string
+          features: string
+          hourly_price: number
+          id: string
+          image_url_1: string
+          location: string
+          monthly_price: number
+          name: string
+          owner_contact: string
+          owner_name: string
+          sub_category: string
+        }[]
+      }
     }
     Enums: {
       business_role: "owner" | "admin" | "worker"

@@ -69,7 +69,7 @@ export default function PropertyBookings() {
   const { t } = useTranslation();
   const { bookings, assets, updateBooking } = useProperty();
   const { userRole, currentBusiness } = useBusiness();
-  const { symbol } = useCurrency();
+  const { currency } = useCurrency();
   const [checkInBooking, setCheckInBooking] = useState<string | null>(null);
 
   const pending = bookings.filter(b => b.status === 'pending');

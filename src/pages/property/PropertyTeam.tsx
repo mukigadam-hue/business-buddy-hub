@@ -93,12 +93,12 @@ function WorkerJoinSection({ onJoined }: { onJoined: () => void }) {
   return (
     <Card className="shadow-card border-dashed border-primary/30">
       <CardContent className="p-4 space-y-3">
-        <h2 className="text-base font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Join via Invite Code</h2>
-        <p className="text-sm text-muted-foreground">Got an invite code from an asset owner or property manager? Enter it to request access.</p>
+        <h2 className="text-base font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Join Another Business</h2>
+        <p className="text-sm text-muted-foreground">Have an invite code from another business, factory, or property owner? Enter it below to join their team.</p>
         <div className="flex gap-2">
           <Input placeholder="Enter invite code (e.g. ABC123)" value={code} onChange={e => setCode(e.target.value.toUpperCase())}
             className="font-mono tracking-wider uppercase" maxLength={10} />
-          <Button onClick={handleRedeem} disabled={loading || !code.trim()}>{loading ? 'Requesting...' : 'Request to Join'}</Button>
+          <Button onClick={handleRedeem} disabled={loading || !code.trim()}>{loading ? 'Joining...' : 'Join'}</Button>
         </div>
       </CardContent>
     </Card>
@@ -622,8 +622,8 @@ export default function PropertyTeam() {
         </Card>
       )}
 
-      {/* Workers/non-owners see join section, owners don't need it */}
-      {!isOwnerOrAdmin && <WorkerJoinSection onJoined={() => { loadMembers(); loadTeamWorkers(); }} />}
+      {/* Join another business - available to everyone */}
+      <WorkerJoinSection onJoined={() => { loadMembers(); loadTeamWorkers(); }} />
       <AdSpace variant="banner" />
 
       {/* ========= TENANT VIEW ========= */}

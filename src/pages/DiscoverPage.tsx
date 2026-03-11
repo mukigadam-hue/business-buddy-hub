@@ -159,6 +159,8 @@ export default function DiscoverPage() {
                       <Badge variant="secondary" className="text-[10px]">
                         {biz.business_type === 'factory' ? (
                           <><Factory className="h-3 w-3 mr-1" />Factory</>
+                        ) : biz.business_type === 'property' ? (
+                          <><Home className="h-3 w-3 mr-1" />Property</>
                         ) : (
                           <><Store className="h-3 w-3 mr-1" />Business</>
                         )}

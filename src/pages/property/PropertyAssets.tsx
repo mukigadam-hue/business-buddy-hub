@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Search, MapPin, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, MapPin, Edit2, Trash2, Home } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { toast } from 'sonner';
 

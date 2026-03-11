@@ -49,7 +49,7 @@ interface Member {
 
 const STAFF_RANKS = ['Property Manager', 'Caretaker', 'Agent', 'Maintenance', 'Security', 'Cleaner'];
 const TENANT_RANK = 'Tenant';
-const LANDLORD_RANK = 'Landlord';
+const LANDLORD_RANK = 'Asset Owner';
 const MAX_STAFF = 3;
 const GENDERS = ['Male', 'Female', 'Other'];
 const PAYMENT_METHODS = [

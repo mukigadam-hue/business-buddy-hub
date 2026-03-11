@@ -622,8 +622,8 @@ export default function PropertyTeam() {
         </Card>
       )}
 
-      {/* Workers/non-owners see join section, owners don't need it */}
-      {!isOwnerOrAdmin && <WorkerJoinSection onJoined={() => { loadMembers(); loadTeamWorkers(); }} />}
+      {/* Join another business - available to everyone */}
+      <WorkerJoinSection onJoined={() => { loadMembers(); loadTeamWorkers(); }} />
       <AdSpace variant="banner" />
 
       {/* ========= TENANT VIEW ========= */}

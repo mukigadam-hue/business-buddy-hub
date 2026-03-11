@@ -360,7 +360,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       className={`w-full flex items-center gap-2.5 p-2.5 rounded-lg text-left transition-all ${
                         isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted/60'
                       }`}>
-                      <span className="text-lg">{isFact ? '🏭' : '🏪'}</span>
+                      <span className="text-lg">{getBusinessType(b)}</span>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{b.name}</p>
                         <p className="text-[11px] text-muted-foreground">{getRoleBadge(role)} {getRoleLabel(role)}</p>

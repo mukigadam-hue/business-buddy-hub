@@ -19,10 +19,10 @@ import LanguageSelector from '@/components/LanguageSelector';
 
 import { toSentenceCase } from '@/lib/utils';
 
-function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' }) {
+function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' | 'property' }) {
   const { createBusiness, currentBusiness } = useBusiness();
   const [open, setOpen] = useState(false);
-  const [businessType, setBusinessType] = useState<'business' | 'factory'>(defaultType);
+  const [businessType, setBusinessType] = useState<'business' | 'factory' | 'property'>(defaultType);
   const [form, setForm] = useState({ name: '', address: '', contact: '', email: '' });
   const [countryCode, setCountryCode] = useState('');
   const [countrySearch, setCountrySearch] = useState('');
@@ -44,25 +44,30 @@ function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated:
     if (!countryCode) { toast.error('Please select a country'); return; }
     setLoading(true);
     await createBusiness(form.name.trim(), form.address.trim(), form.contact.trim(), form.email.trim(), countryCode);
-    if (businessType === 'factory') {
+    if (businessType !== 'business') {
       const { data } = await supabase.from('businesses').select('id').order('created_at', { ascending: false }).limit(1).single();
       if (data) {
-        await supabase.from('businesses').update({ business_type: 'factory' } as any).eq('id', data.id);
+        await supabase.from('businesses').update({ business_type: businessType } as any).eq('id', data.id);
       }
     }
     setForm({ name: '', address: '', contact: '', email: '' });
     setOpen(false);
     setLoading(false);
     onCreated();
-    if (businessType === 'factory') window.location.reload();
+    if (businessType !== 'business') window.location.reload();
   }
 
   const selectedCountry = getCountryByCode(countryCode);
 
+  const nameLabel = businessType === 'factory' ? 'Factory Name' : businessType === 'property' ? 'Property / Agency Name' : 'Business Name';
+  const namePlaceholder = businessType === 'factory' ? 'My Factory' : businessType === 'property' ? 'My Rentals' : 'My Shop';
+  const typeIcon = businessType === 'factory' ? <Factory className="h-4 w-4 mr-2" /> : businessType === 'property' ? <Home className="h-4 w-4 mr-2" /> : <Building2 className="h-4 w-4 mr-2" />;
+  const typeLabel = businessType === 'factory' ? 'Factory' : businessType === 'property' ? 'Property' : 'Business';
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Button variant="outline" className="w-full border-dashed" onClick={() => setOpen(true)}>
-        <Plus className="h-4 w-4 mr-2" /> Add Business or Factory
+        <Plus className="h-4 w-4 mr-2" /> Add Business, Factory or Property
       </Button>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -94,7 +99,7 @@ function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated:
               </div>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <button type="button" onClick={() => setBusinessType('business')}
               className={`p-3 rounded-xl border-2 text-center transition-all ${businessType === 'business' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}>
               <span className="text-2xl">🏪</span>
@@ -105,14 +110,19 @@ function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated:
               <span className="text-2xl">🏭</span>
               <p className="text-xs font-semibold mt-1">Factory</p>
             </button>
+            <button type="button" onClick={() => setBusinessType('property')}
+              className={`p-3 rounded-xl border-2 text-center transition-all ${businessType === 'property' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}>
+              <span className="text-2xl">🏠</span>
+              <p className="text-xs font-semibold mt-1">FlexRent</p>
+            </button>
           </div>
-          <div><Label>Name *</Label><Input placeholder={businessType === 'factory' ? 'My Factory' : 'My Shop'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
+          <div><Label>{nameLabel} *</Label><Input placeholder={namePlaceholder} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
           <div><Label>Address</Label><Input placeholder="Location" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
           <div><Label>Contact</Label><Input placeholder={selectedCountry ? `${selectedCountry.phonePrefix} ...` : 'Phone number'} value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} /></div>
           <div><Label>Email</Label><Input type="email" placeholder="email@example.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {businessType === 'factory' ? <Factory className="h-4 w-4 mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
-            Create {businessType === 'factory' ? 'Factory' : 'Business'}
+            {typeIcon}
+            Create {typeLabel}
           </Button>
         </form>
       </DialogContent>

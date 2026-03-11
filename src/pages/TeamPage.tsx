@@ -101,7 +101,7 @@ function ShareButtons({ code, type }: { code: string; type: 'worker' }) {
   );
 }
 
-function JoinAnotherBusinessSection({ onJoined }: { onJoined: () => void }) {
+function ReceivedInviteCodeSection({ onJoined }: { onJoined: () => void }) {
   const { redeemInviteCode } = useBusiness();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -125,10 +125,10 @@ function JoinAnotherBusinessSection({ onJoined }: { onJoined: () => void }) {
       <CardContent className="p-4 space-y-3">
         <h2 className="text-base font-semibold flex items-center gap-2">
           <Send className="h-4 w-4" />
-          Join Another Business
+          📩 I Received an Invite Code
         </h2>
         <p className="text-sm text-muted-foreground">
-          Have an invite code from another business owner? Enter it below to join their business as a worker or team member.
+          If your <strong>boss or business owner</strong> sent you a code, enter it here to join their team as a worker.
         </p>
         <div className="flex gap-2">
           <Input

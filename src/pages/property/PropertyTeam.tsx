@@ -13,17 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Trash2, Shield, Crown, User, Users, MessageCircle, Share2, Send, Calendar, Clock, Wallet, Plus, Edit2, Home, CheckCircle, Building, Key, Eye, Car, Ship } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { UserPlus, Trash2, Shield, Crown, User, Users, MessageCircle, Share2, Send, Calendar, Clock, Wallet, Plus, Edit2, Home, CheckCircle, Building, Key, Eye, Car, Ship, AlertTriangle, ThumbsUp, ThumbsDown, CreditCard, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
 import { toTitleCase } from '@/lib/utils';
-
-interface Member {
-  user_id: string;
-  role: string;
-  email: string;
-  full_name: string;
-}
+import ImageUpload from '@/components/ImageUpload';
 
 interface TeamMember {
   id: string;
@@ -36,12 +31,32 @@ interface TeamMember {
   hire_date: string;
   next_payment_due: string | null;
   is_active: boolean;
+  gender?: string;
+  age?: number;
+  occupation?: string;
+  rental_purpose?: string;
+  rental_end_date?: string;
+  agreed_amount?: number;
+}
+
+interface Member {
+  user_id: string;
+  role: string;
+  email: string;
+  full_name: string;
 }
 
 const STAFF_RANKS = ['Property Manager', 'Caretaker', 'Agent', 'Maintenance', 'Security', 'Cleaner'];
 const TENANT_RANK = 'Tenant';
 const LANDLORD_RANK = 'Landlord';
 const MAX_STAFF = 3;
+const GENDERS = ['Male', 'Female', 'Other'];
+const PAYMENT_METHODS = [
+  { value: 'cash', label: 'Cash', icon: '💵' },
+  { value: 'mobile_money', label: 'Mobile Money', icon: '📱' },
+  { value: 'card', label: 'Card', icon: '💳' },
+  { value: 'bank_transfer', label: 'Bank Transfer', icon: '🏦' },
+];
 
 function ShareButtons({ code }: { code: string }) {
   const message = `Join our property team! Use this invite code: ${code}`;
@@ -89,36 +104,79 @@ function RedeemCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
   );
 }
 
+// Payment behavior scoring
+function getPayerScore(bookings: any[]): { score: string; label: string; color: string; icon: any; onTimeCount: number; lateCount: number } {
+  if (bookings.length === 0) return { score: 'N/A', label: 'No payments yet', color: 'text-muted-foreground', icon: Clock, onTimeCount: 0, lateCount: 0 };
+  
+  let onTime = 0, late = 0;
+  bookings.forEach(b => {
+    if (b.last_payment_date && b.expected_payment_date) {
+      const paid = new Date(b.last_payment_date);
+      const expected = new Date(b.expected_payment_date);
+      if (paid <= expected) onTime++;
+      else late++;
+    } else if (b.payment_status === 'paid') {
+      onTime++;
+    }
+  });
+  
+  const total = onTime + late;
+  if (total === 0) return { score: 'N/A', label: 'No payments yet', color: 'text-muted-foreground', icon: Clock, onTimeCount: 0, lateCount: 0 };
+  
+  const ratio = onTime / total;
+  if (ratio >= 0.8) return { score: '⭐ Good', label: `${onTime}/${total} on time`, color: 'text-green-600', icon: ThumbsUp, onTimeCount: onTime, lateCount: late };
+  if (ratio >= 0.5) return { score: '⚠️ Fair', label: `${onTime}/${total} on time`, color: 'text-amber-600', icon: AlertTriangle, onTimeCount: onTime, lateCount: late };
+  return { score: '❌ Poor', label: `${late}/${total} late`, color: 'text-destructive', icon: ThumbsDown, onTimeCount: onTime, lateCount: late };
+}
+
 function RentalPaymentsSection({ bookings, assets, isOwnerOrAdmin }: { bookings: any[]; assets: any[]; isOwnerOrAdmin: boolean }) {
   const { fmt } = useCurrency();
   const [paymentDialog, setPaymentDialog] = useState<any>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [proofUrl, setProofUrl] = useState('');
 
   const assetMap = new Map(assets.map((a: any) => [a.id, a]));
   const activeBookings = bookings
     .filter(b => ['active', 'confirmed', 'pending'].includes(b.status))
     .map(b => {
       const asset = assetMap.get(b.asset_id);
-      const outstanding = Number(b.total_price) - Number(b.amount_paid);
+      const outstanding = Number(b.agreed_amount || b.total_price) - Number(b.amount_paid);
       const endDate = new Date(b.end_date);
       const now = new Date();
       const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      return { ...b, asset, outstanding, daysLeft, isOverdue: daysLeft < 0 && outstanding > 0, isUrgent: daysLeft <= 3 && daysLeft >= 0 && outstanding > 0 };
+      const expectedPayment = b.expected_payment_date ? new Date(b.expected_payment_date) : null;
+      const paymentDaysLeft = expectedPayment ? Math.ceil((expectedPayment.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+      return { ...b, asset, outstanding, daysLeft, paymentDaysLeft, isOverdue: daysLeft < 0 && outstanding > 0, isUrgent: daysLeft <= 3 && daysLeft >= 0 && outstanding > 0, isPaymentDue: paymentDaysLeft !== null && paymentDaysLeft <= 3 && outstanding > 0 };
     }).sort((a, b) => a.daysLeft - b.daysLeft);
 
   const totalOutstanding = activeBookings.reduce((s, b) => s + b.outstanding, 0);
   const totalCollected = bookings.reduce((s, b) => s + Number(b.amount_paid), 0);
 
+  // Group by renter for behavior scoring
+  const renterMap = new Map<string, any[]>();
+  bookings.forEach(b => {
+    const name = b.renter_name || 'Unknown';
+    if (!renterMap.has(name)) renterMap.set(name, []);
+    renterMap.get(name)!.push(b);
+  });
+
   async function handleRecordPayment() {
     if (!paymentDialog || !paymentAmount) return;
     const amt = parseFloat(paymentAmount);
     if (isNaN(amt) || amt <= 0) { toast.error('Enter a valid amount'); return; }
+    const total = Number(paymentDialog.agreed_amount || paymentDialog.total_price);
     const newPaid = Number(paymentDialog.amount_paid) + amt;
-    const newStatus = newPaid >= Number(paymentDialog.total_price) ? 'paid' : 'partial';
-    const { error } = await supabase.from('property_bookings').update({ amount_paid: newPaid, payment_status: newStatus } as any).eq('id', paymentDialog.id);
+    const newStatus = newPaid >= total ? 'paid' : 'partial';
+    const { error } = await supabase.from('property_bookings').update({
+      amount_paid: newPaid,
+      payment_status: newStatus,
+      payment_method: paymentMethod,
+      last_payment_date: new Date().toISOString(),
+    } as any).eq('id', paymentDialog.id);
     if (error) { toast.error(error.message); return; }
     toast.success(`Payment of ${fmt(amt)} recorded!`);
-    setPaymentDialog(null); setPaymentAmount('');
+    setPaymentDialog(null); setPaymentAmount(''); setPaymentMethod('cash'); setProofUrl('');
   }
 
   return (
@@ -134,6 +192,32 @@ function RentalPaymentsSection({ bookings, assets, isOwnerOrAdmin }: { bookings:
         </CardContent></Card>
       </div>
 
+      {/* Payer Behavior Section */}
+      {isOwnerOrAdmin && renterMap.size > 0 && (
+        <Card className="shadow-card">
+          <CardContent className="p-3 space-y-2">
+            <h3 className="text-sm font-semibold flex items-center gap-1">📊 Payer Behavior</h3>
+            <div className="space-y-1.5">
+              {Array.from(renterMap.entries()).map(([name, rBookings]) => {
+                const score = getPayerScore(rBookings);
+                return (
+                  <div key={name} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium">{name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-semibold ${score.color}`}>{score.score}</span>
+                      <span className="text-[10px] text-muted-foreground">{score.label}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {activeBookings.length === 0 ? (
         <Card><CardContent className="p-8 text-center">
           <Home className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
@@ -142,24 +226,33 @@ function RentalPaymentsSection({ bookings, assets, isOwnerOrAdmin }: { bookings:
       ) : (
         <div className="space-y-3">
           {activeBookings.map(b => (
-            <Card key={b.id} className={`shadow-card ${b.isOverdue ? 'border-destructive/40' : b.isUrgent ? 'border-warning/40' : ''}`}>
+            <Card key={b.id} className={`shadow-card ${b.isOverdue ? 'border-destructive/40' : b.isUrgent || b.isPaymentDue ? 'border-warning/40' : ''}`}>
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-semibold text-sm">{b.renter_name || 'Tenant'}</p>
                     <p className="text-xs text-muted-foreground">{b.asset?.name || 'Asset'} · {b.duration_type}</p>
+                    {b.gender && <p className="text-[10px] text-muted-foreground">{b.gender}{b.age ? `, ${b.age} yrs` : ''}</p>}
                   </div>
-                  <Badge variant={b.isOverdue ? 'destructive' : b.isUrgent ? 'secondary' : 'outline'} className="text-[10px]">
-                    {b.isOverdue ? `⚠️ Overdue ${Math.abs(b.daysLeft)}d` : b.daysLeft === 0 ? '⏰ Due today' : `${b.daysLeft}d left`}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge variant={b.isOverdue ? 'destructive' : b.isUrgent ? 'secondary' : 'outline'} className="text-[10px]">
+                      {b.isOverdue ? `⚠️ Overdue ${Math.abs(b.daysLeft)}d` : b.daysLeft === 0 ? '⏰ Due today' : `${b.daysLeft}d left`}
+                    </Badge>
+                    {b.isPaymentDue && b.paymentDaysLeft !== null && (
+                      <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-700">
+                        💰 Payment {b.paymentDaysLeft <= 0 ? 'overdue' : `in ${b.paymentDaysLeft}d`}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div><p className="text-muted-foreground">Total</p><p className="font-semibold tabular-nums">{fmt(Number(b.total_price))}</p></div>
+                  <div><p className="text-muted-foreground">Agreed</p><p className="font-semibold tabular-nums">{fmt(Number(b.agreed_amount || b.total_price))}</p></div>
                   <div><p className="text-muted-foreground">Paid</p><p className="font-semibold text-success tabular-nums">{fmt(Number(b.amount_paid))}</p></div>
                   <div><p className="text-muted-foreground">Balance</p><p className={`font-semibold tabular-nums ${b.outstanding > 0 ? 'text-warning' : 'text-success'}`}>{fmt(b.outstanding)}</p></div>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span><Calendar className="inline h-3 w-3 mr-1" />{new Date(b.start_date).toLocaleDateString()} → {new Date(b.end_date).toLocaleDateString()}</span>
+                  {b.last_payment_date && <span className="text-[10px]">Last paid: {new Date(b.last_payment_date).toLocaleDateString()}</span>}
                 </div>
                 {b.outstanding > 0 && (
                   <Button size="sm" className="w-full h-7 text-xs" onClick={() => { setPaymentDialog(b); setPaymentAmount(String(b.outstanding)); }}>
@@ -173,14 +266,49 @@ function RentalPaymentsSection({ bookings, assets, isOwnerOrAdmin }: { bookings:
         </div>
       )}
 
-      <Dialog open={!!paymentDialog} onOpenChange={o => { if (!o) setPaymentDialog(null); }}>
+      {/* Payment Dialog with Method Selection */}
+      <Dialog open={!!paymentDialog} onOpenChange={o => { if (!o) { setPaymentDialog(null); setProofUrl(''); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Record Payment — {paymentDialog?.renter_name}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="p-3 bg-muted/30 rounded-lg text-sm">
+              <p>Agreed: <strong>{fmt(Number(paymentDialog?.agreed_amount || paymentDialog?.total_price || 0))}</strong></p>
+              <p>Paid so far: <strong className="text-success">{fmt(Number(paymentDialog?.amount_paid || 0))}</strong></p>
               <p>Outstanding: <strong className="text-warning">{fmt(paymentDialog?.outstanding || 0)}</strong></p>
             </div>
             <div><Label>Payment Amount</Label><Input type="number" min="0" step="0.01" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} /></div>
+            
+            {/* Payment Method */}
+            <div>
+              <Label>Payment Method</Label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {PAYMENT_METHODS.map(m => (
+                  <button key={m.value} onClick={() => setPaymentMethod(m.value)}
+                    className={`p-2 rounded-lg border text-xs text-left flex items-center gap-2 transition-all ${paymentMethod === m.value ? 'border-primary bg-primary/5 font-semibold' : 'border-border hover:border-primary/30'}`}>
+                    <span>{m.icon}</span> {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Proof upload for mobile money */}
+            {paymentMethod === 'mobile_money' && (
+              <div>
+                <Label>Payment Proof (screenshot)</Label>
+                <ImageUpload bucket="payment-proofs" path="rental" currentUrl={proofUrl} size="md"
+                  onUploaded={url => setProofUrl(url)} onRemoved={() => setProofUrl('')} label="Upload proof" />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={() => { setPaymentAmount(String(Number(paymentDialog?.outstanding || 0) / 2)); }}>
+                Half Payment
+              </Button>
+              <Button variant="outline" onClick={() => { setPaymentAmount(String(paymentDialog?.outstanding || 0)); }}>
+                Full Payment
+              </Button>
+            </div>
+
             <Button onClick={handleRecordPayment} className="w-full"><Wallet className="h-4 w-4 mr-2" /> Confirm Payment</Button>
           </div>
         </DialogContent>
@@ -200,14 +328,15 @@ export default function PropertyTeam() {
   const [loading, setLoading] = useState(false);
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 
-  // View mode: tenant or landlord
   const [viewMode, setViewMode] = useState<'tenant' | 'landlord'>('landlord');
-
   const [teamWorkers, setTeamWorkers] = useState<TeamMember[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editWorkerId, setEditWorkerId] = useState<string | null>(null);
   const [addType, setAddType] = useState<'staff' | 'tenant' | 'landlord'>('tenant');
-  const [workerForm, setWorkerForm] = useState({ full_name: '', rank: 'Tenant', salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10), occupation: '', rental_purpose: '' });
+  const [workerForm, setWorkerForm] = useState({
+    full_name: '', rank: 'Tenant', salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10),
+    occupation: '', rental_purpose: '', gender: '', age: '', rental_end_date: '', agreed_amount: '',
+  });
 
   const businessId = currentBusiness?.id;
 
@@ -240,13 +369,18 @@ export default function PropertyTeam() {
   }
 
   function resetForm() {
-    setWorkerForm({ full_name: '', rank: addType === 'staff' ? 'Caretaker' : addType === 'landlord' ? 'Landlord' : 'Tenant', salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10), occupation: '', rental_purpose: '' });
+    setWorkerForm({
+      full_name: '', rank: addType === 'staff' ? 'Caretaker' : addType === 'landlord' ? 'Landlord' : 'Tenant',
+      salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10),
+      occupation: '', rental_purpose: '', gender: '', age: '', rental_end_date: '', agreed_amount: '',
+    });
   }
 
   async function handleSubmitMember(e: React.FormEvent) {
     e.preventDefault();
     if (!businessId || !workerForm.full_name.trim()) return;
-    const { error } = await supabase.from('business_team_members').insert({
+
+    const insertData: any = {
       business_id: businessId,
       full_name: toTitleCase(workerForm.full_name.trim()),
       rank: workerForm.rank,
@@ -255,8 +389,16 @@ export default function PropertyTeam() {
       hire_date: workerForm.hire_date,
       is_active: true,
       payment_frequency: 'monthly',
-      next_payment_due: new Date().toISOString().slice(0, 10),
-    } as any);
+      next_payment_due: workerForm.rental_end_date || new Date().toISOString().slice(0, 10),
+      gender: workerForm.gender,
+      age: workerForm.age ? parseInt(workerForm.age) : null,
+      occupation: workerForm.occupation.trim(),
+      rental_purpose: workerForm.rental_purpose.trim(),
+      rental_end_date: workerForm.rental_end_date || null,
+      agreed_amount: parseFloat(workerForm.agreed_amount) || 0,
+    };
+
+    const { error } = await supabase.from('business_team_members').insert(insertData);
     if (error) { toast.error(error.message); return; }
     toast.success(`${workerForm.rank} added!`);
     resetForm();
@@ -273,7 +415,13 @@ export default function PropertyTeam() {
       salary: parseFloat(workerForm.salary) || 0,
       phone: workerForm.phone.trim(),
       hire_date: workerForm.hire_date,
-    }).eq('id', editWorkerId);
+      gender: workerForm.gender,
+      age: workerForm.age ? parseInt(workerForm.age) : null,
+      occupation: workerForm.occupation.trim(),
+      rental_purpose: workerForm.rental_purpose.trim(),
+      rental_end_date: workerForm.rental_end_date || null,
+      agreed_amount: parseFloat(workerForm.agreed_amount) || 0,
+    } as any).eq('id', editWorkerId);
     if (error) { toast.error(error.message); return; }
     toast.success('Updated!');
     resetForm(); setEditWorkerId(null);
@@ -281,7 +429,13 @@ export default function PropertyTeam() {
   }
 
   function openEdit(w: TeamMember) {
-    setWorkerForm({ full_name: w.full_name, rank: w.rank, salary: String(w.salary), phone: w.phone, hire_date: w.hire_date, occupation: '', rental_purpose: '' });
+    setWorkerForm({
+      full_name: w.full_name, rank: w.rank, salary: String(w.salary), phone: w.phone,
+      hire_date: w.hire_date, occupation: w.occupation || '', rental_purpose: w.rental_purpose || '',
+      gender: w.gender || '', age: w.age ? String(w.age) : '', rental_end_date: w.rental_end_date || '',
+      agreed_amount: w.agreed_amount ? String(w.agreed_amount) : '',
+    });
+    setAddType(w.rank === TENANT_RANK ? 'tenant' : w.rank === LANDLORD_RANK ? 'landlord' : 'staff');
     setEditWorkerId(w.id);
   }
 
@@ -305,35 +459,99 @@ export default function PropertyTeam() {
 
   function openAddDialog(type: 'staff' | 'tenant' | 'landlord') {
     setAddType(type);
-    setWorkerForm({ full_name: '', rank: type === 'staff' ? 'Caretaker' : type === 'landlord' ? 'Landlord' : 'Tenant', salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10), occupation: '', rental_purpose: '' });
+    setWorkerForm({
+      full_name: '', rank: type === 'staff' ? 'Caretaker' : type === 'landlord' ? 'Landlord' : 'Tenant',
+      salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10),
+      occupation: '', rental_purpose: '', gender: '', age: '', rental_end_date: '', agreed_amount: '',
+    });
     setShowAddDialog(true);
+  }
+
+  // Tenant/Landlord card with full details
+  function PersonCard({ person, showDelete }: { person: TeamMember; showDelete: boolean }) {
+    const isTenant = person.rank === TENANT_RANK;
+    const renterBookings = bookings.filter(b => b.renter_name?.toLowerCase() === person.full_name.toLowerCase());
+    const payerBehavior = getPayerScore(renterBookings);
+    const endDate = person.rental_end_date ? new Date(person.rental_end_date) : null;
+    const daysToEnd = endDate ? Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+    const isExpiringSoon = daysToEnd !== null && daysToEnd <= 7 && daysToEnd >= 0;
+    const isExpired = daysToEnd !== null && daysToEnd < 0;
+
+    return (
+      <Card className={`shadow-card ${isExpired ? 'border-destructive/40' : isExpiringSoon ? 'border-warning/40' : ''}`}>
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`h-9 w-9 rounded-full flex items-center justify-center text-sm ${isTenant ? 'bg-green-500/10' : 'bg-amber-500/10'}`}>
+                {isTenant ? '🏠' : '🔑'}
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{person.full_name}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {person.gender && `${person.gender}`}{person.age ? `, ${person.age} yrs` : ''}
+                  {person.phone && ` · 📞 ${person.phone}`}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              {daysToEnd !== null && (
+                <Badge variant={isExpired ? 'destructive' : isExpiringSoon ? 'secondary' : 'outline'} className="text-[10px]">
+                  {isExpired ? `⚠️ Expired ${Math.abs(daysToEnd)}d ago` : isExpiringSoon ? `⏰ ${daysToEnd}d left` : `${daysToEnd}d left`}
+                </Badge>
+              )}
+              {isTenant && renterBookings.length > 0 && (
+                <span className={`text-[10px] font-semibold ${payerBehavior.color}`}>{payerBehavior.score}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Details grid */}
+          <div className="grid grid-cols-2 gap-1.5 text-xs">
+            {person.occupation && (
+              <div className="p-1.5 rounded bg-muted/40"><span className="text-muted-foreground">Work:</span> <span className="font-medium">{person.occupation}</span></div>
+            )}
+            {person.rental_purpose && (
+              <div className="p-1.5 rounded bg-muted/40"><span className="text-muted-foreground">Purpose:</span> <span className="font-medium">{person.rental_purpose}</span></div>
+            )}
+            <div className="p-1.5 rounded bg-muted/40"><span className="text-muted-foreground">Start:</span> <span className="font-medium">{new Date(person.hire_date).toLocaleDateString()}</span></div>
+            {person.rental_end_date && (
+              <div className="p-1.5 rounded bg-muted/40"><span className="text-muted-foreground">End:</span> <span className="font-medium">{new Date(person.rental_end_date).toLocaleDateString()}</span></div>
+            )}
+            {(person.agreed_amount || 0) > 0 && (
+              <div className="p-1.5 rounded bg-primary/5 col-span-2"><span className="text-muted-foreground">Agreed Amount:</span> <span className="font-semibold text-primary">{fmt(Number(person.agreed_amount))}</span></div>
+            )}
+          </div>
+
+          {showDelete && (
+            <div className="flex gap-1 pt-1">
+              <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => openEdit(person)}><Edit2 className="h-3 w-3 mr-1" /> Edit</Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => deleteWorker(person.id)}><Trash2 className="h-3 w-3" /></Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="h-6 w-6" /> Property Team</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage your property relationships — tenants, landlords & staff
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">Manage your property relationships — tenants, landlords & staff</p>
       </div>
 
       {/* VIEW MODE SELECTOR */}
       <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => setViewMode('tenant')}
-          className={`p-4 rounded-xl border-2 text-left transition-all ${viewMode === 'tenant' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}
-        >
+        <button onClick={() => setViewMode('tenant')}
+          className={`p-4 rounded-xl border-2 text-left transition-all ${viewMode === 'tenant' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xl">🏠</span>
             <span className="font-semibold text-sm">I'm a Tenant</span>
           </div>
           <p className="text-[11px] text-muted-foreground">I rent properties, vehicles, or vessels from others</p>
         </button>
-        <button
-          onClick={() => setViewMode('landlord')}
-          className={`p-4 rounded-xl border-2 text-left transition-all ${viewMode === 'landlord' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}
-        >
+        <button onClick={() => setViewMode('landlord')}
+          className={`p-4 rounded-xl border-2 text-left transition-all ${viewMode === 'landlord' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xl">🔑</span>
             <span className="font-semibold text-sm">I'm an Owner / Landlord</span>
@@ -407,23 +625,7 @@ export default function PropertyTeam() {
                 </CardContent></Card>
               ) : (
                 <div className="space-y-2">
-                  {landlords.map(l => (
-                    <Card key={l.id}>
-                      <CardContent className="p-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center text-sm">🔑</div>
-                          <div>
-                            <p className="text-sm font-medium">{l.full_name}</p>
-                            <p className="text-xs text-muted-foreground">{l.phone && `📞 ${l.phone} · `}Since {new Date(l.hire_date).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(l)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteWorker(l.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {landlords.map(l => <PersonCard key={l.id} person={l} showDelete={true} />)}
                 </div>
               )}
 
@@ -510,25 +712,7 @@ export default function PropertyTeam() {
                 </CardContent></Card>
               ) : (
                 <div className="space-y-2">
-                  {tenants.map(t => (
-                    <Card key={t.id}>
-                      <CardContent className="p-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-sm">🏠</div>
-                          <div>
-                            <p className="text-sm font-medium">{t.full_name}</p>
-                            <p className="text-xs text-muted-foreground">{t.phone && `📞 ${t.phone} · `}Since {new Date(t.hire_date).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                        {isOwnerOrAdmin && (
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteWorker(t.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {tenants.map(t => <PersonCard key={t.id} person={t} showDelete={isOwnerOrAdmin} />)}
                 </div>
               )}
             </TabsContent>
@@ -538,14 +722,13 @@ export default function PropertyTeam() {
               {isOwnerOrAdmin && (
                 <>
                   <Button onClick={() => {
-                    if (staff.length >= MAX_STAFF) { toast.info(`You can add up to ${MAX_STAFF} staff members to help manage your assets.`); return; }
+                    if (staff.length >= MAX_STAFF) { toast.info(`You can add up to ${MAX_STAFF} staff members.`); return; }
                     openAddDialog('staff');
                   }} className="w-full"><Plus className="h-4 w-4 mr-1" /> Add Staff ({staff.length}/{MAX_STAFF})</Button>
 
                   <Card className="shadow-card border-dashed">
                     <CardContent className="p-4 space-y-3">
                       <h2 className="text-base font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite Staff via Code</h2>
-                      <p className="text-sm text-muted-foreground">Generate a code for family members or employees with the app.</p>
                       {workerCode ? (
                         <div className="space-y-2">
                           <div className="rounded-lg p-3 text-center bg-primary/5">
@@ -561,7 +744,6 @@ export default function PropertyTeam() {
                   </Card>
                 </>
               )}
-              <p className="text-xs text-muted-foreground">Family or employees helping manage your assets (max {MAX_STAFF})</p>
 
               {/* App users (members) */}
               {members.filter(m => m.role !== 'owner').length > 0 && (
@@ -598,7 +780,7 @@ export default function PropertyTeam() {
               )}
 
               {staff.length === 0 && members.filter(m => m.role !== 'owner').length === 0 ? (
-                <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No staff members yet. Add manually or invite via code.</CardContent></Card>
+                <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No staff members yet.</CardContent></Card>
               ) : (
                 <div className="space-y-2">
                   {staff.map(s => (
@@ -633,14 +815,15 @@ export default function PropertyTeam() {
         </div>
       )}
 
-      {/* Add/Edit Dialog */}
+      {/* Add/Edit Dialog — Full tenant/landlord form */}
       <Dialog open={showAddDialog || !!editWorkerId} onOpenChange={o => { if (!o) { setShowAddDialog(false); setEditWorkerId(null); resetForm(); } }}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editWorkerId ? 'Edit Member' : `Add ${addType === 'tenant' ? 'Tenant / Renter' : addType === 'landlord' ? 'Landlord / Boss' : 'Staff Member'}`}</DialogTitle>
           </DialogHeader>
           <form onSubmit={editWorkerId ? handleEditMember : handleSubmitMember} className="space-y-3">
             <div><Label>Full Name *</Label><Input value={workerForm.full_name} onChange={e => setWorkerForm(f => ({ ...f, full_name: e.target.value }))} required /></div>
+            
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Role</Label>
@@ -651,18 +834,50 @@ export default function PropertyTeam() {
               </div>
               <div><Label>Phone</Label><Input value={workerForm.phone} onChange={e => setWorkerForm(f => ({ ...f, phone: e.target.value }))} /></div>
             </div>
-            {addType === 'tenant' && !editWorkerId && (
+
+            {/* Gender & Age — for tenant and landlord */}
+            {(addType === 'tenant' || addType === 'landlord') && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Gender</Label>
+                  <Select value={workerForm.gender} onValueChange={v => setWorkerForm(f => ({ ...f, gender: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                    <SelectContent>{GENDERS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Age</Label><Input type="number" min="0" max="150" value={workerForm.age} onChange={e => setWorkerForm(f => ({ ...f, age: e.target.value }))} placeholder="e.g. 30" /></div>
+              </div>
+            )}
+
+            {/* Occupation & Purpose — for tenants */}
+            {addType === 'tenant' && (
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Occupation</Label><Input value={workerForm.occupation} onChange={e => setWorkerForm(f => ({ ...f, occupation: e.target.value }))} placeholder="e.g. Farmer, Teacher" /></div>
                 <div><Label>Purpose of Renting</Label><Input value={workerForm.rental_purpose} onChange={e => setWorkerForm(f => ({ ...f, rental_purpose: e.target.value }))} placeholder="e.g. Farming, Storage" /></div>
               </div>
             )}
+
+            {/* Start & End dates — for tenant and landlord */}
+            {(addType === 'tenant' || addType === 'landlord') && (
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Start Date *</Label><Input type="date" value={workerForm.hire_date} onChange={e => setWorkerForm(f => ({ ...f, hire_date: e.target.value }))} required /></div>
+                <div><Label>End / Expiry Date</Label><Input type="date" value={workerForm.rental_end_date} onChange={e => setWorkerForm(f => ({ ...f, rental_end_date: e.target.value }))} /></div>
+              </div>
+            )}
+
+            {/* Agreed amount — for tenant and landlord */}
+            {(addType === 'tenant' || addType === 'landlord') && (
+              <div><Label>Agreed Amount (per period)</Label><Input type="number" min="0" step="0.01" value={workerForm.agreed_amount} onChange={e => setWorkerForm(f => ({ ...f, agreed_amount: e.target.value }))} placeholder="Rental amount agreed upon" /></div>
+            )}
+
+            {/* Salary — for staff */}
             {addType === 'staff' && (
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Monthly Salary</Label><Input type="number" min="0" step="0.01" value={workerForm.salary} onChange={e => setWorkerForm(f => ({ ...f, salary: e.target.value }))} /></div>
                 <div><Label>Start Date</Label><Input type="date" value={workerForm.hire_date} onChange={e => setWorkerForm(f => ({ ...f, hire_date: e.target.value }))} /></div>
               </div>
             )}
+
             <Button type="submit" className="w-full">{editWorkerId ? 'Save Changes' : `Add ${addType === 'tenant' ? 'Tenant' : addType === 'landlord' ? 'Landlord' : 'Staff'}`}</Button>
           </form>
         </DialogContent>

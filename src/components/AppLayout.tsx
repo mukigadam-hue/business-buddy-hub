@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search, AlertTriangle } from 'lucide-react';
+import ProofVideoButton from '@/components/ProofVideoButton';
 import { useAuth } from '@/context/AuthContext';
 import { APP_VERSION } from '@/version';
 import { useBusiness } from '@/context/BusinessContext';

@@ -44,6 +44,8 @@ const PropertyAssets = lazy(() => import("./pages/property/PropertyAssets"));
 const PropertyBookings = lazy(() => import("./pages/property/PropertyBookings"));
 const PropertyMessages = lazy(() => import("./pages/property/PropertyMessages"));
 const PropertyBrowse = lazy(() => import("./pages/property/PropertyBrowse"));
+const PropertySettings = lazy(() => import("./pages/property/PropertySettings"));
+const PropertyTeam = lazy(() => import("./pages/property/PropertyTeam"));
 
 const queryClient = new QueryClient({
   defaultOptions: {

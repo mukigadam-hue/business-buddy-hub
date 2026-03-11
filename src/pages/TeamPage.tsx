@@ -466,9 +466,7 @@ export default function TeamPage() {
                                   <SelectItem value="worker">Worker</SelectItem>
                                 </SelectContent>
                               </Select>
-                              <Button variant="ghost" size="icon" onClick={() => handleRemove(member.user_id)}>
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
+                              <ConfirmDeleteButton onConfirm={() => handleRemove(member.user_id)} />
                             </>
                           ) : (
                             member.role === 'owner' && <span className="text-xs font-medium capitalize px-2 py-1 rounded-full bg-muted">{member.role}</span>

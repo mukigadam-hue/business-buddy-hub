@@ -123,7 +123,7 @@ function BusinessContent() {
               <Route path="/" element={<PropertyDashboard />} />
               <Route path="/assets" element={<PropertyAssets />} />
               <Route path="/bookings" element={<PropertyBookings />} />
-              <Route path="/messages" element={<PropertyMessages />} />
+              {/* Messages removed - integrated into Bookings */}
               <Route path="/browse" element={<PropertyBrowse />} />
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/discover" element={<DiscoverPage />} />

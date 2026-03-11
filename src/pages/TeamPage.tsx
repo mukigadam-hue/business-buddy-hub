@@ -210,6 +210,7 @@ export default function TeamPage() {
   async function handleRemove(userId: string) {
     await removeMember(userId);
     loadMembers();
+    loadTeamWorkers();
   }
 
   async function handleRoleChange(userId: string, role: string) {

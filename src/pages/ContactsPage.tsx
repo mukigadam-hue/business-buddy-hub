@@ -256,15 +256,22 @@ export default function ContactsPage() {
     return nameA.localeCompare(nameB);
   });
 
+  const isProperty = (currentBusiness as any)?.business_type === 'property';
+  const contactLabel = isProperty ? 'Partners & Contacts' : 'Business Contacts';
+  const contactDesc = isProperty
+    ? 'Connect with landlords, tenants, agents and service providers using their Code'
+    : 'Connect with other businesses using their Business Code';
+  const codeLabel = isProperty ? 'Your Property Code' : 'Your Business Code';
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Building2 className="h-6 w-6" /> Business Contacts
+            <Building2 className="h-6 w-6" /> {contactLabel}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Connect with other businesses using their Business Code
+            {contactDesc}
           </p>
         </div>
 
@@ -327,7 +334,7 @@ export default function ContactsPage() {
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground font-medium">Your Business Code</p>
+            <p className="text-xs text-muted-foreground font-medium">{codeLabel}</p>
             <p className="text-2xl font-mono font-bold tracking-[0.3em] text-primary">{(currentBusiness as any)?.business_code || '—'}</p>
             <p className="text-xs text-muted-foreground mt-1">Share this code so others can find and connect with you</p>
           </div>
@@ -404,16 +411,16 @@ export default function ContactsPage() {
                             <img src={contact.profile.logo_url} alt="" className="h-10 w-10 rounded-full object-cover border" />
                           ) : (
                             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xl">
-                              {contact.profile?.business_type === 'factory' ? '🏭' : '🏪'}
+                              {contact.profile?.business_type === 'factory' ? '🏭' : contact.profile?.business_type === 'property' ? '🏠' : '🏪'}
                             </div>
                           )}
                           <div>
-                            <p className="font-semibold">{contact.nickname || contact.profile?.name || 'Unknown Business'}</p>
+                            <p className="font-semibold">{contact.nickname || contact.profile?.name || 'Unknown'}</p>
                             {contact.nickname && contact.profile?.name && (
                               <p className="text-xs text-muted-foreground">{contact.profile.name}</p>
                             )}
                             <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">
-                              {contact.profile?.business_type === 'factory' ? 'Factory' : 'Business'}
+                              {contact.profile?.business_type === 'factory' ? 'Factory' : contact.profile?.business_type === 'property' ? 'Property' : 'Business'}
                             </span>
                           </div>
                         </div>
@@ -483,12 +490,12 @@ export default function ContactsPage() {
                   <img src={viewProfile.logo_url} alt="" className="h-16 w-16 rounded-full object-cover border" />
                 ) : (
                   <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center text-3xl">
-                    {viewProfile.business_type === 'factory' ? '🏭' : '🏪'}
+                    {viewProfile.business_type === 'factory' ? '🏭' : viewProfile.business_type === 'property' ? '🏠' : '🏪'}
                   </div>
                 )}
                 <div>
                   <p className="text-xl font-bold">{viewProfile.name}</p>
-                  <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{viewProfile.business_type === 'factory' ? 'Factory' : 'Business'}</span>
+                  <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{viewProfile.business_type === 'factory' ? 'Factory' : viewProfile.business_type === 'property' ? 'Property' : 'Business'}</span>
                 </div>
               </div>
               <Separator />

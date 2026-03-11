@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
+import { useProperty } from '@/context/PropertyContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { usePremium } from '@/hooks/usePremium';
@@ -12,9 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Trash2, Shield, Crown, User, Users, MessageCircle, Share2, Send, Calendar, Clock, Wallet, Plus, Edit2, AlertTriangle, ArrowDownCircle } from 'lucide-react';
+import { UserPlus, Trash2, Shield, Crown, User, Users, MessageCircle, Share2, Send, Calendar, Clock, Wallet, Plus, Edit2, AlertTriangle, ArrowDownCircle, Home, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import WorkerPaymentManager from '@/components/business/WorkerPaymentManager';
 import AdSpace from '@/components/AdSpace';
 import { toTitleCase } from '@/lib/utils';
 
@@ -97,8 +97,155 @@ function RedeemCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
   );
 }
 
+interface RentalPaymentsSectionProps {
+  bookings: any[];
+  assets: any[];
+  isOwnerOrAdmin: boolean;
+}
+
+function RentalPaymentsSection({ bookings, assets, isOwnerOrAdmin }: RentalPaymentsSectionProps) {
+  const { fmt } = useCurrency();
+  const [paymentDialog, setPaymentDialog] = useState<any>(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+
+  const assetMap = new Map(assets.map((a: any) => [a.id, a]));
+
+  const activeBookings = bookings
+    .filter(b => ['active', 'confirmed', 'pending'].includes(b.status))
+    .map(b => {
+      const asset = assetMap.get(b.asset_id);
+      const outstanding = Number(b.total_price) - Number(b.amount_paid);
+      const endDate = new Date(b.end_date);
+      const now = new Date();
+      const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      const isOverdue = daysLeft < 0 && outstanding > 0;
+      const isUrgent = daysLeft <= 3 && daysLeft >= 0 && outstanding > 0;
+      return { ...b, asset, outstanding, daysLeft, isOverdue, isUrgent };
+    })
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+
+  const totalOutstanding = activeBookings.reduce((s, b) => s + b.outstanding, 0);
+  const totalCollected = bookings.reduce((s, b) => s + Number(b.amount_paid), 0);
+
+  async function handleRecordPayment() {
+    if (!paymentDialog || !paymentAmount) return;
+    const amt = parseFloat(paymentAmount);
+    if (isNaN(amt) || amt <= 0) { toast.error('Enter a valid amount'); return; }
+    const newPaid = Number(paymentDialog.amount_paid) + amt;
+    const newStatus = newPaid >= Number(paymentDialog.total_price) ? 'paid' : 'partial';
+    const { error } = await supabase.from('property_bookings').update({
+      amount_paid: newPaid,
+      payment_status: newStatus,
+    } as any).eq('id', paymentDialog.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Payment of ${fmt(amt)} recorded!`);
+    setPaymentDialog(null);
+    setPaymentAmount('');
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="shadow-card">
+          <CardContent className="p-3 text-center">
+            <p className="text-xs text-muted-foreground">Total Collected</p>
+            <p className="text-lg font-bold text-success tabular-nums">{fmt(totalCollected)}</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-card">
+          <CardContent className="p-3 text-center">
+            <p className="text-xs text-muted-foreground">Outstanding</p>
+            <p className="text-lg font-bold text-warning tabular-nums">{fmt(totalOutstanding)}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {activeBookings.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Home className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
+            <p className="text-sm text-muted-foreground">No active rental bookings yet.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {activeBookings.map(b => (
+            <Card key={b.id} className={`shadow-card ${b.isOverdue ? 'border-destructive/40' : b.isUrgent ? 'border-warning/40' : ''}`}>
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-sm">{b.renter_name || 'Tenant'}</p>
+                    <p className="text-xs text-muted-foreground">{b.asset?.name || 'Asset'} · {b.duration_type}</p>
+                    {b.renter_contact && <p className="text-xs text-muted-foreground">📞 {b.renter_contact}</p>}
+                  </div>
+                  <Badge variant={b.isOverdue ? 'destructive' : b.isUrgent ? 'secondary' : 'outline'} className="text-[10px]">
+                    {b.isOverdue ? `⚠️ Overdue ${Math.abs(b.daysLeft)}d` : b.daysLeft === 0 ? '⏰ Due today' : `${b.daysLeft}d left`}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Total</p>
+                    <p className="font-semibold tabular-nums">{fmt(Number(b.total_price))}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Paid</p>
+                    <p className="font-semibold text-success tabular-nums">{fmt(Number(b.amount_paid))}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Balance</p>
+                    <p className={`font-semibold tabular-nums ${b.outstanding > 0 ? 'text-warning' : 'text-success'}`}>{fmt(b.outstanding)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span><Calendar className="inline h-3 w-3 mr-1" />{new Date(b.start_date).toLocaleDateString()} → {new Date(b.end_date).toLocaleDateString()}</span>
+                  <Badge variant="outline" className="text-[9px]">{b.status}</Badge>
+                </div>
+
+                {isOwnerOrAdmin && b.outstanding > 0 && (
+                  <Button size="sm" className="w-full h-7 text-xs" onClick={() => { setPaymentDialog(b); setPaymentAmount(String(b.outstanding)); }}>
+                    <Wallet className="h-3 w-3 mr-1" /> Record Payment
+                  </Button>
+                )}
+                {b.outstanding <= 0 && (
+                  <div className="flex items-center gap-1 text-xs text-success">
+                    <CheckCircle className="h-3 w-3" /> Fully paid
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={!!paymentDialog} onOpenChange={o => { if (!o) setPaymentDialog(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Payment — {paymentDialog?.renter_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="p-3 bg-muted/30 rounded-lg text-sm">
+              <p>Asset: <strong>{paymentDialog?.asset?.name}</strong></p>
+              <p>Outstanding: <strong className="text-warning">{fmt(paymentDialog?.outstanding || 0)}</strong></p>
+            </div>
+            <div>
+              <Label>Payment Amount</Label>
+              <Input type="number" min="0" step="0.01" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} />
+            </div>
+            <Button onClick={handleRecordPayment} className="w-full">
+              <Wallet className="h-4 w-4 mr-2" /> Confirm Payment
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 export default function PropertyTeam() {
   const { currentBusiness, userRole, generateInviteCode, getMembers, removeMember, updateMemberRole, memberships } = useBusiness();
+  const { bookings, assets } = useProperty();
   const { user } = useAuth();
   const { fmt } = useCurrency();
   const { maxWorkers } = usePremium();
@@ -276,7 +423,7 @@ export default function PropertyTeam() {
       <Tabs defaultValue="team" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="team" className="flex items-center gap-2"><Users className="h-4 w-4" /> Team</TabsTrigger>
-          <TabsTrigger value="payments" className="flex items-center gap-2"><Wallet className="h-4 w-4" /> Payments</TabsTrigger>
+          <TabsTrigger value="rentals" className="flex items-center gap-2"><Home className="h-4 w-4" /> Rental Payments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="team" className="space-y-4 mt-4">
@@ -396,8 +543,8 @@ export default function PropertyTeam() {
           )}
         </TabsContent>
 
-        <TabsContent value="payments" className="mt-4">
-          <WorkerPaymentManager isOwnerOrAdmin={isOwnerOrAdmin} />
+        <TabsContent value="rentals" className="mt-4 space-y-4">
+          <RentalPaymentsSection bookings={bookings} assets={assets} isOwnerOrAdmin={isOwnerOrAdmin} />
         </TabsContent>
       </Tabs>
 

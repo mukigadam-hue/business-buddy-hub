@@ -59,12 +59,18 @@ export default function PropertyBrowse() {
 
   async function searchAssets() {
     setLoading(true);
-    const { data, error } = await supabase.rpc('search_property_assets', {
-      _query: query,
-      _category: category === 'all' ? '' : category,
-      _location: location,
-    });
-    if (!error) setResults((data || []) as SearchAsset[]);
+    try {
+      const { data, error } = await supabase.rpc('search_property_assets', {
+        _query: query || '',
+        _category: category === 'all' ? '' : category,
+        _location: location || '',
+      });
+      if (!error) setResults((data || []) as SearchAsset[]);
+      else console.error('Search error:', error);
+    } catch (err) {
+      console.error('Search failed:', err);
+      setResults([]);
+    }
     setLoading(false);
   }
 

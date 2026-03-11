@@ -204,31 +204,37 @@ export default function FactoryTeam() {
             );
           })()}
 
-          {/* Invite Section */}
-          <div className="grid md:grid-cols-2 gap-4">
+          {/* Owner: Invite workers to the app */}
+          {isOwnerOrAdmin && (
             <Card className="shadow-card border-dashed">
               <CardContent className="p-4 space-y-3">
-                <h2 className="text-sm font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite App Users</h2>
+                <h2 className="text-sm font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite Worker to App</h2>
+                <p className="text-xs text-muted-foreground">Generate a code and share it with a worker so they can access this factory on the app.</p>
                 {workerCode ? (
                   <div className="rounded-lg p-3 text-center bg-primary/5">
                     <span className="text-2xl font-mono font-bold tracking-widest">{workerCode}</span>
-                    <p className="text-xs text-muted-foreground mt-1">🔐 Worker Code — Expires in 7 days</p>
+                    <p className="text-xs text-muted-foreground mt-1">🔐 Share this code with your worker — Expires in 7 days</p>
                   </div>
                 ) : (
-                  <Button onClick={handleGenCode} disabled={loading} size="sm">Generate Invite Code</Button>
+                  <Button onClick={handleGenCode} disabled={loading} size="sm">Generate Worker Invite Code</Button>
                 )}
               </CardContent>
             </Card>
-            <Card className="shadow-card border-dashed">
+          )}
+
+          {/* Worker: Join via invite code */}
+          {!isOwnerOrAdmin && (
+            <Card className="shadow-card border-dashed border-primary/30">
               <CardContent className="p-4 space-y-3">
-                <h2 className="text-sm font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Redeem Invite Code</h2>
+                <h2 className="text-sm font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Join This Factory</h2>
+                <p className="text-xs text-muted-foreground">Got an invite code from the factory owner? Enter it below to request access.</p>
                 <div className="flex gap-2">
-                  <Input placeholder="Enter code" value={redeemCode} onChange={e => setRedeemCode(e.target.value.toUpperCase())} className="font-mono" maxLength={10} />
-                  <Button onClick={handleRedeem} disabled={loading || !redeemCode.trim()} size="sm">Join</Button>
+                  <Input placeholder="Enter invite code" value={redeemCode} onChange={e => setRedeemCode(e.target.value.toUpperCase())} className="font-mono" maxLength={10} />
+                  <Button onClick={handleRedeem} disabled={loading || !redeemCode.trim()} size="sm">{loading ? 'Requesting...' : 'Request to Join'}</Button>
                 </div>
               </CardContent>
             </Card>
-          </div>
+          )}
 
           {/* Unified All Workers List */}
           <Card className="shadow-card">

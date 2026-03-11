@@ -464,8 +464,8 @@ export default function PropertyTeam() {
 
   const activeWorkers = teamWorkers.filter(w => w.is_active);
   const tenants = activeWorkers.filter(w => w.rank === TENANT_RANK);
-  const landlords = activeWorkers.filter(w => w.rank === LANDLORD_RANK);
-  const staff = activeWorkers.filter(w => w.rank !== TENANT_RANK && w.rank !== LANDLORD_RANK);
+  const landlords = activeWorkers.filter(w => w.rank === LANDLORD_RANK || w.rank === 'Landlord');
+  const staff = activeWorkers.filter(w => w.rank !== TENANT_RANK && w.rank !== LANDLORD_RANK && w.rank !== 'Landlord');
 
   const myMembership = members.find(m => m.user_id === user?.id);
   const myJoinDate = memberships.find(m => m.business_id === currentBusiness?.id && m.user_id === user?.id)?.created_at;

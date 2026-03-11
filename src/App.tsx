@@ -42,7 +42,7 @@ const FactoryProduction = lazy(() => import("./pages/factory/FactoryProduction")
 const PropertyDashboard = lazy(() => import("./pages/property/PropertyDashboard"));
 const PropertyAssets = lazy(() => import("./pages/property/PropertyAssets"));
 const PropertyBookings = lazy(() => import("./pages/property/PropertyBookings"));
-const PropertyMessages = lazy(() => import("./pages/property/PropertyMessages"));
+// PropertyMessages removed - communication integrated into Bookings
 const PropertyBrowse = lazy(() => import("./pages/property/PropertyBrowse"));
 const PropertySettings = lazy(() => import("./pages/property/PropertySettings"));
 const PropertyTeam = lazy(() => import("./pages/property/PropertyTeam"));

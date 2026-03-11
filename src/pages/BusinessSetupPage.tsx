@@ -135,25 +135,32 @@ export default function BusinessSetupPage() {
                 )}
               </div>
 
-              {/* Type Selection */}
               <div>
                 <Label className="text-sm font-semibold">What are you managing?</Label>
-                <div className="grid grid-cols-2 gap-3 mt-2">
+                <div className="grid grid-cols-3 gap-2 mt-2">
                   <button type="button" onClick={() => setBusinessType('business')}
-                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
                       businessType === 'business' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
                     }`}>
-                    <span className="text-3xl">🏪</span>
-                    <p className="text-sm font-semibold mt-2">Business</p>
-                    <p className="text-xs text-muted-foreground">Shops, wholesale, retail</p>
+                    <span className="text-2xl">🏪</span>
+                    <p className="text-xs font-semibold mt-1">Business</p>
+                    <p className="text-[10px] text-muted-foreground">Shops, retail</p>
                   </button>
                   <button type="button" onClick={() => setBusinessType('factory')}
-                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
                       businessType === 'factory' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
                     }`}>
-                    <span className="text-3xl">🏭</span>
-                    <p className="text-sm font-semibold mt-2">Factory</p>
-                    <p className="text-xs text-muted-foreground">Manufacturing, production</p>
+                    <span className="text-2xl">🏭</span>
+                    <p className="text-xs font-semibold mt-1">Factory</p>
+                    <p className="text-[10px] text-muted-foreground">Manufacturing</p>
+                  </button>
+                  <button type="button" onClick={() => setBusinessType('property')}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${
+                      businessType === 'property' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
+                    }`}>
+                    <span className="text-2xl">🏠</span>
+                    <p className="text-xs font-semibold mt-1">Property</p>
+                    <p className="text-[10px] text-muted-foreground">Rentals</p>
                   </button>
                 </div>
               </div>

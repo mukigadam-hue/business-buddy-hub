@@ -24,7 +24,7 @@ const CATEGORIES = [
 
 function AssetForm({ asset, onSave, onClose }: { asset?: PropertyAsset; onSave: (data: Partial<PropertyAsset>) => void; onClose: () => void }) {
   const { t } = useTranslation();
-  const { symbol } = useCurrency();
+  const { currency } = useCurrency();
   const [form, setForm] = useState({
     name: asset?.name || '',
     description: asset?.description || '',

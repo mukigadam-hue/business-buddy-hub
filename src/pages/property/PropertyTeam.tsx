@@ -77,7 +77,7 @@ function ShareButtons({ code }: { code: string }) {
   );
 }
 
-function RedeemCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
+function WorkerJoinSection({ onJoined }: { onJoined: () => void }) {
   const { redeemInviteCode } = useBusiness();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -86,7 +86,7 @@ function RedeemCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
     if (!code.trim()) { toast.error('Please enter an invite code'); return; }
     setLoading(true);
     const success = await redeemInviteCode(code.trim());
-    if (success) { setCode(''); onRedeemed(); }
+    if (success) { setCode(''); onJoined(); }
     setLoading(false);
   }
 
@@ -94,11 +94,11 @@ function RedeemCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
     <Card className="shadow-card border-dashed border-primary/30">
       <CardContent className="p-4 space-y-3">
         <h2 className="text-base font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Join via Invite Code</h2>
-        <p className="text-sm text-muted-foreground">Have an invite code from an asset owner or tenant? Enter it to connect.</p>
+        <p className="text-sm text-muted-foreground">Got an invite code from an asset owner or property manager? Enter it to request access.</p>
         <div className="flex gap-2">
-          <Input placeholder="Enter code (e.g. ABC123)" value={code} onChange={e => setCode(e.target.value.toUpperCase())}
+          <Input placeholder="Enter invite code (e.g. ABC123)" value={code} onChange={e => setCode(e.target.value.toUpperCase())}
             className="font-mono tracking-wider uppercase" maxLength={10} />
-          <Button onClick={handleRedeem} disabled={loading || !code.trim()}>{loading ? 'Joining...' : 'Join'}</Button>
+          <Button onClick={handleRedeem} disabled={loading || !code.trim()}>{loading ? 'Requesting...' : 'Request to Join'}</Button>
         </div>
       </CardContent>
     </Card>

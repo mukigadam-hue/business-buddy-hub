@@ -445,7 +445,7 @@ export default function PropertyTeam() {
     await supabase.from('business_team_members').delete().eq('id', id);
     // Also remove matching membership by name
     if (worker && businessId) {
-      const matchedMember = appMembers.find(m => m.full_name?.toLowerCase() === worker.full_name.toLowerCase());
+      const matchedMember = members.find(m => m.full_name?.toLowerCase() === worker.full_name.toLowerCase());
       if (matchedMember) {
         await supabase.from('business_memberships').delete()
           .eq('user_id', matchedMember.user_id).eq('business_id', businessId);
@@ -453,7 +453,7 @@ export default function PropertyTeam() {
     }
     toast.success('Removed');
     loadTeamWorkers();
-    loadAppMembers();
+    loadMembers();
   }
 
   function ConfirmDeleteButton({ onConfirm, label = 'Remove', name = '' }: { onConfirm: () => void; label?: string; name?: string }) {

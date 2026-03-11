@@ -39,27 +39,22 @@ export default function ProofVideoButton() {
     if (!businessId || !isOwnerOrAdmin) return;
     const people: TargetPerson[] = [];
 
-    // Load app members (business_memberships)
-    const { data: memberships } = await supabase
-      .from('business_memberships')
-      .select('user_id, role')
-      .eq('business_id', businessId);
+    // Load app members via backend helper so joined workers are always visible
+    const { data: appMembers, error: appMembersError } = await supabase.rpc('get_business_members', {
+      _business_id: businessId,
+    });
 
-    if (memberships) {
-      const userIds = memberships.filter(m => m.user_id !== user?.id).map(m => m.user_id);
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', userIds);
-        if (profiles) {
-          profiles.forEach(p => {
-            people.push({
-              id: `user_${p.id}`,
-              name: p.full_name || p.email || 'Unknown',
-              type: 'app_user',
-              user_id: p.id,
-            });
+    if (!appMembersError && appMembers) {
+      appMembers
+        .filter((member: any) => member.user_id !== user?.id)
+        .forEach((member: any) => {
+          people.push({
+            id: `user_${member.user_id}`,
+            name: member.full_name || member.email || 'Unknown',
+            type: 'app_user',
+            user_id: member.user_id,
           });
-        }
-      }
+        });
     }
 
     // Load team members from the right table

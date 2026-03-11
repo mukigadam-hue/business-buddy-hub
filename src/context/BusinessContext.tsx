@@ -903,20 +903,22 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const getMembers = useCallback(async () => {
     if (!currentBusinessId) return [];
-    const { data: memberData } = await supabase
-      .from('business_memberships')
-      .select('user_id, role')
-      .eq('business_id', currentBusinessId);
-    if (!memberData) return [];
-    const userIds = memberData.map(m => m.user_id);
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', userIds);
-    return memberData.map(m => {
-      const profile = profileData?.find(p => p.id === m.user_id);
-      return { user_id: m.user_id, role: m.role, email: profile?.email || '', full_name: profile?.full_name || '' };
+
+    const { data, error } = await supabase.rpc('get_business_members', {
+      _business_id: currentBusinessId,
     });
+
+    if (error) {
+      toast.error(error.message);
+      return [];
+    }
+
+    return (data || []).map((member: any) => ({
+      user_id: member.user_id,
+      role: member.role,
+      email: member.email || '',
+      full_name: member.full_name || '',
+    }));
   }, [currentBusinessId]);
 
   const removeMember = useCallback(async (userId: string) => {

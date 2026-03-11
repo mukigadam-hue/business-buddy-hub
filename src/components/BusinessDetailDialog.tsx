@@ -54,6 +54,7 @@ interface Props {
   business: BusinessInfo | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOrderOrBook?: (biz: BusinessInfo) => void;
 }
 
 export default function BusinessDetailDialog({ business, open, onOpenChange }: Props) {

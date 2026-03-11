@@ -354,7 +354,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {businesses.map(b => {
                   const role = getRoleForBusiness(b.id);
                   const isActive = b.id === currentBusiness?.id;
-                  const isCurrent = b.id === currentBusiness?.id;
                   return (
                     <button key={b.id} onClick={() => { navigate('/'); setCurrentBusinessId(b.id); setMoreOpen(false); }}
                       className={`w-full flex items-center gap-2.5 p-2.5 rounded-lg text-left transition-all ${

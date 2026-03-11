@@ -57,7 +57,7 @@ interface Props {
   onOrderOrBook?: (biz: BusinessInfo) => void;
 }
 
-export default function BusinessDetailDialog({ business, open, onOpenChange }: Props) {
+export default function BusinessDetailDialog({ business, open, onOpenChange, onOrderOrBook }: Props) {
   const { user } = useAuth();
   const { currentBusiness } = useBusiness();
   const { fmt } = useCurrency();

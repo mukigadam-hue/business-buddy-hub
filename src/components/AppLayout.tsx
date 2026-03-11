@@ -344,6 +344,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
+      {/* Proof Video Floating Button - visible on all screens */}
+      <ProofVideoButton />
+
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border flex justify-around items-center py-1.5 pb-safe">
         {mobileMainNav.map(({ to, label, icon: Icon }) => {

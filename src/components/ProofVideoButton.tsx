@@ -46,13 +46,11 @@ export default function ProofVideoButton() {
       .eq('business_id', businessId);
 
     if (memberships) {
-      // Get profile names
       const userIds = memberships.filter(m => m.user_id !== user?.id).map(m => m.user_id);
       if (userIds.length > 0) {
         const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', userIds);
         if (profiles) {
           profiles.forEach(p => {
-            const membership = memberships.find(m => m.user_id === p.id);
             people.push({
               id: `user_${p.id}`,
               name: p.full_name || p.email || 'Unknown',
@@ -74,16 +72,42 @@ export default function ProofVideoButton() {
 
     if (teamMembers) {
       teamMembers.forEach((tm: any) => {
-        // Avoid duplicates if already added as app user
         const alreadyAdded = people.some(p => p.name.toLowerCase() === tm.full_name.toLowerCase());
         if (!alreadyAdded) {
+          const rankLabel = tm.rank === 'Tenant' ? '🏠 ' : tm.rank === 'Asset Owner' || tm.rank === 'Landlord' ? '🔑 ' : '👤 ';
           people.push({
             id: `team_${tm.id}`,
             name: tm.full_name,
-            type: 'team_member',
+            type: tm.rank === 'Tenant' ? 'tenant' : tm.rank === 'Asset Owner' || tm.rank === 'Landlord' ? 'owner' : 'team_member',
           });
         }
       });
+    }
+
+    // For property businesses, also load renters from bookings
+    if (businessType === 'property') {
+      const { data: bookings } = await supabase
+        .from('property_bookings')
+        .select('renter_name, renter_id, status')
+        .eq('business_id', businessId)
+        .in('status', ['active', 'confirmed']) as any;
+      
+      if (bookings) {
+        bookings.forEach((b: any) => {
+          const alreadyAdded = people.some(p => 
+            p.name.toLowerCase() === (b.renter_name || '').toLowerCase() ||
+            p.user_id === b.renter_id
+          );
+          if (!alreadyAdded && b.renter_name) {
+            people.push({
+              id: `renter_${b.renter_id}`,
+              name: b.renter_name,
+              type: 'tenant',
+              user_id: b.renter_id,
+            });
+          }
+        });
+      }
     }
 
     setTargetPeople(people);

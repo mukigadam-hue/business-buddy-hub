@@ -371,7 +371,7 @@ export default function PropertyTeam() {
 
   function resetForm() {
     setWorkerForm({
-      full_name: '', rank: addType === 'staff' ? 'Caretaker' : addType === 'landlord' ? 'Landlord' : 'Tenant',
+      full_name: '', rank: addType === 'staff' ? 'Caretaker' : addType === 'owner' ? 'Asset Owner' : 'Tenant',
       salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10),
       occupation: '', rental_purpose: '', gender: '', age: '', rental_end_date: '', agreed_amount: '',
     });

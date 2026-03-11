@@ -857,7 +857,7 @@ export default function PropertyTeam() {
             </div>
 
             {/* Gender & Age — for tenant and landlord */}
-            {(addType === 'tenant' || addType === 'landlord') && (
+            {(addType === 'tenant' || addType === 'owner') && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Gender</Label>

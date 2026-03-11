@@ -86,7 +86,7 @@ function ReceivedInviteCodeSection({ onJoined }: { onJoined: () => Promise<void>
     if (!code.trim()) { toast.error('Please enter an invite code'); return; }
     setLoading(true);
     const success = await redeemInviteCode(code.trim());
-    if (success) { setCode(''); onJoined(); }
+    if (success) { setCode(''); await onJoined(); }
     setLoading(false);
   }
 

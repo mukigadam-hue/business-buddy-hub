@@ -101,7 +101,7 @@ function ShareButtons({ code, type }: { code: string; type: 'worker' }) {
   );
 }
 
-function WorkerJoinSection({ onJoined }: { onJoined: () => void }) {
+function JoinAnotherBusinessSection({ onJoined }: { onJoined: () => void }) {
   const { redeemInviteCode } = useBusiness();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -125,10 +125,10 @@ function WorkerJoinSection({ onJoined }: { onJoined: () => void }) {
       <CardContent className="p-4 space-y-3">
         <h2 className="text-base font-semibold flex items-center gap-2">
           <Send className="h-4 w-4" />
-          Join This Business
+          Join Another Business
         </h2>
         <p className="text-sm text-muted-foreground">
-          Got an invite code from the business owner? Enter it below to request access.
+          Have an invite code from another business owner? Enter it below to join their business as a worker or team member.
         </p>
         <div className="flex gap-2">
           <Input
@@ -139,7 +139,7 @@ function WorkerJoinSection({ onJoined }: { onJoined: () => void }) {
             maxLength={10}
           />
           <Button onClick={handleRedeem} disabled={loading || !code.trim()}>
-            {loading ? 'Requesting...' : 'Request to Join'}
+            {loading ? 'Joining...' : 'Join'}
           </Button>
         </div>
       </CardContent>

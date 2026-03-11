@@ -47,7 +47,7 @@ interface WorkerBalance {
 const RANKS = ['Supervisor', 'Manager', 'Cashier', 'Security', 'Worker', 'Driver', 'Cleaner'];
 
 function ShareButtons({ code, type }: { code: string; type: 'worker' }) {
-  const message = `Join our business as a Worker! Use this invite code: ${code}`;
+  const message = `You've been invited to join our business as a Worker! Use this invite code in the BizTrack app: ${code}`;
   const encoded = encodeURIComponent(message);
 
   const platforms = [

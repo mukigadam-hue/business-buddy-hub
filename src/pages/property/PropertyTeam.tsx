@@ -60,7 +60,7 @@ const PAYMENT_METHODS = [
 ];
 
 function ShareButtons({ code }: { code: string }) {
-  const message = `Join our property team! Use this invite code: ${code}`;
+  const message = `You've been invited to join our property team! Use this invite code in the BizTrack app: ${code}`;
   const encoded = encodeURIComponent(message);
   return (
     <div className="flex items-center gap-2 flex-wrap mt-2">

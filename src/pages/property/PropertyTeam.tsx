@@ -329,7 +329,7 @@ export default function PropertyTeam() {
   const [loading, setLoading] = useState(false);
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 
-  const [viewMode, setViewMode] = useState<'tenant' | 'landlord'>('landlord');
+  const [viewMode, setViewMode] = useState<'tenant' | 'owner'>('owner');
   const [teamWorkers, setTeamWorkers] = useState<TeamMember[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editWorkerId, setEditWorkerId] = useState<string | null>(null);

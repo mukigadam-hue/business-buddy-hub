@@ -334,7 +334,7 @@ export default function ContactsPage() {
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground font-medium">Your Business Code</p>
+            <p className="text-xs text-muted-foreground font-medium">{codeLabel}</p>
             <p className="text-2xl font-mono font-bold tracking-[0.3em] text-primary">{(currentBusiness as any)?.business_code || '—'}</p>
             <p className="text-xs text-muted-foreground mt-1">Share this code so others can find and connect with you</p>
           </div>

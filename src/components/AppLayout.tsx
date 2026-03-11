@@ -228,10 +228,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const isFactory = (currentBusiness as any)?.business_type === 'factory';
-  const { businessNavItems, factoryNavItems, businessMobileNav, factoryMobileNav, businessMoreNav, factoryMoreNav } = useNavItems();
-  const navItems = isFactory ? factoryNavItems : businessNavItems;
-  const mobileMainNav = isFactory ? factoryMobileNav : businessMobileNav;
-  const mobileMoreNav = isFactory ? factoryMoreNav : businessMoreNav;
+  const isProperty = (currentBusiness as any)?.business_type === 'property';
+  const { businessNavItems, factoryNavItems, propertyNavItems, businessMobileNav, factoryMobileNav, propertyMobileNav, businessMoreNav, factoryMoreNav, propertyMoreNav } = useNavItems();
+  const navItems = isProperty ? propertyNavItems : isFactory ? factoryNavItems : businessNavItems;
+  const mobileMainNav = isProperty ? propertyMobileNav : isFactory ? factoryMobileNav : businessMobileNav;
+  const mobileMoreNav = isProperty ? propertyMoreNav : isFactory ? factoryMoreNav : businessMoreNav;
   const unreadCount = notifications.filter(n => !n.is_read).length;
   const [moreOpen, setMoreOpen] = useState(false);
 

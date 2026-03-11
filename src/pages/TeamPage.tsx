@@ -393,8 +393,10 @@ export default function TeamPage() {
         </Card>
       )}
 
-      {/* Received an invite code - available to everyone */}
-      <ReceivedInviteCodeSection onJoined={() => { loadMembers(); loadTeamWorkers(); }} />
+           <ReceivedInviteCodeSection onJoined={async () => {
+             await loadMembers();
+             await loadTeamWorkers();
+           }} />
 
       <AdSpace variant="banner" />
 

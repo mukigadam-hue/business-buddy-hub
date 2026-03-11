@@ -442,6 +442,26 @@ export default function PropertyTeam() {
 
   async function deleteWorker(id: string) { await supabase.from('business_team_members').delete().eq('id', id); toast.success('Removed'); loadTeamWorkers(); }
 
+  function ConfirmDeleteButton({ onConfirm, label = 'Remove', name = '' }: { onConfirm: () => void; label?: string; name?: string }) {
+    return (
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive"><Trash2 className="h-3 w-3" /></Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {name || 'this person'}?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone. They will lose access if they are an app user.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{label}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
+
   const activeWorkers = teamWorkers.filter(w => w.is_active);
   const tenants = activeWorkers.filter(w => w.rank === TENANT_RANK);
   const landlords = activeWorkers.filter(w => w.rank === LANDLORD_RANK);

@@ -347,9 +347,12 @@ export default function PropertyTeam() {
     setTeamWorkers((data || []) as TeamMember[]);
   }, [businessId]);
 
-  useEffect(() => { loadMembers(); loadTeamWorkers(); }, [currentBusiness, loadTeamWorkers]);
+  useEffect(() => { void loadMembers(); void loadTeamWorkers(); }, [currentBusiness, loadTeamWorkers]);
 
-  async function loadMembers() { const data = await getMembers(); setMembers(data); }
+  async function loadMembers() {
+    const data = await getMembers();
+    setMembers(data);
+  }
 
   async function handleGenerateCode() {
     setLoading(true);

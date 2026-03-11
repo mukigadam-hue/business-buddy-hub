@@ -642,7 +642,7 @@ export default function PropertyTeam() {
               {landlords.length === 0 ? (
                 <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">
                   <Key className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
-                  No landlords added yet. Use an invite code or add manually.
+                  No asset owners added yet. Use an invite code or add manually.
                 </CardContent></Card>
               ) : (
                 <div className="space-y-2">

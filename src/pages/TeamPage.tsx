@@ -393,8 +393,8 @@ export default function TeamPage() {
         </Card>
       )}
 
-      {/* Join another business - available to everyone */}
-      <JoinAnotherBusinessSection onJoined={() => { loadMembers(); loadTeamWorkers(); }} />
+      {/* Received an invite code - available to everyone */}
+      <ReceivedInviteCodeSection onJoined={() => { loadMembers(); loadTeamWorkers(); }} />
 
       <AdSpace variant="banner" />
 

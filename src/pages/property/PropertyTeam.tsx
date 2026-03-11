@@ -99,6 +99,7 @@ function RedeemCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
 
 export default function PropertyTeam() {
   const { currentBusiness, userRole, generateInviteCode, getMembers, removeMember, updateMemberRole, memberships } = useBusiness();
+  const { bookings, assets } = useProperty();
   const { user } = useAuth();
   const { fmt } = useCurrency();
   const { maxWorkers } = usePremium();

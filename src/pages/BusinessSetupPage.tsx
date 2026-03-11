@@ -16,7 +16,7 @@ export default function BusinessSetupPage() {
   const { createBusiness, redeemInviteCode } = useBusiness();
   const { setCurrency } = useCurrency();
   const [tab, setTab] = useState<'create' | 'join'>('create');
-  const [businessType, setBusinessType] = useState<'business' | 'factory'>('business');
+  const [businessType, setBusinessType] = useState<'business' | 'factory' | 'property'>('business');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [contact, setContact] = useState('');

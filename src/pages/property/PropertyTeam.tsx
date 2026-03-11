@@ -623,13 +623,13 @@ export default function PropertyTeam() {
             <TabsContent value="my-landlords" className="space-y-4 mt-4">
               <Card className="shadow-card border-dashed border-primary/30">
                 <CardContent className="p-4 space-y-3">
-                  <h2 className="text-base font-semibold flex items-center gap-2"><Key className="h-4 w-4" /> Add My Landlord / Boss</h2>
+                  <h2 className="text-base font-semibold flex items-center gap-2"><Key className="h-4 w-4" /> Add My Asset Owner</h2>
                   <p className="text-sm text-muted-foreground">
-                    If your landlord uses this app, ask them for their invite code and enter it above.
+                    If the asset owner uses this app, ask them for their invite code and enter it above.
                     Otherwise, add them manually below.
                   </p>
-                  <Button onClick={() => openAddDialog('landlord')} variant="outline" className="w-full">
-                    <Plus className="h-4 w-4 mr-1" /> Add Landlord Manually
+                  <Button onClick={() => openAddDialog('owner')} variant="outline" className="w-full">
+                    <Plus className="h-4 w-4 mr-1" /> Add Asset Owner Manually
                   </Button>
                 </CardContent>
               </Card>

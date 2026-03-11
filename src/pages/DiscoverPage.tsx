@@ -47,7 +47,8 @@ export default function DiscoverPage() {
         _country_code: filterCountry ? myCountry : '',
       });
       if (error) throw error;
-      setResults((data as DiscoveredBusiness[]) || []);
+      const allResults = (data as DiscoveredBusiness[]) || [];
+      setResults(filterType === 'all' ? allResults : allResults.filter(b => b.business_type === filterType));
       setHasSearched(true);
     } catch (err) {
       console.error('Search error:', err);

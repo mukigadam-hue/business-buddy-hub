@@ -1851,6 +1851,53 @@ export type Database = {
           },
         ]
       }
+      video_requests: {
+        Row: {
+          business_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          message: string
+          requested_by: string
+          requested_from: string | null
+          responded_at: string | null
+          status: string
+          target_role: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          message?: string
+          requested_by: string
+          requested_from?: string | null
+          responded_at?: string | null
+          status?: string
+          target_role?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          message?: string
+          requested_by?: string
+          requested_from?: string | null
+          responded_at?: string | null
+          status?: string
+          target_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -94,7 +94,7 @@ function RedeemCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
     <Card className="shadow-card border-dashed border-primary/30">
       <CardContent className="p-4 space-y-3">
         <h2 className="text-base font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Join via Invite Code</h2>
-        <p className="text-sm text-muted-foreground">Have an invite code from a landlord or tenant? Enter it to connect.</p>
+        <p className="text-sm text-muted-foreground">Have an invite code from an asset owner or tenant? Enter it to connect.</p>
         <div className="flex gap-2">
           <Input placeholder="Enter code (e.g. ABC123)" value={code} onChange={e => setCode(e.target.value.toUpperCase())}
             className="font-mono tracking-wider uppercase" maxLength={10} />

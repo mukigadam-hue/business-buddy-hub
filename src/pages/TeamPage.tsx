@@ -513,7 +513,7 @@ export default function TeamPage() {
                           {isOwnerOrAdmin && (
                             <>
                               <Button variant="ghost" size="icon" onClick={() => openEditWorker(w)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                              <Button variant="ghost" size="icon" onClick={() => deactivateWorker(w.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                              <ConfirmDeleteButton onConfirm={() => deactivateWorker(w.id)} label="Deactivate" />
                             </>
                           )}
                         </div>

@@ -543,7 +543,8 @@ export default function PropertyBookings() {
       </Tabs>
 
       {/* Book Now Dialog */}
-      <BookNowDialog open={bookNowOpen} onClose={() => setBookNowOpen(false)} />
+      <BookNowDialog open={bookNowOpen} onClose={() => { setBookNowOpen(false); setPrefilledPropertyId(''); setPrefilledPropertyName(''); }} 
+        prefilledPropertyId={prefilledPropertyId} prefilledPropertyName={prefilledPropertyName} />
 
       {/* Check-In Dialog */}
       <Dialog open={!!checkInBooking} onOpenChange={() => setCheckInBooking(null)}>

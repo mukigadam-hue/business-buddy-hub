@@ -112,6 +112,29 @@ function BusinessContent() {
   const isFactory = currentBusiness.business_type === 'factory';
   const isProperty = currentBusiness.business_type === 'property';
 
+  if (isProperty) {
+    return (
+      <PropertyProvider key={currentBusiness.id}>
+        <AppLayout>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<PropertyDashboard />} />
+              <Route path="/assets" element={<PropertyAssets />} />
+              <Route path="/bookings" element={<PropertyBookings />} />
+              <Route path="/messages" element={<PropertyMessages />} />
+              <Route path="/browse" element={<PropertyBrowse />} />
+              <Route path="/contacts" element={<ContactsPage />} />
+              <Route path="/discover" element={<DiscoverPage />} />
+              <Route path="/team" element={<TeamPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </AppLayout>
+      </PropertyProvider>
+    );
+  }
+
   if (isFactory) {
     return (
       <FactoryProvider key={currentBusiness.id}>

@@ -551,6 +551,8 @@ export default function PropertyBookings() {
         </Button>
       </div>
 
+      <AdSpace variant="banner" />
+
       <Tabs defaultValue="pending">
         <TabsList className="grid grid-cols-3">
           <TabsTrigger value="pending" className="text-xs">Pending ({pending.length})</TabsTrigger>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -7,11 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { toast } from 'sonner';
 import {
   MapPin, Phone, Mail, Factory, Store, Star, ThumbsUp, Copy, Check,
-  Package, MessageSquare, Send, Loader2,
+  Package, MessageSquare, Send, Loader2, ShoppingCart, CalendarCheck, Home,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -25,6 +27,7 @@ interface BusinessInfo {
   logo_url: string | null;
   business_code: string | null;
   products_description: string;
+  country_code?: string;
 }
 
 interface Product {
@@ -55,6 +58,7 @@ interface Props {
 
 export default function BusinessDetailDialog({ business, open, onOpenChange }: Props) {
   const { user } = useAuth();
+  const { currentBusiness } = useBusiness();
   const { fmt } = useCurrency();
   const [products, setProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -70,66 +74,39 @@ export default function BusinessDetailDialog({ business, open, onOpenChange }: P
     if (!business) return;
     setLoadingProducts(true);
     try {
-      const { data, error } = await supabase.rpc('get_business_public_products', {
-        _business_id: business.id,
-      });
+      const { data, error } = await supabase.rpc('get_business_public_products', { _business_id: business.id });
       if (error) throw error;
       setProducts((data as Product[]) || []);
-    } catch { /* ignore */ } finally {
-      setLoadingProducts(false);
-    }
+    } catch { /* ignore */ } finally { setLoadingProducts(false); }
   }, [business]);
 
   const loadReviews = useCallback(async () => {
     if (!business) return;
     setLoadingReviews(true);
     try {
-      const { data, error } = await supabase.rpc('get_business_reviews', {
-        _business_id: business.id,
-      });
+      const { data, error } = await supabase.rpc('get_business_reviews', { _business_id: business.id });
       if (error) throw error;
       setReviews((data as Review[]) || []);
-
-      // Load user's likes
       if (user) {
-        const { data: likes } = await supabase
-          .from('review_likes')
-          .select('review_id')
-          .eq('user_id', user.id);
+        const { data: likes } = await supabase.from('review_likes').select('review_id').eq('user_id', user.id);
         if (likes) setLikedReviews(new Set(likes.map(l => l.review_id)));
       }
-    } catch { /* ignore */ } finally {
-      setLoadingReviews(false);
-    }
+    } catch { /* ignore */ } finally { setLoadingReviews(false); }
   }, [business, user]);
 
   useEffect(() => {
-    if (open && business) {
-      loadProducts();
-      loadReviews();
-    }
+    if (open && business) { loadProducts(); loadReviews(); }
   }, [open, business, loadProducts, loadReviews]);
 
   async function submitReview() {
     if (!business || !user || !newComment.trim()) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('business_reviews').insert({
-        business_id: business.id,
-        reviewer_id: user.id,
-        rating: newRating,
-        comment: newComment.trim(),
-      });
+      const { error } = await supabase.from('business_reviews').insert({ business_id: business.id, reviewer_id: user.id, rating: newRating, comment: newComment.trim() });
       if (error) throw error;
-      setNewComment('');
-      setNewRating(5);
-      toast.success('Review posted!');
-      loadReviews();
-    } catch {
-      toast.error('Failed to post review');
-    } finally {
-      setSubmitting(false);
-    }
+      setNewComment(''); setNewRating(5);
+      toast.success('Review posted!'); loadReviews();
+    } catch { toast.error('Failed to post review'); } finally { setSubmitting(false); }
   }
 
   async function toggleLike(reviewId: string) {
@@ -138,7 +115,6 @@ export default function BusinessDetailDialog({ business, open, onOpenChange }: P
     try {
       if (liked) {
         await supabase.from('review_likes').delete().eq('review_id', reviewId).eq('user_id', user.id);
-        // Decrement
         await supabase.from('business_reviews').update({ likes_count: Math.max(0, (reviews.find(r => r.id === reviewId)?.likes_count || 1) - 1) }).eq('id', reviewId);
         setLikedReviews(prev => { const n = new Set(prev); n.delete(reviewId); return n; });
       } else {
@@ -159,28 +135,39 @@ export default function BusinessDetailDialog({ business, open, onOpenChange }: P
 
   if (!business) return null;
 
-  const avgRating = reviews.length > 0
-    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
-    : null;
+  const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
+  const isProperty = business.business_type === 'property';
+  const isFactory = business.business_type === 'factory';
+  const actionLabel = isProperty ? 'Book Now' : 'Order Now';
+  const actionIcon = isProperty ? <CalendarCheck className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />;
+  const typeIcon = isProperty ? '🏠' : isFactory ? '🏭' : '🏪';
+  const typeLabel = isProperty ? 'Property' : isFactory ? 'Factory' : 'Business';
+
+  function handleAction() {
+    if (!business?.business_code) {
+      toast.error('This business has no code yet');
+      return;
+    }
+    navigator.clipboard.writeText(business.business_code);
+    toast.success(`Code "${business.business_code}" copied! Go to ${isProperty ? 'Bookings' : 'Orders'} to use it.`);
+    onOpenChange(false);
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0">
-        {/* Header */}
         <DialogHeader className="p-4 pb-2">
           <div className="flex items-start gap-3">
             {business.logo_url ? (
               <img src={business.logo_url} alt={business.name} className="h-12 w-12 rounded-lg object-cover border" />
             ) : (
-              <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-xl">
-                {business.business_type === 'factory' ? '🏭' : '🏪'}
-              </div>
+              <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-xl">{typeIcon}</div>
             )}
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-base truncate">{business.name}</DialogTitle>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="secondary" className="text-[10px]">
-                  {business.business_type === 'factory' ? <><Factory className="h-3 w-3 mr-1" />Factory</> : <><Store className="h-3 w-3 mr-1" />Business</>}
+                  {isProperty ? <><Home className="h-3 w-3 mr-1" />{typeLabel}</> : isFactory ? <><Factory className="h-3 w-3 mr-1" />{typeLabel}</> : <><Store className="h-3 w-3 mr-1" />{typeLabel}</>}
                 </Badge>
                 {avgRating && (
                   <Badge variant="outline" className="text-[10px] gap-1">
@@ -192,7 +179,6 @@ export default function BusinessDetailDialog({ business, open, onOpenChange }: P
             </div>
           </div>
 
-          {/* Contact info */}
           <div className="space-y-1 mt-3 text-xs text-muted-foreground">
             {business.products_description && <p className="text-foreground text-sm">{business.products_description}</p>}
             {business.address && <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3 shrink-0" /><span>{business.address}</span></div>}
@@ -201,27 +187,30 @@ export default function BusinessDetailDialog({ business, open, onOpenChange }: P
           </div>
 
           {business.business_code && (
-            <Button variant="outline" size="sm" className="w-full text-xs font-mono gap-2 mt-2" onClick={() => copyCode(business.business_code!)}>
-              {copiedCode ? <><Check className="h-3 w-3 text-primary" />Copied!</> : <><Copy className="h-3 w-3" />Code: {business.business_code}</>}
-            </Button>
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" size="sm" className="flex-1 text-xs font-mono gap-2" onClick={() => copyCode(business.business_code!)}>
+                {copiedCode ? <><Check className="h-3 w-3 text-primary" />Copied!</> : <><Copy className="h-3 w-3" />Code: {business.business_code}</>}
+              </Button>
+              <Button size="sm" className="flex-1 text-xs gap-2" onClick={handleAction}>
+                {actionIcon} {actionLabel}
+              </Button>
+            </div>
           )}
         </DialogHeader>
 
-        {/* Tabs */}
         <Tabs defaultValue="products" className="px-4 pb-4">
           <TabsList className="w-full">
-            <TabsTrigger value="products" className="flex-1 gap-1 text-xs"><Package className="h-3.5 w-3.5" />Products ({products.length})</TabsTrigger>
+            <TabsTrigger value="products" className="flex-1 gap-1 text-xs"><Package className="h-3.5 w-3.5" />{isProperty ? 'Assets' : 'Products'} ({products.length})</TabsTrigger>
             <TabsTrigger value="reviews" className="flex-1 gap-1 text-xs"><MessageSquare className="h-3.5 w-3.5" />Reviews ({reviews.length})</TabsTrigger>
           </TabsList>
 
-          {/* Products Tab */}
           <TabsContent value="products">
             {loadingProducts ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">Loading products...</div>
+              <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
             ) : products.length === 0 ? (
               <div className="text-center py-8">
                 <Package className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
-                <p className="text-sm text-muted-foreground">No products listed yet</p>
+                <p className="text-sm text-muted-foreground">No {isProperty ? 'assets' : 'products'} listed yet</p>
               </div>
             ) : (
               <div className="space-y-2 mt-2">
@@ -241,22 +230,18 @@ export default function BusinessDetailDialog({ business, open, onOpenChange }: P
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-semibold text-primary">{fmt(p.retail_price)}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {p.quantity > 0 ? `${p.quantity} in stock` : 'Out of stock'}
-                      </p>
+                      <p className="text-[10px] text-muted-foreground">{p.quantity > 0 ? `${p.quantity} in stock` : 'Out of stock'}</p>
                     </div>
                   </div>
                 ))}
                 <p className="text-[10px] text-muted-foreground text-center pt-2">
-                  💡 To see wholesale prices, send an order request using the business code above
+                  💡 Use the "{actionLabel}" button above to start {isProperty ? 'a booking' : 'an order'}
                 </p>
               </div>
             )}
           </TabsContent>
 
-          {/* Reviews Tab */}
           <TabsContent value="reviews">
-            {/* Add review form */}
             <Card className="mt-2">
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-center gap-1">
@@ -267,21 +252,13 @@ export default function BusinessDetailDialog({ business, open, onOpenChange }: P
                     </button>
                   ))}
                 </div>
-                <Textarea
-                  placeholder="Share your experience with this business..."
-                  value={newComment}
-                  onChange={e => setNewComment(e.target.value)}
-                  rows={2}
-                  className="text-sm resize-none"
-                />
+                <Textarea placeholder="Share your experience..." value={newComment} onChange={e => setNewComment(e.target.value)} rows={2} className="text-sm resize-none" />
                 <Button size="sm" className="w-full gap-1.5" onClick={submitReview} disabled={submitting || !newComment.trim()}>
-                  {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                  Post Review
+                  {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Post Review
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Reviews list */}
             {loadingReviews ? (
               <div className="text-center py-6 text-muted-foreground text-sm">Loading reviews...</div>
             ) : reviews.length === 0 ? (
@@ -296,23 +273,13 @@ export default function BusinessDetailDialog({ business, open, onOpenChange }: P
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{r.reviewer_name}</span>
-                        <div className="flex">
-                          {[1, 2, 3, 4, 5].map(s => (
-                            <Star key={s} className={`h-3 w-3 ${s <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/20'}`} />
-                          ))}
-                        </div>
+                        <div className="flex">{[1,2,3,4,5].map(s => <Star key={s} className={`h-3 w-3 ${s <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/20'}`} />)}</div>
                       </div>
-                      <span className="text-[10px] text-muted-foreground">
-                        {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
-                      </span>
+                      <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">{r.comment}</p>
-                    <button
-                      onClick={() => toggleLike(r.id)}
-                      className={`flex items-center gap-1 text-xs ${likedReviews.has(r.id) ? 'text-primary font-medium' : 'text-muted-foreground'}`}
-                    >
-                      <ThumbsUp className={`h-3 w-3 ${likedReviews.has(r.id) ? 'fill-primary' : ''}`} />
-                      {r.likes_count > 0 && r.likes_count}
+                    <button onClick={() => toggleLike(r.id)} className={`flex items-center gap-1 text-xs ${likedReviews.has(r.id) ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                      <ThumbsUp className={`h-3 w-3 ${likedReviews.has(r.id) ? 'fill-primary' : ''}`} />{r.likes_count > 0 && r.likes_count}
                     </button>
                   </div>
                 ))}

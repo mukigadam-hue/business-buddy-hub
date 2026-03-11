@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Trash2, Shield, Crown, User, Users, MessageCircle, Share2, Send, Calendar, Clock, Wallet, Plus, Edit2, Home, CheckCircle, Building, Key } from 'lucide-react';
+import { UserPlus, Trash2, Shield, Crown, User, Users, MessageCircle, Share2, Send, Calendar, Clock, Wallet, Plus, Edit2, Home, CheckCircle, Building, Key, Eye, Car, Ship } from 'lucide-react';
 import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
 import { toTitleCase } from '@/lib/utils';
@@ -38,7 +38,6 @@ interface TeamMember {
   is_active: boolean;
 }
 
-// Property-specific roles
 const STAFF_RANKS = ['Property Manager', 'Caretaker', 'Agent', 'Maintenance', 'Security', 'Cleaner'];
 const TENANT_RANK = 'Tenant';
 const LANDLORD_RANK = 'Landlord';
@@ -78,8 +77,8 @@ function RedeemCodeSection({ onRedeemed }: { onRedeemed: () => void }) {
   return (
     <Card className="shadow-card border-dashed border-primary/30">
       <CardContent className="p-4 space-y-3">
-        <h2 className="text-base font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Redeem Invite Code</h2>
-        <p className="text-sm text-muted-foreground">Have an invite code? Enter it to join a property team.</p>
+        <h2 className="text-base font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Join via Invite Code</h2>
+        <p className="text-sm text-muted-foreground">Have an invite code from a landlord or tenant? Enter it to connect.</p>
         <div className="flex gap-2">
           <Input placeholder="Enter code (e.g. ABC123)" value={code} onChange={e => setCode(e.target.value.toUpperCase())}
             className="font-mono tracking-wider uppercase" maxLength={10} />
@@ -162,7 +161,7 @@ function RentalPaymentsSection({ bookings, assets, isOwnerOrAdmin }: { bookings:
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span><Calendar className="inline h-3 w-3 mr-1" />{new Date(b.start_date).toLocaleDateString()} → {new Date(b.end_date).toLocaleDateString()}</span>
                 </div>
-                {isOwnerOrAdmin && b.outstanding > 0 && (
+                {b.outstanding > 0 && (
                   <Button size="sm" className="w-full h-7 text-xs" onClick={() => { setPaymentDialog(b); setPaymentAmount(String(b.outstanding)); }}>
                     <Wallet className="h-3 w-3 mr-1" /> Record Payment
                   </Button>
@@ -200,6 +199,9 @@ export default function PropertyTeam() {
   const [workerCode, setWorkerCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
+
+  // View mode: tenant or landlord
+  const [viewMode, setViewMode] = useState<'tenant' | 'landlord'>('landlord');
 
   const [teamWorkers, setTeamWorkers] = useState<TeamMember[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -308,12 +310,36 @@ export default function PropertyTeam() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="h-6 w-6" /> Property Team</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {tenants.length} tenant{tenants.length !== 1 ? 's' : ''} · {landlords.length} landlord{landlords.length !== 1 ? 's' : ''} · {staff.length}/{MAX_STAFF} staff
+          Manage your property relationships — tenants, landlords & staff
         </p>
+      </div>
+
+      {/* VIEW MODE SELECTOR */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setViewMode('tenant')}
+          className={`p-4 rounded-xl border-2 text-left transition-all ${viewMode === 'tenant' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xl">🏠</span>
+            <span className="font-semibold text-sm">I'm a Tenant</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">I rent properties, vehicles, or vessels from others</p>
+        </button>
+        <button
+          onClick={() => setViewMode('landlord')}
+          className={`p-4 rounded-xl border-2 text-left transition-all ${viewMode === 'landlord' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xl">🔑</span>
+            <span className="font-semibold text-sm">I'm an Owner / Landlord</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">I own assets and rent them out to tenants</p>
+        </button>
       </div>
 
       {/* Own profile for non-owners */}
@@ -346,98 +372,66 @@ export default function PropertyTeam() {
       <RedeemCodeSection onRedeemed={() => { loadMembers(); loadTeamWorkers(); }} />
       <AdSpace variant="banner" />
 
-      <Tabs defaultValue="tenants" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="tenants" className="text-xs">🏠 Tenants</TabsTrigger>
-          <TabsTrigger value="landlords" className="text-xs">🔑 Landlords</TabsTrigger>
-          <TabsTrigger value="staff" className="text-xs">👷 Staff</TabsTrigger>
-          <TabsTrigger value="payments" className="text-xs">💰 Payments</TabsTrigger>
-        </TabsList>
+      {/* ========= TENANT VIEW ========= */}
+      {viewMode === 'tenant' && (
+        <div className="space-y-4">
+          <Tabs defaultValue="my-landlords" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="my-landlords" className="text-xs">🔑 My Landlords / Bosses</TabsTrigger>
+              <TabsTrigger value="my-payments" className="text-xs">💰 My Payments</TabsTrigger>
+            </TabsList>
 
-        {/* TENANTS TAB */}
-        <TabsContent value="tenants" className="space-y-4 mt-4">
-          {isOwnerOrAdmin && (
-            <Button onClick={() => openAddDialog('tenant')} className="w-full"><Plus className="h-4 w-4 mr-1" /> Add Tenant</Button>
-          )}
-          <p className="text-xs text-muted-foreground">People renting your properties or assets</p>
-          {tenants.length === 0 ? (
-            <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No tenants registered yet</CardContent></Card>
-          ) : (
-            <div className="space-y-2">
-              {tenants.map(t => (
-                <Card key={t.id}>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-sm">🏠</div>
-                        <div>
-                          <p className="text-sm font-medium">{t.full_name}</p>
-                          <p className="text-xs text-muted-foreground">{t.phone && `📞 ${t.phone} · `}Since {new Date(t.hire_date).toLocaleDateString()}</p>
+            <TabsContent value="my-landlords" className="space-y-4 mt-4">
+              <Card className="shadow-card border-dashed border-primary/30">
+                <CardContent className="p-4 space-y-3">
+                  <h2 className="text-base font-semibold flex items-center gap-2"><Key className="h-4 w-4" /> Add My Landlord / Boss</h2>
+                  <p className="text-sm text-muted-foreground">
+                    If your landlord uses this app, ask them for their invite code and enter it above.
+                    Otherwise, add them manually below.
+                  </p>
+                  <Button onClick={() => openAddDialog('landlord')} variant="outline" className="w-full">
+                    <Plus className="h-4 w-4 mr-1" /> Add Landlord Manually
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-sm font-semibold">My Landlords & Bosses</h3>
+                <Badge variant="secondary" className="text-[10px]">{landlords.length}</Badge>
+              </div>
+
+              {landlords.length === 0 ? (
+                <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">
+                  <Key className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                  No landlords added yet. Use an invite code or add manually.
+                </CardContent></Card>
+              ) : (
+                <div className="space-y-2">
+                  {landlords.map(l => (
+                    <Card key={l.id}>
+                      <CardContent className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center text-sm">🔑</div>
+                          <div>
+                            <p className="text-sm font-medium">{l.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{l.phone && `📞 ${l.phone} · `}Since {new Date(l.hire_date).toLocaleDateString()}</p>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    {isOwnerOrAdmin && (
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteWorker(t.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* LANDLORDS TAB */}
-        <TabsContent value="landlords" className="space-y-4 mt-4">
-          {isOwnerOrAdmin && (
-            <Button onClick={() => openAddDialog('landlord')} className="w-full"><Plus className="h-4 w-4 mr-1" /> Add Landlord</Button>
-          )}
-          <p className="text-xs text-muted-foreground">Property owners whose assets you are renting</p>
-          {landlords.length === 0 ? (
-            <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No landlords registered yet</CardContent></Card>
-          ) : (
-            <div className="space-y-2">
-              {landlords.map(l => (
-                <Card key={l.id}>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center text-sm">🔑</div>
-                        <div>
-                          <p className="text-sm font-medium">{l.full_name}</p>
-                          <p className="text-xs text-muted-foreground">{l.phone && `📞 ${l.phone} · `}Since {new Date(l.hire_date).toLocaleDateString()}</p>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(l)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteWorker(l.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                         </div>
-                      </div>
-                    </div>
-                    {isOwnerOrAdmin && (
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(l)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteWorker(l.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
 
-        {/* STAFF TAB */}
-        <TabsContent value="staff" className="space-y-4 mt-4">
-          {isOwnerOrAdmin && (
-            <>
-              <Button onClick={() => {
-                if (staff.length >= MAX_STAFF) { toast.info(`You can add up to ${MAX_STAFF} staff members to help manage your assets.`); return; }
-                openAddDialog('staff');
-              }} className="w-full"><Plus className="h-4 w-4 mr-1" /> Add Staff ({staff.length}/{MAX_STAFF})</Button>
-              
-              {/* Invite by code */}
+              {/* Generate my code so landlord can add me */}
               <Card className="shadow-card border-dashed">
                 <CardContent className="p-4 space-y-3">
-                  <h2 className="text-base font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite Staff via Code</h2>
-                  <p className="text-sm text-muted-foreground">Generate a code for family members or employees with the app.</p>
+                  <h2 className="text-base font-semibold flex items-center gap-2"><Share2 className="h-4 w-4" /> Share My Code</h2>
+                  <p className="text-sm text-muted-foreground">Generate a code and give it to your landlord so they can add you as a tenant.</p>
                   {workerCode ? (
                     <div className="space-y-2">
                       <div className="rounded-lg p-3 text-center bg-primary/5">
@@ -447,88 +441,203 @@ export default function PropertyTeam() {
                       <ShareButtons code={workerCode} />
                     </div>
                   ) : (
-                    <Button onClick={handleGenerateCode} disabled={loading}><UserPlus className="h-4 w-4 mr-2" /> Generate Staff Code</Button>
+                    <Button onClick={handleGenerateCode} disabled={loading}><UserPlus className="h-4 w-4 mr-2" /> Generate My Code</Button>
                   )}
                 </CardContent>
               </Card>
-            </>
-          )}
-          <p className="text-xs text-muted-foreground">Family or employees helping manage your assets (max {MAX_STAFF})</p>
+            </TabsContent>
 
-          {/* App users (members) */}
-          {members.filter(m => m.role !== 'owner').length > 0 && (
-            <div className="space-y-2">
-              {members.filter(m => m.role !== 'owner').map(member => (
-                <Card key={member.user_id}>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {getRoleIcon(member.role)}
-                      <div>
-                        <p className="text-sm font-medium">{member.full_name || 'Unknown'}</p>
-                        <div className="flex items-center gap-1">
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">📱 App User</Badge>
-                          <span className="text-xs text-muted-foreground">{member.role}</span>
+            <TabsContent value="my-payments" className="mt-4 space-y-4">
+              <RentalPaymentsSection bookings={bookings} assets={assets} isOwnerOrAdmin={false} />
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
+
+      {/* ========= LANDLORD / OWNER VIEW ========= */}
+      {viewMode === 'landlord' && (
+        <div className="space-y-4">
+          <Tabs defaultValue="tenants" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="tenants" className="text-xs">🏠 My Tenants</TabsTrigger>
+              <TabsTrigger value="staff" className="text-xs">👷 Staff ({staff.length}/{MAX_STAFF})</TabsTrigger>
+              <TabsTrigger value="payments" className="text-xs">💰 Payments</TabsTrigger>
+            </TabsList>
+
+            {/* TENANTS TAB */}
+            <TabsContent value="tenants" className="space-y-4 mt-4">
+              <Card className="shadow-card border-dashed border-primary/30">
+                <CardContent className="p-4 space-y-3">
+                  <h2 className="text-base font-semibold flex items-center gap-2"><Home className="h-4 w-4" /> Add a Tenant / Renter</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Add renters for your properties, vehicles <Car className="inline h-3 w-3" />, or vessels <Ship className="inline h-3 w-3" />. 
+                    Use their invite code if they have the app, or add manually.
+                  </p>
+                  <Button onClick={() => openAddDialog('tenant')} className="w-full"><Plus className="h-4 w-4 mr-1" /> Add Tenant Manually</Button>
+                </CardContent>
+              </Card>
+
+              {/* Generate code for tenant to join */}
+              {isOwnerOrAdmin && (
+                <Card className="shadow-card border-dashed">
+                  <CardContent className="p-4 space-y-3">
+                    <h2 className="text-base font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite Tenant via Code</h2>
+                    <p className="text-sm text-muted-foreground">Generate a code for tenants who use this app to join your team.</p>
+                    {workerCode ? (
+                      <div className="space-y-2">
+                        <div className="rounded-lg p-3 text-center bg-primary/5">
+                          <span className="text-2xl font-mono font-bold tracking-widest">{workerCode}</span>
+                          <p className="text-xs text-muted-foreground mt-1">🔐 Expires in 7 days</p>
                         </div>
+                        <ShareButtons code={workerCode} />
                       </div>
-                    </div>
-                    {isOwnerOrAdmin && member.role !== 'owner' && (
-                      <div className="flex items-center gap-2">
-                        <Select value={member.role} onValueChange={v => handleRoleChange(member.user_id, v)}>
-                          <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="worker">Worker</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemove(member.user_id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                      </div>
+                    ) : (
+                      <Button onClick={handleGenerateCode} disabled={loading}><UserPlus className="h-4 w-4 mr-2" /> Generate Invite Code</Button>
                     )}
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          )}
+              )}
 
-          {/* Manual staff */}
-          {staff.length === 0 && members.filter(m => m.role !== 'owner').length === 0 ? (
-            <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No staff members yet. Add manually or invite via code.</CardContent></Card>
-          ) : (
-            <div className="space-y-2">
-              {staff.map(s => (
-                <Card key={s.id}>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center text-sm">👷</div>
-                      <div>
-                        <p className="text-sm font-medium">{s.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{s.rank}{s.phone && ` · 📞 ${s.phone}`}</p>
-                        {isOwnerOrAdmin && s.salary > 0 && <p className="text-xs text-success">{fmt(Number(s.salary))}/mo</p>}
-                      </div>
-                    </div>
-                    {isOwnerOrAdmin && (
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteWorker(s.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-sm font-semibold">Tenants / Renters</h3>
+                <Badge variant="secondary" className="text-[10px]">{tenants.length}</Badge>
+              </div>
 
-        {/* PAYMENTS TAB */}
-        <TabsContent value="payments" className="mt-4 space-y-4">
-          <RentalPaymentsSection bookings={bookings} assets={assets} isOwnerOrAdmin={isOwnerOrAdmin} />
-        </TabsContent>
-      </Tabs>
+              {tenants.length === 0 ? (
+                <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">
+                  <Home className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                  No tenants registered yet
+                </CardContent></Card>
+              ) : (
+                <div className="space-y-2">
+                  {tenants.map(t => (
+                    <Card key={t.id}>
+                      <CardContent className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-sm">🏠</div>
+                          <div>
+                            <p className="text-sm font-medium">{t.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{t.phone && `📞 ${t.phone} · `}Since {new Date(t.hire_date).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        {isOwnerOrAdmin && (
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteWorker(t.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* STAFF TAB */}
+            <TabsContent value="staff" className="space-y-4 mt-4">
+              {isOwnerOrAdmin && (
+                <>
+                  <Button onClick={() => {
+                    if (staff.length >= MAX_STAFF) { toast.info(`You can add up to ${MAX_STAFF} staff members to help manage your assets.`); return; }
+                    openAddDialog('staff');
+                  }} className="w-full"><Plus className="h-4 w-4 mr-1" /> Add Staff ({staff.length}/{MAX_STAFF})</Button>
+
+                  <Card className="shadow-card border-dashed">
+                    <CardContent className="p-4 space-y-3">
+                      <h2 className="text-base font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite Staff via Code</h2>
+                      <p className="text-sm text-muted-foreground">Generate a code for family members or employees with the app.</p>
+                      {workerCode ? (
+                        <div className="space-y-2">
+                          <div className="rounded-lg p-3 text-center bg-primary/5">
+                            <span className="text-2xl font-mono font-bold tracking-widest">{workerCode}</span>
+                            <p className="text-xs text-muted-foreground mt-1">🔐 Expires in 7 days</p>
+                          </div>
+                          <ShareButtons code={workerCode} />
+                        </div>
+                      ) : (
+                        <Button onClick={handleGenerateCode} disabled={loading}><UserPlus className="h-4 w-4 mr-2" /> Generate Staff Code</Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+              <p className="text-xs text-muted-foreground">Family or employees helping manage your assets (max {MAX_STAFF})</p>
+
+              {/* App users (members) */}
+              {members.filter(m => m.role !== 'owner').length > 0 && (
+                <div className="space-y-2">
+                  {members.filter(m => m.role !== 'owner').map(member => (
+                    <Card key={member.user_id}>
+                      <CardContent className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {getRoleIcon(member.role)}
+                          <div>
+                            <p className="text-sm font-medium">{member.full_name || 'Unknown'}</p>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">📱 App User</Badge>
+                              <span className="text-xs text-muted-foreground">{member.role}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {isOwnerOrAdmin && member.role !== 'owner' && (
+                          <div className="flex items-center gap-2">
+                            <Select value={member.role} onValueChange={v => handleRoleChange(member.user_id, v)}>
+                              <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="worker">Worker</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemove(member.user_id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {staff.length === 0 && members.filter(m => m.role !== 'owner').length === 0 ? (
+                <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No staff members yet. Add manually or invite via code.</CardContent></Card>
+              ) : (
+                <div className="space-y-2">
+                  {staff.map(s => (
+                    <Card key={s.id}>
+                      <CardContent className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center text-sm">👷</div>
+                          <div>
+                            <p className="text-sm font-medium">{s.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{s.rank}{s.phone && ` · 📞 ${s.phone}`}</p>
+                            {isOwnerOrAdmin && s.salary > 0 && <p className="text-xs text-success">{fmt(Number(s.salary))}/mo</p>}
+                          </div>
+                        </div>
+                        {isOwnerOrAdmin && (
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteWorker(s.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* PAYMENTS TAB */}
+            <TabsContent value="payments" className="mt-4 space-y-4">
+              <RentalPaymentsSection bookings={bookings} assets={assets} isOwnerOrAdmin={isOwnerOrAdmin} />
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
 
       {/* Add/Edit Dialog */}
       <Dialog open={showAddDialog || !!editWorkerId} onOpenChange={o => { if (!o) { setShowAddDialog(false); setEditWorkerId(null); resetForm(); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editWorkerId ? 'Edit Member' : `Add ${addType === 'tenant' ? 'Tenant' : addType === 'landlord' ? 'Landlord' : 'Staff Member'}`}</DialogTitle>
+            <DialogTitle>{editWorkerId ? 'Edit Member' : `Add ${addType === 'tenant' ? 'Tenant / Renter' : addType === 'landlord' ? 'Landlord / Boss' : 'Staff Member'}`}</DialogTitle>
           </DialogHeader>
           <form onSubmit={editWorkerId ? handleEditMember : handleSubmitMember} className="space-y-3">
             <div><Label>Full Name *</Label><Input value={workerForm.full_name} onChange={e => setWorkerForm(f => ({ ...f, full_name: e.target.value }))} required /></div>
@@ -544,8 +653,8 @@ export default function PropertyTeam() {
             </div>
             {addType === 'tenant' && !editWorkerId && (
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Occupation</Label><Input value={workerForm.occupation} onChange={e => setWorkerForm(f => ({ ...f, occupation: e.target.value }))} placeholder="e.g. Farmer" /></div>
-                <div><Label>Purpose of Renting</Label><Input value={workerForm.rental_purpose} onChange={e => setWorkerForm(f => ({ ...f, rental_purpose: e.target.value }))} placeholder="e.g. Farming" /></div>
+                <div><Label>Occupation</Label><Input value={workerForm.occupation} onChange={e => setWorkerForm(f => ({ ...f, occupation: e.target.value }))} placeholder="e.g. Farmer, Teacher" /></div>
+                <div><Label>Purpose of Renting</Label><Input value={workerForm.rental_purpose} onChange={e => setWorkerForm(f => ({ ...f, rental_purpose: e.target.value }))} placeholder="e.g. Farming, Storage" /></div>
               </div>
             )}
             {addType === 'staff' && (

@@ -280,7 +280,8 @@ export default function FactoryTeam() {
                               </Select>
                               <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon">
                                 <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
+                              </Button></AlertDialogTrigger>
+                              <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will remove this person and revoke their app access. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => removeMember(member.user_id).then(loadAppMembers)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                             </>
                           ) : (
                             member.role === 'owner' && <span className="text-xs font-medium capitalize px-2 py-1 rounded-full bg-muted">{member.role}</span>

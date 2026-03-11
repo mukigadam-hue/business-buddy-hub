@@ -436,7 +436,7 @@ export default function PropertyTeam() {
       gender: w.gender || '', age: w.age ? String(w.age) : '', rental_end_date: w.rental_end_date || '',
       agreed_amount: w.agreed_amount ? String(w.agreed_amount) : '',
     });
-    setAddType(w.rank === TENANT_RANK ? 'tenant' : w.rank === LANDLORD_RANK ? 'landlord' : 'staff');
+    setAddType(w.rank === TENANT_RANK ? 'tenant' : (w.rank === LANDLORD_RANK || w.rank === 'Landlord') ? 'owner' : 'staff');
     setEditWorkerId(w.id);
   }
 

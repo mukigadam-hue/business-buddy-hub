@@ -56,7 +56,7 @@ export default function DiscoverPage() {
     } finally {
       setLoading(false);
     }
-  }, [filterCountry, myCountry]);
+  }, [filterCountry, filterType, myCountry]);
 
   useEffect(() => {
     searchBusinesses('');

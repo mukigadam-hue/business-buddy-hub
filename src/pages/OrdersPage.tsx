@@ -1195,15 +1195,19 @@ export default function OrdersPage() {
 
       {/* Orders Lists */}
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="w-full grid grid-cols-4 h-12 rounded-xl bg-muted/60 p-1">
-          <TabsTrigger value="live_orders" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1">
-            🛒 My Orders
-            {liveOrders.length > 0 && <span className="ml-0.5 bg-primary-foreground/20 text-[10px] px-1.5 py-0.5 rounded-full">{liveOrders.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="inbox" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1">
-            📥 Customers
-            {inboxOrders.length > 0 && <span className="ml-0.5 bg-warning text-warning-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">{inboxOrders.length}</span>}
-          </TabsTrigger>
+        <TabsList className={`w-full grid ${fromDiscover ? 'grid-cols-1' : 'grid-cols-4'} h-12 rounded-xl bg-muted/60 p-1`}>
+          {!fromDiscover && (
+            <TabsTrigger value="live_orders" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1">
+              🛒 My Orders
+              {liveOrders.length > 0 && <span className="ml-0.5 bg-primary-foreground/20 text-[10px] px-1.5 py-0.5 rounded-full">{liveOrders.length}</span>}
+            </TabsTrigger>
+          )}
+          {!fromDiscover && (
+            <TabsTrigger value="inbox" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1">
+              📥 Customers
+              {inboxOrders.length > 0 && <span className="ml-0.5 bg-warning text-warning-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">{inboxOrders.length}</span>}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="my_requests" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1 relative">
             📨 Suppliers
             {myRequests.length > 0 && <span className="ml-0.5 bg-primary-foreground/20 text-[10px] px-1.5 py-0.5 rounded-full">{myRequests.length}</span>}
@@ -1213,10 +1217,12 @@ export default function OrdersPage() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="verify_payments" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Verify</span>
-          </TabsTrigger>
+          {!fromDiscover && (
+            <TabsTrigger value="verify_payments" className="rounded-lg text-xs sm:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md gap-1">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Verify</span>
+            </TabsTrigger>
+          )}
         </TabsList>
         <TabsContent value="live_orders" className="space-y-3 mt-4">
           <p className="text-xs text-muted-foreground mb-2">Orders from walk-in customers, phone calls, or messages (WhatsApp/SMS). You pack items → customer pays → you give a receipt.</p>

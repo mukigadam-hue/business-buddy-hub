@@ -990,6 +990,7 @@ export type Database = {
         Row: {
           area_size: number
           area_unit: string
+          asset_code: string | null
           business_id: string
           category: string
           created_at: string
@@ -1015,6 +1016,7 @@ export type Database = {
         Insert: {
           area_size?: number
           area_unit?: string
+          asset_code?: string | null
           business_id: string
           category?: string
           created_at?: string
@@ -1040,6 +1042,7 @@ export type Database = {
         Update: {
           area_size?: number
           area_unit?: string
+          asset_code?: string | null
           business_id?: string
           category?: string
           created_at?: string
@@ -1082,10 +1085,13 @@ export type Database = {
           end_date: string
           id: string
           notes: string
+          owner_notes: string | null
           payment_status: string
+          rental_purpose: string | null
           renter_contact: string
           renter_id: string
           renter_name: string
+          renter_occupation: string | null
           start_date: string
           status: string
           total_price: number
@@ -1099,10 +1105,13 @@ export type Database = {
           end_date: string
           id?: string
           notes?: string
+          owner_notes?: string | null
           payment_status?: string
+          rental_purpose?: string | null
           renter_contact?: string
           renter_id: string
           renter_name?: string
+          renter_occupation?: string | null
           start_date: string
           status?: string
           total_price?: number
@@ -1116,10 +1125,13 @@ export type Database = {
           end_date?: string
           id?: string
           notes?: string
+          owner_notes?: string | null
           payment_status?: string
+          rental_purpose?: string | null
           renter_contact?: string
           renter_id?: string
           renter_name?: string
+          renter_occupation?: string | null
           start_date?: string
           status?: string
           total_price?: number

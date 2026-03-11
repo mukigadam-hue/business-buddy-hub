@@ -13,7 +13,7 @@ export default function PropertyDashboard() {
   const { t } = useTranslation();
   const { currentBusiness } = useBusiness();
   const { assets, bookings } = useProperty();
-  const { symbol } = useCurrency();
+  const { currency } = useCurrency();
   const navigate = useNavigate();
 
   const activeAssets = assets.filter(a => !a.deleted_at);

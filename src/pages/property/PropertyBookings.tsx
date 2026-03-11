@@ -162,6 +162,7 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
     });
     if (hasConflict) { toast.error('This asset is already booked for these dates'); setSubmitting(false); return; }
 
+    const totalPrice = price * units;
     const { error } = await supabase.from('property_bookings').insert({
       asset_id: foundAsset.id,
       business_id: foundAsset.business_id,
@@ -171,11 +172,15 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
       start_date: start.toISOString(),
       end_date: end.toISOString(),
       duration_type: durationType,
-      total_price: price * units,
+      total_price: totalPrice,
+      agreed_amount: totalPrice,
       status: 'pending',
       notes: notes.trim(),
       renter_occupation: renterOccupation.trim(),
       rental_purpose: rentalPurpose.trim(),
+      gender: renterGender,
+      age: renterAge ? parseInt(renterAge) : null,
+      expected_payment_date: end.toISOString(),
     } as any);
     if (error) { toast.error(error.message); setSubmitting(false); return; }
     toast.success('Booking request sent!');

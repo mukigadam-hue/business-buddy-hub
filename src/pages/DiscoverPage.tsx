@@ -32,7 +32,8 @@ export default function DiscoverPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedBiz, setSelectedBiz] = useState<DiscoveredBusiness | null>(null);
-  const [filterCountry, setFilterCountry] = useState(true); // default: show nearby first
+  const [filterCountry, setFilterCountry] = useState(true);
+  const [filterType, setFilterType] = useState<'all' | 'business' | 'factory' | 'property'>('all');
 
   const myCountry = (currentBusiness as any)?.country_code || '';
 

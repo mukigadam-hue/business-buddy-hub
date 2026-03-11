@@ -227,13 +227,12 @@ export default function FactoryTeam() {
             <CardContent className="p-4 space-y-3">
               <h2 className="text-sm font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Join Another Business</h2>
               <p className="text-xs text-muted-foreground">Have an invite code from another business or factory owner? Enter it below to join their team.</p>
-                <div className="flex gap-2">
-                  <Input placeholder="Enter invite code" value={redeemCode} onChange={e => setRedeemCode(e.target.value.toUpperCase())} className="font-mono" maxLength={10} />
-                  <Button onClick={handleRedeem} disabled={loading || !redeemCode.trim()} size="sm">{loading ? 'Requesting...' : 'Request to Join'}</Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              <div className="flex gap-2">
+                <Input placeholder="Enter invite code" value={redeemCode} onChange={e => setRedeemCode(e.target.value.toUpperCase())} className="font-mono" maxLength={10} />
+                <Button onClick={handleRedeem} disabled={loading || !redeemCode.trim()} size="sm">{loading ? 'Joining...' : 'Join'}</Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Unified All Workers List */}
           <Card className="shadow-card">

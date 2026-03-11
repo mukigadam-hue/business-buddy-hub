@@ -44,6 +44,8 @@ const PropertyAssets = lazy(() => import("./pages/property/PropertyAssets"));
 const PropertyBookings = lazy(() => import("./pages/property/PropertyBookings"));
 const PropertyMessages = lazy(() => import("./pages/property/PropertyMessages"));
 const PropertyBrowse = lazy(() => import("./pages/property/PropertyBrowse"));
+const PropertySettings = lazy(() => import("./pages/property/PropertySettings"));
+const PropertyTeam = lazy(() => import("./pages/property/PropertyTeam"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -125,8 +127,8 @@ function BusinessContent() {
               <Route path="/browse" element={<PropertyBrowse />} />
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/discover" element={<DiscoverPage />} />
-              <Route path="/team" element={<TeamPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/team" element={<PropertyTeam />} />
+              <Route path="/settings" element={<PropertySettings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

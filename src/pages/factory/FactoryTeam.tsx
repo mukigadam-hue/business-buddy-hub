@@ -208,25 +208,25 @@ export default function FactoryTeam() {
           {isOwnerOrAdmin && (
             <Card className="shadow-card border-dashed">
               <CardContent className="p-4 space-y-3">
-                <h2 className="text-sm font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite Worker to App</h2>
-                <p className="text-xs text-muted-foreground">Generate a code and share it with a worker so they can access this factory on the app.</p>
+                <h2 className="text-sm font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> 👔 Invite My Worker to App</h2>
+                <p className="text-xs text-muted-foreground">As the <strong>owner/boss</strong>, generate a code and send it to your worker. They will enter it on their phone to join your factory team.</p>
                 {workerCode ? (
                   <div className="rounded-lg p-3 text-center bg-primary/5">
                     <span className="text-2xl font-mono font-bold tracking-widest">{workerCode}</span>
-                    <p className="text-xs text-muted-foreground mt-1">🔐 Share this code with your worker — Expires in 7 days</p>
+                    <p className="text-xs text-muted-foreground mt-1">🔐 Send this code to your worker — Expires in 7 days</p>
                   </div>
                 ) : (
-                  <Button onClick={handleGenCode} disabled={loading} size="sm">Generate Worker Invite Code</Button>
+                  <Button onClick={handleGenCode} disabled={loading} size="sm">Generate Code for My Worker</Button>
                 )}
               </CardContent>
             </Card>
           )}
 
-          {/* Join another business/factory - available to everyone */}
+          {/* Received an invite code - available to everyone */}
           <Card className="shadow-card border-dashed border-primary/30">
             <CardContent className="p-4 space-y-3">
-              <h2 className="text-sm font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> Join Another Business</h2>
-              <p className="text-xs text-muted-foreground">Have an invite code from another business or factory owner? Enter it below to join their team.</p>
+              <h2 className="text-sm font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> 📩 I Received an Invite Code</h2>
+              <p className="text-xs text-muted-foreground">If your <strong>boss or factory owner</strong> sent you a code, enter it here to join their team as a worker.</p>
               <div className="flex gap-2">
                 <Input placeholder="Enter invite code" value={redeemCode} onChange={e => setRedeemCode(e.target.value.toUpperCase())} className="font-mono" maxLength={10} />
                 <Button onClick={handleRedeem} disabled={loading || !redeemCode.trim()} size="sm">{loading ? 'Joining...' : 'Join'}</Button>

@@ -719,18 +719,18 @@ export default function PropertyTeam() {
               {isOwnerOrAdmin && (
                 <Card className="shadow-card border-dashed">
                   <CardContent className="p-4 space-y-3">
-                    <h2 className="text-base font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Invite Tenant to App</h2>
-                    <p className="text-sm text-muted-foreground">Generate a code and share it with a tenant who uses this app, so they can access your property profile.</p>
+                    <h2 className="text-base font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> 🔑 Invite My Tenant to App</h2>
+                    <p className="text-sm text-muted-foreground">As the <strong>asset owner</strong>, generate a code and send it to your tenant. They will enter it on their phone to join your property.</p>
                     {workerCode ? (
                       <div className="space-y-2">
                         <div className="rounded-lg p-3 text-center bg-primary/5">
                           <span className="text-2xl font-mono font-bold tracking-widest">{workerCode}</span>
-                          <p className="text-xs text-muted-foreground mt-1">🔐 Share this code with your tenant — Expires in 7 days</p>
+                          <p className="text-xs text-muted-foreground mt-1">🔐 Send this code to your tenant — Expires in 7 days</p>
                         </div>
                         <ShareButtons code={workerCode} />
                       </div>
                     ) : (
-                      <Button onClick={handleGenerateCode} disabled={loading}><UserPlus className="h-4 w-4 mr-2" /> Generate Tenant Invite Code</Button>
+                      <Button onClick={handleGenerateCode} disabled={loading}><UserPlus className="h-4 w-4 mr-2" /> Generate Code for My Tenant</Button>
                     )}
                   </CardContent>
                 </Card>

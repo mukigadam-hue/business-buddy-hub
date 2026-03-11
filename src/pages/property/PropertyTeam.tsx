@@ -474,7 +474,7 @@ export default function PropertyTeam() {
 
   function getRanksForType() {
     if (addType === 'tenant') return [TENANT_RANK];
-    if (addType === 'landlord') return [LANDLORD_RANK];
+    if (addType === 'owner') return [LANDLORD_RANK];
     return STAFF_RANKS;
   }
 

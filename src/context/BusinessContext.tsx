@@ -928,25 +928,26 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     // Also look up the user's profile name and deactivate matching team member records
     const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
     if (profile?.full_name) {
-      const name = profile.full_name.toLowerCase();
+      const name = profile.full_name.trim().toLowerCase();
       // Deactivate in business_team_members
       const { data: btm } = await supabase.from('business_team_members')
         .select('id, full_name').eq('business_id', currentBusinessId).eq('is_active', true);
-      const matchBtm = (btm || []).find((m: any) => m.full_name.toLowerCase() === name);
+      const matchBtm = (btm || []).find((m: any) => m.full_name?.trim().toLowerCase() === name);
       if (matchBtm) {
         await supabase.from('business_team_members').update({ is_active: false }).eq('id', matchBtm.id);
       }
       // Deactivate in factory_team_members
       const { data: ftm } = await supabase.from('factory_team_members')
         .select('id, full_name').eq('business_id', currentBusinessId).eq('is_active', true);
-      const matchFtm = (ftm || []).find((m: any) => m.full_name.toLowerCase() === name);
+      const matchFtm = (ftm || []).find((m: any) => m.full_name?.trim().toLowerCase() === name);
       if (matchFtm) {
         await supabase.from('factory_team_members').update({ is_active: false }).eq('id', matchFtm.id);
       }
     }
 
+    await loadBusinesses();
     toast.success('Member removed');
-  }, [currentBusinessId]);
+  }, [currentBusinessId, user?.id]);
 
   const updateMemberRole = useCallback(async (userId: string, role: string) => {
     if (!currentBusinessId) return;

@@ -87,6 +87,9 @@ export default function BusinessSetupPage() {
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">📦 BizTrack</h1>
             <p className="text-sm text-muted-foreground">Set up your business, factory, or property — or join an existing one</p>
+            <Button type="button" variant="ghost" size="sm" onClick={handleExit} disabled={loading}>
+              Exit to sign in / sign up
+            </Button>
           </div>
 
           <div className="flex gap-2">

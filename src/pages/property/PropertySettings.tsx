@@ -297,10 +297,13 @@ export default function PropertySettings() {
     : 0;
 
   function getRoleForBusiness(businessId: string) {
-    return memberships.find(m => m.business_id === businessId)?.role || 'worker';
+    return memberships.find(m => m.business_id === businessId)?.role || null;
   }
   const ownedBusinesses = businesses.filter(b => getRoleForBusiness(b.id) === 'owner');
-  const employedBusinesses = businesses.filter(b => getRoleForBusiness(b.id) !== 'owner');
+  const employedBusinesses = businesses.filter(b => {
+    const role = getRoleForBusiness(b.id);
+    return role !== null && role !== 'owner';
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

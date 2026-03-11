@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Search, MapPin, Edit2, Trash2, Home } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { toast } from 'sonner';
+import AdSpace from '@/components/AdSpace';
 
 const CATEGORIES = [
   { value: 'land', label: '🏞️ Land', subs: ['plot', 'farm', 'parking'] },

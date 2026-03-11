@@ -166,9 +166,9 @@ export default function BusinessSetupPage() {
               </div>
 
               <div>
-                <Label>{businessType === 'factory' ? 'Factory Name' : 'Business Name'} *</Label>
+                <Label>{businessType === 'factory' ? 'Factory Name' : businessType === 'property' ? 'Property / Agency Name' : 'Business Name'} *</Label>
                 <Input value={name} onChange={e => setName(e.target.value)} required
-                  placeholder={businessType === 'factory' ? 'My Factory' : 'My Shop'} />
+                  placeholder={businessType === 'factory' ? 'My Factory' : businessType === 'property' ? 'My Rentals' : 'My Shop'} />
               </div>
               <div><Label>Address</Label><Input value={address} onChange={e => setAddress(e.target.value)} placeholder="123 Main St" /></div>
               <div>

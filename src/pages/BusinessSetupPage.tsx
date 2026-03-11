@@ -78,7 +78,7 @@ export default function BusinessSetupPage() {
         <CardContent className="p-6 space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">📦 BizTrack</h1>
-            <p className="text-sm text-muted-foreground">Set up your business or factory, or join an existing one</p>
+            <p className="text-sm text-muted-foreground">Set up your business, factory, or property — or join an existing one</p>
           </div>
 
           <div className="flex gap-2">

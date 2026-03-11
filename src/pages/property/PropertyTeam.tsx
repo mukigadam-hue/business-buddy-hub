@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
+import { useProperty } from '@/context/PropertyContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { usePremium } from '@/hooks/usePremium';
@@ -12,9 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Trash2, Shield, Crown, User, Users, MessageCircle, Share2, Send, Calendar, Clock, Wallet, Plus, Edit2, AlertTriangle, ArrowDownCircle } from 'lucide-react';
+import { UserPlus, Trash2, Shield, Crown, User, Users, MessageCircle, Share2, Send, Calendar, Clock, Wallet, Plus, Edit2, AlertTriangle, ArrowDownCircle, Home, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import WorkerPaymentManager from '@/components/business/WorkerPaymentManager';
 import AdSpace from '@/components/AdSpace';
 import { toTitleCase } from '@/lib/utils';
 

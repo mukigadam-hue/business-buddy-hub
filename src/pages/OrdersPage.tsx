@@ -927,22 +927,24 @@ export default function OrdersPage() {
       </div>
 
       {/* Create new order */}
-      <div className="flex gap-2 flex-wrap">
-        <Button
-          size="sm"
-          variant={orderMode === 'my_order' ? 'default' : 'outline'}
-          onClick={() => { setOrderMode('my_order'); setItems([]); setCustomerName(''); }}
-        >
-          📋 New Order (Walk-in / Inbox)
-        </Button>
-        <Button
-          size="sm"
-          variant={orderMode === 'request' ? 'default' : 'outline'}
-          onClick={() => { setOrderMode('request'); setItems([]); setCustomerName(''); }}
-        >
-          📨 Request from Supplier
-        </Button>
-      </div>
+      {!fromDiscover && (
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant={orderMode === 'my_order' ? 'default' : 'outline'}
+            onClick={() => { setOrderMode('my_order'); setItems([]); setCustomerName(''); }}
+          >
+            📋 New Order (Walk-in / Inbox)
+          </Button>
+          <Button
+            size="sm"
+            variant={orderMode === 'request' ? 'default' : 'outline'}
+            onClick={() => { setOrderMode('request'); setItems([]); setCustomerName(''); }}
+          >
+            📨 Request from Supplier
+          </Button>
+        </div>
+      )}
 
       {/* Input section — only for my_order and request. Inbox only shows list */}
       {(orderMode === 'my_order' || orderMode === 'request') && (

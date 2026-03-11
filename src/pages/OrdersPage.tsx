@@ -24,6 +24,7 @@ import { toSentenceCase, toTitleCase } from '@/lib/utils';
 export default function OrdersPage() {
   const { stock, orders, addOrder, updateOrder, completeOrderToSale, saveReceipt, currentBusiness, addStockItem, addExpense, refreshData, notifications, userRole } = useBusiness();
   const { fmt } = useCurrency();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState('live_orders');
   const isAdmin = userRole === 'owner' || userRole === 'admin';
 

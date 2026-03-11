@@ -274,9 +274,19 @@ export default function TeamPage() {
   }
 
   async function deactivateWorker(id: string) {
+    const worker = activeWorkers.find(w => w.id === id);
     await supabase.from('business_team_members').update({ is_active: false }).eq('id', id);
+    // Also remove matching membership by name
+    if (worker && businessId) {
+      const matchedMember = members.find(m => m.full_name?.toLowerCase() === worker.full_name.toLowerCase());
+      if (matchedMember) {
+        await supabase.from('business_memberships').delete()
+          .eq('user_id', matchedMember.user_id).eq('business_id', businessId);
+      }
+    }
     toast.success('Worker deactivated');
     loadTeamWorkers();
+    loadMembers();
   }
 
   async function reactivateWorker(id: string) {
@@ -285,9 +295,19 @@ export default function TeamPage() {
   }
 
   async function deleteWorker(id: string) {
+    const worker = [...activeWorkers, ...inactiveWorkers].find(w => w.id === id);
     await supabase.from('business_team_members').delete().eq('id', id);
+    // Also remove matching membership by name
+    if (worker && businessId) {
+      const matchedMember = members.find(m => m.full_name?.toLowerCase() === worker.full_name.toLowerCase());
+      if (matchedMember) {
+        await supabase.from('business_memberships').delete()
+          .eq('user_id', matchedMember.user_id).eq('business_id', businessId);
+      }
+    }
     toast.success('Worker permanently removed');
     loadTeamWorkers();
+    loadMembers();
   }
 
   function ConfirmDeleteButton({ onConfirm, label = 'Remove' }: { onConfirm: () => void; label?: string }) {

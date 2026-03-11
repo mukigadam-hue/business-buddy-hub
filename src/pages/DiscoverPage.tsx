@@ -150,7 +150,7 @@ export default function DiscoverPage() {
                     <img src={biz.logo_url} alt={biz.name} className="h-10 w-10 rounded-lg object-cover border" />
                   ) : (
                     <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-lg">
-                      {biz.business_type === 'factory' ? '🏭' : '🏪'}
+                      {biz.business_type === 'factory' ? '🏭' : biz.business_type === 'property' ? '🏠' : '🏪'}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">

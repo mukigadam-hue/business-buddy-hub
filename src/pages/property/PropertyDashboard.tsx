@@ -1,21 +1,25 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBusiness } from '@/context/BusinessContext';
 import { useProperty } from '@/context/PropertyContext';
 import { useCurrency } from '@/hooks/useCurrency';
+import { getCountryFlag } from '@/lib/countries';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Home, CalendarCheck, TrendingUp, Plus, AlertTriangle, Search } from 'lucide-react';
+import { Home, CalendarCheck, TrendingUp, Plus, AlertTriangle, Search, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '@/version';
 import LanguageSelector from '@/components/LanguageSelector';
+import ImageUpload from '@/components/ImageUpload';
 import AdSpace from '@/components/AdSpace';
 
 export default function PropertyDashboard() {
   const { t } = useTranslation();
-  const { currentBusiness } = useBusiness();
+  const { currentBusiness, updateBusiness } = useBusiness();
   const { assets, bookings } = useProperty();
   const { currency, fmt } = useCurrency();
   const navigate = useNavigate();
+  const [showLogoUpload, setShowLogoUpload] = useState(false);
 
   const activeAssets = assets.filter(a => !a.deleted_at);
   const availableAssets = activeAssets.filter(a => a.is_available);
@@ -34,9 +38,59 @@ export default function PropertyDashboard() {
         <LanguageSelector variant="compact" />
       </div>
 
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold">🏠 {currentBusiness?.name}</h1>
-        <p className="text-xs text-muted-foreground">{t('property.dashboard', 'Property Dashboard')}</p>
+      {/* Header with Logo - same pattern as Business Dashboard */}
+      <div className="gradient-primary rounded-xl p-4 sm:p-6 text-primary-foreground">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="shrink-0">
+            {currentBusiness?.logo_url ? (
+              <div className="relative cursor-pointer" onClick={() => setShowLogoUpload(v => !v)}>
+                <img src={currentBusiness.logo_url} alt="Logo" className="h-12 w-12 sm:h-16 sm:w-16 rounded-xl object-cover border-2 border-primary-foreground/30" />
+              </div>
+            ) : (
+              <button onClick={() => setShowLogoUpload(v => !v)}
+                className="h-12 w-12 sm:h-16 sm:w-16 rounded-xl border-2 border-dashed border-primary-foreground/40 flex items-center justify-center hover:border-primary-foreground/70 transition-colors">
+                <Camera className="h-5 w-5 sm:h-6 sm:w-6 opacity-60" />
+              </button>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold truncate">🏠 {currentBusiness?.name}</h1>
+            {currentBusiness?.business_code && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs sm:text-sm font-mono bg-primary-foreground/20 px-2 py-0.5 rounded">
+                  {(currentBusiness as any)?.country_code ? getCountryFlag((currentBusiness as any).country_code) : '🔗'} Code: {currentBusiness.business_code}
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(currentBusiness.business_code || '');
+                    import('sonner').then(m => m.toast.success('Code copied!'));
+                  }}
+                  className="text-xs bg-primary-foreground/20 hover:bg-primary-foreground/30 px-2 py-0.5 rounded transition-colors"
+                >
+                  📋 Copy
+                </button>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm opacity-90">
+              {currentBusiness?.address && <span className="truncate max-w-[150px] sm:max-w-none">📍 {currentBusiness.address}</span>}
+              {currentBusiness?.contact && <span>📞 {currentBusiness.contact}</span>}
+              {currentBusiness?.email && <span className="truncate max-w-[150px] sm:max-w-none">✉️ {currentBusiness.email}</span>}
+            </div>
+          </div>
+        </div>
+        {showLogoUpload && (
+          <div className="mt-4 p-3 bg-background/10 rounded-lg">
+            <ImageUpload
+              bucket="business-logos"
+              path={currentBusiness?.id || 'logo'}
+              currentUrl={currentBusiness?.logo_url}
+              onUploaded={(url) => { updateBusiness({ logo_url: url } as any); setShowLogoUpload(false); }}
+              onRemoved={() => updateBusiness({ logo_url: '' } as any)}
+              size="md"
+              label="Property Logo"
+            />
+          </div>
+        )}
       </div>
 
       {/* Stats */}

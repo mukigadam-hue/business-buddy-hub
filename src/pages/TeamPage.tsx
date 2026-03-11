@@ -393,7 +393,8 @@ export default function TeamPage() {
         </Card>
       )}
 
-      <RedeemCodeSection onRedeemed={() => { loadMembers(); loadTeamWorkers(); }} />
+      {/* Workers see "Join" section, Owners don't need it */}
+      {!isOwnerOrAdmin && <WorkerJoinSection onJoined={() => { loadMembers(); loadTeamWorkers(); }} />}
 
       <AdSpace variant="banner" />
 

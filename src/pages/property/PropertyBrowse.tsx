@@ -39,7 +39,7 @@ export default function PropertyBrowse() {
   const { user } = useAuth();
   const { currency } = useCurrency();
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('all');
   const [location, setLocation] = useState('');
   const [results, setResults] = useState<SearchAsset[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,7 +61,7 @@ export default function PropertyBrowse() {
     setLoading(true);
     const { data, error } = await supabase.rpc('search_property_assets', {
       _query: query,
-      _category: category,
+      _category: category === 'all' ? '' : category,
       _location: location,
     });
     if (!error) setResults((data || []) as SearchAsset[]);
@@ -151,7 +151,7 @@ export default function PropertyBrowse() {
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger className="w-36 h-9"><SelectValue placeholder={t('property.allCategories', 'All Types')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All</SelectItem>
+            <SelectItem value="all">All</SelectItem>
             <SelectItem value="land">🏞️ Land</SelectItem>
             <SelectItem value="vehicle">🚗 Vehicle</SelectItem>
             <SelectItem value="vessel">🚢 Vessel</SelectItem>

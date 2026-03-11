@@ -281,6 +281,21 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
                 <div><Label>Purpose of Renting *</Label><Input value={rentalPurpose} onChange={e => setRentalPurpose(e.target.value)} placeholder="e.g. Farming, Transport..." /></div>
               </div>
 
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label>Gender</Label>
+                  <Select value={renterGender} onValueChange={setRenterGender}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Age</Label><Input type="number" min="0" max="150" value={renterAge} onChange={e => setRenterAge(e.target.value)} placeholder="e.g. 30" /></div>
+              </div>
+
               {/* Duration */}
               <div>
                 <Label>Duration Type</Label>

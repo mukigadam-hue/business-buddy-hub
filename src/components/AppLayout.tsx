@@ -83,7 +83,6 @@ function useNavItems() {
     { to: '/assets', label: t('property.assets', 'My Assets'), icon: Home },
     { to: '/bookings', label: t('property.bookings', 'Bookings'), icon: CalendarCheck },
     { to: '/browse', label: t('property.browse', 'Browse'), icon: Search },
-    { to: '/messages', label: t('property.messages', 'Messages'), icon: MessageSquare },
     { to: '/contacts', label: t('nav.contacts'), icon: Contact },
     { to: '/discover', label: t('nav.discover'), icon: Globe },
     { to: '/team', label: t('nav.team'), icon: Users },
@@ -98,7 +97,6 @@ function useNavItems() {
 
   const propertyMoreNav = [
     { to: '/browse', label: t('property.browse', 'Browse'), icon: Search },
-    { to: '/messages', label: t('property.messages', 'Messages'), icon: MessageSquare },
     { to: '/contacts', label: t('nav.contacts'), icon: Contact },
     { to: '/discover', label: t('nav.discover'), icon: Globe },
     { to: '/team', label: t('nav.team'), icon: Users },

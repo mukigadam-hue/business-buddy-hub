@@ -37,7 +37,7 @@ interface SearchAsset {
 export default function PropertyBrowse() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { symbol } = useCurrency();
+  const { currency } = useCurrency();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');

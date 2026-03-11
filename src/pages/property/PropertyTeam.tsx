@@ -840,7 +840,7 @@ export default function PropertyTeam() {
       <Dialog open={showAddDialog || !!editWorkerId} onOpenChange={o => { if (!o) { setShowAddDialog(false); setEditWorkerId(null); resetForm(); } }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editWorkerId ? 'Edit Member' : `Add ${addType === 'tenant' ? 'Tenant / Renter' : addType === 'landlord' ? 'Landlord / Boss' : 'Staff Member'}`}</DialogTitle>
+            <DialogTitle>{editWorkerId ? 'Edit Member' : `Add ${addType === 'tenant' ? 'Tenant / Renter' : addType === 'owner' ? 'Asset Owner' : 'Staff Member'}`}</DialogTitle>
           </DialogHeader>
           <form onSubmit={editWorkerId ? handleEditMember : handleSubmitMember} className="space-y-3">
             <div><Label>Full Name *</Label><Input value={workerForm.full_name} onChange={e => setWorkerForm(f => ({ ...f, full_name: e.target.value }))} required /></div>

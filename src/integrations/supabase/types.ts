@@ -250,42 +250,60 @@ export type Database = {
       }
       business_team_members: {
         Row: {
+          age: number | null
+          agreed_amount: number
           business_id: string
           created_at: string
           full_name: string
+          gender: string
           hire_date: string
           id: string
           is_active: boolean
           next_payment_due: string | null
+          occupation: string
           payment_frequency: string
           phone: string
           rank: string
+          rental_end_date: string | null
+          rental_purpose: string
           salary: number
         }
         Insert: {
+          age?: number | null
+          agreed_amount?: number
           business_id: string
           created_at?: string
           full_name: string
+          gender?: string
           hire_date?: string
           id?: string
           is_active?: boolean
           next_payment_due?: string | null
+          occupation?: string
           payment_frequency?: string
           phone?: string
           rank?: string
+          rental_end_date?: string | null
+          rental_purpose?: string
           salary?: number
         }
         Update: {
+          age?: number | null
+          agreed_amount?: number
           business_id?: string
           created_at?: string
           full_name?: string
+          gender?: string
           hire_date?: string
           id?: string
           is_active?: boolean
           next_payment_due?: string | null
+          occupation?: string
           payment_frequency?: string
           phone?: string
           rank?: string
+          rental_end_date?: string | null
+          rental_purpose?: string
           salary?: number
         }
         Relationships: [
@@ -1077,15 +1095,21 @@ export type Database = {
       }
       property_bookings: {
         Row: {
+          age: number | null
+          agreed_amount: number
           amount_paid: number
           asset_id: string
           business_id: string
           created_at: string
           duration_type: string
           end_date: string
+          expected_payment_date: string | null
+          gender: string
           id: string
+          last_payment_date: string | null
           notes: string
           owner_notes: string | null
+          payment_method: string
           payment_status: string
           rental_purpose: string | null
           renter_contact: string
@@ -1097,15 +1121,21 @@ export type Database = {
           total_price: number
         }
         Insert: {
+          age?: number | null
+          agreed_amount?: number
           amount_paid?: number
           asset_id: string
           business_id: string
           created_at?: string
           duration_type?: string
           end_date: string
+          expected_payment_date?: string | null
+          gender?: string
           id?: string
+          last_payment_date?: string | null
           notes?: string
           owner_notes?: string | null
+          payment_method?: string
           payment_status?: string
           rental_purpose?: string | null
           renter_contact?: string
@@ -1117,15 +1147,21 @@ export type Database = {
           total_price?: number
         }
         Update: {
+          age?: number | null
+          agreed_amount?: number
           amount_paid?: number
           asset_id?: string
           business_id?: string
           created_at?: string
           duration_type?: string
           end_date?: string
+          expected_payment_date?: string | null
+          gender?: string
           id?: string
+          last_payment_date?: string | null
           notes?: string
           owner_notes?: string | null
+          payment_method?: string
           payment_status?: string
           rental_purpose?: string | null
           renter_contact?: string

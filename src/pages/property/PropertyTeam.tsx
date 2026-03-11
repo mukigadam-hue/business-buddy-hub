@@ -791,34 +791,50 @@ export default function PropertyTeam() {
               {/* App users (members) */}
               {members.filter(m => m.role !== 'owner').length > 0 && (
                 <div className="space-y-2">
-                  {members.filter(m => m.role !== 'owner').map(member => (
-                    <Card key={member.user_id}>
-                      <CardContent className="p-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {getRoleIcon(member.role)}
-                          <div>
-                            <p className="text-sm font-medium">{member.full_name || 'Unknown'}</p>
-                            <div className="flex items-center gap-1">
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">📱 App User</Badge>
-                              <span className="text-xs text-muted-foreground">{member.role}</span>
+                  {members.filter(m => m.role !== 'owner').map(member => {
+                    const matchedWorker = activeWorkers.find(w => w.full_name.toLowerCase() === (member.full_name || '').toLowerCase());
+                    const needsProfile = !matchedWorker;
+                    return (
+                      <Card key={member.user_id} className={needsProfile ? 'border-warning/40 bg-warning/5' : ''}>
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {getRoleIcon(member.role)}
+                              <div>
+                                <p className="text-sm font-medium">{member.full_name || 'Unknown'}</p>
+                                <div className="flex items-center gap-1">
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">📱 App User</Badge>
+                                  <span className="text-xs text-muted-foreground">{member.role}</span>
+                                </div>
+                              </div>
                             </div>
+                            {isOwnerOrAdmin && member.role !== 'owner' && (
+                              <div className="flex items-center gap-2">
+                                <Select value={member.role} onValueChange={v => handleRoleChange(member.user_id, v)}>
+                                  <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="worker">Worker</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Remove {member.full_name}?</AlertDialogTitle><AlertDialogDescription>This will revoke their app access. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleRemove(member.user_id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                        {isOwnerOrAdmin && member.role !== 'owner' && (
-                          <div className="flex items-center gap-2">
-                            <Select value={member.role} onValueChange={v => handleRoleChange(member.user_id, v)}>
-                              <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="worker">Worker</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Remove {member.full_name}?</AlertDialogTitle><AlertDialogDescription>This will revoke their app access. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleRemove(member.user_id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                          {needsProfile && isOwnerOrAdmin && (
+                            <div className="mt-2">
+                              <Button size="sm" variant="outline" className="h-7 text-xs border-warning text-warning hover:bg-warning/10 w-full" onClick={() => {
+                                openAddDialog('staff');
+                                setWorkerForm(f => ({ ...f, full_name: member.full_name || '' }));
+                              }}>
+                                <Edit2 className="h-3 w-3 mr-1" /> Complete Profile (Add Salary, Role, etc.)
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
 

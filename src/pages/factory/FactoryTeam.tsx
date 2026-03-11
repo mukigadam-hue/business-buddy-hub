@@ -252,49 +252,62 @@ export default function FactoryTeam() {
                   {visibleAppMembers.map(member => {
                     const matchedWorker = activeMembers.find(w => w.full_name.toLowerCase() === (member.full_name || '').toLowerCase());
                     const bal = matchedWorker ? (workerBalances[matchedWorker.id] || { totalOwed: 0, totalAdvances: 0 }) : { totalOwed: 0, totalAdvances: 0 };
+                    const needsProfile = !matchedWorker && member.role !== 'owner';
                     return (
-                      <div key={member.user_id} className="flex items-center justify-between p-3 rounded-lg border">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            {getRoleIcon(member.role)}
-                            <p className="font-medium text-sm">{member.full_name || 'Unknown'}</p>
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
-                              📱 App User
-                            </Badge>
+                      <div key={member.user_id} className={`p-3 rounded-lg border ${needsProfile ? 'border-warning/40 bg-warning/5' : ''}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              {getRoleIcon(member.role)}
+                              <p className="font-medium text-sm">{member.full_name || 'Unknown'}</p>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
+                                📱 App User
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground ml-6">
+                              {member.email}{member.role !== 'owner' && ` · ${member.role}`}
+                            </p>
+                            {bal.totalOwed > 0 && (
+                              <p className="text-xs text-destructive mt-0.5 ml-6">
+                                <AlertTriangle className="inline h-3 w-3 mr-1" />Business owes: {fmt(bal.totalOwed)}
+                              </p>
+                            )}
+                            {bal.totalAdvances > 0 && (
+                              <p className="text-xs text-warning mt-0.5 ml-6">
+                                <ArrowDownCircle className="inline h-3 w-3 mr-1" />Advance given: {fmt(bal.totalAdvances)}
+                              </p>
+                            )}
                           </div>
-                          <p className="text-xs text-muted-foreground ml-6">
-                            {member.email}{member.role !== 'owner' && ` · ${member.role}`}
-                          </p>
-                          {bal.totalOwed > 0 && (
-                            <p className="text-xs text-destructive mt-0.5 ml-6">
-                              <AlertTriangle className="inline h-3 w-3 mr-1" />Business owes: {fmt(bal.totalOwed)}
-                            </p>
-                          )}
-                          {bal.totalAdvances > 0 && (
-                            <p className="text-xs text-warning mt-0.5 ml-6">
-                              <ArrowDownCircle className="inline h-3 w-3 mr-1" />Advance given: {fmt(bal.totalAdvances)}
-                            </p>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {isOwnerOrAdmin && member.role !== 'owner' ? (
+                              <>
+                                <Select value={member.role} onValueChange={v => updateMemberRole(member.user_id, v).then(loadAppMembers)}>
+                                  <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="worker">Worker</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon">
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button></AlertDialogTrigger>
+                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will remove this person and revoke their app access. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => removeMember(member.user_id).then(loadAppMembers)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                              </>
+                            ) : (
+                              member.role === 'owner' && <span className="text-xs font-medium capitalize px-2 py-1 rounded-full bg-muted">{member.role}</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {isOwnerOrAdmin && member.role !== 'owner' ? (
-                            <>
-                              <Select value={member.role} onValueChange={v => updateMemberRole(member.user_id, v).then(loadAppMembers)}>
-                                <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="admin">Admin</SelectItem>
-                                  <SelectItem value="worker">Worker</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon">
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button></AlertDialogTrigger>
-                              <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will remove this person and revoke their app access. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => removeMember(member.user_id).then(loadAppMembers)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-                            </>
-                          ) : (
-                            member.role === 'owner' && <span className="text-xs font-medium capitalize px-2 py-1 rounded-full bg-muted">{member.role}</span>
-                          )}
-                        </div>
+                        {needsProfile && isOwnerOrAdmin && (
+                          <div className="mt-2 ml-6">
+                            <Button size="sm" variant="outline" className="h-7 text-xs border-warning text-warning hover:bg-warning/10" onClick={() => {
+                              setForm({ full_name: member.full_name || '', rank: 'Worker', salary: '', phone: '', hire_date: new Date().toISOString().slice(0, 10) });
+                              setShowAdd(true);
+                            }}>
+                              <Edit2 className="h-3 w-3 mr-1" /> Complete Profile (Add Salary, Rank, etc.)
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

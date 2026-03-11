@@ -546,7 +546,7 @@ export default function PropertyTeam() {
           {showDelete && (
             <div className="flex gap-1 pt-1">
               <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => openEdit(person)}><Edit2 className="h-3 w-3 mr-1" /> Edit</Button>
-              <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => deleteWorker(person.id)}><Trash2 className="h-3 w-3" /></Button>
+              <ConfirmDeleteButton onConfirm={() => deleteWorker(person.id)} name={person.full_name} />
             </div>
           )}
         </CardContent>

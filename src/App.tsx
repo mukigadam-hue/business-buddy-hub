@@ -127,8 +127,8 @@ function BusinessContent() {
               <Route path="/browse" element={<PropertyBrowse />} />
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/discover" element={<DiscoverPage />} />
-              <Route path="/team" element={<TeamPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/team" element={<PropertyTeam />} />
+              <Route path="/settings" element={<PropertySettings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

@@ -81,6 +81,8 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
   const [renterContact, setRenterContact] = useState('');
   const [renterOccupation, setRenterOccupation] = useState('');
   const [rentalPurpose, setRentalPurpose] = useState('');
+  const [renterGender, setRenterGender] = useState('');
+  const [renterAge, setRenterAge] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [durationType, setDurationType] = useState('daily');

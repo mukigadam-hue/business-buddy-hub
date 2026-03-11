@@ -105,7 +105,7 @@ export default function PropertyBrowse() {
         <p className="text-center text-muted-foreground py-8">No assets found. Try different filters.</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map(asset => (
+          {withInlineAds(results, (asset) => (
             <Card key={asset.id} className="overflow-hidden">
               {asset.image_url_1 && (
                 <div className="h-36 overflow-hidden">

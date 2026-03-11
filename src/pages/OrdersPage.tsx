@@ -73,6 +73,7 @@ export default function OrdersPage() {
   // Supplier products when coming from Discover page
   const [supplierProducts, setSupplierProducts] = useState<{ name: string; category: string; quality: string; retail_price: number }[]>([]);
   const [prefilledSupplierName, setPrefilledSupplierName] = useState('');
+  const [fromDiscover, setFromDiscover] = useState(false);
 
   // Auto-fill supplier from URL params (from Discover page "Order Now")
   useEffect(() => {

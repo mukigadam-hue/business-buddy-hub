@@ -110,6 +110,7 @@ function BusinessContent() {
   if (!currentBusiness) return <BusinessSetupPage />;
 
   const isFactory = currentBusiness.business_type === 'factory';
+  const isProperty = currentBusiness.business_type === 'property';
 
   if (isFactory) {
     return (

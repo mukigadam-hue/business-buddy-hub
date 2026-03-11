@@ -178,8 +178,8 @@ export default function BusinessSetupPage() {
               </div>
               <div><Label>Email</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" /></div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {businessType === 'factory' ? <Factory className="h-4 w-4 mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
-                Create {businessType === 'factory' ? 'Factory' : 'Business'}
+                {businessType === 'factory' ? <Factory className="h-4 w-4 mr-2" /> : businessType === 'property' ? <Home className="h-4 w-4 mr-2" /> : <Building2 className="h-4 w-4 mr-2" />}
+                Create {businessType === 'factory' ? 'Factory' : businessType === 'property' ? 'Property' : 'Business'}
               </Button>
             </form>
           ) : (

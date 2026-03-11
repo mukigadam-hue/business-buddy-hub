@@ -50,6 +50,7 @@ export default function FactoryTeam() {
 
   const activeMembers = teamMembers.filter(t => t.is_active);
   const inactiveMembers = teamMembers.filter(t => !t.is_active);
+  const visibleAppMembers = appMembers.filter(member => member.role !== 'owner');
   const totalSalary = activeMembers.reduce((sum, t) => sum + Number(t.salary), 0);
 
   const loadAppMembers = useCallback(async () => {

@@ -357,6 +357,12 @@ function BookingComments({ booking, isOwner }: { booking: any; isOwner: boolean 
       {(booking as any).rental_purpose && (
         <p className="text-xs text-muted-foreground">🎯 Purpose: <span className="font-medium text-foreground">{(booking as any).rental_purpose}</span></p>
       )}
+      {((booking as any).gender || (booking as any).age) && (
+        <p className="text-xs text-muted-foreground">
+          {(booking as any).gender && `👤 ${(booking as any).gender}`}
+          {(booking as any).age && `, ${(booking as any).age} yrs`}
+        </p>
+      )}
       {/* Owner's response */}
       {isOwner && (
         <div className="space-y-1">

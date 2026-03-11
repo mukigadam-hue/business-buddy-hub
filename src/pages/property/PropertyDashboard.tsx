@@ -8,6 +8,7 @@ import { Home, CalendarCheck, TrendingUp, Plus, AlertTriangle, Search } from 'lu
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '@/version';
 import LanguageSelector from '@/components/LanguageSelector';
+import AdSpace from '@/components/AdSpace';
 
 export default function PropertyDashboard() {
   const { t } = useTranslation();
@@ -20,7 +21,6 @@ export default function PropertyDashboard() {
   const availableAssets = activeAssets.filter(a => a.is_available);
   const activeBookings = bookings.filter(b => b.status === 'active' || b.status === 'confirmed');
   const pendingBookings = bookings.filter(b => b.status === 'pending');
-  const totalRevenue = bookings.filter(b => b.payment_status === 'paid').reduce((s, b) => s + b.total_price, 0);
 
   const categoryBreakdown = activeAssets.reduce((acc, a) => {
     acc[a.category] = (acc[a.category] || 0) + 1;
@@ -87,6 +87,8 @@ export default function PropertyDashboard() {
         </Card>
       </div>
 
+      <AdSpace variant="banner" />
+
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <Button variant="outline" className="h-auto py-3 flex flex-col gap-1" onClick={() => navigate('/assets')}>
@@ -121,6 +123,8 @@ export default function PropertyDashboard() {
           </CardContent>
         </Card>
       )}
+
+      <AdSpace variant="inline" />
 
       {/* Pending Bookings Preview */}
       {pendingBookings.length > 0 && (

@@ -22,7 +22,7 @@ export default function AdSpace({ variant = 'banner', className }: AdSpaceProps)
         className,
       )}
     >
-      <span className="text-[10px] font-medium uppercase tracking-widest">Ad Space</span>
+      <span className="text-[10px] font-medium uppercase tracking-widest">Sponsored</span>
     </div>
   );
 }

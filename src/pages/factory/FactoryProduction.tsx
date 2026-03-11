@@ -183,6 +183,11 @@ export default function FactoryProduction() {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Wholesale Price</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} placeholder="0.00" /></div>
+              <div><Label>Retail Price</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} placeholder="0.00" /></div>
+            </div>
+
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div><Label>Qty Produced *</Label><Input type="number" min="1" value={form.quantity_produced} onChange={e => setForm(f => ({ ...f, quantity_produced: e.target.value }))} required /></div>
               <div><Label>Waste Qty</Label><Input type="number" min="0" step="0.01" value={form.waste_quantity} onChange={e => setForm(f => ({ ...f, waste_quantity: e.target.value }))} /></div>

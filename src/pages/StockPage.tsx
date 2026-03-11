@@ -297,8 +297,9 @@ export default function StockPage() {
                           )}
                         </div>
                         <div className="flex items-center justify-between mt-2">
-                          <div className="flex gap-3 text-xs">
-                            <span className="tabular-nums"><span className="text-muted-foreground">Retail:</span> <span className="font-semibold">{fmt(Number(item.retail_price))}</span></span>
+                          <div className="flex gap-3 text-xs flex-wrap">
+                            <span className="tabular-nums"><span className="text-muted-foreground">W:</span> <span className="font-semibold">{fmt(Number(item.wholesale_price))}</span></span>
+                            <span className="tabular-nums"><span className="text-muted-foreground">R:</span> <span className="font-semibold">{fmt(Number(item.retail_price))}</span></span>
                             <span className="tabular-nums"><span className="text-muted-foreground">Qty:</span> <span className="font-bold">{item.quantity}</span></span>
                           </div>
                           <div className="flex gap-1">

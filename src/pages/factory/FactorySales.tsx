@@ -251,26 +251,7 @@ export default function FactorySales() {
                         <TableCell><Button variant="ghost" size="icon" onClick={() => removeItem(i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
                       </TableRow>
                     ))}
-                    {serviceItems.map((svc, i) => (
-                      <TableRow key={`svc-${i}`} className="bg-muted/20">
-                        <TableCell className="font-medium">🔧 {svc.service_name}</TableCell>
-                        <TableCell className="text-xs">Service</TableCell>
-                        <TableCell className="text-right">1</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(svc.cost)}</TableCell>
-                        <TableCell className="text-right font-semibold tabular-nums">{fmt(svc.cost)}</TableCell>
-                        <TableCell><Button variant="ghost" size="icon" onClick={() => removeServiceItem(i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
-                      </TableRow>
-                    ))}
-                    {serviceParts.map((part, i) => (
-                      <TableRow key={`part-${i}`} className="bg-accent/5">
-                        <TableCell className="font-medium text-accent">[Part] {part.item_name}</TableCell>
-                        <TableCell className="text-xs">Part</TableCell>
-                        <TableCell className="text-right">{part.quantity}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(part.unit_price)}</TableCell>
-                        <TableCell className="text-right font-semibold tabular-nums">{fmt(part.subtotal)}</TableCell>
-                        <TableCell><Button variant="ghost" size="icon" onClick={() => removeServicePart(i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
-                      </TableRow>
-                    ))}
+                    {/* Service rows removed */}
                     <TableRow>
                       <TableCell colSpan={4} className="text-right font-bold">Grand Total</TableCell>
                       <TableCell className="text-right font-bold text-lg text-success tabular-nums">{fmt(grandTotal)}</TableCell>

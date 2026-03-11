@@ -342,7 +342,7 @@ export default function FactoryTeam() {
                     <span className="text-sm text-muted-foreground">{m.full_name} — {m.rank}</span>
                     <div className="flex gap-1">
                       <Button size="sm" variant="outline" onClick={() => updateTeamMember(m.id, { is_active: true })}>Reactivate</Button>
-                      <Button size="sm" variant="destructive" onClick={() => deleteTeamMember(m.id)}>Remove</Button>
+                      <AlertDialog><AlertDialogTrigger asChild><Button size="sm" variant="destructive">Remove</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Permanently remove {m.full_name}?</AlertDialogTitle><AlertDialogDescription>This will permanently delete this worker's record. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteTeamMember(m.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                     </div>
                   </div>
                 ))}

@@ -535,7 +535,15 @@ export default function TeamPage() {
                     <span className="text-sm text-muted-foreground">{w.full_name} — {w.rank}</span>
                     <div className="flex gap-1">
                       <Button size="sm" variant="outline" onClick={() => reactivateWorker(w.id)}>Reactivate</Button>
-                      <Button size="sm" variant="destructive" onClick={() => deleteWorker(w.id)}>Remove</Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild><Button size="sm" variant="destructive">Remove</Button></AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader><AlertDialogTitle>Permanently remove {w.full_name}?</AlertDialogTitle>
+                          <AlertDialogDescription>This will permanently delete this worker's record. This cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteWorker(w.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 ))}

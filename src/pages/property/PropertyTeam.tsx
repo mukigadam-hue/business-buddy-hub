@@ -899,7 +899,7 @@ export default function PropertyTeam() {
               </div>
             )}
 
-            <Button type="submit" className="w-full">{editWorkerId ? 'Save Changes' : `Add ${addType === 'tenant' ? 'Tenant' : addType === 'landlord' ? 'Landlord' : 'Staff'}`}</Button>
+            <Button type="submit" className="w-full">{editWorkerId ? 'Save Changes' : `Add ${addType === 'tenant' ? 'Tenant' : addType === 'owner' ? 'Asset Owner' : 'Staff'}`}</Button>
           </form>
         </DialogContent>
       </Dialog>

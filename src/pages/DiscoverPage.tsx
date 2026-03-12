@@ -80,8 +80,8 @@ export default function DiscoverPage() {
 
   function handleOrderOrBook(biz: DiscoveredBusiness) {
     if (biz.business_type === 'property') {
-      // Navigate to bookings with the property pre-selected
-      navigate(`/bookings?property_id=${biz.id}&property_name=${encodeURIComponent(biz.name)}`);
+      // Navigate to browse with the property pre-selected for booking
+      navigate(`/browse?property_id=${biz.id}&property_name=${encodeURIComponent(biz.name)}`);
     } else {
       // Navigate to orders with supplier pre-filled
       navigate(`/orders?supplier_id=${biz.id}&supplier_name=${encodeURIComponent(biz.name)}`);

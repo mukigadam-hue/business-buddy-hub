@@ -181,6 +181,7 @@ function BusinessContent() {
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/expenses" element={<BusinessExpenses />} />
           <Route path="/waste" element={<WastePage />} />
+          <Route path="/browse" element={<PropertyBrowse />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/team" element={<TeamPage />} />

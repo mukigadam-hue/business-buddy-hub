@@ -16,6 +16,7 @@ import { Search, MapPin, Phone, Copy, CalendarCheck, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { toTitleCase, toSentenceCase } from '@/lib/utils';
 import AdSpace, { withInlineAds } from '@/components/AdSpace';
+import { PaymentMethodsViewer } from '@/components/PaymentMethodsManager';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },

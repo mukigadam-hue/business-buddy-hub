@@ -18,6 +18,7 @@ import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import type { Order, OrderItem } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
+import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 

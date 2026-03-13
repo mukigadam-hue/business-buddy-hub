@@ -14,7 +14,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Search, MapPin, Phone, Copy, CalendarCheck, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { toTitleCase, toSentenceCase } from '@/lib/utils';
 import AdSpace, { withInlineAds } from '@/components/AdSpace';
+
+const PAYMENT_FREQUENCIES = [
+  { value: 'monthly', label: 'Every Month' },
+  { value: 'quarterly', label: 'Every 3 Months' },
+  { value: 'biannual', label: 'Every 6 Months' },
+  { value: 'annual', label: 'Every 12 Months' },
+  { value: 'one-time', label: 'One-Time Payment' },
+];
 
 interface SearchAsset {
   id: string;

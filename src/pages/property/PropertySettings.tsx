@@ -390,6 +390,9 @@ export default function PropertySettings() {
 
       <AdSpace variant="inline" />
 
+      {/* ===== RECEIPT ARCHIVE ===== */}
+      <ReceiptArchive businessId={currentBusiness?.id || ''} />
+
       {/* ===== PROPERTY FINANCIAL SUMMARY ===== */}
       <Card className="shadow-card border-primary/20">
         <CardContent className="p-4 space-y-4">

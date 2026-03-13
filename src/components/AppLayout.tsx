@@ -358,9 +358,22 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
             })}
           </nav>
 
-          <div className="p-3 border-t border-sidebar-border space-y-1">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground text-sm" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />{t('nav.signOut')}
+          <div className="p-3 border-t border-sidebar-border space-y-2">
+            {/* Support */}
+            <div className="bg-sidebar-accent/20 rounded-lg p-2.5 space-y-1.5">
+              <p className="text-[10px] font-semibold text-sidebar-foreground uppercase tracking-wider">📞 Support</p>
+              <a href="mailto:ndamson8@gmail.com" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
+                📧 <span className="truncate">ndamson8@gmail.com</span>
+              </a>
+              <a href="https://x.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
+                𝕏 <span>Current VIBE</span>
+              </a>
+              <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
+                📘 <span>Current VIBE</span>
+              </a>
+            </div>
+            <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground text-xs h-8" onClick={signOut}>
+              <LogOut className="h-3.5 w-3.5 mr-1.5" />{t('nav.signOut')}
             </Button>
             <p className="text-[10px] text-sidebar-muted text-center">v{APP_VERSION}</p>
           </div>

@@ -168,7 +168,7 @@ export default function PropertyDashboard() {
               {Object.entries(categoryBreakdown).map(([cat, count]) => (
                 <div key={cat} className="flex items-center justify-between">
                   <span className="text-sm capitalize flex items-center gap-2">
-                    {cat === 'land' ? '🏞️' : cat === 'vehicle' ? '🚗' : '🚢'} {cat}
+                    {cat === 'house' ? '🏠' : cat === 'land' ? '🏞️' : cat === 'vehicle' ? '🚗' : '🚢'} {cat}
                   </span>
                   <span className="text-sm font-medium">{count}</span>
                 </div>

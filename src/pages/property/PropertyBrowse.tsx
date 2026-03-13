@@ -293,7 +293,7 @@ export default function PropertyBrowse() {
                 <CardContent className="p-3 space-y-2">
                   <h3 className="font-semibold text-sm">{asset.name}</h3>
                   <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{asset.location}</p>
-                  <p className="text-xs">{asset.category === 'land' ? '🏞️' : asset.category === 'vehicle' ? '🚗' : '🚢'} {asset.sub_category || asset.category}</p>
+                  <p className="text-xs">{asset.category === 'house' ? '🏠' : asset.category === 'land' ? '🏞️' : asset.category === 'vehicle' ? '🚗' : '🚢'} {asset.sub_category || asset.category}</p>
                   {asset.description && <p className="text-xs text-muted-foreground line-clamp-2">{asset.description}</p>}
                   <div className="flex gap-2 text-xs font-medium">
                     {asset.hourly_price > 0 && <Badge variant="outline">{fmt(asset.hourly_price)}/hr</Badge>}

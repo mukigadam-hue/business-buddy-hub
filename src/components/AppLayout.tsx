@@ -257,6 +257,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return t('nav.employed');
   }
 
+function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label: string; icon: any }[]; pathname: string }) {
+  const navigate = useNavigate();
+  const currentIndex = navItems.findIndex(n => n.to === pathname);
+  const prev = currentIndex > 0 ? navItems[currentIndex - 1] : null;
+  const next = currentIndex < navItems.length - 1 ? navItems[currentIndex + 1] : null;
+  if (!prev && !next) return null;
+  return (
+    <div className="hidden md:flex items-center justify-between px-6 py-3 border-t border-border bg-muted/30 sticky bottom-0">
+      {prev ? (
+        <Button variant="ghost" size="sm" onClick={() => navigate(prev.to)} className="gap-1.5 text-xs">
+          <ChevronLeft className="h-3.5 w-3.5" /> {prev.label}
+        </Button>
+      ) : <span />}
+      <span className="text-[10px] text-muted-foreground">{currentIndex + 1} / {navItems.length}</span>
+      {next ? (
+        <Button variant="ghost" size="sm" onClick={() => navigate(next.to)} className="gap-1.5 text-xs">
+          {next.label} <ChevronRight className="h-3.5 w-3.5" />
+        </Button>
+      ) : <span />}
+    </div>
+  );
+}
+
   return (
     <div className="flex h-screen overflow-hidden flex-col">
       {currentBusiness && <BusinessRoleBanner userRole={userRole!} businessName={currentBusiness.name} businessType={(currentBusiness as any).business_type || 'business'} />}

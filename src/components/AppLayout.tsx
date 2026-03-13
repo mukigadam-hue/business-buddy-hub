@@ -139,15 +139,19 @@ function getNotificationRoute(type: string): string {
     case 'order_priced': return '/orders';
     case 'order_confirmed': return '/orders';
     case 'order_rejected': return '/orders';
+    case 'order_completed': return '/orders';
     case 'new_purchase': return '/purchases';
     case 'payment_submitted': return '/orders';
-    case 'payment_confirmed': return '/orders';
+    case 'payment_confirmed': return '/checkout';
+    case 'booking_confirmed': return '/bookings';
+    case 'booking_completed': return '/bookings';
     case 'poke': return '/contacts';
     case 'low_stock': return '/stock';
     case 'empty_stock': return '/stock';
     case 'new_sale': return '/sales';
     case 'new_expense': return '/expenses';
     case 'new_service': return '/services';
+    case 'complaint': return '/bookings';
     case 'team': return '/team';
     default: return '/';
   }
@@ -354,9 +358,22 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
             })}
           </nav>
 
-          <div className="p-3 border-t border-sidebar-border space-y-1">
-            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground text-sm" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />{t('nav.signOut')}
+          <div className="p-3 border-t border-sidebar-border space-y-2">
+            {/* Support */}
+            <div className="bg-sidebar-accent/20 rounded-lg p-2.5 space-y-1.5">
+              <p className="text-[10px] font-semibold text-sidebar-foreground uppercase tracking-wider">📞 Support</p>
+              <a href="mailto:ndamson8@gmail.com" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
+                📧 <span className="truncate">ndamson8@gmail.com</span>
+              </a>
+              <a href="https://x.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
+                𝕏 <span>Current VIBE</span>
+              </a>
+              <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
+                📘 <span>Current VIBE</span>
+              </a>
+            </div>
+            <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground text-xs h-8" onClick={signOut}>
+              <LogOut className="h-3.5 w-3.5 mr-1.5" />{t('nav.signOut')}
             </Button>
             <p className="text-[10px] text-sidebar-muted text-center">v{APP_VERSION}</p>
           </div>
@@ -461,9 +478,24 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
               })}
             </div>
 
-            <div className="mt-4 pt-3 border-t space-y-1">
-              <Button variant="ghost" className="w-full justify-start text-destructive text-sm" onClick={signOut}>
-                <LogOut className="h-4 w-4 mr-2" /> {t('nav.signOut')}
+            <div className="mt-4 pt-3 border-t space-y-2">
+              {/* Support */}
+              <div className="bg-muted/50 rounded-lg p-2.5 space-y-1.5">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">📞 Support</p>
+                <a href="mailto:ndamson8@gmail.com" className="flex items-center gap-2 text-[11px] text-foreground hover:text-primary transition-colors">
+                  📧 <span className="truncate">ndamson8@gmail.com</span>
+                </a>
+                <div className="flex gap-3">
+                  <a href="https://x.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="text-[11px] text-foreground hover:text-primary transition-colors">
+                    𝕏 Current VIBE
+                  </a>
+                  <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="text-[11px] text-foreground hover:text-primary transition-colors">
+                    📘 Facebook
+                  </a>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" className="w-full justify-start text-destructive text-xs h-8" onClick={signOut}>
+                <LogOut className="h-3.5 w-3.5 mr-1.5" /> {t('nav.signOut')}
               </Button>
               <p className="text-[10px] text-muted-foreground text-center">v{APP_VERSION}</p>
             </div>

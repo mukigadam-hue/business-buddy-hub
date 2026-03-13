@@ -137,7 +137,7 @@ export default function PaymentMethodsManager({ businessId }: { businessId: stri
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Register the payment methods your customers or renters can use to pay you. They will see these when making payments.
+          Register all your payment methods — Mobile Money, Card, Bank — so customers can choose how to pay. You can add as many accounts as you need across all types.
         </p>
 
         {/* Summary badges */}

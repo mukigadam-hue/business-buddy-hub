@@ -18,6 +18,9 @@ export interface StockItem {
   image_url_1: string;
   image_url_2: string;
   image_url_3: string;
+  pieces_per_carton: number;
+  cartons_per_box: number;
+  boxes_per_container: number;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -209,7 +212,7 @@ interface BusinessContextType {
   createBusiness: (name: string, address: string, contact: string, email: string, countryCode?: string) => Promise<void>;
   deleteBusiness: (businessId: string, reason: string) => Promise<boolean>;
   updateBusiness: (updates: Partial<Business>) => Promise<void>;
-  addStockItem: (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at'>) => Promise<void>;
+  addStockItem: (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at'| 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => Promise<void>;
   updateStockItem: (id: string, updates: Partial<StockItem>) => Promise<void>;
   deleteStockItem: (id: string) => Promise<void>;
   restoreStockItem: (id: string) => Promise<void>;
@@ -515,7 +518,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     toast.success('Business updated!');
   }, [currentBusinessId]);
 
-  const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
+  const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at' | 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => {
     if (!currentBusinessId) return;
     const { data, error } = await supabase.from('stock_items').insert({ ...item, business_id: currentBusinessId } as any).select().single();
     if (error) { toast.error(error.message); return; }
@@ -616,7 +619,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, [currentBusinessId, stock]);
 
   const addPurchase = useCallback(async (
-    items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number }[],
+    items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number; pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }[],
     grandTotal: number, supplier: string, recordedBy: string,
     paymentStatus: string = 'paid', amountPaid?: number
   ) => {
@@ -653,6 +656,10 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       const buyPrice = item.unit_price; // purchase cost = buying price
       const ws = item.wholesale_price ?? item.unit_price;
       const ret = item.retail_price ?? item.unit_price;
+      const packagingUpdate: any = {};
+      if (item.pieces_per_carton && item.pieces_per_carton > 0) packagingUpdate.pieces_per_carton = item.pieces_per_carton;
+      if (item.cartons_per_box && item.cartons_per_box > 0) packagingUpdate.cartons_per_box = item.cartons_per_box;
+      if (item.boxes_per_container && item.boxes_per_container > 0) packagingUpdate.boxes_per_container = item.boxes_per_container;
 
       if (existingStock) {
         await supabase.from('stock_items').update({
@@ -660,12 +667,14 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
           buying_price: buyPrice,
           wholesale_price: ws,
           retail_price: ret,
+          ...packagingUpdate,
         }).eq('id', existingStock.id);
       } else {
         await supabase.from('stock_items').insert({
           business_id: currentBusinessId, name: item.item_name, category: item.category,
           quality: item.quality, buying_price: buyPrice, wholesale_price: ws, retail_price: ret,
           quantity: item.quantity, min_stock_level: 5,
+          ...packagingUpdate,
         });
       }
     }

@@ -11,6 +11,7 @@ import { Plus, Search, Pencil, Trash2, RotateCcw, AlertTriangle, Image, X, ScanL
 import BarcodeScanner from '@/components/BarcodeScanner';
 import type { StockItem } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
+import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase } from '@/lib/utils';
 
@@ -99,6 +100,7 @@ export default function StockPage() {
   const [form, setForm] = useState({
     name: '', category: '', quality: '', barcode: '',
     buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5',
+    pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0',
   });
 
   const activeStock = stock.filter(s => !s.deleted_at);
@@ -117,7 +119,7 @@ export default function StockPage() {
   const existingCategories = [...new Set(stock.map(s => s.category).filter(Boolean))];
 
   function resetForm() {
-    setForm({ name: '', category: '', quality: '', barcode: '', buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5' });
+    setForm({ name: '', category: '', quality: '', barcode: '', buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
     setEditItem(null);
   }
 
@@ -136,6 +138,9 @@ export default function StockPage() {
       image_url_1: editItem?.image_url_1 || '',
       image_url_2: editItem?.image_url_2 || '',
       image_url_3: editItem?.image_url_3 || '',
+      pieces_per_carton: parseInt(form.pieces_per_carton) || 0,
+      cartons_per_box: parseInt(form.cartons_per_box) || 0,
+      boxes_per_container: parseInt(form.boxes_per_container) || 0,
     };
     if (editItem) {
       await updateStockItem(editItem.id, itemData);
@@ -152,6 +157,9 @@ export default function StockPage() {
       name: item.name, category: item.category, quality: item.quality, barcode: item.barcode || '',
       buying_price: String(item.buying_price), wholesale_price: String(item.wholesale_price), retail_price: String(item.retail_price),
       quantity: String(item.quantity), min_stock_level: String(item.min_stock_level),
+      pieces_per_carton: String((item as any).pieces_per_carton || 0),
+      cartons_per_box: String((item as any).cartons_per_box || 0),
+      boxes_per_container: String((item as any).boxes_per_container || 0),
     });
     setOpen(true);
   }
@@ -210,6 +218,12 @@ export default function StockPage() {
                     <Label>Barcode (Optional)</Label>
                     <Input value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Scan or type barcode..." />
                   </div>
+                  <BulkPackagingFields
+                    piecesPerCarton={form.pieces_per_carton}
+                    cartonsPerBox={form.cartons_per_box}
+                    boxesPerContainer={form.boxes_per_container}
+                    onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+                  />
                   <Button type="submit" className="w-full">{editItem ? 'Update Item' : 'Add Item'}</Button>
                 </form>
               </DialogContent>
@@ -296,6 +310,12 @@ export default function StockPage() {
                             <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full shrink-0">OK</span>
                           )}
                         </div>
+                        <BulkPackagingInfo
+                          quantity={item.quantity}
+                          piecesPerCarton={(item as any).pieces_per_carton || 0}
+                          cartonsPerBox={(item as any).cartons_per_box || 0}
+                          boxesPerContainer={(item as any).boxes_per_container || 0}
+                        />
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex gap-3 text-xs flex-wrap">
                             <span className="tabular-nums"><span className="text-muted-foreground">W:</span> <span className="font-semibold">{fmt(Number(item.wholesale_price))}</span></span>
@@ -368,7 +388,16 @@ export default function StockPage() {
                         )}
                         <TableCell className="text-right tabular-nums">{fmt(Number(item.wholesale_price))}</TableCell>
                         <TableCell className="text-right tabular-nums font-medium">{fmt(Number(item.retail_price))}</TableCell>
-                        <TableCell className="text-right font-semibold">{item.quantity}</TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {item.quantity}
+                          <BulkPackagingInfo
+                            quantity={item.quantity}
+                            piecesPerCarton={(item as any).pieces_per_carton || 0}
+                            cartonsPerBox={(item as any).cartons_per_box || 0}
+                            boxesPerContainer={(item as any).boxes_per_container || 0}
+                            compact
+                          />
+                        </TableCell>
                         <TableCell>
                           {item.quantity === 0 ? (
                             <span className="text-xs font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Out</span>

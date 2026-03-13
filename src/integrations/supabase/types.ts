@@ -641,13 +641,16 @@ export type Database = {
       }
       factory_raw_materials: {
         Row: {
+          boxes_per_container: number
           business_id: string
+          cartons_per_box: number
           category: string
           created_at: string
           deleted_at: string | null
           id: string
           min_stock_level: number
           name: string
+          pieces_per_carton: number
           quantity: number
           supplier: string
           unit_cost: number
@@ -655,13 +658,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          boxes_per_container?: number
           business_id: string
+          cartons_per_box?: number
           category?: string
           created_at?: string
           deleted_at?: string | null
           id?: string
           min_stock_level?: number
           name: string
+          pieces_per_carton?: number
           quantity?: number
           supplier?: string
           unit_cost?: number
@@ -669,13 +675,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          boxes_per_container?: number
           business_id?: string
+          cartons_per_box?: number
           category?: string
           created_at?: string
           deleted_at?: string | null
           id?: string
           min_stock_level?: number
           name?: string
+          pieces_per_carton?: number
           quantity?: number
           supplier?: string
           unit_cost?: number
@@ -1859,8 +1868,10 @@ export type Database = {
       stock_items: {
         Row: {
           barcode: string
+          boxes_per_container: number
           business_id: string
           buying_price: number
+          cartons_per_box: number
           category: string
           created_at: string
           deleted_at: string | null
@@ -1870,6 +1881,7 @@ export type Database = {
           image_url_3: string | null
           min_stock_level: number
           name: string
+          pieces_per_carton: number
           quality: string
           quantity: number
           retail_price: number
@@ -1878,8 +1890,10 @@ export type Database = {
         }
         Insert: {
           barcode?: string
+          boxes_per_container?: number
           business_id: string
           buying_price?: number
+          cartons_per_box?: number
           category?: string
           created_at?: string
           deleted_at?: string | null
@@ -1889,6 +1903,7 @@ export type Database = {
           image_url_3?: string | null
           min_stock_level?: number
           name: string
+          pieces_per_carton?: number
           quality?: string
           quantity?: number
           retail_price?: number
@@ -1897,8 +1912,10 @@ export type Database = {
         }
         Update: {
           barcode?: string
+          boxes_per_container?: number
           business_id?: string
           buying_price?: number
+          cartons_per_box?: number
           category?: string
           created_at?: string
           deleted_at?: string | null
@@ -1908,6 +1925,7 @@ export type Database = {
           image_url_3?: string | null
           min_stock_level?: number
           name?: string
+          pieces_per_carton?: number
           quality?: string
           quantity?: number
           retail_price?: number

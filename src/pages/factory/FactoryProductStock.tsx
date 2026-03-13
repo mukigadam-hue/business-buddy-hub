@@ -12,6 +12,7 @@ import ImageUpload from '@/components/ImageUpload';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
+import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase } from '@/lib/utils';
 
@@ -27,13 +28,14 @@ export default function FactoryProductStock() {
     name: '', category: '', quality: '', quantity: '0', barcode: '',
     buying_price: '', wholesale_price: '', retail_price: '', min_stock_level: '5',
     image_url_1: '', image_url_2: '', image_url_3: '',
+    pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0',
   });
 
   const active = stock.filter(s => !s.deleted_at);
   const deleted = stock.filter(s => s.deleted_at);
 
   function resetForm() {
-    setForm({ name: '', category: '', quality: '', quantity: '0', barcode: '', buying_price: '', wholesale_price: '', retail_price: '', min_stock_level: '5', image_url_1: '', image_url_2: '', image_url_3: '' });
+    setForm({ name: '', category: '', quality: '', quantity: '0', barcode: '', buying_price: '', wholesale_price: '', retail_price: '', min_stock_level: '5', image_url_1: '', image_url_2: '', image_url_3: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
   }
 
   async function handleAdd(e: React.FormEvent) {
@@ -46,6 +48,9 @@ export default function FactoryProductStock() {
       retail_price: parseFloat(form.retail_price) || 0, min_stock_level: parseInt(form.min_stock_level) || 5,
       barcode: form.barcode.trim(),
       image_url_1: form.image_url_1, image_url_2: form.image_url_2, image_url_3: form.image_url_3,
+      pieces_per_carton: parseInt(form.pieces_per_carton) || 0,
+      cartons_per_box: parseInt(form.cartons_per_box) || 0,
+      boxes_per_container: parseInt(form.boxes_per_container) || 0,
     });
     resetForm(); setShowAdd(false);
   }
@@ -59,6 +64,9 @@ export default function FactoryProductStock() {
       buying_price: parseFloat(form.buying_price) || 0, wholesale_price: parseFloat(form.wholesale_price) || 0,
       retail_price: parseFloat(form.retail_price) || 0, min_stock_level: parseInt(form.min_stock_level) || 5,
       image_url_1: form.image_url_1, image_url_2: form.image_url_2, image_url_3: form.image_url_3,
+      pieces_per_carton: parseInt(form.pieces_per_carton) || 0,
+      cartons_per_box: parseInt(form.cartons_per_box) || 0,
+      boxes_per_container: parseInt(form.boxes_per_container) || 0,
     });
     resetForm(); setEditItem(null);
   }
@@ -70,6 +78,9 @@ export default function FactoryProductStock() {
       buying_price: String(item.buying_price), wholesale_price: String(item.wholesale_price),
       retail_price: String(item.retail_price), min_stock_level: String(item.min_stock_level),
       image_url_1: item.image_url_1 || '', image_url_2: item.image_url_2 || '', image_url_3: item.image_url_3 || '',
+      pieces_per_carton: String((item as any).pieces_per_carton || 0),
+      cartons_per_box: String((item as any).cartons_per_box || 0),
+      boxes_per_container: String((item as any).boxes_per_container || 0),
     });
     setEditItem(item.id);
   }
@@ -137,6 +148,7 @@ export default function FactoryProductStock() {
                           {item.quantity}
                           {isOut && <span className="ml-1 text-xs text-destructive font-semibold">OUT</span>}
                           {isLow && <span className="ml-1 text-xs text-warning font-semibold">LOW</span>}
+                          <BulkPackagingInfo quantity={item.quantity} piecesPerCarton={(item as any).pieces_per_carton || 0} cartonsPerBox={(item as any).cartons_per_box || 0} boxesPerContainer={(item as any).boxes_per_container || 0} compact />
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{fmt(Number(item.wholesale_price))}</TableCell>
                         <TableCell className="text-right tabular-nums">{fmt(Number(item.retail_price))}</TableCell>
@@ -193,6 +205,12 @@ export default function FactoryProductStock() {
               <div><Label>Retail</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} /></div>
             </div>
             <div><Label>Barcode (Optional)</Label><Input value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Scan or type barcode..." /></div>
+            <BulkPackagingFields
+              piecesPerCarton={form.pieces_per_carton}
+              cartonsPerBox={form.cartons_per_box}
+              boxesPerContainer={form.boxes_per_container}
+              onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+            />
             <div className="space-y-2">
               <Label>Product Images (up to 3)</Label>
               <div className="grid grid-cols-3 gap-2">

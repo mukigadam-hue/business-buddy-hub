@@ -11,6 +11,7 @@ import { Plus, Trash2, Package, ScanLine } from 'lucide-react';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
+import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
@@ -26,6 +27,7 @@ export default function PurchasesPage() {
   const [form, setForm] = useState({
     name: '', category: '', quality: '', quantity: '1',
     unit_price: '', wholesale_price: '', retail_price: '',
+    pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0',
   });
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');
@@ -55,8 +57,11 @@ export default function PurchasesPage() {
       unit_price: parseFloat(form.unit_price) || 0,
       wholesale_price: parseFloat(form.wholesale_price) || parseFloat(form.unit_price) || 0,
       retail_price: parseFloat(form.retail_price) || parseFloat(form.unit_price) || 0,
+      pieces_per_carton: parseInt(form.pieces_per_carton) || 0,
+      cartons_per_box: parseInt(form.cartons_per_box) || 0,
+      boxes_per_container: parseInt(form.boxes_per_container) || 0,
     }]);
-    setForm({ name: '', category: '', quality: '', quantity: '1', unit_price: '', wholesale_price: '', retail_price: '' });
+    setForm({ name: '', category: '', quality: '', quantity: '1', unit_price: '', wholesale_price: '', retail_price: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
@@ -180,6 +185,12 @@ export default function PurchasesPage() {
             <div className="w-24"><Label>Retail</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} placeholder="Auto" /></div>
             <Button onClick={addItem} disabled={!form.name.trim()}><Plus className="h-4 w-4 mr-1" />Add</Button>
           </div>
+          <BulkPackagingFields
+            piecesPerCarton={form.pieces_per_carton}
+            cartonsPerBox={form.cartons_per_box}
+            boxesPerContainer={form.boxes_per_container}
+            onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+          />
 
           {items.length > 0 && (
             <>

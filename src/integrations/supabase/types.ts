@@ -210,6 +210,47 @@ export type Database = {
           },
         ]
       }
+      business_payment_methods: {
+        Row: {
+          account_name: string
+          account_number: string
+          business_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          provider_name: string
+          provider_type: string
+        }
+        Insert: {
+          account_name?: string
+          account_number?: string
+          business_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider_name?: string
+          provider_type?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider_name?: string
+          provider_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_payment_methods_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_reviews: {
         Row: {
           business_id: string

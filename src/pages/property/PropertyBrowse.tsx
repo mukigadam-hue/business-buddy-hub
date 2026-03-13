@@ -16,6 +16,7 @@ import { Search, MapPin, Phone, Copy, CalendarCheck, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { toTitleCase, toSentenceCase } from '@/lib/utils';
 import AdSpace, { withInlineAds } from '@/components/AdSpace';
+import { PaymentMethodsViewer } from '@/components/PaymentMethodsManager';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },
@@ -201,6 +202,14 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
             <Label>Message to Owner</Label>
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any special requests or comments..." rows={2} />
           </div>
+
+          {/* Show landlord's registered payment methods */}
+          {asset.business_id && (
+            <div className="p-3 bg-muted/30 rounded-lg border">
+              <p className="text-xs font-semibold mb-2">💰 Owner's Accepted Payment Methods</p>
+              <PaymentMethodsViewer businessId={asset.business_id} />
+            </div>
+          )}
 
           <Button onClick={handleBook} disabled={submitting} className="w-full">
             <Send className="h-4 w-4 mr-2" />{submitting ? 'Sending...' : 'Send Booking Request'}

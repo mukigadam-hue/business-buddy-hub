@@ -18,6 +18,7 @@ import AdSpace from '@/components/AdSpace';
 import LanguageSelector from '@/components/LanguageSelector';
 
 import { toSentenceCase } from '@/lib/utils';
+import PaymentMethodsManager from '@/components/PaymentMethodsManager';
 
 function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' | 'property' }) {
   const { createBusiness, currentBusiness } = useBusiness();
@@ -827,6 +828,9 @@ export default function SettingsPage() {
 
       {/* Discovery Visibility */}
       <DiscoverVisibilityCard businessId={currentBusiness?.id || ''} />
+
+      {/* Payment Methods - TOP PRIORITY */}
+      {currentBusiness && <PaymentMethodsManager businessId={currentBusiness.id} />}
 
       {/* Currency Setting */}
       <Card className="shadow-card">

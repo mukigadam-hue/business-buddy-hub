@@ -850,6 +850,9 @@ export default function PropertyBookings() {
           {completed.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No booking history</p>
             : completed.map(b => <BookingCard key={b.id} booking={b} />)}
         </TabsContent>
+        <TabsContent value="complaints" className="space-y-2 mt-3">
+          <ComplaintsSection bookings={bookings} assets={assets} isOwnerOrAdmin={isOwnerOrAdmin} businessId={currentBusiness?.id || ''} />
+        </TabsContent>
       </Tabs>
 
       <AdSpace variant="inline" />

@@ -343,6 +343,15 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {/* Cash in Hand info */}
+            {paymentMethod === 'cash' && (
+              <div className="p-4 bg-amber-500/5 rounded-lg border border-amber-500/20">
+                <p className="text-sm text-muted-foreground">
+                  💵 Cash payment received directly. The order will be marked as <span className="font-semibold text-success">Paid</span> immediately.
+                </p>
+              </div>
+            )}
+
             {/* Card payment info */}
             {paymentMethod === 'card' && (
               <div className="p-4 bg-info/5 rounded-lg border border-info/20">

@@ -508,6 +508,7 @@ export default function PropertyTeam() {
   // Tenant/Landlord card with full details
   function PersonCard({ person, showDelete }: { person: TeamMember; showDelete: boolean }) {
     const isTenant = person.rank === TENANT_RANK;
+    const isLandlord = person.rank === LANDLORD_RANK || person.rank === 'Landlord';
     const renterBookings = bookings.filter(b => b.renter_name?.toLowerCase() === person.full_name.toLowerCase());
     const payerBehavior = getPayerScore(renterBookings);
     const endDate = person.rental_end_date ? new Date(person.rental_end_date) : null;
@@ -515,17 +516,47 @@ export default function PropertyTeam() {
     const isExpiringSoon = daysToEnd !== null && daysToEnd <= 7 && daysToEnd >= 0;
     const isExpired = daysToEnd !== null && daysToEnd < 0;
 
+    // Find what asset(s) this person is renting from active/confirmed bookings
+    const rentedAssets = renterBookings
+      .filter(b => ['active', 'confirmed'].includes(b.status))
+      .map(b => {
+        const asset = assets.find((a: any) => a.id === b.asset_id);
+        return asset ? {
+          name: asset.name,
+          category: asset.category,
+          location: asset.location,
+          room_size: (asset as any).room_size,
+          total_rooms: (asset as any).total_rooms,
+        } : null;
+      })
+      .filter(Boolean);
+
+    const categoryIcon = (cat: string) => {
+      switch (cat) {
+        case 'house': return '🏠';
+        case 'land': return '🏞️';
+        case 'vehicle': return '🚗';
+        case 'water_vessel': return '🚢';
+        default: return '🏢';
+      }
+    };
+
     return (
       <Card className={`shadow-card ${isExpired ? 'border-destructive/40' : isExpiringSoon ? 'border-warning/40' : ''}`}>
         <CardContent className="p-3 space-y-2">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
-              <div className={`h-9 w-9 rounded-full flex items-center justify-center text-sm ${isTenant ? 'bg-green-500/10' : 'bg-amber-500/10'}`}>
-                {isTenant ? '🏠' : '🔑'}
+              <div className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold ${
+                isTenant ? 'bg-success/10 text-success' : isLandlord ? 'bg-warning/10 text-warning' : 'bg-info/10 text-info'
+              }`}>
+                {isTenant ? '🏠' : isLandlord ? '🔑' : '👷'}
               </div>
               <div>
                 <p className="text-sm font-semibold">{person.full_name}</p>
-                <p className="text-[10px] text-muted-foreground">
+                <Badge variant={isTenant ? 'default' : isLandlord ? 'secondary' : 'outline'} className="text-[9px] px-1.5 py-0">
+                  {isTenant ? '🏠 Tenant' : isLandlord ? '🔑 Asset Owner' : `👷 ${person.rank}`}
+                </Badge>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
                   {person.gender && `${person.gender}`}{person.age ? `, ${person.age} yrs` : ''}
                   {person.phone && ` · 📞 ${person.phone}`}
                 </p>
@@ -542,6 +573,31 @@ export default function PropertyTeam() {
               )}
             </div>
           </div>
+
+          {/* Rented Asset(s) — what they are renting */}
+          {isTenant && rentedAssets.length > 0 && (
+            <div className="space-y-1">
+              {rentedAssets.map((asset: any, idx: number) => (
+                <div key={idx} className="flex items-center gap-2 p-1.5 rounded-lg bg-accent/10 border border-accent/20">
+                  <span className="text-base">{categoryIcon(asset.category)}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate">{asset.name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {asset.category === 'house' && asset.total_rooms > 0
+                        ? `${asset.total_rooms} room(s)${asset.room_size ? ` · ${asset.room_size}` : ''}`
+                        : asset.location || asset.category}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-[9px] capitalize">{asset.category.replace('_', ' ')}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+          {isTenant && rentedAssets.length === 0 && (
+            <div className="p-1.5 rounded-lg bg-muted/40 border border-dashed border-muted-foreground/20 text-xs text-muted-foreground italic">
+              ⚠️ No asset linked — add via booking or edit to assign
+            </div>
+          )}
 
           {/* Details grid */}
           <div className="grid grid-cols-2 gap-1.5 text-xs">

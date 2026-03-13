@@ -223,7 +223,7 @@ export default function ProofVideoButton() {
       <>
         <button
           onClick={handleStartRecording}
-          className={`fixed bottom-36 right-4 md:bottom-6 md:right-6 z-[60] flex items-center gap-2 px-4 py-3 rounded-full shadow-2xl transition-all ${
+          className={`fixed bottom-36 right-4 md:bottom-24 md:right-6 z-[60] flex items-center gap-2 px-4 py-3 rounded-full shadow-2xl transition-all ${
             alertPulse
               ? 'bg-destructive text-destructive-foreground animate-bounce shadow-destructive/50'
               : 'bg-destructive text-destructive-foreground'
@@ -249,7 +249,7 @@ export default function ProofVideoButton() {
       <>
         <button
           onClick={() => { setRequestDialogOpen(true); loadTargets(); }}
-          className="fixed bottom-36 right-4 md:bottom-6 md:right-6 z-[55] flex items-center gap-2 px-3 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          className="fixed bottom-36 right-4 md:bottom-24 md:right-6 z-[55] flex items-center gap-2 px-3 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105"
           title="Request proof video"
         >
           <Video className="h-5 w-5" />

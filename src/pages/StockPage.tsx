@@ -170,8 +170,19 @@ export default function StockPage() {
     await deleteStockItem(id);
   }
 
+  function handleBarcodeScan(code: string) {
+    const match = stock.find(s => s.barcode && s.barcode === code && !s.deleted_at);
+    if (match) {
+      openEdit(match);
+      toast.success(`Found: ${match.name}`);
+    } else {
+      toast.error(`No stock item found for barcode: ${code}`);
+    }
+  }
+
   return (
     <div className="space-y-4">
+      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
       <div className="sticky top-0 space-y-1.5 pb-2 bg-background z-20 -mx-3 px-3 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6 -mt-3 pt-2 sm:-mt-4 sm:pt-3 md:-mt-6 md:pt-4 border-b border-border/40">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-lg font-bold">My Stock</h1>

@@ -366,7 +366,6 @@ export default function CheckoutPage() {
               onClick={handleCheckout}
               className="w-full h-12 text-base"
               disabled={submitting || !customerName.trim() || items.length === 0 || (paymentMethod === 'mobile_money' && !proofFile)}
-
             >
               {submitting ? (
                 'Processing...'

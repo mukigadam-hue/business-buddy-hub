@@ -178,8 +178,22 @@ export default function FactoryInputStock() {
                 </Select>
               </div>
             </div>
+            <BulkPackagingFields
+              piecesPerCarton={form.pieces_per_carton}
+              cartonsPerBox={form.cartons_per_box}
+              boxesPerContainer={form.boxes_per_container}
+              onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+              onQuantityCalculated={(total) => setForm(f => ({ ...f, quantity: String(total) }))}
+              currentQuantity={form.quantity}
+            />
             <div className="grid grid-cols-3 gap-3">
-              <div><Label>Quantity</Label><Input type="number" min="0" step="0.01" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} /></div>
+              <div>
+                <Label>Quantity</Label>
+                <Input type="number" min="0" step="0.01" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
+                  readOnly={parseInt(form.pieces_per_carton) > 0}
+                  className={parseInt(form.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''} />
+                {parseInt(form.pieces_per_carton) > 0 && <p className="text-[10px] text-muted-foreground mt-0.5">Auto-calculated from bulk</p>}
+              </div>
               <div><Label>Unit Cost</Label><Input type="number" min="0" step="0.01" value={form.unit_cost} onChange={e => setForm(f => ({ ...f, unit_cost: e.target.value }))} /></div>
               <div><Label>Min Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
             </div>

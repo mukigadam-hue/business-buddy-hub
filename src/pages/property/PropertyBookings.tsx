@@ -19,7 +19,49 @@ import { CalendarCheck, CheckCircle, XCircle, Clock, Camera, Plus, Search, Send,
 import ImageUpload from '@/components/ImageUpload';
 import Receipt from '@/components/Receipt';
 import { toast } from 'sonner';
+import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import AdSpace from '@/components/AdSpace';
+
+const PAYMENT_FREQUENCIES = [
+  { value: 'monthly', label: 'Every Month' },
+  { value: 'quarterly', label: 'Every 3 Months' },
+  { value: 'biannual', label: 'Every 6 Months' },
+  { value: 'annual', label: 'Every 12 Months' },
+  { value: 'one-time', label: 'One-Time Payment' },
+];
+
+// Helper to send notifications to both owner and renter businesses
+async function sendCrossBusinessNotification(booking: any, title: string, message: string) {
+  try {
+    // 1. Notify the owner's business
+    await supabase.from('notifications').insert({
+      business_id: booking.business_id,
+      title,
+      message,
+      type: 'booking',
+    } as any);
+
+    // 2. Notify the renter — find all businesses where renter_id is a member
+    if (booking.renter_id) {
+      const { data: renterMemberships } = await supabase
+        .from('business_memberships')
+        .select('business_id')
+        .eq('user_id', booking.renter_id);
+      if (renterMemberships) {
+        for (const m of renterMemberships) {
+          if (m.business_id !== booking.business_id) {
+            await supabase.from('notifications').insert({
+              business_id: m.business_id,
+              title,
+              message,
+              type: 'booking',
+            } as any);
+          }
+        }
+      }
+    }
+  } catch (e) { console.error('Notification error', e); }
+}
 
 // ========== CHECK-IN DIALOG ==========
 function CheckInDialog({ bookingId, businessId, onClose }: { bookingId: string; businessId: string; onClose: () => void }) {
@@ -30,9 +72,7 @@ function CheckInDialog({ bookingId, businessId, onClose }: { bookingId: string; 
   const [photos, setPhotos] = useState<string[]>([]);
   const [existingCheckIns, setExistingCheckIns] = useState<any[]>([]);
 
-  useEffect(() => {
-    loadCheckIns();
-  }, [bookingId]);
+  useEffect(() => { loadCheckIns(); }, [bookingId]);
 
   async function loadCheckIns() {
     const { data } = await supabase.from('property_check_ins').select('*').eq('booking_id', bookingId).order('created_at');
@@ -42,22 +82,15 @@ function CheckInDialog({ bookingId, businessId, onClose }: { bookingId: string; 
   async function handleSubmit() {
     if (!user) return;
     await addCheckIn({
-      booking_id: bookingId,
-      business_id: businessId,
-      check_type: checkType,
-      photo_urls: photos,
-      notes,
-      recorded_by: user.id,
+      booking_id: bookingId, business_id: businessId, check_type: checkType,
+      photo_urls: photos, notes: toSentenceCase(notes), recorded_by: user.id,
     });
     toast.success(`${checkType === 'start' ? 'Check-In' : 'Check-Out'} recorded with ${photos.length} photo(s)`);
-    loadCheckIns();
-    setNotes('');
-    setPhotos([]);
+    loadCheckIns(); setNotes(''); setPhotos([]);
   }
 
   return (
     <div className="space-y-4">
-      {/* Existing check-ins */}
       {existingCheckIns.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground">📋 Previous Records:</p>
@@ -81,19 +114,11 @@ function CheckInDialog({ bookingId, businessId, onClose }: { bookingId: string; 
           ))}
         </div>
       )}
-
       <div className="grid grid-cols-2 gap-2">
-        <Button variant={checkType === 'start' ? 'default' : 'outline'} onClick={() => setCheckType('start')} className="text-sm">
-          📥 Check-In
-        </Button>
-        <Button variant={checkType === 'end' ? 'default' : 'outline'} onClick={() => setCheckType('end')} className="text-sm">
-          📤 Check-Out
-        </Button>
+        <Button variant={checkType === 'start' ? 'default' : 'outline'} onClick={() => setCheckType('start')} className="text-sm">📥 Check-In</Button>
+        <Button variant={checkType === 'end' ? 'default' : 'outline'} onClick={() => setCheckType('end')} className="text-sm">📤 Check-Out</Button>
       </div>
-      <div>
-        <Label>Condition Notes</Label>
-        <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Describe the condition..." />
-      </div>
+      <div><Label>Condition Notes</Label><Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Describe the condition..." /></div>
       <div>
         <p className="text-xs font-semibold mb-2">Condition Photos</p>
         <div className="flex gap-3 flex-wrap">
@@ -125,6 +150,7 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [durationType, setDurationType] = useState('monthly');
+  const [paymentFrequency, setPaymentFrequency] = useState('monthly');
   const [agreedAmount, setAgreedAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [amountPaid, setAmountPaid] = useState('');
@@ -143,8 +169,7 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
 
   async function handleSubmit() {
     if (!user || !currentBusiness || !selectedAssetId || !renterName.trim() || !startDate || !endDate) {
-      toast.error('Please fill in all required fields');
-      return;
+      toast.error('Please fill in all required fields'); return;
     }
     setSubmitting(true);
     const totalPrice = parseFloat(agreedAmount) || 0;
@@ -152,38 +177,42 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
     const payStatus = paid >= totalPrice ? 'paid' : paid > 0 ? 'partial' : 'unpaid';
 
     const { error } = await supabase.from('property_bookings').insert({
-      asset_id: selectedAssetId,
-      business_id: currentBusiness.id,
-      renter_id: user.id,
-      renter_name: renterName.trim(),
-      renter_contact: renterContact.trim(),
-      start_date: new Date(startDate).toISOString(),
-      end_date: new Date(endDate).toISOString(),
-      duration_type: durationType,
-      total_price: totalPrice,
-      agreed_amount: totalPrice,
-      amount_paid: paid,
-      payment_status: payStatus,
-      payment_method: paymentMethod,
-      status: 'active',
-      booking_type: 'direct',
-      notes: notes.trim(),
-      renter_occupation: renterOccupation.trim(),
-      rental_purpose: rentalPurpose.trim(),
-      gender: renterGender,
-      age: renterAge ? parseInt(renterAge) : null,
+      asset_id: selectedAssetId, business_id: currentBusiness.id, renter_id: user.id,
+      renter_name: toTitleCase(renterName.trim()), renter_contact: renterContact.trim(),
+      start_date: new Date(startDate).toISOString(), end_date: new Date(endDate).toISOString(),
+      duration_type: durationType, payment_frequency: paymentFrequency,
+      total_price: totalPrice, agreed_amount: totalPrice, amount_paid: paid,
+      payment_status: payStatus, payment_method: paymentMethod,
+      status: 'active', booking_type: 'direct',
+      notes: toSentenceCase(notes.trim()),
+      renter_occupation: toSentenceCase(renterOccupation.trim()),
+      rental_purpose: toSentenceCase(rentalPurpose.trim()),
+      gender: renterGender, age: renterAge ? parseInt(renterAge) : null,
       expected_payment_date: new Date(endDate).toISOString(),
       proof_url: proofUrl || null,
     } as any);
 
     if (error) { toast.error(error.message); setSubmitting(false); return; }
-
-    // Mark asset as unavailable
     await supabase.from('property_assets').update({ is_available: false } as any).eq('id', selectedAssetId);
+    
+    // Auto-add tenant
+    const { data: existingTenant } = await supabase.from('business_team_members')
+      .select('id').eq('business_id', currentBusiness.id)
+      .eq('full_name', toTitleCase(renterName.trim())).eq('rank', 'Tenant').limit(1);
+    if (!existingTenant || existingTenant.length === 0) {
+      await supabase.from('business_team_members').insert({
+        business_id: currentBusiness.id, full_name: toTitleCase(renterName.trim()),
+        phone: renterContact.trim(), rank: 'Tenant',
+        hire_date: startDate, rental_end_date: endDate || null,
+        occupation: toSentenceCase(renterOccupation.trim()),
+        rental_purpose: toSentenceCase(rentalPurpose.trim()),
+        gender: renterGender, age: renterAge ? parseInt(renterAge) : null,
+        agreed_amount: totalPrice, is_active: true, payment_frequency: paymentFrequency, salary: 0,
+      } as any);
+    }
 
     toast.success('Direct booking created! Asset marked as occupied.');
-    setSubmitting(false);
-    onClose();
+    setSubmitting(false); onClose();
   }
 
   return (
@@ -193,20 +222,20 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
           <DialogTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5" /> Direct Booking (Walk-in)</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          {/* Select Asset */}
           <div>
-            <Label>Select Asset *</Label>
+            <Label>Select Asset / Unit *</Label>
             <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-              <SelectTrigger><SelectValue placeholder="Choose an asset..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Choose asset or specific room/unit..." /></SelectTrigger>
               <SelectContent>
                 {assets.filter(a => a.is_available).map(a => (
                   <SelectItem key={a.id} value={a.id}>
                     {a.category === 'house' ? '🏠' : a.category === 'land' ? '🏞️' : a.category === 'vehicle' ? '🚗' : '🚢'} {a.name} - {a.location}
-                    {a.total_rooms > 0 && ` (${a.total_rooms} rooms)`}
+                    {(a as any).total_rooms > 0 && ` (${(a as any).total_rooms} rooms)`}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground mt-1">💡 Tip: Add each room/unit as a separate asset with its own price for different pricing</p>
           </div>
 
           {selectedAsset && (
@@ -222,7 +251,6 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
             </Card>
           )}
 
-          {/* Renter Info */}
           <div className="grid grid-cols-2 gap-2">
             <div><Label>Renter Name *</Label><Input value={renterName} onChange={e => setRenterName(e.target.value)} /></div>
             <div><Label>Phone</Label><Input value={renterContact} onChange={e => setRenterContact(e.target.value)} /></div>
@@ -246,10 +274,9 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
             <div><Label>Age</Label><Input type="number" value={renterAge} onChange={e => setRenterAge(e.target.value)} /></div>
           </div>
 
-          {/* Duration */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label>Duration</Label>
+              <Label>Billing Duration</Label>
               <Select value={durationType} onValueChange={setDurationType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -259,22 +286,26 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Payment Frequency</Label>
+              <Select value={paymentFrequency} onValueChange={setPaymentFrequency}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_FREQUENCIES.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
             <div><Label>Start *</Label><Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
             <div><Label>End *</Label><Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
           </div>
 
-          {/* Payment */}
           <div className="border-t pt-3 space-y-2">
             <p className="text-xs font-semibold">💰 Payment</p>
             <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label>Agreed Amount</Label>
-                <Input type="number" value={agreedAmount} onChange={e => setAgreedAmount(e.target.value)} />
-              </div>
-              <div>
-                <Label>Amount Paid Now</Label>
-                <Input type="number" value={amountPaid} onChange={e => setAmountPaid(e.target.value)} placeholder="0 if credit" />
-              </div>
+              <div><Label>Agreed Amount</Label><Input type="number" value={agreedAmount} onChange={e => setAgreedAmount(e.target.value)} /></div>
+              <div><Label>Amount Paid Now</Label><Input type="number" value={amountPaid} onChange={e => setAmountPaid(e.target.value)} placeholder="0 if credit" /></div>
             </div>
             <div>
               <Label>Payment Method</Label>
@@ -297,11 +328,7 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
             )}
           </div>
 
-          <div>
-            <Label>Notes</Label>
-            <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
-          </div>
-
+          <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
           <Button onClick={handleSubmit} disabled={submitting} className="w-full">
             <CheckCircle className="h-4 w-4 mr-2" />{submitting ? 'Creating...' : 'Create Direct Booking'}
           </Button>
@@ -327,6 +354,7 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [durationType, setDurationType] = useState('daily');
+  const [paymentFrequency, setPaymentFrequency] = useState('monthly');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [propertyAssets, setPropertyAssets] = useState<any[]>([]);
@@ -369,18 +397,31 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
     if (hasConflict) { toast.error('Asset already booked for these dates'); setSubmitting(false); return; }
 
     const totalPrice = price * units;
-    const { error } = await supabase.from('property_bookings').insert({
+    const bookingData = {
       asset_id: foundAsset.id, business_id: foundAsset.business_id, renter_id: user.id,
-      renter_name: renterName.trim(), renter_contact: renterContact.trim(),
+      renter_name: toTitleCase(renterName.trim()), renter_contact: renterContact.trim(),
       start_date: start.toISOString(), end_date: end.toISOString(),
-      duration_type: durationType, total_price: totalPrice, agreed_amount: totalPrice,
-      status: 'pending', booking_type: 'online', notes: notes.trim(),
-      renter_occupation: renterOccupation.trim(), rental_purpose: rentalPurpose.trim(),
+      duration_type: durationType, payment_frequency: paymentFrequency,
+      total_price: totalPrice, agreed_amount: totalPrice,
+      status: 'pending', booking_type: 'online',
+      notes: toSentenceCase(notes.trim()),
+      renter_occupation: toSentenceCase(renterOccupation.trim()),
+      rental_purpose: toSentenceCase(rentalPurpose.trim()),
       gender: renterGender, age: renterAge ? parseInt(renterAge) : null,
       expected_payment_date: end.toISOString(),
-    } as any);
+    };
+
+    const { error } = await supabase.from('property_bookings').insert(bookingData as any);
     if (error) { toast.error(error.message); setSubmitting(false); return; }
-    toast.success('Booking request sent!'); setSubmitting(false); onClose();
+
+    // Send notification to owner's business about new booking request
+    await sendCrossBusinessNotification(
+      { business_id: foundAsset.business_id, renter_id: user.id },
+      '📅 New Booking Request',
+      `${toTitleCase(renterName.trim())} wants to rent "${foundAsset.name}" from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}. Total: ${totalPrice}. Payment: ${paymentFrequency}.`
+    );
+
+    toast.success('Booking request sent! The owner will be notified.'); setSubmitting(false); onClose();
   }
 
   return (
@@ -467,16 +508,27 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
                 </div>
                 <div><Label>Age</Label><Input type="number" value={renterAge} onChange={e => setRenterAge(e.target.value)} /></div>
               </div>
-              <div>
-                <Label>Duration</Label>
-                <Select value={durationType} onValueChange={setDurationType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {foundAsset.hourly_price > 0 && <SelectItem value="hourly">Hourly ({fmt(foundAsset.hourly_price)}/hr)</SelectItem>}
-                    {foundAsset.daily_price > 0 && <SelectItem value="daily">Daily ({fmt(foundAsset.daily_price)}/day)</SelectItem>}
-                    {foundAsset.monthly_price > 0 && <SelectItem value="monthly">Monthly ({fmt(foundAsset.monthly_price)}/mo)</SelectItem>}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label>Billing Duration</Label>
+                  <Select value={durationType} onValueChange={setDurationType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {foundAsset.hourly_price > 0 && <SelectItem value="hourly">Hourly ({fmt(foundAsset.hourly_price)}/hr)</SelectItem>}
+                      {foundAsset.daily_price > 0 && <SelectItem value="daily">Daily ({fmt(foundAsset.daily_price)}/day)</SelectItem>}
+                      {foundAsset.monthly_price > 0 && <SelectItem value="monthly">Monthly ({fmt(foundAsset.monthly_price)}/mo)</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Payment Frequency</Label>
+                  <Select value={paymentFrequency} onValueChange={setPaymentFrequency}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_FREQUENCIES.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label>Start *</Label><Input type="datetime-local" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
@@ -501,9 +553,13 @@ function BookingComments({ booking, isOwner }: { booking: any; isOwner: boolean 
 
   async function saveOwnerNotes() {
     setSaving(true);
-    const { error } = await supabase.from('property_bookings').update({ owner_notes: ownerNotes } as any).eq('id', booking.id);
+    const { error } = await supabase.from('property_bookings').update({ owner_notes: toSentenceCase(ownerNotes) } as any).eq('id', booking.id);
     if (error) toast.error(error.message);
-    else toast.success('Response saved and visible to renter!');
+    else {
+      toast.success('Response saved and visible to renter!');
+      // Notify renter about the response
+      await sendCrossBusinessNotification(booking, '💬 Owner Responded', `The owner responded to your booking for "${booking.renter_name}": "${ownerNotes.slice(0, 80)}"`);
+    }
     setSaving(false);
   }
 
@@ -547,19 +603,9 @@ function ReceiptDialog({ booking, asset, businessInfo, open, onClose }: { bookin
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>📄 Booking Receipt</DialogTitle></DialogHeader>
         <Receipt
-          items={[{
-            itemName: asset?.name || 'Asset Rental',
-            category: asset?.category || 'rental',
-            quantity: 1,
-            unitPrice: Number(booking.total_price),
-            subtotal: Number(booking.total_price),
-          }]}
-          grandTotal={Number(booking.total_price)}
-          buyerName={booking.renter_name}
-          sellerName={businessInfo?.name || ''}
-          date={booking.created_at}
-          type="sale"
-          businessInfo={businessInfo}
+          items={[{ itemName: asset?.name || 'Asset Rental', category: asset?.category || 'rental', quantity: 1, unitPrice: Number(booking.total_price), subtotal: Number(booking.total_price) }]}
+          grandTotal={Number(booking.total_price)} buyerName={booking.renter_name}
+          sellerName={businessInfo?.name || ''} date={booking.created_at} type="sale" businessInfo={businessInfo}
         />
       </DialogContent>
     </Dialog>
@@ -588,21 +634,14 @@ function ComplaintsSection({ bookings, assets, isOwnerOrAdmin, businessId }: { b
     const booking = bookings.find(b => b.id === selectedBooking);
     if (!booking) return;
     const { error } = await supabase.from('property_complaints').insert({
-      booking_id: selectedBooking,
-      asset_id: booking.asset_id,
-      business_id: businessId,
-      renter_id: user.id,
-      renter_name: booking.renter_name || 'Renter',
-      category,
-      description: description.trim(),
+      booking_id: selectedBooking, asset_id: booking.asset_id, business_id: businessId,
+      renter_id: user.id, renter_name: booking.renter_name || 'Renter',
+      category, description: toSentenceCase(description.trim()),
     } as any);
     if (error) { toast.error(error.message); return; }
-    // Send notification to owner
     await supabase.from('notifications').insert({
-      business_id: businessId,
-      title: '⚠️ New Complaint',
-      message: `${booking.renter_name} filed a complaint: ${category} — "${description.trim().slice(0, 80)}"`,
-      type: 'complaint',
+      business_id: businessId, title: '⚠️ New Complaint',
+      message: `${booking.renter_name} filed a complaint: ${category} — "${description.trim().slice(0, 80)}"`, type: 'complaint',
     } as any);
     toast.success('Complaint submitted! Owner will be notified.');
     setShowAdd(false); setDescription(''); setSelectedBooking(''); setCategory('general');
@@ -613,12 +652,10 @@ function ComplaintsSection({ bookings, assets, isOwnerOrAdmin, businessId }: { b
   async function saveResponse(complaintId: string) {
     if (!responseText.trim()) return;
     const { error } = await supabase.from('property_complaints').update({
-      owner_response: responseText.trim(),
-      status: 'responded',
+      owner_response: toSentenceCase(responseText.trim()), status: 'responded',
     } as any).eq('id', complaintId);
     if (error) { toast.error(error.message); return; }
-    toast.success('Response saved!');
-    setRespondingId(null); setResponseText('');
+    toast.success('Response saved!'); setRespondingId(null); setResponseText('');
     const { data } = await supabase.from('property_complaints').select('*').eq('business_id', businessId).order('created_at', { ascending: false });
     setComplaints(data || []);
   }
@@ -632,23 +669,15 @@ function ComplaintsSection({ bookings, assets, isOwnerOrAdmin, businessId }: { b
 
   const activeBookings = bookings.filter(b => ['active', 'confirmed'].includes(b.status));
   const COMPLAINT_CATS = [
-    { value: 'general', label: 'General' },
-    { value: 'maintenance', label: '🔧 Maintenance / Repairs' },
-    { value: 'plumbing', label: '🚿 Plumbing / Leaks' },
-    { value: 'electrical', label: '⚡ Electrical' },
-    { value: 'noise', label: '🔊 Noise / Disturbance' },
-    { value: 'cleanliness', label: '🧹 Cleanliness' },
-    { value: 'vehicle_repair', label: '🚗 Vehicle Repair Needed' },
-    { value: 'other', label: 'Other' },
+    { value: 'general', label: 'General' }, { value: 'maintenance', label: '🔧 Maintenance / Repairs' },
+    { value: 'plumbing', label: '🚿 Plumbing / Leaks' }, { value: 'electrical', label: '⚡ Electrical' },
+    { value: 'noise', label: '🔊 Noise / Disturbance' }, { value: 'cleanliness', label: '🧹 Cleanliness' },
+    { value: 'vehicle_repair', label: '🚗 Vehicle Repair Needed' }, { value: 'other', label: 'Other' },
   ];
 
   return (
     <div className="space-y-3">
-      <Button size="sm" onClick={() => setShowAdd(true)} className="w-full">
-        <AlertTriangle className="h-4 w-4 mr-1" /> File a Complaint
-      </Button>
-
-      {/* Add Complaint Dialog */}
+      <Button size="sm" onClick={() => setShowAdd(true)} className="w-full"><AlertTriangle className="h-4 w-4 mr-1" /> File a Complaint</Button>
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent>
           <DialogHeader><DialogTitle>⚠️ File a Complaint</DialogTitle></DialogHeader>
@@ -669,25 +698,18 @@ function ComplaintsSection({ bookings, assets, isOwnerOrAdmin, businessId }: { b
               <Label>Category</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {COMPLAINT_CATS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                </SelectContent>
+                <SelectContent>{COMPLAINT_CATS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Description *</Label>
-              <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe the issue in detail..." rows={3} />
-            </div>
+            <div><Label>Description *</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe the issue in detail..." rows={3} /></div>
             <Button onClick={submitComplaint} className="w-full">Submit Complaint</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Complaints List */}
       {complaints.length === 0 ? (
         <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">
-          <AlertTriangle className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
-          No complaints filed yet.
+          <AlertTriangle className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />No complaints filed yet.
         </CardContent></Card>
       ) : (
         complaints.map(c => {
@@ -720,9 +742,7 @@ function ComplaintsSection({ bookings, assets, isOwnerOrAdmin, businessId }: { b
                       <div className="w-full space-y-1">
                         <Textarea value={responseText} onChange={e => setResponseText(e.target.value)} placeholder="Your response..." rows={2} className="text-xs" />
                         <div className="flex gap-1">
-                          <Button size="sm" className="h-7 text-xs flex-1" onClick={() => saveResponse(c.id)}>
-                            <Send className="h-3 w-3 mr-1" /> Save Response
-                          </Button>
+                          <Button size="sm" className="h-7 text-xs flex-1" onClick={() => saveResponse(c.id)}><Send className="h-3 w-3 mr-1" /> Save Response</Button>
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setRespondingId(null)}>Cancel</Button>
                         </div>
                       </div>
@@ -747,6 +767,10 @@ function ComplaintsSection({ bookings, assets, isOwnerOrAdmin, businessId }: { b
   );
 }
 
+const FREQ_LABEL: Record<string, string> = {
+  monthly: 'Monthly', quarterly: 'Every 3 months', biannual: 'Every 6 months', annual: 'Yearly', 'one-time': 'One-time',
+};
+
 // ========== MAIN COMPONENT ==========
 export default function PropertyBookings() {
   const { t } = useTranslation();
@@ -762,7 +786,6 @@ export default function PropertyBookings() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [proofUrl, setProofUrl] = useState('');
   const [receiptBooking, setReceiptBooking] = useState<any>(null);
-
   const [prefilledPropertyId, setPrefilledPropertyId] = useState('');
   const [prefilledPropertyName, setPrefilledPropertyName] = useState('');
 
@@ -811,37 +834,28 @@ export default function PropertyBookings() {
     const newStatus = newPaid >= Number(paymentDialog.total_price) ? 'paid' : 'partial';
 
     const updates: any = {
-      amount_paid: newPaid,
-      payment_status: newStatus,
-      payment_method: paymentMethod,
+      amount_paid: newPaid, payment_status: newStatus, payment_method: paymentMethod,
       last_payment_date: new Date().toISOString(),
     };
     if (proofUrl) updates.proof_url = proofUrl;
 
     const { error } = await supabase.from('property_bookings').update(updates).eq('id', paymentDialog.id);
     if (error) { toast.error(error.message); return; }
-      toast.success(`Payment of ${fmt(amt)} recorded!`);
+    toast.success(`Payment of ${fmt(amt)} recorded!`);
 
-    // Send payment notification
-    try {
-      await supabase.from('notifications').insert({
-        business_id: paymentDialog.business_id,
-        title: '💰 Payment Received',
-        message: `${paymentDialog.renter_name} paid ${fmt(amt)} for rental. Status: ${newStatus === 'paid' ? 'Fully Paid ✅' : 'Partial Payment'}`,
-        type: 'payment',
-      } as any);
-    } catch (e) { console.error('Notification error', e); }
+    // Notify both parties about payment
+    const asset = assets.find(a => a.id === paymentDialog.asset_id);
+    await sendCrossBusinessNotification(
+      paymentDialog,
+      '💰 Payment Recorded',
+      `Payment of ${fmt(amt)} for "${asset?.name || 'Rental'}" by ${paymentDialog.renter_name}. Status: ${newStatus === 'paid' ? 'Fully Paid ✅' : 'Partial Payment'}`
+    );
 
-    // If fully paid, generate receipt
     if (newStatus === 'paid') {
-      const asset = assets.find(a => a.id === paymentDialog.asset_id);
       await supabase.from('receipts').insert({
-        business_id: paymentDialog.business_id,
-        transaction_id: paymentDialog.id,
-        receipt_type: 'booking',
-        buyer_name: paymentDialog.renter_name,
-        seller_name: currentBusiness?.name || '',
-        grand_total: Number(paymentDialog.total_price),
+        business_id: paymentDialog.business_id, transaction_id: paymentDialog.id,
+        receipt_type: 'booking', buyer_name: paymentDialog.renter_name,
+        seller_name: currentBusiness?.name || '', grand_total: Number(paymentDialog.total_price),
         items: [{ item_name: asset?.name || 'Rental', quantity: 1, unit_price: Number(paymentDialog.total_price), subtotal: Number(paymentDialog.total_price), category: 'rental' }],
         business_info: { name: currentBusiness?.name, address: currentBusiness?.address, contact: currentBusiness?.contact, email: currentBusiness?.email },
       } as any);
@@ -852,17 +866,6 @@ export default function PropertyBookings() {
     refreshData();
   }
 
-  async function sendBookingNotification(booking: any, message: string) {
-    try {
-      await supabase.from('notifications').insert({
-        business_id: booking.business_id,
-        title: '📅 Booking Update',
-        message,
-        type: 'booking',
-      } as any);
-    } catch (e) { console.error('Notification error', e); }
-  }
-
   async function handleStatusChange(bookingId: string, newStatus: string) {
     const booking = bookings.find(b => b.id === bookingId);
     if (!booking) return;
@@ -870,40 +873,36 @@ export default function PropertyBookings() {
 
     await updateBooking(bookingId, { status: newStatus } as any);
 
-    // Send notification
     const statusLabels: Record<string, string> = { confirmed: 'confirmed ✅', active: 'started 🟢', completed: 'completed ✅', cancelled: 'cancelled ❌' };
-    await sendBookingNotification(booking, `Booking for "${asset?.name || 'Asset'}" by ${booking.renter_name} has been ${statusLabels[newStatus] || newStatus}.`);
+    await sendCrossBusinessNotification(
+      booking,
+      '📅 Booking Update',
+      `Booking for "${asset?.name || 'Asset'}" by ${booking.renter_name} has been ${statusLabels[newStatus] || newStatus}.`
+    );
 
-    // When activating, mark asset as unavailable
     if (newStatus === 'active' || newStatus === 'confirmed') {
       await supabase.from('property_assets').update({ is_available: false } as any).eq('id', booking.asset_id);
     }
-    // When completing/cancelling, re-mark as available
     if (newStatus === 'completed' || newStatus === 'cancelled') {
       await supabase.from('property_assets').update({ is_available: true } as any).eq('id', booking.asset_id);
     }
 
-    // Auto-add to tenant list when booking is confirmed/active
+    // Auto-add to tenant list
     if (newStatus === 'active' || newStatus === 'confirmed') {
       const { data: existingTenant } = await supabase.from('business_team_members')
         .select('id').eq('business_id', booking.business_id)
         .eq('full_name', booking.renter_name).eq('rank', 'Tenant').limit(1);
       if (!existingTenant || existingTenant.length === 0) {
         await supabase.from('business_team_members').insert({
-          business_id: booking.business_id,
-          full_name: booking.renter_name || 'Tenant',
-          phone: booking.renter_contact || '',
-          rank: 'Tenant',
+          business_id: booking.business_id, full_name: booking.renter_name || 'Tenant',
+          phone: booking.renter_contact || '', rank: 'Tenant',
           hire_date: new Date(booking.start_date).toISOString().slice(0, 10),
           rental_end_date: new Date(booking.end_date).toISOString().slice(0, 10),
           occupation: (booking as any).renter_occupation || '',
           rental_purpose: (booking as any).rental_purpose || '',
-          gender: (booking as any).gender || '',
-          age: (booking as any).age || null,
+          gender: (booking as any).gender || '', age: (booking as any).age || null,
           agreed_amount: Number(booking.total_price) || 0,
-          is_active: true,
-          payment_frequency: 'monthly',
-          salary: 0,
+          is_active: true, payment_frequency: (booking as any).payment_frequency || 'monthly', salary: 0,
         } as any);
       }
     }
@@ -915,6 +914,7 @@ export default function PropertyBookings() {
     const asset = assets.find(a => a.id === booking.asset_id);
     const outstanding = Number(booking.total_price) - Number(booking.amount_paid);
     const bType = (booking as any).booking_type || 'online';
+    const freq = (booking as any).payment_frequency || 'monthly';
 
     return (
       <Card>
@@ -933,7 +933,7 @@ export default function PropertyBookings() {
           </div>
           <div className="text-xs space-y-0.5">
             <p>📅 {new Date(booking.start_date).toLocaleDateString()} → {new Date(booking.end_date).toLocaleDateString()}</p>
-            <p>⏱ {booking.duration_type} · {fmt(Number(booking.total_price))}</p>
+            <p>⏱ {booking.duration_type} · {fmt(Number(booking.total_price))} · <span className="text-primary font-medium">Pays {FREQ_LABEL[freq] || freq}</span></p>
             <div className="flex items-center gap-3">
               <span>💰 Paid: <span className="text-success font-medium">{fmt(Number(booking.amount_paid))}</span></span>
               {outstanding > 0 && <span>Balance: <span className="text-warning font-medium">{fmt(outstanding)}</span></span>}
@@ -1038,10 +1038,8 @@ export default function PropertyBookings() {
 
       <AdSpace variant="inline" />
 
-      {/* Dialogs */}
       <BookNowDialog open={bookNowOpen} onClose={() => { setBookNowOpen(false); setPrefilledPropertyId(''); setPrefilledPropertyName(''); }}
         prefilledPropertyId={prefilledPropertyId} prefilledPropertyName={prefilledPropertyName} />
-
       <DirectBookingDialog open={directBookOpen} onClose={() => { setDirectBookOpen(false); refreshData(); }} assets={assets} />
 
       <Dialog open={!!checkInBooking} onOpenChange={() => setCheckInBooking(null)}>
@@ -1050,7 +1048,6 @@ export default function PropertyBookings() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Dialog */}
       <Dialog open={!!paymentDialog} onOpenChange={o => { if (!o) { setPaymentDialog(null); setProofUrl(''); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Record Payment — {paymentDialog?.renter_name}</DialogTitle></DialogHeader>
@@ -1088,13 +1085,10 @@ export default function PropertyBookings() {
         </DialogContent>
       </Dialog>
 
-      {/* Receipt Dialog */}
       <ReceiptDialog
-        booking={receiptBooking}
-        asset={receiptAsset}
+        booking={receiptBooking} asset={receiptAsset}
         businessInfo={currentBusiness ? { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email } : null}
-        open={!!receiptBooking}
-        onClose={() => setReceiptBooking(null)}
+        open={!!receiptBooking} onClose={() => setReceiptBooking(null)}
       />
     </div>
   );

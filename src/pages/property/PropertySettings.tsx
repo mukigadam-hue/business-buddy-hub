@@ -450,100 +450,146 @@ export default function PropertySettings() {
       <ReceiptArchive businessId={currentBusiness?.id || ''} />
 
       {/* ===== PROPERTY FINANCIAL SUMMARY ===== */}
-      <Card className="shadow-card border-primary/20">
-        <CardContent className="p-4 space-y-4">
-          <h2 className="text-lg font-bold flex items-center gap-2">📊 Property Financial Summary</h2>
+      {(() => {
+        // Total expected monthly revenue if ALL assets rented
+        const totalExpectedRevenue = activeAssets.reduce((s, a) => s + (a.monthly_price > 0 ? a.monthly_price : a.daily_price * 30), 0);
+        // Revenue from occupied assets
+        const occupiedRevenue = activeAssets.filter(a => !a.is_available).reduce((s, a) => s + (a.monthly_price > 0 ? a.monthly_price : a.daily_price * 30), 0);
+        // Expected from unoccupied
+        const unoccupiedExpected = totalExpectedRevenue - occupiedRevenue;
 
-          {/* Portfolio Overview */}
-          <div className="p-3 rounded-lg bg-info/5 border border-info/20">
-            <div className="flex items-center gap-2 mb-1"><Home className="h-4 w-4 text-info" /><p className="text-sm font-semibold">Portfolio Overview</p></div>
-            <div className="grid grid-cols-3 gap-3 mt-2">
-              <div>
-                <p className="text-xs text-muted-foreground">Total Assets</p>
-                <p className="text-xl font-bold tabular-nums">{activeAssets.length}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Available</p>
-                <p className="text-xl font-bold text-success tabular-nums">{availableAssets.length}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Occupancy</p>
-                <p className="text-xl font-bold tabular-nums">{occupancyRate}%</p>
-              </div>
-            </div>
-          </div>
+        return (
+          <Card className="shadow-card border-primary/20">
+            <CardContent className="p-4 space-y-4">
+              <h2 className="text-lg font-bold flex items-center gap-2">📊 Property Financial Summary</h2>
 
-          {/* Booking Summary */}
-          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-            <div className="flex items-center gap-2 mb-1"><CalendarCheck className="h-4 w-4 text-primary" /><p className="text-sm font-semibold">Bookings</p></div>
-            <div className="grid grid-cols-3 gap-3 mt-2">
-              <div>
-                <p className="text-xs text-muted-foreground">Active</p>
-                <p className="text-lg font-bold tabular-nums">{activeBookings.length}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Pending</p>
-                <p className="text-lg font-bold text-warning tabular-nums">{pendingBookings.length}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Completed</p>
-                <p className="text-lg font-bold tabular-nums">{completedBookings.length}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Revenue */}
-          <div className="p-3 rounded-lg bg-success/5 border border-success/20">
-            <div className="flex items-center gap-2 mb-1"><DollarSign className="h-4 w-4 text-success" /><p className="text-sm font-semibold">Revenue</p></div>
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              <div>
-                <p className="text-xs text-muted-foreground">Today's Collections</p>
-                <p className="text-lg font-bold text-success tabular-nums">{fmt(todayRevenue)}</p>
-                <p className="text-[10px] text-muted-foreground">{todayBookings.length} booking(s)</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Collected</p>
-                <p className="text-lg font-bold text-success tabular-nums">{fmt(totalCashCollected)}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Outstanding */}
-          {totalOutstanding > 0 && (
-            <div className="p-3 rounded-lg bg-warning/5 border border-warning/20">
-              <div className="flex items-center gap-2 mb-1"><Wallet className="h-4 w-4 text-warning" /><p className="text-sm font-semibold">Outstanding Payments</p></div>
-              <p className="text-2xl font-bold text-warning tabular-nums">{fmt(totalOutstanding)}</p>
-              <p className="text-xs text-muted-foreground">
-                {bookings.filter(b => b.payment_status !== 'paid' && (Number(b.total_price) - Number(b.amount_paid)) > 0).length} booking(s) with pending payment
-              </p>
-            </div>
-          )}
-
-          {/* Category breakdown */}
-          {(() => {
-            const cats = activeAssets.reduce((acc, a) => {
-              acc[a.category] = (acc[a.category] || 0) + 1;
-              return acc;
-            }, {} as Record<string, number>);
-            if (Object.keys(cats).length === 0) return null;
-            return (
-              <div className="p-3 rounded-lg bg-muted/30 border">
-                <p className="text-sm font-semibold mb-2">🏷️ Asset Categories</p>
-                <div className="space-y-1">
-                  {Object.entries(cats).map(([cat, count]) => (
-                    <div key={cat} className="flex items-center justify-between text-sm">
-                      <span className="capitalize flex items-center gap-2">
-                        {cat === 'land' ? '🏞️' : cat === 'vehicle' ? '🚗' : cat === 'vessel' ? '🚢' : '🏠'} {cat}
-                      </span>
-                      <span className="font-medium">{count}</span>
-                    </div>
-                  ))}
+              {/* Portfolio Overview */}
+              <div className="p-3 rounded-lg bg-info/5 border border-info/20">
+                <div className="flex items-center gap-2 mb-1"><Home className="h-4 w-4 text-info" /><p className="text-sm font-semibold">Portfolio Overview</p></div>
+                <div className="grid grid-cols-3 gap-3 mt-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Assets</p>
+                    <p className="text-xl font-bold tabular-nums">{activeAssets.length}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Available</p>
+                    <p className="text-xl font-bold text-success tabular-nums">{availableAssets.length}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Occupancy</p>
+                    <p className="text-xl font-bold tabular-nums">{occupancyRate}%</p>
+                  </div>
                 </div>
               </div>
-            );
-          })()}
-        </CardContent>
-      </Card>
+
+              {/* Total Expected Revenue */}
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-primary" /><p className="text-sm font-semibold">Expected Monthly Revenue (If All Rented)</p></div>
+                <p className="text-2xl font-bold text-primary tabular-nums">{fmt(totalExpectedRevenue)}</p>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">From Occupied ({activeAssets.length - availableAssets.length})</p>
+                    <p className="text-lg font-bold text-success tabular-nums">{fmt(occupiedRevenue)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Potential from Vacant ({availableAssets.length})</p>
+                    <p className="text-lg font-bold text-warning tabular-nums">{fmt(unoccupiedExpected)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Per-Asset Revenue Breakdown */}
+              {activeAssets.length > 0 && (
+                <div className="p-3 rounded-lg bg-muted/30 border">
+                  <p className="text-sm font-semibold mb-2">💰 Per-Asset Revenue</p>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {activeAssets.map(a => {
+                      const monthlyRate = a.monthly_price > 0 ? a.monthly_price : a.daily_price * 30;
+                      const isOccupied = !a.is_available;
+                      const assetBookings = bookings.filter(b => b.asset_id === a.id);
+                      const assetCollected = assetBookings.reduce((s, b) => s + Number(b.amount_paid), 0);
+                      return (
+                        <div key={a.id} className="flex items-center justify-between text-xs p-1.5 rounded bg-background border">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span>{a.category === 'house' ? '🏠' : a.category === 'land' ? '🏞️' : a.category === 'vehicle' ? '🚗' : '🚢'}</span>
+                            <span className="font-medium truncate">{a.name}</span>
+                            <Badge variant={isOccupied ? 'destructive' : 'default'} className="text-[8px] shrink-0">{isOccupied ? 'Occupied' : 'Vacant'}</Badge>
+                          </div>
+                          <div className="text-right shrink-0 ml-2">
+                            <p className="font-semibold tabular-nums">{fmt(monthlyRate)}/mo</p>
+                            {assetCollected > 0 && <p className="text-[10px] text-success">Collected: {fmt(assetCollected)}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Booking Summary */}
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2 mb-1"><CalendarCheck className="h-4 w-4 text-primary" /><p className="text-sm font-semibold">Bookings</p></div>
+                <div className="grid grid-cols-3 gap-3 mt-2">
+                  <div><p className="text-xs text-muted-foreground">Active</p><p className="text-lg font-bold tabular-nums">{activeBookings.length}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Pending</p><p className="text-lg font-bold text-warning tabular-nums">{pendingBookings.length}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Completed</p><p className="text-lg font-bold tabular-nums">{completedBookings.length}</p></div>
+                </div>
+              </div>
+
+              {/* Revenue Collected */}
+              <div className="p-3 rounded-lg bg-success/5 border border-success/20">
+                <div className="flex items-center gap-2 mb-1"><DollarSign className="h-4 w-4 text-success" /><p className="text-sm font-semibold">Revenue Collected</p></div>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Today's Collections</p>
+                    <p className="text-lg font-bold text-success tabular-nums">{fmt(todayRevenue)}</p>
+                    <p className="text-[10px] text-muted-foreground">{todayBookings.length} booking(s)</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Collected</p>
+                    <p className="text-lg font-bold text-success tabular-nums">{fmt(totalCashCollected)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Outstanding */}
+              {totalOutstanding > 0 && (
+                <div className="p-3 rounded-lg bg-warning/5 border border-warning/20">
+                  <div className="flex items-center gap-2 mb-1"><Wallet className="h-4 w-4 text-warning" /><p className="text-sm font-semibold">Outstanding Payments</p></div>
+                  <p className="text-2xl font-bold text-warning tabular-nums">{fmt(totalOutstanding)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {bookings.filter(b => b.payment_status !== 'paid' && (Number(b.total_price) - Number(b.amount_paid)) > 0).length} booking(s) with pending payment
+                  </p>
+                </div>
+              )}
+
+              {/* Category breakdown */}
+              {(() => {
+                const cats = activeAssets.reduce((acc, a) => {
+                  acc[a.category] = (acc[a.category] || 0) + 1;
+                  return acc;
+                }, {} as Record<string, number>);
+                if (Object.keys(cats).length === 0) return null;
+                return (
+                  <div className="p-3 rounded-lg bg-muted/30 border">
+                    <p className="text-sm font-semibold mb-2">🏷️ Asset Categories</p>
+                    <div className="space-y-1">
+                      {Object.entries(cats).map(([cat, count]) => (
+                        <div key={cat} className="flex items-center justify-between text-sm">
+                          <span className="capitalize flex items-center gap-2">
+                            {cat === 'land' ? '🏞️' : cat === 'vehicle' ? '🚗' : cat === 'vessel' ? '🚢' : '🏠'} {cat}
+                          </span>
+                          <span className="font-medium">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Settings Password */}
       <Card className="shadow-card">

@@ -168,17 +168,28 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
             <div><Label>Age</Label><Input type="number" min="0" max="150" value={renterAge} onChange={e => setRenterAge(e.target.value)} placeholder="e.g. 30" /></div>
           </div>
 
-          {/* Duration */}
-          <div>
-            <Label>Duration Type</Label>
-            <Select value={durationType} onValueChange={setDurationType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {asset.hourly_price > 0 && <SelectItem value="hourly">Hourly ({fmt(asset.hourly_price)}/hr)</SelectItem>}
-                {asset.daily_price > 0 && <SelectItem value="daily">Daily ({fmt(asset.daily_price)}/day)</SelectItem>}
-                {asset.monthly_price > 0 && <SelectItem value="monthly">Monthly ({fmt(asset.monthly_price)}/mo)</SelectItem>}
-              </SelectContent>
-            </Select>
+          {/* Duration & Payment Frequency */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label>Billing Duration</Label>
+              <Select value={durationType} onValueChange={setDurationType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {asset.hourly_price > 0 && <SelectItem value="hourly">Hourly ({fmt(asset.hourly_price)}/hr)</SelectItem>}
+                  {asset.daily_price > 0 && <SelectItem value="daily">Daily ({fmt(asset.daily_price)}/day)</SelectItem>}
+                  {asset.monthly_price > 0 && <SelectItem value="monthly">Monthly ({fmt(asset.monthly_price)}/mo)</SelectItem>}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Payment Frequency</Label>
+              <Select value={paymentFrequency} onValueChange={setPaymentFrequency}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_FREQUENCIES.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">

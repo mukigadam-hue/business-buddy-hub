@@ -139,15 +139,19 @@ function getNotificationRoute(type: string): string {
     case 'order_priced': return '/orders';
     case 'order_confirmed': return '/orders';
     case 'order_rejected': return '/orders';
+    case 'order_completed': return '/orders';
     case 'new_purchase': return '/purchases';
     case 'payment_submitted': return '/orders';
-    case 'payment_confirmed': return '/orders';
+    case 'payment_confirmed': return '/checkout';
+    case 'booking_confirmed': return '/bookings';
+    case 'booking_completed': return '/bookings';
     case 'poke': return '/contacts';
     case 'low_stock': return '/stock';
     case 'empty_stock': return '/stock';
     case 'new_sale': return '/sales';
     case 'new_expense': return '/expenses';
     case 'new_service': return '/services';
+    case 'complaint': return '/bookings';
     case 'team': return '/team';
     default: return '/';
   }

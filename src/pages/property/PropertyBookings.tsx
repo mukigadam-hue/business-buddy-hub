@@ -639,7 +639,17 @@ export default function PropertyBookings() {
 
     const { error } = await supabase.from('property_bookings').update(updates).eq('id', paymentDialog.id);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Payment of ${fmt(amt)} recorded!`);
+      toast.success(`Payment of ${fmt(amt)} recorded!`);
+
+    // Send payment notification
+    try {
+      await supabase.from('notifications').insert({
+        business_id: paymentDialog.business_id,
+        title: '💰 Payment Received',
+        message: `${paymentDialog.renter_name} paid ${fmt(amt)} for rental. Status: ${newStatus === 'paid' ? 'Fully Paid ✅' : 'Partial Payment'}`,
+        type: 'payment',
+      } as any);
+    } catch (e) { console.error('Notification error', e); }
 
     // If fully paid, generate receipt
     if (newStatus === 'paid') {

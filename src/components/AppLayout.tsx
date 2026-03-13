@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProofVideoButton from '@/components/ProofVideoButton';
 import { useAuth } from '@/context/AuthContext';
 import { APP_VERSION } from '@/version';
@@ -257,6 +257,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return t('nav.employed');
   }
 
+function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label: string; icon: any }[]; pathname: string }) {
+  const navigate = useNavigate();
+  const currentIndex = navItems.findIndex(n => n.to === pathname);
+  const prev = currentIndex > 0 ? navItems[currentIndex - 1] : null;
+  const next = currentIndex < navItems.length - 1 ? navItems[currentIndex + 1] : null;
+  if (!prev && !next) return null;
+  return (
+    <div className="hidden md:flex items-center justify-between px-6 py-3 border-t border-border bg-muted/30 sticky bottom-0">
+      {prev ? (
+        <Button variant="ghost" size="sm" onClick={() => navigate(prev.to)} className="gap-1.5 text-xs">
+          <ChevronLeft className="h-3.5 w-3.5" /> {prev.label}
+        </Button>
+      ) : <span />}
+      <span className="text-[10px] text-muted-foreground">{currentIndex + 1} / {navItems.length}</span>
+      {next ? (
+        <Button variant="ghost" size="sm" onClick={() => navigate(next.to)} className="gap-1.5 text-xs">
+          {next.label} <ChevronRight className="h-3.5 w-3.5" />
+        </Button>
+      ) : <span />}
+    </div>
+  );
+}
+
   return (
     <div className="flex h-screen overflow-hidden flex-col">
       {currentBusiness && <BusinessRoleBanner userRole={userRole!} businessName={currentBusiness.name} businessType={(currentBusiness as any).business_type || 'business'} />}
@@ -339,8 +362,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-10">
           <div className="p-3 sm:p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">{children}</div>
+          {/* Desktop prev/next page nav */}
+          <DesktopPageNav navItems={navItems} pathname={pathname} />
         </main>
       </div>
 

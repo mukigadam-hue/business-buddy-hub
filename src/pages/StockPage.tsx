@@ -210,20 +210,28 @@ export default function StockPage() {
                     <div><Label>Wholesale Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} required placeholder="Sell to wholesalers" /></div>
                     <div><Label>Retail Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} required placeholder="Sell to customers" /></div>
                   </div>
+                  <BulkPackagingFields
+                    piecesPerCarton={form.pieces_per_carton}
+                    cartonsPerBox={form.cartons_per_box}
+                    boxesPerContainer={form.boxes_per_container}
+                    onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+                    onQuantityCalculated={(total) => setForm(f => ({ ...f, quantity: String(total) }))}
+                    currentQuantity={form.quantity}
+                  />
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Quantity</Label><Input type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} required /></div>
+                    <div>
+                      <Label>Quantity (Total Pieces)</Label>
+                      <Input type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} required
+                        readOnly={parseInt(form.pieces_per_carton) > 0}
+                        className={parseInt(form.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''} />
+                      {parseInt(form.pieces_per_carton) > 0 && <p className="text-[10px] text-muted-foreground mt-0.5">Auto-calculated from bulk</p>}
+                    </div>
                     <div><Label>Min Stock Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
                   </div>
                   <div>
                     <Label>Barcode (Optional)</Label>
                     <Input value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Scan or type barcode..." />
                   </div>
-                  <BulkPackagingFields
-                    piecesPerCarton={form.pieces_per_carton}
-                    cartonsPerBox={form.cartons_per_box}
-                    boxesPerContainer={form.boxes_per_container}
-                    onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
-                  />
                   <Button type="submit" className="w-full">{editItem ? 'Update Item' : 'Add Item'}</Button>
                 </form>
               </DialogContent>

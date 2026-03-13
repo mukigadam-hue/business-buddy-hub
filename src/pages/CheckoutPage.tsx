@@ -354,10 +354,12 @@ export default function CheckoutPage() {
 
             {/* Card payment info */}
             {paymentMethod === 'card' && (
-              <div className="p-4 bg-info/5 rounded-lg border border-info/20">
-                <p className="text-sm text-muted-foreground">
-                  💳 Card payments via Stripe can be configured by the business owner in <span className="font-semibold">Settings</span>. 
-                  If not yet configured, the order will be saved as pending.
+              <div className="space-y-3 p-4 bg-muted/40 rounded-lg border">
+                {currentBusiness && (
+                  <PaymentMethodsViewer businessId={currentBusiness.id} />
+                )}
+                <p className="text-xs text-muted-foreground mt-2">
+                  💳 Select a card/online payment method above, or contact the seller for payment details.
                 </p>
               </div>
             )}

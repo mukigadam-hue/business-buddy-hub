@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine, Search, Building2, Package, Flame, RefreshCw, XCircle, Eye, ShieldCheck } from 'lucide-react';
+import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine, Search, Building2, Package, Flame, RefreshCw, XCircle, Eye, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
@@ -48,7 +48,7 @@ export default function OrdersPage() {
   const [completeDialog, setCompleteDialog] = useState<Order | null>(null);
   const [completeBuyer, setCompleteBuyer] = useState('');
   const [completeSeller, setCompleteSeller] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'card'>('mobile_money');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mobile_money' | 'card'>('mobile_money');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
@@ -599,7 +599,7 @@ export default function OrdersPage() {
         await supabase.from('orders').update({
           payment_method: paymentMethod,
           proof_url: proofUrl,
-          status: paymentMethod === 'card' ? 'paid' : 'pending',
+          status: paymentMethod === 'card' || paymentMethod === 'cash' ? 'paid' : 'pending',
         } as any).eq('id', completeDialog.id);
 
         await completeOrderToSale(completeDialog.id, toTitleCase(completeBuyer.trim()), toTitleCase(completeSeller.trim()));
@@ -1483,7 +1483,21 @@ export default function OrdersPage() {
                 <>
                   <div>
                     <Label className="text-xs font-semibold mb-2 block">Payment Method</Label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => setPaymentMethod('cash')}
+                        className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left ${
+                          paymentMethod === 'cash'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-muted-foreground/30'
+                        }`}
+                      >
+                        <ShoppingBag className="h-5 w-5 text-amber-600 shrink-0" />
+                        <div>
+                          <p className="font-semibold text-xs">Cash</p>
+                          <p className="text-[10px] text-muted-foreground">In hand</p>
+                        </div>
+                      </button>
                       <button
                         onClick={() => setPaymentMethod('mobile_money')}
                         className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left ${
@@ -1508,7 +1522,7 @@ export default function OrdersPage() {
                       >
                         <CreditCard className="h-5 w-5 text-info shrink-0" />
                         <div>
-                          <p className="font-semibold text-xs">Card / Cash</p>
+                          <p className="font-semibold text-xs">Card</p>
                           <p className="text-[10px] text-muted-foreground">Paid directly</p>
                         </div>
                       </button>

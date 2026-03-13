@@ -566,6 +566,187 @@ function ReceiptDialog({ booking, asset, businessInfo, open, onClose }: { bookin
   );
 }
 
+// ========== COMPLAINTS SECTION ==========
+function ComplaintsSection({ bookings, assets, isOwnerOrAdmin, businessId }: { bookings: any[]; assets: any[]; isOwnerOrAdmin: boolean; businessId: string }) {
+  const [complaints, setComplaints] = useState<any[]>([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState('');
+  const [category, setCategory] = useState('general');
+  const [description, setDescription] = useState('');
+  const [responseText, setResponseText] = useState('');
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!businessId) return;
+    supabase.from('property_complaints').select('*').eq('business_id', businessId).order('created_at', { ascending: false })
+      .then(({ data }) => setComplaints(data || []));
+  }, [businessId]);
+
+  async function submitComplaint() {
+    if (!selectedBooking || !description.trim() || !user) { toast.error('Fill all required fields'); return; }
+    const booking = bookings.find(b => b.id === selectedBooking);
+    if (!booking) return;
+    const { error } = await supabase.from('property_complaints').insert({
+      booking_id: selectedBooking,
+      asset_id: booking.asset_id,
+      business_id: businessId,
+      renter_id: user.id,
+      renter_name: booking.renter_name || 'Renter',
+      category,
+      description: description.trim(),
+    } as any);
+    if (error) { toast.error(error.message); return; }
+    // Send notification to owner
+    await supabase.from('notifications').insert({
+      business_id: businessId,
+      title: '⚠️ New Complaint',
+      message: `${booking.renter_name} filed a complaint: ${category} — "${description.trim().slice(0, 80)}"`,
+      type: 'complaint',
+    } as any);
+    toast.success('Complaint submitted! Owner will be notified.');
+    setShowAdd(false); setDescription(''); setSelectedBooking(''); setCategory('general');
+    const { data } = await supabase.from('property_complaints').select('*').eq('business_id', businessId).order('created_at', { ascending: false });
+    setComplaints(data || []);
+  }
+
+  async function saveResponse(complaintId: string) {
+    if (!responseText.trim()) return;
+    const { error } = await supabase.from('property_complaints').update({
+      owner_response: responseText.trim(),
+      status: 'responded',
+    } as any).eq('id', complaintId);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Response saved!');
+    setRespondingId(null); setResponseText('');
+    const { data } = await supabase.from('property_complaints').select('*').eq('business_id', businessId).order('created_at', { ascending: false });
+    setComplaints(data || []);
+  }
+
+  async function resolveComplaint(complaintId: string) {
+    await supabase.from('property_complaints').update({ status: 'resolved', resolved_at: new Date().toISOString() } as any).eq('id', complaintId);
+    toast.success('Complaint resolved!');
+    const { data } = await supabase.from('property_complaints').select('*').eq('business_id', businessId).order('created_at', { ascending: false });
+    setComplaints(data || []);
+  }
+
+  const activeBookings = bookings.filter(b => ['active', 'confirmed'].includes(b.status));
+  const COMPLAINT_CATS = [
+    { value: 'general', label: 'General' },
+    { value: 'maintenance', label: '🔧 Maintenance / Repairs' },
+    { value: 'plumbing', label: '🚿 Plumbing / Leaks' },
+    { value: 'electrical', label: '⚡ Electrical' },
+    { value: 'noise', label: '🔊 Noise / Disturbance' },
+    { value: 'cleanliness', label: '🧹 Cleanliness' },
+    { value: 'vehicle_repair', label: '🚗 Vehicle Repair Needed' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <Button size="sm" onClick={() => setShowAdd(true)} className="w-full">
+        <AlertTriangle className="h-4 w-4 mr-1" /> File a Complaint
+      </Button>
+
+      {/* Add Complaint Dialog */}
+      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>⚠️ File a Complaint</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Select Your Booking *</Label>
+              <Select value={selectedBooking} onValueChange={setSelectedBooking}>
+                <SelectTrigger><SelectValue placeholder="Choose booking..." /></SelectTrigger>
+                <SelectContent>
+                  {activeBookings.map(b => {
+                    const asset = assets.find(a => a.id === b.asset_id);
+                    return <SelectItem key={b.id} value={b.id}>{asset?.name || 'Asset'} — {b.renter_name}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Category</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {COMPLAINT_CATS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Description *</Label>
+              <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe the issue in detail..." rows={3} />
+            </div>
+            <Button onClick={submitComplaint} className="w-full">Submit Complaint</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Complaints List */}
+      {complaints.length === 0 ? (
+        <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">
+          <AlertTriangle className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+          No complaints filed yet.
+        </CardContent></Card>
+      ) : (
+        complaints.map(c => {
+          const asset = assets.find(a => a.id === c.asset_id);
+          return (
+            <Card key={c.id} className={c.status === 'open' ? 'border-amber-500/30' : c.status === 'resolved' ? 'border-green-500/30' : ''}>
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-semibold">{asset?.name || 'Asset'}</p>
+                    <p className="text-xs text-muted-foreground">{c.renter_name} · {new Date(c.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <Badge variant={c.status === 'open' ? 'secondary' : c.status === 'resolved' ? 'default' : 'outline'} className="text-[10px]">
+                    {c.status === 'open' ? '🔴 Open' : c.status === 'resolved' ? '✅ Resolved' : '💬 Responded'}
+                  </Badge>
+                </div>
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">📋 {c.category}</p>
+                  <p className="text-xs">{c.description}</p>
+                </div>
+                {c.owner_response && (
+                  <div className="p-2 rounded-lg bg-primary/5 border border-primary/20">
+                    <p className="text-[10px] font-semibold text-primary mb-0.5">💬 Owner Response:</p>
+                    <p className="text-xs">{c.owner_response}</p>
+                  </div>
+                )}
+                {isOwnerOrAdmin && c.status !== 'resolved' && (
+                  <div className="flex gap-1">
+                    {respondingId === c.id ? (
+                      <div className="w-full space-y-1">
+                        <Textarea value={responseText} onChange={e => setResponseText(e.target.value)} placeholder="Your response..." rows={2} className="text-xs" />
+                        <div className="flex gap-1">
+                          <Button size="sm" className="h-7 text-xs flex-1" onClick={() => saveResponse(c.id)}>
+                            <Send className="h-3 w-3 mr-1" /> Save Response
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setRespondingId(null)}>Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setRespondingId(c.id); setResponseText(c.owner_response || ''); }}>
+                          <Send className="h-3 w-3 mr-1" /> Respond
+                        </Button>
+                        <Button size="sm" className="h-7 text-xs" onClick={() => resolveComplaint(c.id)}>
+                          <CheckCircle className="h-3 w-3 mr-1" /> Resolve
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
 // ========== MAIN COMPONENT ==========
 export default function PropertyBookings() {
   const { t } = useTranslation();
@@ -639,7 +820,17 @@ export default function PropertyBookings() {
 
     const { error } = await supabase.from('property_bookings').update(updates).eq('id', paymentDialog.id);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Payment of ${fmt(amt)} recorded!`);
+      toast.success(`Payment of ${fmt(amt)} recorded!`);
+
+    // Send payment notification
+    try {
+      await supabase.from('notifications').insert({
+        business_id: paymentDialog.business_id,
+        title: '💰 Payment Received',
+        message: `${paymentDialog.renter_name} paid ${fmt(amt)} for rental. Status: ${newStatus === 'paid' ? 'Fully Paid ✅' : 'Partial Payment'}`,
+        type: 'payment',
+      } as any);
+    } catch (e) { console.error('Notification error', e); }
 
     // If fully paid, generate receipt
     if (newStatus === 'paid') {
@@ -661,11 +852,27 @@ export default function PropertyBookings() {
     refreshData();
   }
 
+  async function sendBookingNotification(booking: any, message: string) {
+    try {
+      await supabase.from('notifications').insert({
+        business_id: booking.business_id,
+        title: '📅 Booking Update',
+        message,
+        type: 'booking',
+      } as any);
+    } catch (e) { console.error('Notification error', e); }
+  }
+
   async function handleStatusChange(bookingId: string, newStatus: string) {
     const booking = bookings.find(b => b.id === bookingId);
     if (!booking) return;
+    const asset = assets.find(a => a.id === booking.asset_id);
 
     await updateBooking(bookingId, { status: newStatus } as any);
+
+    // Send notification
+    const statusLabels: Record<string, string> = { confirmed: 'confirmed ✅', active: 'started 🟢', completed: 'completed ✅', cancelled: 'cancelled ❌' };
+    await sendBookingNotification(booking, `Booking for "${asset?.name || 'Asset'}" by ${booking.renter_name} has been ${statusLabels[newStatus] || newStatus}.`);
 
     // When activating, mark asset as unavailable
     if (newStatus === 'active' || newStatus === 'confirmed') {
@@ -675,6 +882,32 @@ export default function PropertyBookings() {
     if (newStatus === 'completed' || newStatus === 'cancelled') {
       await supabase.from('property_assets').update({ is_available: true } as any).eq('id', booking.asset_id);
     }
+
+    // Auto-add to tenant list when booking is confirmed/active
+    if (newStatus === 'active' || newStatus === 'confirmed') {
+      const { data: existingTenant } = await supabase.from('business_team_members')
+        .select('id').eq('business_id', booking.business_id)
+        .eq('full_name', booking.renter_name).eq('rank', 'Tenant').limit(1);
+      if (!existingTenant || existingTenant.length === 0) {
+        await supabase.from('business_team_members').insert({
+          business_id: booking.business_id,
+          full_name: booking.renter_name || 'Tenant',
+          phone: booking.renter_contact || '',
+          rank: 'Tenant',
+          hire_date: new Date(booking.start_date).toISOString().slice(0, 10),
+          rental_end_date: new Date(booking.end_date).toISOString().slice(0, 10),
+          occupation: (booking as any).renter_occupation || '',
+          rental_purpose: (booking as any).rental_purpose || '',
+          gender: (booking as any).gender || '',
+          age: (booking as any).age || null,
+          agreed_amount: Number(booking.total_price) || 0,
+          is_active: true,
+          payment_frequency: 'monthly',
+          salary: 0,
+        } as any);
+      }
+    }
+
     refreshData();
   }
 
@@ -780,10 +1013,11 @@ export default function PropertyBookings() {
       <AdSpace variant="banner" />
 
       <Tabs defaultValue="pending">
-        <TabsList className="grid grid-cols-3">
+        <TabsList className="grid grid-cols-4">
           <TabsTrigger value="pending" className="text-xs">Pending ({pending.length})</TabsTrigger>
           <TabsTrigger value="active" className="text-xs">Active ({active.length})</TabsTrigger>
           <TabsTrigger value="history" className="text-xs">History ({completed.length})</TabsTrigger>
+          <TabsTrigger value="complaints" className="text-xs">⚠️ Complaints</TabsTrigger>
         </TabsList>
         <TabsContent value="pending" className="space-y-2 mt-3">
           {pending.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No pending bookings</p>
@@ -796,6 +1030,9 @@ export default function PropertyBookings() {
         <TabsContent value="history" className="space-y-2 mt-3">
           {completed.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No booking history</p>
             : completed.map(b => <BookingCard key={b.id} booking={b} />)}
+        </TabsContent>
+        <TabsContent value="complaints" className="space-y-2 mt-3">
+          <ComplaintsSection bookings={bookings} assets={assets} isOwnerOrAdmin={isOwnerOrAdmin} businessId={currentBusiness?.id || ''} />
         </TabsContent>
       </Tabs>
 

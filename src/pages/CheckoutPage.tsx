@@ -31,7 +31,7 @@ export default function CheckoutPage() {
   const [selectedProduct, setSelectedProduct] = useState('');
   const [qty, setQty] = useState('1');
   const [priceType, setPriceType] = useState('retail');
-  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'card'>('mobile_money');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mobile_money' | 'card'>('mobile_money');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -108,7 +108,7 @@ export default function CheckoutPage() {
         type: 'checkout',
         customer_name: toTitleCase(customerName.trim()),
         grand_total: grandTotal,
-        status: paymentMethod === 'card' ? 'paid' : 'pending',
+        status: paymentMethod === 'card' || paymentMethod === 'cash' ? 'paid' : 'pending',
         code,
         payment_method: paymentMethod,
         proof_url: proofUrl,
@@ -152,7 +152,7 @@ export default function CheckoutPage() {
           type: 'checkout',
           customer_name: toTitleCase(customerName.trim()),
           grand_total: grandTotal,
-          status: paymentMethod === 'card' ? 'paid' : 'pending',
+          status: paymentMethod === 'card' || paymentMethod === 'cash' ? 'paid' : 'pending',
           code,
           transferred_to_sale: false,
           sharing_code: null,
@@ -167,6 +167,8 @@ export default function CheckoutPage() {
       toast.success(
         paymentMethod === 'mobile_money'
           ? 'Order placed! Payment proof submitted for verification.'
+          : paymentMethod === 'cash'
+          ? 'Order placed! Cash payment recorded.'
           : 'Order placed and paid!'
       );
       setItems([]); setCustomerName(''); setProofFile(null); setProofPreview(null);
@@ -263,7 +265,21 @@ export default function CheckoutPage() {
             <CardTitle className="text-base">Payment Method</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                onClick={() => setPaymentMethod('cash')}
+                className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                  paymentMethod === 'cash'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-muted-foreground/30'
+                }`}
+              >
+                <ShoppingBag className="h-6 w-6 text-amber-600" />
+                <div className="text-left">
+                  <p className="font-semibold text-sm">Cash in Hand</p>
+                  <p className="text-xs text-muted-foreground">Direct cash payment</p>
+                </div>
+              </button>
               <button
                 onClick={() => setPaymentMethod('mobile_money')}
                 className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
@@ -323,6 +339,15 @@ export default function CheckoutPage() {
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                   {proofFile && <p className="text-xs text-success mt-1">✓ {proofFile.name}</p>}
                 </div>
+              </div>
+            )}
+
+            {/* Cash in Hand info */}
+            {paymentMethod === 'cash' && (
+              <div className="p-4 bg-amber-500/5 rounded-lg border border-amber-500/20">
+                <p className="text-sm text-muted-foreground">
+                  💵 Cash payment received directly. The order will be marked as <span className="font-semibold text-success">Paid</span> immediately.
+                </p>
               </div>
             )}
 

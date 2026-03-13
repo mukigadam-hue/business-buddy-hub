@@ -616,7 +616,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, [currentBusinessId, stock]);
 
   const addPurchase = useCallback(async (
-    items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number }[],
+    items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number; pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }[],
     grandTotal: number, supplier: string, recordedBy: string,
     paymentStatus: string = 'paid', amountPaid?: number
   ) => {
@@ -653,6 +653,10 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       const buyPrice = item.unit_price; // purchase cost = buying price
       const ws = item.wholesale_price ?? item.unit_price;
       const ret = item.retail_price ?? item.unit_price;
+      const packagingUpdate: any = {};
+      if (item.pieces_per_carton && item.pieces_per_carton > 0) packagingUpdate.pieces_per_carton = item.pieces_per_carton;
+      if (item.cartons_per_box && item.cartons_per_box > 0) packagingUpdate.cartons_per_box = item.cartons_per_box;
+      if (item.boxes_per_container && item.boxes_per_container > 0) packagingUpdate.boxes_per_container = item.boxes_per_container;
 
       if (existingStock) {
         await supabase.from('stock_items').update({
@@ -660,12 +664,14 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
           buying_price: buyPrice,
           wholesale_price: ws,
           retail_price: ret,
+          ...packagingUpdate,
         }).eq('id', existingStock.id);
       } else {
         await supabase.from('stock_items').insert({
           business_id: currentBusinessId, name: item.item_name, category: item.category,
           quality: item.quality, buying_price: buyPrice, wholesale_price: ws, retail_price: ret,
           quantity: item.quantity, min_stock_level: 5,
+          ...packagingUpdate,
         });
       }
     }

@@ -1116,6 +1116,7 @@ export type Database = {
           last_payment_date: string | null
           notes: string
           owner_notes: string | null
+          payment_frequency: string
           payment_method: string
           payment_status: string
           proof_url: string | null
@@ -1144,6 +1145,7 @@ export type Database = {
           last_payment_date?: string | null
           notes?: string
           owner_notes?: string | null
+          payment_frequency?: string
           payment_method?: string
           payment_status?: string
           proof_url?: string | null
@@ -1172,6 +1174,7 @@ export type Database = {
           last_payment_date?: string | null
           notes?: string
           owner_notes?: string | null
+          payment_frequency?: string
           payment_method?: string
           payment_status?: string
           proof_url?: string | null

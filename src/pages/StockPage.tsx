@@ -230,7 +230,12 @@ export default function StockPage() {
                   </div>
                   <div>
                     <Label>Barcode (Optional)</Label>
-                    <Input value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Scan or type barcode..." />
+                    <div className="flex gap-1.5">
+                      <Input className="flex-1" value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Scan or type barcode..." />
+                      <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
+                        <ScanLine className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <Button type="submit" className="w-full">{editItem ? 'Update Item' : 'Add Item'}</Button>
                 </form>

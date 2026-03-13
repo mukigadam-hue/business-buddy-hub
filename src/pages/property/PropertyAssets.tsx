@@ -59,7 +59,15 @@ function AssetForm({ asset, onSave, onClose }: { asset?: PropertyAsset; onSave: 
     e.preventDefault();
     if (!form.name.trim()) { toast.error('Name is required'); return; }
     if (!form.location.trim()) { toast.error('Location is required'); return; }
-    onSave(form);
+    onSave({
+      ...form,
+      name: toSentenceCase(form.name.trim()),
+      description: toSentenceCase(form.description.trim()),
+      location: toTitleCase(form.location.trim()),
+      owner_name: toTitleCase(form.owner_name.trim()),
+      features: form.features.trim(),
+      rules: toSentenceCase(form.rules.trim()),
+    });
     onClose();
   }
 

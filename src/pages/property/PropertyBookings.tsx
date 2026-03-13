@@ -832,10 +832,11 @@ export default function PropertyBookings() {
       <AdSpace variant="banner" />
 
       <Tabs defaultValue="pending">
-        <TabsList className="grid grid-cols-3">
+        <TabsList className="grid grid-cols-4">
           <TabsTrigger value="pending" className="text-xs">Pending ({pending.length})</TabsTrigger>
           <TabsTrigger value="active" className="text-xs">Active ({active.length})</TabsTrigger>
           <TabsTrigger value="history" className="text-xs">History ({completed.length})</TabsTrigger>
+          <TabsTrigger value="complaints" className="text-xs">⚠️ Complaints</TabsTrigger>
         </TabsList>
         <TabsContent value="pending" className="space-y-2 mt-3">
           {pending.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No pending bookings</p>

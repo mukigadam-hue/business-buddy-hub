@@ -168,6 +168,8 @@ export default function CheckoutPage() {
       toast.success(
         paymentMethod === 'mobile_money'
           ? 'Order placed! Payment proof submitted for verification.'
+          : paymentMethod === 'cash'
+          ? 'Order placed! Cash payment recorded.'
           : 'Order placed and paid!'
       );
       setItems([]); setCustomerName(''); setProofFile(null); setProofPreview(null);

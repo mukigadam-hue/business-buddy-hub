@@ -661,11 +661,27 @@ export default function PropertyBookings() {
     refreshData();
   }
 
+  async function sendBookingNotification(booking: any, message: string) {
+    try {
+      await supabase.from('notifications').insert({
+        business_id: booking.business_id,
+        title: '📅 Booking Update',
+        message,
+        type: 'booking',
+      } as any);
+    } catch (e) { console.error('Notification error', e); }
+  }
+
   async function handleStatusChange(bookingId: string, newStatus: string) {
     const booking = bookings.find(b => b.id === bookingId);
     if (!booking) return;
+    const asset = assets.find(a => a.id === booking.asset_id);
 
     await updateBooking(bookingId, { status: newStatus } as any);
+
+    // Send notification
+    const statusLabels: Record<string, string> = { confirmed: 'confirmed ✅', active: 'started 🟢', completed: 'completed ✅', cancelled: 'cancelled ❌' };
+    await sendBookingNotification(booking, `Booking for "${asset?.name || 'Asset'}" by ${booking.renter_name} has been ${statusLabels[newStatus] || newStatus}.`);
 
     // When activating, mark asset as unavailable
     if (newStatus === 'active' || newStatus === 'confirmed') {
@@ -675,6 +691,32 @@ export default function PropertyBookings() {
     if (newStatus === 'completed' || newStatus === 'cancelled') {
       await supabase.from('property_assets').update({ is_available: true } as any).eq('id', booking.asset_id);
     }
+
+    // Auto-add to tenant list when booking is confirmed/active
+    if (newStatus === 'active' || newStatus === 'confirmed') {
+      const { data: existingTenant } = await supabase.from('business_team_members')
+        .select('id').eq('business_id', booking.business_id)
+        .eq('full_name', booking.renter_name).eq('rank', 'Tenant').limit(1);
+      if (!existingTenant || existingTenant.length === 0) {
+        await supabase.from('business_team_members').insert({
+          business_id: booking.business_id,
+          full_name: booking.renter_name || 'Tenant',
+          phone: booking.renter_contact || '',
+          rank: 'Tenant',
+          hire_date: new Date(booking.start_date).toISOString().slice(0, 10),
+          rental_end_date: new Date(booking.end_date).toISOString().slice(0, 10),
+          occupation: booking.renter_occupation || '',
+          rental_purpose: booking.rental_purpose || '',
+          gender: booking.gender || '',
+          age: booking.age || null,
+          agreed_amount: Number(booking.total_price) || 0,
+          is_active: true,
+          payment_frequency: 'monthly',
+          salary: 0,
+        } as any);
+      }
+    }
+
     refreshData();
   }
 

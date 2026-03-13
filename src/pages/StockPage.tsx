@@ -85,6 +85,7 @@ export default function StockPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [viewGalleryItem, setViewGalleryItem] = useState<StockItem | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     const mainEl = document.querySelector('main');

@@ -2006,39 +2006,6 @@ export type Database = {
               products_description: string
             }[]
           }
-      search_property_assets: {
-        Args: {
-          _category?: string
-          _end_date?: string
-          _limit?: number
-          _location?: string
-          _max_price?: number
-          _min_price?: number
-          _offset?: number
-          _query?: string
-          _start_date?: string
-        }
-        Returns: {
-          area_size: number
-          area_unit: string
-          business_contact: string
-          business_id: string
-          business_name: string
-          category: string
-          daily_price: number
-          description: string
-          features: string
-          hourly_price: number
-          id: string
-          image_url_1: string
-          location: string
-          monthly_price: number
-          name: string
-          owner_contact: string
-          owner_name: string
-          sub_category: string
-        }[]
-      }
     }
     Enums: {
       business_role: "owner" | "admin" | "worker"

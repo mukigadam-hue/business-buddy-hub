@@ -12,6 +12,7 @@ import ImageUpload from '@/components/ImageUpload';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
+import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase } from '@/lib/utils';
 

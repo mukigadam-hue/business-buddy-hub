@@ -388,7 +388,16 @@ export default function StockPage() {
                         )}
                         <TableCell className="text-right tabular-nums">{fmt(Number(item.wholesale_price))}</TableCell>
                         <TableCell className="text-right tabular-nums font-medium">{fmt(Number(item.retail_price))}</TableCell>
-                        <TableCell className="text-right font-semibold">{item.quantity}</TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {item.quantity}
+                          <BulkPackagingInfo
+                            quantity={item.quantity}
+                            piecesPerCarton={(item as any).pieces_per_carton || 0}
+                            cartonsPerBox={(item as any).cartons_per_box || 0}
+                            boxesPerContainer={(item as any).boxes_per_container || 0}
+                            compact
+                          />
+                        </TableCell>
                         <TableCell>
                           {item.quantity === 0 ? (
                             <span className="text-xs font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Out</span>

@@ -31,7 +31,7 @@ export default function CheckoutPage() {
   const [selectedProduct, setSelectedProduct] = useState('');
   const [qty, setQty] = useState('1');
   const [priceType, setPriceType] = useState('retail');
-  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'card'>('mobile_money');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mobile_money' | 'card'>('mobile_money');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

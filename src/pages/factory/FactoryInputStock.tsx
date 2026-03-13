@@ -44,7 +44,10 @@ export default function FactoryInputStock() {
       unit_cost: parseFloat(form.unit_cost) || 0,
       min_stock_level: parseFloat(form.min_stock_level) || 5,
       supplier: toTitleCase(form.supplier.trim()),
-    });
+      pieces_per_carton: parseInt(form.pieces_per_carton) || 0,
+      cartons_per_box: parseInt(form.cartons_per_box) || 0,
+      boxes_per_container: parseInt(form.boxes_per_container) || 0,
+    } as any);
     resetForm();
     setShowAdd(false);
   }

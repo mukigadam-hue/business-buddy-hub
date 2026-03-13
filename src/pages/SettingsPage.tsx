@@ -828,6 +828,9 @@ export default function SettingsPage() {
       {/* Discovery Visibility */}
       <DiscoverVisibilityCard businessId={currentBusiness?.id || ''} />
 
+      {/* Payment Methods - TOP PRIORITY */}
+      {currentBusiness && <PaymentMethodsManager businessId={currentBusiness.id} />}
+
       {/* Currency Setting */}
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-3">

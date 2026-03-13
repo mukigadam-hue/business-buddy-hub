@@ -1131,7 +1131,12 @@ export default function OrdersPage() {
                 <Input value={form.quality} onChange={e => setForm(f => ({ ...f, quality: e.target.value }))} onBlur={() => applyCase('quality')} placeholder="Quality..." list="qual-suggestions" />
                 <datalist id="qual-suggestions">{existingQualities.map(q => <option key={q} value={q} />)}</datalist>
               </div>
-              <div className="w-20"><Label>Qty</Label><Input type="number" min="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} /></div>
+              <div className="w-20">
+                <Label>Qty</Label>
+                <Input type="number" min="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
+                  readOnly={parseInt(form.pieces_per_carton) > 0}
+                  className={parseInt(form.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''} />
+              </div>
               <div className="w-28">
                 <Label>Price Type</Label>
                 <Select value={form.priceType} onValueChange={v => setForm(f => ({ ...f, priceType: v }))}>

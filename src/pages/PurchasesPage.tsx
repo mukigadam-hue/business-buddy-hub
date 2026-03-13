@@ -185,6 +185,12 @@ export default function PurchasesPage() {
             <div className="w-24"><Label>Retail</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} placeholder="Auto" /></div>
             <Button onClick={addItem} disabled={!form.name.trim()}><Plus className="h-4 w-4 mr-1" />Add</Button>
           </div>
+          <BulkPackagingFields
+            piecesPerCarton={form.pieces_per_carton}
+            cartonsPerBox={form.cartons_per_box}
+            boxesPerContainer={form.boxes_per_container}
+            onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+          />
 
           {items.length > 0 && (
             <>

@@ -11,6 +11,8 @@ import ImageUpload from '@/components/ImageUpload';
 import QuickAddItem from '@/components/QuickAddItem';
 import AdSpace from '@/components/AdSpace';
 import LanguageSelector from '@/components/LanguageSelector';
+import DailyTipBanner from '@/components/DailyTipBanner';
+import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -75,6 +77,9 @@ export default function Dashboard() {
         <span className="text-[10px] text-muted-foreground font-mono">v{APP_VERSION}</span>
         <LanguageSelector variant="compact" />
       </div>
+
+      <AnnouncementsBanner />
+      <DailyTipBanner />
 
       <div className="gradient-primary rounded-xl p-4 sm:p-6 text-primary-foreground">
         <div className="flex items-start gap-3 sm:gap-4">

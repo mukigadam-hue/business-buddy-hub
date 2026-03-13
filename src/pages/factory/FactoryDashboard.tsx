@@ -8,6 +8,8 @@ import { Package, TrendingUp, AlertTriangle, XCircle, DollarSign, Factory, Wrenc
 import ImageUpload from '@/components/ImageUpload';
 import QuickAddItem from '@/components/QuickAddItem';
 import AdSpace from '@/components/AdSpace';
+import DailyTipBanner from '@/components/DailyTipBanner';
+import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 
 export default function FactoryDashboard() {
   const { currentBusiness, updateBusiness, stock, sales, services } = useBusiness();
@@ -42,6 +44,9 @@ export default function FactoryDashboard() {
 
   return (
     <div className="space-y-6">
+      <AnnouncementsBanner />
+      <DailyTipBanner />
+
       {/* Header */}
       <div className="gradient-primary rounded-xl p-4 sm:p-6 text-primary-foreground">
         <div className="flex items-start gap-3 sm:gap-4">

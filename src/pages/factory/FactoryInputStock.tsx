@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Edit2, Trash2, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
+import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
@@ -22,14 +23,14 @@ export default function FactoryInputStock() {
   const { fmt } = useCurrency();
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', category: '', unit_type: 'Pieces', quantity: '', unit_cost: '', min_stock_level: '5', supplier: '' });
+  const [form, setForm] = useState({ name: '', category: '', unit_type: 'Pieces', quantity: '', unit_cost: '', min_stock_level: '5', supplier: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
 
   const active = rawMaterials.filter(r => !r.deleted_at);
   const existingCategories = [...new Set(active.map(r => r.category).filter(Boolean))];
   const allCategories = [...new Set([...CATEGORIES, ...existingCategories])];
 
   function resetForm() {
-    setForm({ name: '', category: '', unit_type: 'Pieces', quantity: '', unit_cost: '', min_stock_level: '5', supplier: '' });
+    setForm({ name: '', category: '', unit_type: 'Pieces', quantity: '', unit_cost: '', min_stock_level: '5', supplier: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
   }
 
   async function handleAdd(e: React.FormEvent) {
@@ -43,7 +44,10 @@ export default function FactoryInputStock() {
       unit_cost: parseFloat(form.unit_cost) || 0,
       min_stock_level: parseFloat(form.min_stock_level) || 5,
       supplier: toTitleCase(form.supplier.trim()),
-    });
+      pieces_per_carton: parseInt(form.pieces_per_carton) || 0,
+      cartons_per_box: parseInt(form.cartons_per_box) || 0,
+      boxes_per_container: parseInt(form.boxes_per_container) || 0,
+    } as any);
     resetForm();
     setShowAdd(false);
   }
@@ -59,7 +63,10 @@ export default function FactoryInputStock() {
       unit_cost: parseFloat(form.unit_cost) || 0,
       min_stock_level: parseFloat(form.min_stock_level) || 5,
       supplier: toTitleCase(form.supplier.trim()),
-    });
+      pieces_per_carton: parseInt(form.pieces_per_carton) || 0,
+      cartons_per_box: parseInt(form.cartons_per_box) || 0,
+      boxes_per_container: parseInt(form.boxes_per_container) || 0,
+    } as any);
     resetForm();
     setEditItem(null);
   }
@@ -69,6 +76,9 @@ export default function FactoryInputStock() {
       name: r.name, category: r.category, unit_type: r.unit_type,
       quantity: String(r.quantity), unit_cost: String(r.unit_cost),
       min_stock_level: String(r.min_stock_level), supplier: r.supplier,
+      pieces_per_carton: String((r as any).pieces_per_carton || 0),
+      cartons_per_box: String((r as any).cartons_per_box || 0),
+      boxes_per_container: String((r as any).boxes_per_container || 0),
     });
     setEditItem(r.id);
   }
@@ -112,9 +122,16 @@ export default function FactoryInputStock() {
                         <TableCell>{r.category}</TableCell>
                         <TableCell className="capitalize">{r.unit_type}</TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {r.quantity}
-                          {isOut && <span className="ml-1 text-xs text-destructive font-semibold">OUT</span>}
-                          {isLow && <span className="ml-1 text-xs text-warning font-semibold">LOW</span>}
+                          <div>{r.quantity}</div>
+                          {isOut && <span className="text-xs text-destructive font-semibold">OUT</span>}
+                          {isLow && <span className="text-xs text-warning font-semibold">LOW</span>}
+                          <BulkPackagingInfo
+                            quantity={Number(r.quantity)}
+                            piecesPerCarton={(r as any).pieces_per_carton || 0}
+                            cartonsPerBox={(r as any).cartons_per_box || 0}
+                            boxesPerContainer={(r as any).boxes_per_container || 0}
+                            compact
+                          />
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{fmt(Number(r.unit_cost))}</TableCell>
                         <TableCell className="text-right tabular-nums font-semibold">{fmt(Number(r.quantity) * Number(r.unit_cost))}</TableCell>
@@ -161,8 +178,22 @@ export default function FactoryInputStock() {
                 </Select>
               </div>
             </div>
+            <BulkPackagingFields
+              piecesPerCarton={form.pieces_per_carton}
+              cartonsPerBox={form.cartons_per_box}
+              boxesPerContainer={form.boxes_per_container}
+              onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+              onQuantityCalculated={(total) => setForm(f => ({ ...f, quantity: String(total) }))}
+              currentQuantity={form.quantity}
+            />
             <div className="grid grid-cols-3 gap-3">
-              <div><Label>Quantity</Label><Input type="number" min="0" step="0.01" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} /></div>
+              <div>
+                <Label>Quantity</Label>
+                <Input type="number" min="0" step="0.01" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
+                  readOnly={parseInt(form.pieces_per_carton) > 0}
+                  className={parseInt(form.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''} />
+                {parseInt(form.pieces_per_carton) > 0 && <p className="text-[10px] text-muted-foreground mt-0.5">Auto-calculated from bulk</p>}
+              </div>
               <div><Label>Unit Cost</Label><Input type="number" min="0" step="0.01" value={form.unit_cost} onChange={e => setForm(f => ({ ...f, unit_cost: e.target.value }))} /></div>
               <div><Label>Min Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
             </div>

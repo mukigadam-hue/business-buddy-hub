@@ -18,6 +18,7 @@ import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import type { Order, OrderItem } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
+import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
@@ -36,7 +37,7 @@ export default function OrdersPage() {
   const [customerName, setCustomerName] = useState('');
   const [sellerName, setSellerName] = useState('');
   const [items, setItems] = useState<{ item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number }[]>([]);
-  const [form, setForm] = useState({ name: '', category: '', quality: '', quantity: '1', priceType: 'retail' as string, unitPrice: '' });
+  const [form, setForm] = useState({ name: '', category: '', quality: '', quantity: '1', priceType: 'retail' as string, unitPrice: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
   const [requestComment, setRequestComment] = useState('');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editItems, setEditItems] = useState<OrderItem[]>([]);
@@ -279,7 +280,7 @@ export default function OrdersPage() {
       price_type: form.priceType,
       unit_price: unitPrice,
     }]);
-    setForm({ name: '', category: '', quality: '', quantity: '1', priceType: 'retail', unitPrice: '' });
+    setForm({ name: '', category: '', quality: '', quantity: '1', priceType: 'retail', unitPrice: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
@@ -1130,7 +1131,12 @@ export default function OrdersPage() {
                 <Input value={form.quality} onChange={e => setForm(f => ({ ...f, quality: e.target.value }))} onBlur={() => applyCase('quality')} placeholder="Quality..." list="qual-suggestions" />
                 <datalist id="qual-suggestions">{existingQualities.map(q => <option key={q} value={q} />)}</datalist>
               </div>
-              <div className="w-20"><Label>Qty</Label><Input type="number" min="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} /></div>
+              <div className="w-20">
+                <Label>Qty</Label>
+                <Input type="number" min="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
+                  readOnly={parseInt(form.pieces_per_carton) > 0}
+                  className={parseInt(form.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''} />
+              </div>
               <div className="w-28">
                 <Label>Price Type</Label>
                 <Select value={form.priceType} onValueChange={v => setForm(f => ({ ...f, priceType: v }))}>
@@ -1146,6 +1152,14 @@ export default function OrdersPage() {
               )}
               <Button onClick={addItem} disabled={!form.name.trim()}><Plus className="h-4 w-4 mr-1" />Add</Button>
             </div>
+            <BulkPackagingFields
+              piecesPerCarton={form.pieces_per_carton}
+              cartonsPerBox={form.cartons_per_box}
+              boxesPerContainer={form.boxes_per_container}
+              onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+              onQuantityCalculated={(total) => setForm(f => ({ ...f, quantity: String(total) }))}
+              currentQuantity={form.quantity}
+            />
 
             {items.length > 0 && (
               <>

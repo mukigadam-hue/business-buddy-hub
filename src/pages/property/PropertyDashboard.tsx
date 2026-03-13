@@ -12,6 +12,8 @@ import { APP_VERSION } from '@/version';
 import LanguageSelector from '@/components/LanguageSelector';
 import ImageUpload from '@/components/ImageUpload';
 import AdSpace from '@/components/AdSpace';
+import DailyTipBanner from '@/components/DailyTipBanner';
+import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 
 export default function PropertyDashboard() {
   const { t } = useTranslation();
@@ -37,6 +39,9 @@ export default function PropertyDashboard() {
         <span className="text-[10px] text-muted-foreground font-mono">v{APP_VERSION}</span>
         <LanguageSelector variant="compact" />
       </div>
+
+      <AnnouncementsBanner />
+      <DailyTipBanner />
 
       {/* Header with Logo - same pattern as Business Dashboard */}
       <div className="gradient-primary rounded-xl p-4 sm:p-6 text-primary-foreground">

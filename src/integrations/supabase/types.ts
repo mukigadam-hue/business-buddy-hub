@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_announcements: {
+        Row: {
+          announcement_type: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          message: string
+          title: string
+        }
+        Insert: {
+          announcement_type?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string
+          title?: string
+        }
+        Update: {
+          announcement_type?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string
+          title?: string
+        }
+        Relationships: []
+      }
       business_blocks: {
         Row: {
           blocked_business_id: string
@@ -356,6 +386,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      business_tips: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          title: string
+        }
+        Insert: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+        }
+        Relationships: []
       }
       business_worker_advances: {
         Row: {

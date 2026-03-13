@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
@@ -85,6 +86,7 @@ export default function StockPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [viewGalleryItem, setViewGalleryItem] = useState<StockItem | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     const mainEl = document.querySelector('main');
@@ -169,8 +171,19 @@ export default function StockPage() {
     await deleteStockItem(id);
   }
 
+  function handleBarcodeScan(code: string) {
+    const match = stock.find(s => s.barcode && s.barcode === code && !s.deleted_at);
+    if (match) {
+      openEdit(match);
+      toast.success(`Found: ${match.name}`);
+    } else {
+      toast.error(`No stock item found for barcode: ${code}`);
+    }
+  }
+
   return (
     <div className="space-y-4">
+      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
       <div className="sticky top-0 space-y-1.5 pb-2 bg-background z-20 -mx-3 px-3 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6 -mt-3 pt-2 sm:-mt-4 sm:pt-3 md:-mt-6 md:pt-4 border-b border-border/40">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-lg font-bold">My Stock</h1>
@@ -230,7 +243,12 @@ export default function StockPage() {
                   </div>
                   <div>
                     <Label>Barcode (Optional)</Label>
-                    <Input value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Scan or type barcode..." />
+                    <div className="flex gap-1.5">
+                      <Input className="flex-1" value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Scan or type barcode..." />
+                      <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
+                        <ScanLine className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <Button type="submit" className="w-full">{editItem ? 'Update Item' : 'Add Item'}</Button>
                 </form>

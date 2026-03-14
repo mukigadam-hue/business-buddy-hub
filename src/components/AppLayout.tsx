@@ -136,6 +136,7 @@ function useNavItems() {
 function BusinessRoleBanner({ userRole, businessName, businessType }: { userRole: string | null; businessName: string; businessType: string }) {
   const { t } = useTranslation();
   if (!userRole) return null;
+  if (businessType === 'personal') return null; // No role banner for personal accounts
   const isOwner = userRole === 'owner';
   const isAdmin = userRole === 'admin';
   const typeLabel = businessType === 'factory' ? 'Factory' : businessType === 'property' ? 'Property' : 'Business';

@@ -1004,8 +1004,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
       )}
-      {/* Delete Business */}
-      {userRole === 'owner' && (() => {
+      {/* Delete Business - hidden for personal */}
+      {!isPersonal && userRole === 'owner' && (() => {
         const ownedBusinesses = businesses.filter(b => memberships.find(m => m.business_id === b.id && m.role === 'owner'));
         const isLastOwned = ownedBusinesses.length <= 1;
         return (

@@ -18,8 +18,13 @@ import AdSpace from '@/components/AdSpace';
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
 export default function SalesPage() {
-  const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment } = useBusiness();
+  const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment, userRole } = useBusiness();
+  const { user } = useAuth();
   const { fmt } = useCurrency();
+
+  // Auto-fill seller name from user profile
+  const userFullName = user?.user_metadata?.full_name || '';
+  const roleLabel = userRole === 'owner' ? '(Owner)' : userRole === 'admin' ? '(Admin)' : '(Worker)';
 
   const [items, setItems] = useState<{
     stock_item_id: string; item_name: string; category: string;
@@ -39,7 +44,7 @@ export default function SalesPage() {
   const [priceType, setPriceType] = useState<'wholesale' | 'retail'>('retail');
   const [svcForm, setSvcForm] = useState({ service_name: '', description: '', cost: '' });
   const [buyerName, setBuyerName] = useState('');
-  const [sellerName, setSellerName] = useState('');
+  const [sellerName, setSellerName] = useState(userFullName);
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');

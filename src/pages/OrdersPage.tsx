@@ -21,13 +21,17 @@ import AdSpace from '@/components/AdSpace';
 import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 export default function OrdersPage() {
   const { stock, orders, addOrder, updateOrder, completeOrderToSale, saveReceipt, currentBusiness, addStockItem, addExpense, refreshData, notifications, userRole } = useBusiness();
+  const { user } = useAuth();
   const { fmt } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState('live_orders');
   const isAdmin = userRole === 'owner' || userRole === 'admin';
+  const userFullName = user?.user_metadata?.full_name || '';
+  const roleLabel = userRole === 'owner' ? 'Owner' : userRole === 'admin' ? 'Admin' : 'Worker';
 
   // Payment verification state
   const [verifyFilter, setVerifyFilter] = useState<'pending' | 'paid' | 'all'>('pending');
@@ -303,13 +307,17 @@ export default function OrdersPage() {
       if (recipientBusinessId === currentBusiness?.id) { toast.error("You can't send an order to yourself"); return; }
     }
 
-    const comment = type === 'request' && requestComment.trim() ? requestComment.trim() : undefined;
-    const name = customerName.trim() || (comment ? `Comment: ${comment}` : 'Walk-in');
+    const reqComment = type === 'request' && requestComment.trim() ? requestComment.trim() : undefined;
+    const userName = customerName.trim() || userFullName || 'Walk-in';
+    const nameWithRole = type === 'request'
+      ? `${userName} (${roleLabel} — ${currentBusiness?.name || ''})`
+      : userName;
+    const finalName = reqComment ? `${nameWithRole} | Comment: ${reqComment}` : nameWithRole;
     await addOrder(
-      type, name,
+      type, finalName,
       items.map(item => ({ ...item, subtotal: item.quantity * item.unit_price })),
       grandTotal, type === 'request' ? 'pending' : 'confirmed',
-      recipientBusinessId, comment
+      recipientBusinessId, reqComment
     );
     setItems([]);
     setCustomerName('');
@@ -792,7 +800,7 @@ export default function OrdersPage() {
               <Button size="sm" variant="ghost" onClick={() => setReceiptOrder(order)}>
                 <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
               </Button>
-              {order.type === 'inbox' && (
+              {(order.type === 'inbox' || order.type === 'request') && (
                 <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
                   <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
                 </Button>
@@ -807,8 +815,8 @@ export default function OrdersPage() {
             </Button>
           )}
 
-          {/* Allocate for confirmed/priced inbox orders */}
-          {order.type === 'inbox' && (order.status === 'priced' || order.status === 'confirmed' || order.status === 'payment_submitted') && !order.transferred_to_sale && (
+          {/* Allocate for confirmed/priced inbox or request orders */}
+          {(order.type === 'inbox' || order.type === 'request') && (order.status === 'priced' || order.status === 'confirmed' || order.status === 'payment_submitted' || order.status === 'paid') && !order.transferred_to_sale && (
             <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
               <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
             </Button>
@@ -850,24 +858,39 @@ export default function OrdersPage() {
         if (target === 'stock') {
           // Add to stock (business stock or factory input stock)
           if (isFactory) {
-            await supabase.from('factory_raw_materials').insert({
-              business_id: currentBusiness.id,
-              name: item.item_name,
-              category: item.category || '',
-              unit_type: 'Pieces',
-              quantity: item.quantity,
-              unit_cost: Number(item.unit_price),
-              min_stock_level: 5,
-              supplier: allocateOrder.customer_name,
-            });
+            // Check for existing material to merge
+            const { data: existingMats } = await supabase.from('factory_raw_materials').select('*')
+              .eq('business_id', currentBusiness.id)
+              .ilike('name', item.item_name)
+              .is('deleted_at', null)
+              .limit(1);
+            if (existingMats && existingMats.length > 0) {
+              // Merge: add quantity to existing
+              await supabase.from('factory_raw_materials').update({
+                quantity: Number(existingMats[0].quantity) + item.quantity,
+                unit_cost: Number(item.unit_price),
+              }).eq('id', existingMats[0].id);
+            } else {
+              await supabase.from('factory_raw_materials').insert({
+                business_id: currentBusiness.id,
+                name: item.item_name,
+                category: item.category || '',
+                unit_type: 'Pieces',
+                quantity: item.quantity,
+                unit_cost: Number(item.unit_price),
+                min_stock_level: 5,
+                supplier: allocateOrder.customer_name,
+              });
+            }
           } else {
-            // Check if item already exists in stock
+            // Check if item already exists in stock (merge)
             const existing = activeStock.find(s =>
               s.name.toLowerCase() === item.item_name.toLowerCase() &&
               s.category.toLowerCase() === (item.category || '').toLowerCase() &&
               s.quality.toLowerCase() === (item.quality || '').toLowerCase()
             );
             if (existing) {
+              // Merge: add quantity
               await supabase.from('stock_items').update({
                 quantity: existing.quantity + item.quantity,
                 buying_price: Number(item.unit_price),
@@ -1101,7 +1124,13 @@ export default function OrdersPage() {
               </div>
             )}
 
-            <div><Label>Your Name / Customer Name</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toTitleCase(customerName))} placeholder="Name..." /></div>
+            <div>
+              <Label>Your Name / Customer Name ({roleLabel} at {currentBusiness?.name})</Label>
+              <Input value={customerName || userFullName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toTitleCase(customerName || userFullName))} placeholder="Auto-filled from your profile" />
+              {orderMode === 'request' && currentBusiness && (
+                <p className="text-[10px] text-muted-foreground mt-0.5">📍 Business: {currentBusiness.name} · Contact: {currentBusiness.contact || currentBusiness.email}</p>
+              )}
+            </div>
 
             {orderMode === 'request' && (
               <div>

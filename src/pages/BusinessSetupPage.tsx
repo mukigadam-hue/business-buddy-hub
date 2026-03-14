@@ -6,18 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Building2, KeyRound, Plus, Factory, MapPin, Home } from 'lucide-react';
+import { Building2, KeyRound, Plus, Factory, MapPin, Home, ArrowLeft, Crown, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { countries, getCountryByCode } from '@/lib/countries';
 import { useCurrency } from '@/hooks/useCurrency';
 import i18n from '@/i18n';
 
+type Step = 'choose_type' | 'choose_role' | 'create' | 'join';
+
 export default function BusinessSetupPage() {
   const { createBusiness, redeemInviteCode } = useBusiness();
   const { signOut } = useAuth();
   const { setCurrency } = useCurrency();
-  const [tab, setTab] = useState<'create' | 'join'>('create');
+  const [step, setStep] = useState<Step>('choose_type');
   const [businessType, setBusinessType] = useState<'business' | 'factory' | 'property'>('business');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
@@ -37,7 +39,6 @@ export default function BusinessSetupPage() {
     setCountrySearch('');
     const country = getCountryByCode(code);
     if (country) {
-      // Auto-set currency and language
       setCurrency(country.currencySymbol);
       if (i18n.language !== country.language) {
         i18n.changeLanguage(country.language);
@@ -49,6 +50,11 @@ export default function BusinessSetupPage() {
     setLoading(true);
     await signOut();
     setLoading(false);
+  }
+
+  function handleTypeSelect(type: 'business' | 'factory' | 'property') {
+    setBusinessType(type);
+    setStep('choose_role');
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -80,30 +86,85 @@ export default function BusinessSetupPage() {
 
   const selectedCountry = getCountryByCode(countryCode);
 
+  const typeLabels = {
+    business: { icon: '🏪', title: 'Business', sub: 'Shops, retail, trading' },
+    factory: { icon: '🏭', title: 'Factory', sub: 'Manufacturing, production' },
+    property: { icon: '🏠', title: 'Property', sub: 'Rentals, real estate' },
+  };
+
+  const roleLabels = {
+    business: { owner: 'Register a Personal Business', ownerDesc: 'I own or manage a shop/business', worker: 'Register as a Worker', workerDesc: 'My boss will give me an invite code' },
+    factory: { owner: 'Register a Personal Factory', ownerDesc: 'I own or manage a factory', worker: 'Register as a Worker', workerDesc: 'My boss will give me an invite code' },
+    property: { owner: 'Register as an Asset Owner', ownerDesc: 'I own or manage rental properties', worker: 'Register as a Renter', workerDesc: 'My landlord will give me an invite code' },
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-card">
         <CardContent className="p-6 space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">📦 BizTrack</h1>
-            <p className="text-sm text-muted-foreground">Create your own business, factory, or property — or join an existing one as a worker</p>
+            <p className="text-sm text-muted-foreground">
+              {step === 'choose_type' ? 'What would you like to manage?' :
+               step === 'choose_role' ? `${typeLabels[businessType].icon} ${typeLabels[businessType].title} — How will you use it?` :
+               step === 'create' ? `Create your ${typeLabels[businessType].title.toLowerCase()}` :
+               `Join a ${typeLabels[businessType].title.toLowerCase()}`}
+            </p>
             <Button type="button" variant="ghost" size="sm" onClick={handleExit} disabled={loading}>
               Exit to sign in / sign up
             </Button>
           </div>
 
-          <div className="flex gap-2">
-            <Button variant={tab === 'create' ? 'default' : 'outline'} className="flex-1" onClick={() => setTab('create')}>
-              <Plus className="h-4 w-4 mr-2" />I'm the Owner
+          {step !== 'choose_type' && (
+            <Button variant="ghost" size="sm" onClick={() => setStep(step === 'create' || step === 'join' ? 'choose_role' : 'choose_type')} className="gap-1.5">
+              <ArrowLeft className="h-3.5 w-3.5" /> Back
             </Button>
-            <Button variant={tab === 'join' ? 'default' : 'outline'} className="flex-1" onClick={() => setTab('join')}>
-              <KeyRound className="h-4 w-4 mr-2" />I'm a Worker
-            </Button>
-          </div>
+          )}
 
-          <Separator />
+          {/* Step 1: Choose Type */}
+          {step === 'choose_type' && (
+            <div className="grid grid-cols-1 gap-3">
+              {(['business', 'factory', 'property'] as const).map(type => (
+                <button key={type} onClick={() => handleTypeSelect(type)}
+                  className="p-4 rounded-xl border-2 border-border hover:border-primary/50 text-left transition-all flex items-center gap-4">
+                  <span className="text-3xl">{typeLabels[type].icon}</span>
+                  <div>
+                    <p className="font-semibold text-base">{typeLabels[type].title}</p>
+                    <p className="text-xs text-muted-foreground">{typeLabels[type].sub}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
 
-          {tab === 'create' ? (
+          {/* Step 2: Choose Role */}
+          {step === 'choose_role' && (
+            <div className="grid grid-cols-1 gap-3">
+              <button onClick={() => setStep('create')}
+                className="p-4 rounded-xl border-2 border-border hover:border-primary/50 text-left transition-all flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Crown className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-base">{roleLabels[businessType].owner}</p>
+                  <p className="text-xs text-muted-foreground">{roleLabels[businessType].ownerDesc}</p>
+                </div>
+              </button>
+              <button onClick={() => setStep('join')}
+                className="p-4 rounded-xl border-2 border-border hover:border-primary/50 text-left transition-all flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0">
+                  <User className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-base">{roleLabels[businessType].worker}</p>
+                  <p className="text-xs text-muted-foreground">{roleLabels[businessType].workerDesc}</p>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* Step 3a: Create */}
+          {step === 'create' && (
             <form onSubmit={handleCreate} className="space-y-4">
               {/* Country Selection */}
               <div>
@@ -147,36 +208,6 @@ export default function BusinessSetupPage() {
               </div>
 
               <div>
-                <Label className="text-sm font-semibold">What are you managing?</Label>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  <button type="button" onClick={() => setBusinessType('business')}
-                    className={`p-3 rounded-xl border-2 text-center transition-all ${
-                      businessType === 'business' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
-                    }`}>
-                    <span className="text-2xl">🏪</span>
-                    <p className="text-xs font-semibold mt-1">Business</p>
-                    <p className="text-[10px] text-muted-foreground">Shops, retail</p>
-                  </button>
-                  <button type="button" onClick={() => setBusinessType('factory')}
-                    className={`p-3 rounded-xl border-2 text-center transition-all ${
-                      businessType === 'factory' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
-                    }`}>
-                    <span className="text-2xl">🏭</span>
-                    <p className="text-xs font-semibold mt-1">Factory</p>
-                    <p className="text-[10px] text-muted-foreground">Manufacturing</p>
-                  </button>
-                  <button type="button" onClick={() => setBusinessType('property')}
-                    className={`p-3 rounded-xl border-2 text-center transition-all ${
-                      businessType === 'property' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
-                    }`}>
-                    <span className="text-2xl">🏠</span>
-                    <p className="text-xs font-semibold mt-1">Property</p>
-                    <p className="text-[10px] text-muted-foreground">Rentals</p>
-                  </button>
-                </div>
-              </div>
-
-              <div>
                 <Label>{businessType === 'factory' ? 'Factory Name' : businessType === 'property' ? 'Property / Agency Name' : 'Business Name'} *</Label>
                 <Input value={name} onChange={e => setName(e.target.value)} required
                   placeholder={businessType === 'factory' ? 'My Factory' : businessType === 'property' ? 'My Rentals' : 'My Shop'} />
@@ -193,24 +224,40 @@ export default function BusinessSetupPage() {
                 Create {businessType === 'factory' ? 'Factory' : businessType === 'property' ? 'Property' : 'Business'}
               </Button>
             </form>
-          ) : (
+          )}
+
+          {/* Step 3b: Join as Worker/Renter */}
+          {step === 'join' && (
             <form onSubmit={handleJoin} className="space-y-4">
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground mb-1">👷 Joining as a Worker</p>
-                <p>Your boss or business owner will give you an invite code. Enter it below to join their business, factory, or property.</p>
+                <p className="font-medium text-foreground mb-1">
+                  {businessType === 'property' ? '🏠 Joining as a Renter' : '👷 Joining as a Worker'}
+                </p>
+                <p>
+                  {businessType === 'property'
+                    ? 'Your landlord or property manager will give you an invite code. Enter it below to join their property.'
+                    : 'Your boss or business owner will give you an invite code. Enter it below to join their business.'}
+                </p>
               </div>
               <div>
-                <Label>Invite Code from Owner</Label>
+                <Label>Invite Code from {businessType === 'property' ? 'Landlord' : 'Owner'}</Label>
                 <Input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())}
-                  required placeholder="Enter the code your boss gave you" maxLength={6}
+                  required placeholder="Enter the code you received" maxLength={6}
                   className="text-center text-lg tracking-widest font-mono" />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Ask your business/factory/property owner for the invite code.
+                  Ask your {businessType === 'property' ? 'property owner' : 'business/factory owner'} for the invite code.
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 <KeyRound className="h-4 w-4 mr-2" />Request to Join
               </Button>
+
+              <Separator />
+
+              <div className="p-3 rounded-lg bg-muted/50 border text-xs text-muted-foreground space-y-2">
+                <p className="font-medium text-foreground">💡 Want to register your own business too?</p>
+                <p>After joining as a {businessType === 'property' ? 'renter' : 'worker'}, you can always add your own personal business, factory, or property from the app's menu.</p>
+              </div>
             </form>
           )}
         </CardContent>

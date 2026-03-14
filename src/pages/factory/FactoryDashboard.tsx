@@ -10,6 +10,7 @@ import QuickAddItem from '@/components/QuickAddItem';
 import AdSpace from '@/components/AdSpace';
 import DailyTipBanner from '@/components/DailyTipBanner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
+import WorkerActivityTracker from '@/components/WorkerActivityTracker';
 
 export default function FactoryDashboard() {
   const { currentBusiness, updateBusiness, stock, sales, services } = useBusiness();
@@ -252,6 +253,9 @@ export default function FactoryDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Worker Activity Tracker */}
+      <WorkerActivityTracker />
 
       <AdSpace variant="banner" />
     </div>

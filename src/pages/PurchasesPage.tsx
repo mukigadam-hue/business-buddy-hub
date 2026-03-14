@@ -14,16 +14,20 @@ import AdSpace from '@/components/AdSpace';
 import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 export default function PurchasesPage() {
-  const { stock, purchases, addPurchase, updatePurchasePayment } = useBusiness();
+  const { stock, purchases, addPurchase, updatePurchasePayment, userRole, currentBusiness } = useBusiness();
+  const { user } = useAuth();
   const { fmt } = useCurrency();
+  const userFullName = user?.user_metadata?.full_name || '';
+  const roleLabel = userRole === 'owner' ? '(Owner)' : userRole === 'admin' ? '(Admin)' : '(Worker)';
   const [items, setItems] = useState<{
     item_name: string; category: string; quality: string;
     quantity: number; unit_price: number; wholesale_price: number; retail_price: number;
   }[]>([]);
   const [supplier, setSupplier] = useState('');
-  const [recordedBy, setRecordedBy] = useState('');
+  const [recordedBy, setRecordedBy] = useState(userFullName);
   const [form, setForm] = useState({
     name: '', category: '', quality: '', quantity: '1',
     unit_price: '', wholesale_price: '', retail_price: '',
@@ -154,8 +158,9 @@ export default function PurchasesPage() {
               <Input value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Supplier name" />
             </div>
             <div>
-              <Label>Recorded By</Label>
-              <Input value={recordedBy} onChange={e => setRecordedBy(e.target.value)} onBlur={() => setRecordedBy(toTitleCase(recordedBy))} placeholder="Your name" />
+              <Label>Recorded By {roleLabel}</Label>
+              <Input value={recordedBy} onChange={e => setRecordedBy(e.target.value)} onBlur={() => setRecordedBy(toTitleCase(recordedBy))} placeholder="Your name (auto-filled)" />
+              {currentBusiness && <p className="text-[10px] text-muted-foreground mt-0.5">📍 {currentBusiness.name}</p>}
             </div>
           </div>
 

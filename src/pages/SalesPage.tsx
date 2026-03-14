@@ -16,10 +16,16 @@ import type { Sale } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 export default function SalesPage() {
-  const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment } = useBusiness();
+  const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment, userRole } = useBusiness();
+  const { user } = useAuth();
   const { fmt } = useCurrency();
+
+  // Auto-fill seller name from user profile
+  const userFullName = user?.user_metadata?.full_name || '';
+  const roleLabel = userRole === 'owner' ? '(Owner)' : userRole === 'admin' ? '(Admin)' : '(Worker)';
 
   const [items, setItems] = useState<{
     stock_item_id: string; item_name: string; category: string;
@@ -39,7 +45,7 @@ export default function SalesPage() {
   const [priceType, setPriceType] = useState<'wholesale' | 'retail'>('retail');
   const [svcForm, setSvcForm] = useState({ service_name: '', description: '', cost: '' });
   const [buyerName, setBuyerName] = useState('');
-  const [sellerName, setSellerName] = useState('');
+  const [sellerName, setSellerName] = useState(userFullName);
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');
@@ -263,8 +269,9 @@ export default function SalesPage() {
               <Input value={buyerName} onChange={e => setBuyerName(e.target.value)} onBlur={() => setBuyerName(toTitleCase(buyerName))} placeholder="Customer name (required)" />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-destructive">Seller Name *</Label>
-              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toTitleCase(sellerName))} placeholder="Your name (required)" />
+              <Label className="text-xs font-semibold text-destructive">Seller Name * {roleLabel}</Label>
+              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toTitleCase(sellerName))} placeholder="Your name (auto-filled)" />
+              {currentBusiness && <p className="text-[10px] text-muted-foreground mt-0.5">📍 {currentBusiness.name}</p>}
             </div>
           </div>
 

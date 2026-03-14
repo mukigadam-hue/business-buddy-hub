@@ -467,7 +467,8 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{isPersonal ? '⚙️ Settings' : 'Settings'}</h1>
 
-      {/* Business Code */}
+      {/* Business Code - hidden for personal */}
+      {!isPersonal && (
       <Card className="shadow-card border-primary/20">
         <CardContent className="p-4">
           <h2 className="text-base font-semibold flex items-center gap-2 mb-2">
@@ -487,6 +488,7 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Language Settings */}
       <Card className="shadow-card">

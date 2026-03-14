@@ -25,9 +25,12 @@ interface ReceiptProps {
   date: string;
   type: 'sale' | 'order' | 'service' | 'checkout' | 'purchase';
   businessInfo?: { name: string; address: string; contact: string; email: string };
+  counterpartyInfo?: { name: string; contact: string };
+  recordedBy?: string;
+  recordedByRole?: string;
 }
 
-export default function Receipt({ items, grandTotal, buyerName, sellerName, customerName, code, date, type, businessInfo }: ReceiptProps) {
+export default function Receipt({ items, grandTotal, buyerName, sellerName, customerName, code, date, type, businessInfo, counterpartyInfo, recordedBy, recordedByRole }: ReceiptProps) {
   const { fmt } = useCurrency();
   const { canShareReceipts, canDownloadReceipts, canPrintReceipts } = usePremium();
   const buyer = buyerName || customerName || '';
@@ -44,6 +47,13 @@ export default function Receipt({ items, grandTotal, buyerName, sellerName, cust
                 <h3 className="font-bold text-base">{businessInfo.name}</h3>
                 <p className="text-xs text-muted-foreground">{businessInfo.address}</p>
                 <p className="text-xs text-muted-foreground">{businessInfo.contact} · {businessInfo.email}</p>
+              </div>
+            )}
+            {counterpartyInfo && (
+              <div className="bg-accent/10 rounded-lg p-2 text-center space-y-0.5">
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">{type === 'purchase' ? 'Supplier' : 'Customer Business'}</p>
+                <p className="text-sm font-semibold">{counterpartyInfo.name}</p>
+                {counterpartyInfo.contact && <p className="text-xs text-muted-foreground">{counterpartyInfo.contact}</p>}
               </div>
             )}
             <Separator />
@@ -96,6 +106,12 @@ export default function Receipt({ items, grandTotal, buyerName, sellerName, cust
               <span>TOTAL</span>
               <span className="text-success tabular-nums">{fmt(grandTotal)}</span>
             </div>
+            {recordedBy && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Recorded by:</span>
+                <span className="font-medium text-foreground">{recordedBy} {recordedByRole && <span className="text-[10px]">({recordedByRole})</span>}</span>
+              </div>
+            )}
             <p className="text-center text-xs text-muted-foreground pt-2">Thank you for your business!</p>
           </CardContent>
         </Card>

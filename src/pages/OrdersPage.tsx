@@ -32,6 +32,23 @@ export default function OrdersPage() {
   const isAdmin = userRole === 'owner' || userRole === 'admin';
   const userFullName = user?.user_metadata?.full_name || '';
   const roleLabel = userRole === 'owner' ? 'Owner' : userRole === 'admin' ? 'Admin' : 'Worker';
+  const highlightNotificationId = searchParams.get('highlight_notification');
+
+  // Auto-switch to relevant tab based on notification
+  useEffect(() => {
+    if (highlightNotificationId) {
+      const notification = notifications.find(n => n.id === highlightNotificationId);
+      if (notification) {
+        if (notification.type === 'new_order' || notification.type === 'order_confirmed') setTab('customer_inbox');
+        else if (notification.type === 'order_priced' || notification.type === 'order_rejected') setTab('my_requests');
+        else if (notification.type === 'payment_submitted') setTab('verify_payments');
+      }
+      // Clear the param after processing
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('highlight_notification');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [highlightNotificationId]);
 
   // Payment verification state
   const [verifyFilter, setVerifyFilter] = useState<'pending' | 'paid' | 'all'>('pending');

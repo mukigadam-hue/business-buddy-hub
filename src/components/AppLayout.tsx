@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search, AlertTriangle, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import ProofVideoButton from '@/components/ProofVideoButton';
 import { useAuth } from '@/context/AuthContext';
 import { APP_VERSION } from '@/version';
@@ -164,12 +164,13 @@ function NotificationsPanel({ onNavigate, variant = 'desktop' }: { onNavigate?: 
   const [open, setOpen] = useState(false);
   const unread = notifications.filter(n => !n.is_read).length;
 
-  function handleNotificationClick(n: { id: string; type: string; is_read: boolean }) {
+  function handleNotificationClick(n: { id: string; type: string; is_read: boolean; title: string; message: string }) {
     if (!n.is_read) markNotificationRead(n.id);
     const route = getNotificationRoute(n.type);
     setOpen(false);
     onNavigate?.();
-    navigate(route);
+    // Deep-link with highlight: pass notification id as URL param
+    navigate(`${route}?highlight_notification=${n.id}`);
   }
 
   return (
@@ -356,6 +357,11 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
                 </Link>
               );
             })}
+            {/* Register Personal Business for any user */}
+            <Link to="/register-business"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-sidebar-foreground hover:bg-sidebar-accent/50">
+              <Plus className="h-4 w-4 shrink-0" /> Add Business
+            </Link>
           </nav>
 
           <div className="p-3 border-t border-sidebar-border space-y-2">
@@ -492,7 +498,13 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
                   <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="text-[11px] text-foreground hover:text-primary transition-colors">
                     📘 Facebook
                   </a>
-                </div>
+            </div>
+
+            {/* Add Business button in mobile */}
+            <Link to="/register-business" onClick={() => setMoreOpen(false)}
+              className="mt-2 flex items-center justify-center gap-2 p-3 rounded-xl text-xs font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors">
+              <Plus className="h-4 w-4" /> Add New Business / Factory / Property
+            </Link>
               </div>
               <Button variant="ghost" size="sm" className="w-full justify-start text-destructive text-xs h-8" onClick={signOut}>
                 <LogOut className="h-3.5 w-3.5 mr-1.5" /> {t('nav.signOut')}

@@ -27,6 +27,7 @@ const BusinessExpenses = lazy(() => import("./pages/BusinessExpenses"));
 const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const WastePage = lazy(() => import("./pages/WastePage"));
+const RegisterBusinessPage = lazy(() => import("./pages/RegisterBusinessPage"));
 
 // Factory pages
 const FactoryDashboard = lazy(() => import("./pages/factory/FactoryDashboard"));
@@ -130,6 +131,7 @@ function BusinessContent() {
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/register-business" element={<RegisterBusinessPage />} />
               <Route path="/team" element={<PropertyTeam />} />
               <Route path="/settings" element={<PropertySettings />} />
               <Route path="*" element={<NotFound />} />
@@ -158,6 +160,7 @@ function BusinessContent() {
               <Route path="/browse" element={<PropertyBrowse />} />
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/discover" element={<DiscoverPage />} />
+              <Route path="/register-business" element={<RegisterBusinessPage />} />
               <Route path="/team" element={<FactoryTeam />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFound />} />
@@ -185,6 +188,7 @@ function BusinessContent() {
           <Route path="/browse" element={<PropertyBrowse />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/register-business" element={<RegisterBusinessPage />} />
           <Route path="/team" element={<TeamPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

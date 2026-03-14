@@ -103,6 +103,11 @@ export interface Order {
   code: string;
   transferred_to_sale: boolean;
   sharing_code: string | null;
+  payment_method?: string;
+  proof_url?: string | null;
+  payment_status: string;
+  amount_paid: number;
+  balance: number;
   created_at: string;
   items: OrderItem[];
 }

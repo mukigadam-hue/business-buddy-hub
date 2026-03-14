@@ -74,6 +74,7 @@ function PageLoader() {
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
+  useOfflineQueue(); // Auto-sync offline data when back online
 
   if (authLoading) {
     return (

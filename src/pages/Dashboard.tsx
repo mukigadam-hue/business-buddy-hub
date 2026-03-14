@@ -13,6 +13,7 @@ import AdSpace from '@/components/AdSpace';
 import LanguageSelector from '@/components/LanguageSelector';
 import DailyTipBanner from '@/components/DailyTipBanner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
+import WorkerActivityTracker from '@/components/WorkerActivityTracker';
 
 export default function Dashboard() {
   const { t } = useTranslation();

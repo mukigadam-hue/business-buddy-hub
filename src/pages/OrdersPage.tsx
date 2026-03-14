@@ -1859,6 +1859,92 @@ export default function OrdersPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Confirm Payment with Proof Viewer Dialog (for supplier/inbox) */}
+      <Dialog open={!!confirmPaymentOrder} onOpenChange={o => { if (!o) setConfirmPaymentOrder(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Review & Confirm Payment</DialogTitle></DialogHeader>
+          {confirmPaymentOrder && (
+            <div className="space-y-4">
+              <div className="p-3 bg-muted/40 rounded-lg border space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Order</span>
+                  <span className="font-mono font-semibold">{confirmPaymentOrder.code}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Customer</span>
+                  <span className="font-medium">{confirmPaymentOrder.customer_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold">Total</span>
+                  <span className="font-bold text-success text-lg">{fmt(Number(confirmPaymentOrder.grand_total))}</span>
+                </div>
+                {confirmPaymentOrder.payment_method && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Payment Method</span>
+                    <span className="capitalize">{confirmPaymentOrder.payment_method === 'mobile_money' ? 'Mobile Money' : confirmPaymentOrder.payment_method}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Proof image */}
+              {confirmPaymentOrder.proof_url ? (
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">📸 Payment Proof Submitted by Buyer</Label>
+                  <img
+                    src={confirmPaymentOrder.proof_url}
+                    alt="Payment proof"
+                    className="w-full rounded-lg border max-h-64 object-contain"
+                    loading="eager"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                  />
+                </div>
+              ) : (
+                <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg text-center">
+                  <p className="text-sm text-muted-foreground">⚠️ No payment proof screenshot was attached by the buyer.</p>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
+                  onClick={() => confirmPaymentOrder && doConfirmPayment(confirmPaymentOrder)}
+                  disabled={syncing}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />{syncing ? 'Confirming...' : 'Confirm Payment Received'}
+                </Button>
+                <Button variant="outline" onClick={() => setConfirmPaymentOrder(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Payment Dialog (for installments) */}
+      <Dialog open={!!updatePaymentOrder} onOpenChange={o => { if (!o) setUpdatePaymentOrder(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Update Payment — {updatePaymentOrder?.code}</DialogTitle></DialogHeader>
+          {updatePaymentOrder && (
+            <div className="space-y-3">
+              <p className="text-sm">Total: <span className="font-bold">{fmt(Number(updatePaymentOrder.grand_total))}</span></p>
+              <p className="text-sm">Previously Paid: <span className="font-bold">{fmt(Number(updatePaymentOrder.amount_paid))}</span></p>
+              <div>
+                <Label>New Total Amount Paid</Label>
+                <Input type="number" min="0" step="0.01" value={updatePaymentAmount} onChange={e => setUpdatePaymentAmount(e.target.value)} />
+              </div>
+              <p className="text-sm">New Balance: <span className="font-bold text-destructive">{fmt(Number(updatePaymentOrder.grand_total) - (parseFloat(updatePaymentAmount) || 0))}</span></p>
+              <Button className="w-full" onClick={() => {
+                const amt = parseFloat(updatePaymentAmount) || 0;
+                updateOrderPayment(updatePaymentOrder.id, amt, Number(updatePaymentOrder.grand_total));
+              }}>
+                💰 Save Payment
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

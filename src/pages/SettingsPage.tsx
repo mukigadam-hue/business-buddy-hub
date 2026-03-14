@@ -903,8 +903,8 @@ export default function SettingsPage() {
 
       <AdSpace variant="banner" />
 
-      {/* Recycle Bin */}
-      {deletedStock.length > 0 && (
+      {/* Recycle Bin - hidden for personal */}
+      {!isPersonal && deletedStock.length > 0 && (
         <Card className="shadow-card border-destructive/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">

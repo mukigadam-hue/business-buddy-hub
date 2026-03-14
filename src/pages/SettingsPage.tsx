@@ -1080,7 +1080,93 @@ export default function SettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Receipt View Dialog */}
+      {/* Account Management */}
+      <Card className="shadow-card border-muted">
+        <CardContent className="p-4 space-y-4">
+          <h2 className="text-base font-semibold flex items-center gap-2">
+            <User className="h-4 w-4" /> Account
+          </h2>
+          <p className="text-xs text-muted-foreground">Signed in as <strong>{user?.email}</strong></p>
+
+          <div className="grid grid-cols-1 gap-2">
+            <Button variant="outline" className="w-full justify-start" onClick={() => setShowChangeEmail(true)}>
+              <Mail className="h-4 w-4 mr-2" /> Change Email
+            </Button>
+            <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" onClick={() => setShowDeleteAccount(true)}>
+              <UserX className="h-4 w-4 mr-2" /> Delete Account
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" onClick={async () => { await signOut(); window.location.reload(); }}>
+              <LogOut className="h-4 w-4 mr-2" /> Sign Out
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Change Email Dialog */}
+      <Dialog open={showChangeEmail} onOpenChange={o => { if (!o) setNewEmail(''); setShowChangeEmail(o); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> Change Email</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">Current: <strong>{user?.email}</strong></p>
+            <div>
+              <Label>New Email</Label>
+              <Input type="email" placeholder="newemail@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} className="mt-1" />
+            </div>
+            <Button className="w-full" disabled={changingEmail || !newEmail.includes('@')} onClick={async () => {
+              setChangingEmail(true);
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const res = await supabase.functions.invoke('change-email', {
+                  body: { newEmail: newEmail.trim() },
+                });
+                if (res.error) throw new Error(res.error.message || 'Failed');
+                const resData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+                if (resData.error) throw new Error(resData.error);
+                toast.success('Email changed! Please sign in again with your new email.');
+                setShowChangeEmail(false);
+                setNewEmail('');
+                await signOut();
+              } catch (err: any) { toast.error(err.message || 'Failed to change email'); }
+              finally { setChangingEmail(false); }
+            }}>
+              <Mail className="h-4 w-4 mr-2" /> {changingEmail ? 'Changing...' : 'Change Email'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      <Dialog open={showDeleteAccount} onOpenChange={o => { if (!o) setDeleteAccountConfirm(''); setShowDeleteAccount(o); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="text-destructive flex items-center gap-2"><UserX className="h-5 w-5" /> Delete Account</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              This will permanently delete your account, all your owned businesses, and all associated data. This action <strong>cannot be undone</strong>.
+            </p>
+            <div>
+              <Label>Type <strong>DELETE</strong> to confirm</Label>
+              <Input className="mt-1" placeholder="Type DELETE" value={deleteAccountConfirm} onChange={e => setDeleteAccountConfirm(e.target.value)} />
+            </div>
+            <Button variant="destructive" className="w-full" disabled={deletingAccount || deleteAccountConfirm !== 'DELETE'} onClick={async () => {
+              setDeletingAccount(true);
+              try {
+                const res = await supabase.functions.invoke('delete-account');
+                if (res.error) throw new Error(res.error.message || 'Failed');
+                const resData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+                if (resData.error) throw new Error(resData.error);
+                toast.success('Account deleted successfully');
+                localStorage.clear();
+                window.location.reload();
+              } catch (err: any) { toast.error(err.message || 'Failed to delete account'); }
+              finally { setDeletingAccount(false); }
+            }}>
+              <UserX className="h-4 w-4 mr-2" /> {deletingAccount ? 'Deleting...' : 'Permanently Delete Account'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={!!viewingReceipt} onOpenChange={o => { if (!o) setViewingReceipt(null); }}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Receipt</DialogTitle></DialogHeader>

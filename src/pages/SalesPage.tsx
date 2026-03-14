@@ -269,8 +269,9 @@ export default function SalesPage() {
               <Input value={buyerName} onChange={e => setBuyerName(e.target.value)} onBlur={() => setBuyerName(toTitleCase(buyerName))} placeholder="Customer name (required)" />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-destructive">Seller Name *</Label>
-              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toTitleCase(sellerName))} placeholder="Your name (required)" />
+              <Label className="text-xs font-semibold text-destructive">Seller Name * {roleLabel}</Label>
+              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toTitleCase(sellerName))} placeholder="Your name (auto-filled)" />
+              {currentBusiness && <p className="text-[10px] text-muted-foreground mt-0.5">📍 {currentBusiness.name}</p>}
             </div>
           </div>
 

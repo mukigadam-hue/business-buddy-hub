@@ -158,8 +158,9 @@ export default function PurchasesPage() {
               <Input value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Supplier name" />
             </div>
             <div>
-              <Label>Recorded By</Label>
-              <Input value={recordedBy} onChange={e => setRecordedBy(e.target.value)} onBlur={() => setRecordedBy(toTitleCase(recordedBy))} placeholder="Your name" />
+              <Label>Recorded By {roleLabel}</Label>
+              <Input value={recordedBy} onChange={e => setRecordedBy(e.target.value)} onBlur={() => setRecordedBy(toTitleCase(recordedBy))} placeholder="Your name (auto-filled)" />
+              {currentBusiness && <p className="text-[10px] text-muted-foreground mt-0.5">📍 {currentBusiness.name}</p>}
             </div>
           </div>
 

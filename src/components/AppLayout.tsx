@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search, AlertTriangle, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import ProofVideoButton from '@/components/ProofVideoButton';
+import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import { useAuth } from '@/context/AuthContext';
 import { APP_VERSION } from '@/version';
 import { useBusiness } from '@/context/BusinessContext';
@@ -287,6 +288,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
 
   return (
     <div className="flex h-screen overflow-hidden flex-col">
+      <NetworkStatusBanner />
       {currentBusiness && <BusinessRoleBanner userRole={userRole!} businessName={currentBusiness.name} businessType={(currentBusiness as any).business_type || 'business'} />}
 
       <div className="flex flex-1 overflow-hidden">

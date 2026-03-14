@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
+import { enqueueOfflineOperation } from '@/hooks/useOfflineQueue';
 
 export interface StockItem {
   id: string;
@@ -264,22 +265,51 @@ function generateCode(): string {
 
 export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [memberships, setMemberships] = useState<BusinessMembership[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>(() => {
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_businesses') || '[]'); } catch { return []; }
+  });
+  const [memberships, setMemberships] = useState<BusinessMembership[]>(() => {
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_memberships') || '[]'); } catch { return []; }
+  });
   const [currentBusinessId, setCurrentBusinessId] = useState<string | null>(() => {
     return localStorage.getItem('biztrack_current_business');
   });
-  const [stock, setStock] = useState<StockItem[]>([]);
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [services, setServices] = useState<ServiceRecord[]>([]);
-  const [expenses, setExpenses] = useState<BusinessExpense[]>([]);
+  const [stock, setStock] = useState<StockItem[]>(() => {
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_stock') || '[]'); } catch { return []; }
+  });
+  const [sales, setSales] = useState<Sale[]>(() => {
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_sales') || '[]'); } catch { return []; }
+  });
+  const [purchases, setPurchases] = useState<Purchase[]>(() => {
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_purchases') || '[]'); } catch { return []; }
+  });
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_orders') || '[]'); } catch { return []; }
+  });
+  const [services, setServices] = useState<ServiceRecord[]>(() => {
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_services') || '[]'); } catch { return []; }
+  });
+  const [expenses, setExpenses] = useState<BusinessExpense[]>(() => {
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_expenses') || '[]'); } catch { return []; }
+  });
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    // If we have cached businesses, skip the loading state
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_businesses') || '[]').length === 0; } catch { return true; }
+  });
 
   const currentBusiness = businesses.find(b => b.id === currentBusinessId) || null;
   const userRole = memberships.find(m => m.business_id === currentBusinessId)?.role || null;
+
+  // Persist cache on data change
+  useEffect(() => { try { localStorage.setItem('biztrack_cache_businesses', JSON.stringify(businesses)); } catch {} }, [businesses]);
+  useEffect(() => { try { localStorage.setItem('biztrack_cache_memberships', JSON.stringify(memberships)); } catch {} }, [memberships]);
+  useEffect(() => { try { localStorage.setItem('biztrack_cache_stock', JSON.stringify(stock)); } catch {} }, [stock]);
+  useEffect(() => { try { localStorage.setItem('biztrack_cache_sales', JSON.stringify(sales)); } catch {} }, [sales]);
+  useEffect(() => { try { localStorage.setItem('biztrack_cache_purchases', JSON.stringify(purchases)); } catch {} }, [purchases]);
+  useEffect(() => { try { localStorage.setItem('biztrack_cache_orders', JSON.stringify(orders)); } catch {} }, [orders]);
+  useEffect(() => { try { localStorage.setItem('biztrack_cache_services', JSON.stringify(services)); } catch {} }, [services]);
+  useEffect(() => { try { localStorage.setItem('biztrack_cache_expenses', JSON.stringify(expenses)); } catch {} }, [expenses]);
 
   useEffect(() => {
     if (currentBusinessId) {
@@ -306,7 +336,8 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   async function loadBusinesses() {
     if (!user) return;
-    setLoading(true);
+    // Only show loading if no cached data
+    if (businesses.length === 0) setLoading(true);
     try {
       const { data: membershipData } = await supabase
         .from('business_memberships')
@@ -573,7 +604,8 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     const paid = amountPaid ?? grandTotal;
     const bal = Math.max(0, grandTotal - paid);
     const status = bal <= 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
-    const { data: saleData, error: saleError } = await supabase.from('sales').insert({
+    
+    const salePayload = {
       business_id: currentBusinessId,
       grand_total: grandTotal,
       recorded_by: recordedBy,
@@ -583,7 +615,25 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       payment_status: paymentStatus === 'paid' ? status : paymentStatus,
       amount_paid: paid,
       balance: bal,
-    } as any).select().single();
+    };
+
+    // If offline, queue and return optimistic result
+    if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const saleItems = items.map(item => ({
+        sale_id: tempId, stock_item_id: item.stock_item_id || null,
+        item_name: item.item_name, category: item.category, quality: item.quality,
+        quantity: item.quantity, price_type: item.price_type, unit_price: item.unit_price, subtotal: item.subtotal,
+      }));
+      enqueueOfflineOperation({ table: 'sales', type: 'insert', data: salePayload });
+      // Queue items separately — they'll need the real sale_id, so we queue them together
+      const optimistic = { ...salePayload, id: tempId, created_at: new Date().toISOString(), items: saleItems as any } as Sale;
+      setSales(prev => [optimistic, ...prev]);
+      toast.success('Sale saved offline — will sync when online');
+      return optimistic;
+    }
+
+    const { data: saleData, error: saleError } = await supabase.from('sales').insert(salePayload as any).select().single();
     if (saleError || !saleData) { toast.error(saleError?.message || 'Failed'); return null; }
 
     const saleItems = items.map(item => ({
@@ -632,12 +682,28 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     const paid = amountPaid ?? grandTotal;
     const bal = Math.max(0, grandTotal - paid);
     const status = bal <= 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
-    const { data: purchaseData, error } = await supabase.from('purchases').insert({
+
+    const purchasePayload = {
       business_id: currentBusinessId, grand_total: grandTotal, supplier, recorded_by: recordedBy,
       payment_status: paymentStatus === 'paid' ? status : paymentStatus,
-      amount_paid: paid,
-      balance: bal,
-    } as any).select().single();
+      amount_paid: paid, balance: bal,
+    };
+
+    // If offline, queue and return optimistic result
+    if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const purchaseItems = items.map(item => ({
+        purchase_id: tempId, item_name: item.item_name, category: item.category,
+        quality: item.quality, quantity: item.quantity, unit_price: item.unit_price, subtotal: item.subtotal,
+      }));
+      enqueueOfflineOperation({ table: 'purchases', type: 'insert', data: purchasePayload });
+      const optimistic = { ...purchasePayload, id: tempId, created_at: new Date().toISOString(), items: purchaseItems as any } as Purchase;
+      setPurchases(prev => [optimistic, ...prev]);
+      toast.success('Purchase saved offline — will sync when online');
+      return;
+    }
+
+    const { data: purchaseData, error } = await supabase.from('purchases').insert(purchasePayload as any).select().single();
     if (error || !purchaseData) { toast.error(error?.message || 'Failed'); return; }
 
     const purchaseItems = items.map(item => ({

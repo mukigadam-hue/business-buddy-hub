@@ -14,10 +14,14 @@ import AdSpace from '@/components/AdSpace';
 import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 export default function PurchasesPage() {
-  const { stock, purchases, addPurchase, updatePurchasePayment } = useBusiness();
+  const { stock, purchases, addPurchase, updatePurchasePayment, userRole, currentBusiness } = useBusiness();
+  const { user } = useAuth();
   const { fmt } = useCurrency();
+  const userFullName = user?.user_metadata?.full_name || '';
+  const roleLabel = userRole === 'owner' ? '(Owner)' : userRole === 'admin' ? '(Admin)' : '(Worker)';
   const [items, setItems] = useState<{
     item_name: string; category: string; quality: string;
     quantity: number; unit_price: number; wholesale_price: number; retail_price: number;

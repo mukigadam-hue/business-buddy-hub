@@ -366,24 +366,20 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
             </Link>
           </nav>
 
-          <div className="p-3 border-t border-sidebar-border space-y-2">
-            {/* Support */}
-            <div className="bg-sidebar-accent/20 rounded-lg p-2.5 space-y-1.5">
-              <p className="text-[10px] font-semibold text-sidebar-foreground uppercase tracking-wider">📞 Support</p>
-              <a href="mailto:ndamson8@gmail.com" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
-                📧 <span className="truncate">ndamson8@gmail.com</span>
-              </a>
-              <a href="https://x.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
-                𝕏 <span>Current VIBE</span>
-              </a>
-              <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
-                📘 <span>Current VIBE</span>
-              </a>
+          <div className="px-3 py-2 border-t border-sidebar-border">
+            <div className="flex items-center gap-1.5 text-[10px] text-sidebar-foreground mb-1">
+              <span>📞</span>
+              <a href="mailto:ndamson8@gmail.com" className="hover:text-primary transition-colors truncate">ndamson8@gmail.com</a>
+              <span className="text-sidebar-muted">·</span>
+              <a href="https://x.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">𝕏</a>
+              <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">📘</a>
             </div>
-            <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground text-xs h-8" onClick={signOut}>
-              <LogOut className="h-3.5 w-3.5 mr-1.5" />{t('nav.signOut')}
-            </Button>
-            <p className="text-[10px] text-sidebar-muted text-center">v{APP_VERSION}</p>
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="sm" className="text-sidebar-foreground text-[11px] h-6 px-1.5" onClick={signOut}>
+                <LogOut className="h-3 w-3 mr-1" />{t('nav.signOut')}
+              </Button>
+              <span className="text-[9px] text-sidebar-muted">v{APP_VERSION}</span>
+            </div>
           </div>
         </aside>
 
@@ -486,32 +482,26 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
               })}
             </div>
 
-            <div className="mt-4 pt-3 border-t space-y-2">
-              {/* Support */}
-              <div className="bg-muted/50 rounded-lg p-2.5 space-y-1.5">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">📞 Support</p>
-                <a href="mailto:ndamson8@gmail.com" className="flex items-center gap-2 text-[11px] text-foreground hover:text-primary transition-colors">
-                  📧 <span className="truncate">ndamson8@gmail.com</span>
-                </a>
-                <div className="flex gap-3">
-                  <a href="https://x.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="text-[11px] text-foreground hover:text-primary transition-colors">
-                    𝕏 Current VIBE
-                  </a>
-                  <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="text-[11px] text-foreground hover:text-primary transition-colors">
-                    📘 Facebook
-                  </a>
-            </div>
-
             {/* Add Business button in mobile */}
             <Link to="/register-business" onClick={() => setMoreOpen(false)}
-              className="mt-2 flex items-center justify-center gap-2 p-3 rounded-xl text-xs font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors">
+              className="mt-3 flex items-center justify-center gap-2 p-2.5 rounded-xl text-xs font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors">
               <Plus className="h-4 w-4" /> Add New Business / Factory / Property
             </Link>
+
+            <div className="mt-2 pt-2 border-t border-border">
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <span>📞</span>
+                <a href="mailto:ndamson8@gmail.com" className="hover:text-primary transition-colors truncate">ndamson8@gmail.com</a>
+                <span>·</span>
+                <a href="https://x.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">𝕏</a>
+                <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">📘</a>
               </div>
-              <Button variant="ghost" size="sm" className="w-full justify-start text-destructive text-xs h-8" onClick={signOut}>
-                <LogOut className="h-3.5 w-3.5 mr-1.5" /> {t('nav.signOut')}
-              </Button>
-              <p className="text-[10px] text-muted-foreground text-center">v{APP_VERSION}</p>
+              <div className="flex items-center justify-between mt-1">
+                <Button variant="ghost" size="sm" className="text-destructive text-[11px] h-6 px-1.5" onClick={signOut}>
+                  <LogOut className="h-3 w-3 mr-1" /> {t('nav.signOut')}
+                </Button>
+                <span className="text-[9px] text-muted-foreground">v{APP_VERSION}</span>
+              </div>
             </div>
           </SheetContent>
         </Sheet>

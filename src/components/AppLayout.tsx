@@ -366,24 +366,20 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
             </Link>
           </nav>
 
-          <div className="p-3 border-t border-sidebar-border space-y-2">
-            {/* Support */}
-            <div className="bg-sidebar-accent/20 rounded-lg p-2.5 space-y-1.5">
-              <p className="text-[10px] font-semibold text-sidebar-foreground uppercase tracking-wider">📞 Support</p>
-              <a href="mailto:ndamson8@gmail.com" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
-                📧 <span className="truncate">ndamson8@gmail.com</span>
-              </a>
-              <a href="https://x.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
-                𝕏 <span>Current VIBE</span>
-              </a>
-              <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-sidebar-foreground hover:text-primary transition-colors">
-                📘 <span>Current VIBE</span>
-              </a>
+          <div className="px-3 py-2 border-t border-sidebar-border">
+            <div className="flex items-center gap-1.5 text-[10px] text-sidebar-foreground mb-1">
+              <span>📞</span>
+              <a href="mailto:ndamson8@gmail.com" className="hover:text-primary transition-colors truncate">ndamson8@gmail.com</a>
+              <span className="text-sidebar-muted">·</span>
+              <a href="https://x.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">𝕏</a>
+              <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">📘</a>
             </div>
-            <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground text-xs h-8" onClick={signOut}>
-              <LogOut className="h-3.5 w-3.5 mr-1.5" />{t('nav.signOut')}
-            </Button>
-            <p className="text-[10px] text-sidebar-muted text-center">v{APP_VERSION}</p>
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="sm" className="text-sidebar-foreground text-[11px] h-6 px-1.5" onClick={signOut}>
+                <LogOut className="h-3 w-3 mr-1" />{t('nav.signOut')}
+              </Button>
+              <span className="text-[9px] text-sidebar-muted">v{APP_VERSION}</span>
+            </div>
           </div>
         </aside>
 

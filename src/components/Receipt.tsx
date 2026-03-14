@@ -49,6 +49,13 @@ export default function Receipt({ items, grandTotal, buyerName, sellerName, cust
                 <p className="text-xs text-muted-foreground">{businessInfo.contact} · {businessInfo.email}</p>
               </div>
             )}
+            {counterpartyInfo && (
+              <div className="bg-accent/10 rounded-lg p-2 text-center space-y-0.5">
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">{type === 'purchase' ? 'Supplier' : 'Customer Business'}</p>
+                <p className="text-sm font-semibold">{counterpartyInfo.name}</p>
+                {counterpartyInfo.contact && <p className="text-xs text-muted-foreground">{counterpartyInfo.contact}</p>}
+              </div>
+            )}
             <Separator />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{type === 'order' ? 'Order' : type === 'service' ? 'Service' : 'Sale'} Receipt</span>

@@ -250,6 +250,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { currentBusiness, updateBusiness, stock, sales, purchases, services, expenses, orders, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, restoreStockItem, permanentDeleteStockItem, deleteBusiness } = useBusiness();
   const { currency, setCurrency, fmt } = useCurrency();
+  const isPersonal = (currentBusiness as any)?.business_type === 'personal';
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 
   // Password gate
@@ -424,8 +425,8 @@ export default function SettingsPage() {
     (r.code && r.code.toLowerCase().includes(receiptSearch.toLowerCase()))
   );
 
-  // Password gate for workers or when password is set
-  if (!isOwnerOrAdmin) {
+  // Password gate for workers or when password is set (personal users always have access)
+  if (!isOwnerOrAdmin && !isPersonal) {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Settings</h1>
@@ -440,7 +441,7 @@ export default function SettingsPage() {
     );
   }
 
-  if (hasPassword && !unlocked) {
+  if (!isPersonal && hasPassword && !unlocked) {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Settings</h1>
@@ -464,9 +465,10 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Settings</h1>
+      <h1 className="text-2xl font-bold">{isPersonal ? '⚙️ Settings' : 'Settings'}</h1>
 
-      {/* Business Code */}
+      {/* Business Code - hidden for personal */}
+      {!isPersonal && (
       <Card className="shadow-card border-primary/20">
         <CardContent className="p-4">
           <h2 className="text-base font-semibold flex items-center gap-2 mb-2">
@@ -486,6 +488,7 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Language Settings */}
       <Card className="shadow-card">
@@ -496,6 +499,7 @@ export default function SettingsPage() {
 
       <AdSpace variant="inline" />
 
+      {!isPersonal && (<>
       {/* ===== COMPREHENSIVE FINANCIAL SUMMARY ===== */}
       <Card className="shadow-card border-primary/20">
         <CardContent className="p-4 space-y-4">
@@ -839,6 +843,7 @@ export default function SettingsPage() {
 
       {/* Payment Methods - TOP PRIORITY */}
       {currentBusiness && <PaymentMethodsManager businessId={currentBusiness.id} />}
+      </>)}
 
       {/* Currency Setting */}
       <Card className="shadow-card">
@@ -898,8 +903,8 @@ export default function SettingsPage() {
 
       <AdSpace variant="banner" />
 
-      {/* Recycle Bin */}
-      {deletedStock.length > 0 && (
+      {/* Recycle Bin - hidden for personal */}
+      {!isPersonal && deletedStock.length > 0 && (
         <Card className="shadow-card border-destructive/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -984,7 +989,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Business Information */}
+      {/* Business Information - hidden for personal */}
+      {!isPersonal && (
       <Card className="shadow-card">
         <CardContent className="p-4">
           <h2 className="text-base font-semibold mb-3">Business Information — {currentBusiness?.name}</h2>
@@ -997,9 +1003,9 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
-
-      {/* Delete Business */}
-      {userRole === 'owner' && (() => {
+      )}
+      {/* Delete Business - hidden for personal */}
+      {!isPersonal && userRole === 'owner' && (() => {
         const ownedBusinesses = businesses.filter(b => memberships.find(m => m.business_id === b.id && m.role === 'owner'));
         const isLastOwned = ownedBusinesses.length <= 1;
         return (

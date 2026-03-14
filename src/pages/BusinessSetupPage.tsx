@@ -13,7 +13,7 @@ import { countries, getCountryByCode } from '@/lib/countries';
 import { useCurrency } from '@/hooks/useCurrency';
 import i18n from '@/i18n';
 
-type Step = 'choose_type' | 'choose_role' | 'create' | 'join';
+type Step = 'choose_type' | 'choose_role' | 'create' | 'join' | 'personal_create';
 
 export default function BusinessSetupPage() {
   const { createBusiness, redeemInviteCode } = useBusiness();
@@ -73,6 +73,21 @@ export default function BusinessSetupPage() {
     window.location.reload();
   }
 
+  async function handlePersonalCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    if (!countryCode) { toast.error('Please select your country'); return; }
+    setLoading(true);
+    await createBusiness(name.trim(), address.trim(), contact.trim(), email.trim(), countryCode);
+    // Set as personal type
+    const { data } = await supabase.from('businesses').select('id').order('created_at', { ascending: false }).limit(1).single();
+    if (data) {
+      await supabase.from('businesses').update({ business_type: 'personal', is_discoverable: false } as any).eq('id', data.id);
+    }
+    setLoading(false);
+    window.location.reload();
+  }
+
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     if (!inviteCode.trim()) return;
@@ -95,8 +110,15 @@ export default function BusinessSetupPage() {
   const roleLabels = {
     business: { owner: 'Register a Personal Business', ownerDesc: 'I own or manage a shop/business', worker: 'Register as a Worker', workerDesc: 'My boss will give me an invite code' },
     factory: { owner: 'Register a Personal Factory', ownerDesc: 'I own or manage a factory', worker: 'Register as a Worker', workerDesc: 'My boss will give me an invite code' },
-    property: { owner: 'Register as an Asset Owner', ownerDesc: 'I own or manage rental properties', worker: 'Register as a Renter', workerDesc: 'My landlord will give me an invite code' },
+    property: { owner: 'Register as an Asset Owner', ownerDesc: 'I own or manage rental properties', worker: 'Register as a Worker', workerDesc: 'My employer will give me an invite code' },
   };
+
+  function getBackStep(): Step {
+    if (step === 'personal_create') return 'choose_type';
+    if (step === 'create' || step === 'join') return 'choose_role';
+    if (step === 'choose_role') return 'choose_type';
+    return 'choose_type';
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -105,7 +127,8 @@ export default function BusinessSetupPage() {
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">📦 BizTrack</h1>
             <p className="text-sm text-muted-foreground">
-              {step === 'choose_type' ? 'What would you like to manage?' :
+              {step === 'choose_type' ? 'How would you like to use BizTrack?' :
+               step === 'personal_create' ? '👤 Register for Personal Use' :
                step === 'choose_role' ? `${typeLabels[businessType].icon} ${typeLabels[businessType].title} — How will you use it?` :
                step === 'create' ? `Create your ${typeLabels[businessType].title.toLowerCase()}` :
                `Join a ${typeLabels[businessType].title.toLowerCase()}`}
@@ -116,14 +139,24 @@ export default function BusinessSetupPage() {
           </div>
 
           {step !== 'choose_type' && (
-            <Button variant="ghost" size="sm" onClick={() => setStep(step === 'create' || step === 'join' ? 'choose_role' : 'choose_type')} className="gap-1.5">
+            <Button variant="ghost" size="sm" onClick={() => setStep(getBackStep())} className="gap-1.5">
               <ArrowLeft className="h-3.5 w-3.5" /> Back
             </Button>
           )}
 
-          {/* Step 1: Choose Type */}
+          {/* Step 1: Choose Type - now includes Personal Use */}
           {step === 'choose_type' && (
             <div className="grid grid-cols-1 gap-3">
+              {/* Personal Use - first option */}
+              <button onClick={() => setStep('personal_create')}
+                className="p-4 rounded-xl border-2 border-border hover:border-primary/50 text-left transition-all flex items-center gap-4">
+                <span className="text-3xl">👤</span>
+                <div>
+                  <p className="font-semibold text-base">Personal Use</p>
+                  <p className="text-xs text-muted-foreground">Orders, bookings, personal tracking</p>
+                </div>
+              </button>
+
               {(['business', 'factory', 'property'] as const).map(type => (
                 <button key={type} onClick={() => handleTypeSelect(type)}
                   className="p-4 rounded-xl border-2 border-border hover:border-primary/50 text-left transition-all flex items-center gap-4">
@@ -135,6 +168,65 @@ export default function BusinessSetupPage() {
                 </button>
               ))}
             </div>
+          )}
+
+          {/* Personal Use Registration */}
+          {step === 'personal_create' && (
+            <form onSubmit={handlePersonalCreate} className="space-y-4">
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground mb-1">👤 Personal Account</p>
+                <p>Use BizTrack for personal needs — make orders to businesses, book properties, and track your transactions. You can add a business anytime later.</p>
+              </div>
+
+              {/* Country Selection */}
+              <div>
+                <Label className="text-sm font-semibold flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" /> Your Country *
+                </Label>
+                {selectedCountry ? (
+                  <button type="button" onClick={() => setCountryCode('')}
+                    className="w-full mt-1.5 flex items-center gap-3 p-3 rounded-xl border-2 border-primary bg-primary/5 text-left">
+                    <span className="text-2xl">{selectedCountry.flag}</span>
+                    <div>
+                      <p className="font-semibold text-sm">{selectedCountry.name}</p>
+                      <p className="text-xs text-muted-foreground">Currency: {selectedCountry.currencySymbol}</p>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="mt-1.5 space-y-2">
+                    <Input placeholder="Search country..." value={countrySearch} onChange={e => setCountrySearch(e.target.value)} className="h-9" />
+                    <div className="max-h-40 overflow-y-auto rounded-lg border border-border">
+                      {filteredCountries.map(c => (
+                        <button key={c.code} type="button" onClick={() => handleCountrySelect(c.code)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-muted/60 text-sm border-b border-border last:border-0">
+                          <span className="text-lg">{c.flag}</span>
+                          <span className="flex-1">{c.name}</span>
+                          <span className="text-xs text-muted-foreground">{c.currencySymbol}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label>Your Full Name *</Label>
+                <Input value={name} onChange={e => setName(e.target.value)} required placeholder="John Doe" />
+              </div>
+              <div>
+                <Label>Contact</Label>
+                <Input value={contact} onChange={e => setContact(e.target.value)} 
+                  placeholder={selectedCountry ? `${selectedCountry.phonePrefix} ...` : '+1 234 567 890'} />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                <User className="h-4 w-4 mr-2" />
+                Create Personal Account
+              </Button>
+            </form>
           )}
 
           {/* Step 2: Choose Role */}
@@ -226,26 +318,20 @@ export default function BusinessSetupPage() {
             </form>
           )}
 
-          {/* Step 3b: Join as Worker/Renter */}
+          {/* Step 3b: Join as Worker */}
           {step === 'join' && (
             <form onSubmit={handleJoin} className="space-y-4">
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground mb-1">
-                  {businessType === 'property' ? '🏠 Joining as a Renter' : '👷 Joining as a Worker'}
-                </p>
-                <p>
-                  {businessType === 'property'
-                    ? 'Your landlord or property manager will give you an invite code. Enter it below to join their property.'
-                    : 'Your boss or business owner will give you an invite code. Enter it below to join their business.'}
-                </p>
+                <p className="font-medium text-foreground mb-1">👷 Joining as a Worker</p>
+                <p>Your boss or manager will give you an invite code. Enter it below to join their {businessType === 'property' ? 'property' : businessType === 'factory' ? 'factory' : 'business'}.</p>
               </div>
               <div>
-                <Label>Invite Code from {businessType === 'property' ? 'Landlord' : 'Owner'}</Label>
+                <Label>Invite Code from {businessType === 'property' ? 'Manager' : 'Owner'}</Label>
                 <Input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())}
                   required placeholder="Enter the code you received" maxLength={6}
                   className="text-center text-lg tracking-widest font-mono" />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Ask your {businessType === 'property' ? 'property owner' : 'business/factory owner'} for the invite code.
+                  Ask your {businessType === 'property' ? 'property manager' : 'business/factory owner'} for the invite code.
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
@@ -256,7 +342,7 @@ export default function BusinessSetupPage() {
 
               <div className="p-3 rounded-lg bg-muted/50 border text-xs text-muted-foreground space-y-2">
                 <p className="font-medium text-foreground">💡 Want to register your own business too?</p>
-                <p>After joining as a {businessType === 'property' ? 'renter' : 'worker'}, you can always add your own personal business, factory, or property from the app's menu.</p>
+                <p>After joining as a worker, you can always add your own personal business, factory, or property from the app's menu.</p>
               </div>
             </form>
           )}

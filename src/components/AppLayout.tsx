@@ -93,10 +93,26 @@ function useNavItems() {
     { to: '/settings', label: t('nav.settings'), icon: Settings },
   ];
 
+  const personalNavItems = [
+    { to: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { to: '/orders', label: t('nav.orders'), icon: ClipboardList },
+    { to: '/browse', label: t('property.browse', 'Browse & Book'), icon: Search },
+    { to: '/contacts', label: t('nav.contacts'), icon: Contact },
+    { to: '/discover', label: t('nav.discover'), icon: Globe },
+    { to: '/team', label: t('nav.team'), icon: Users },
+    { to: '/settings', label: t('nav.settings'), icon: Settings },
+  ];
+
   const propertyMobileNav = [
     { to: '/', label: t('nav.home'), icon: LayoutDashboard },
     { to: '/assets', label: t('property.assets', 'Assets'), icon: Home },
     { to: '/bookings', label: t('property.bookings', 'Bookings'), icon: CalendarCheck },
+  ];
+
+  const personalMobileNav = [
+    { to: '/', label: t('nav.home'), icon: LayoutDashboard },
+    { to: '/orders', label: t('nav.orders'), icon: ClipboardList },
+    { to: '/discover', label: t('nav.discover'), icon: Globe },
   ];
 
   const propertyMoreNav = [
@@ -107,12 +123,20 @@ function useNavItems() {
     { to: '/settings', label: t('nav.settings'), icon: Settings },
   ];
 
-  return { businessNavItems, factoryNavItems, propertyNavItems, businessMobileNav, businessMoreNav, factoryMobileNav, factoryMoreNav, propertyMobileNav, propertyMoreNav };
+  const personalMoreNav = [
+    { to: '/browse', label: t('property.browse', 'Browse & Book'), icon: Search },
+    { to: '/contacts', label: t('nav.contacts'), icon: Contact },
+    { to: '/team', label: t('nav.team'), icon: Users },
+    { to: '/settings', label: t('nav.settings'), icon: Settings },
+  ];
+
+  return { businessNavItems, factoryNavItems, propertyNavItems, personalNavItems, businessMobileNav, businessMoreNav, factoryMobileNav, factoryMoreNav, propertyMobileNav, propertyMoreNav, personalMobileNav, personalMoreNav };
 }
 
 function BusinessRoleBanner({ userRole, businessName, businessType }: { userRole: string | null; businessName: string; businessType: string }) {
   const { t } = useTranslation();
   if (!userRole) return null;
+  if (businessType === 'personal') return null; // No role banner for personal accounts
   const isOwner = userRole === 'owner';
   const isAdmin = userRole === 'admin';
   const typeLabel = businessType === 'factory' ? 'Factory' : businessType === 'property' ? 'Property' : 'Business';
@@ -236,10 +260,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isFactory = (currentBusiness as any)?.business_type === 'factory';
   const isProperty = (currentBusiness as any)?.business_type === 'property';
-  const { businessNavItems, factoryNavItems, propertyNavItems, businessMobileNav, factoryMobileNav, propertyMobileNav, businessMoreNav, factoryMoreNav, propertyMoreNav } = useNavItems();
-  const navItems = isProperty ? propertyNavItems : isFactory ? factoryNavItems : businessNavItems;
-  const mobileMainNav = isProperty ? propertyMobileNav : isFactory ? factoryMobileNav : businessMobileNav;
-  const mobileMoreNav = isProperty ? propertyMoreNav : isFactory ? factoryMoreNav : businessMoreNav;
+  const isPersonal = (currentBusiness as any)?.business_type === 'personal';
+  const { businessNavItems, factoryNavItems, propertyNavItems, personalNavItems, businessMobileNav, factoryMobileNav, propertyMobileNav, personalMobileNav, businessMoreNav, factoryMoreNav, propertyMoreNav, personalMoreNav } = useNavItems();
+  const navItems = isPersonal ? personalNavItems : isProperty ? propertyNavItems : isFactory ? factoryNavItems : businessNavItems;
+  const mobileMainNav = isPersonal ? personalMobileNav : isProperty ? propertyMobileNav : isFactory ? factoryMobileNav : businessMobileNav;
+  const mobileMoreNav = isPersonal ? personalMoreNav : isProperty ? propertyMoreNav : isFactory ? factoryMoreNav : businessMoreNav;
   const unreadCount = notifications.filter(n => !n.is_read).length;
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -248,7 +273,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   function getBusinessType(b: any) {
-    return b.business_type === 'factory' ? '🏭' : b.business_type === 'property' ? '🏠' : '🏪';
+    return b.business_type === 'personal' ? '👤' : b.business_type === 'factory' ? '🏭' : b.business_type === 'property' ? '🏠' : '🏪';
   }
 
   function getRoleBadge(role: string) {
@@ -297,9 +322,9 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
           <div className="p-5 border-b border-sidebar-border flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold text-sidebar-accent-foreground tracking-tight">
-                {isProperty ? '🏠 FlexRent' : isFactory ? '🏭 BizTrack' : '📦 BizTrack'}
+                {isPersonal ? '👤 BizTrack' : isProperty ? '🏠 FlexRent' : isFactory ? '🏭 BizTrack' : '📦 BizTrack'}
               </h1>
-              <p className="text-xs text-sidebar-muted mt-1">{isProperty ? t('nav.propertyManager', 'Property Manager') : isFactory ? t('nav.factoryManager') : t('nav.businessManager')}</p>
+              <p className="text-xs text-sidebar-muted mt-1">{isPersonal ? 'Personal Account' : isProperty ? t('nav.propertyManager', 'Property Manager') : isFactory ? t('nav.factoryManager') : t('nav.businessManager')}</p>
             </div>
             <NotificationsPanel />
           </div>

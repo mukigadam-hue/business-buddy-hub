@@ -25,6 +25,9 @@ interface ReceiptProps {
   date: string;
   type: 'sale' | 'order' | 'service' | 'checkout' | 'purchase';
   businessInfo?: { name: string; address: string; contact: string; email: string };
+  counterpartyInfo?: { name: string; contact: string };
+  recordedBy?: string;
+  recordedByRole?: string;
 }
 
 export default function Receipt({ items, grandTotal, buyerName, sellerName, customerName, code, date, type, businessInfo }: ReceiptProps) {

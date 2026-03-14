@@ -55,6 +55,14 @@ export default function OrdersPage() {
   const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [checkoutOrders, setCheckoutOrders] = useState<any[]>([]);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
+  // Installment payment state
+  const [orderPaymentStatus, setOrderPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');
+  const [orderAmountPaid, setOrderAmountPaid] = useState('');
+  // Update payment dialog for existing orders
+  const [updatePaymentOrder, setUpdatePaymentOrder] = useState<Order | null>(null);
+  const [updatePaymentAmount, setUpdatePaymentAmount] = useState('');
+  // Proof viewer for confirming payment
+  const [confirmPaymentOrder, setConfirmPaymentOrder] = useState<Order | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [sellerName, setSellerName] = useState('');
   const [items, setItems] = useState<{ item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number }[]>([]);

@@ -147,16 +147,20 @@ export default function CheckoutPage() {
           code,
         });
 
+        const isPaid = paymentMethod === 'card' || paymentMethod === 'cash';
         setCompletedOrder({
           id: (orderData as any).id,
           business_id: currentBusiness.id,
           type: 'checkout',
           customer_name: toTitleCase(customerName.trim()),
           grand_total: grandTotal,
-          status: paymentMethod === 'card' || paymentMethod === 'cash' ? 'paid' : 'pending',
+          status: isPaid ? 'paid' : 'pending',
           code,
           transferred_to_sale: false,
           sharing_code: null,
+          payment_status: isPaid ? 'paid' : 'unpaid',
+          amount_paid: isPaid ? grandTotal : 0,
+          balance: isPaid ? 0 : grandTotal,
           created_at: new Date().toISOString(),
           items: orderItems.map((item, idx) => ({
             id: `temp-${idx}`, order_id: (orderData as any).id,

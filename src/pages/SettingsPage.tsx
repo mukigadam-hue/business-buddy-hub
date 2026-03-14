@@ -425,8 +425,8 @@ export default function SettingsPage() {
     (r.code && r.code.toLowerCase().includes(receiptSearch.toLowerCase()))
   );
 
-  // Password gate for workers or when password is set
-  if (!isOwnerOrAdmin) {
+  // Password gate for workers or when password is set (personal users always have access)
+  if (!isOwnerOrAdmin && !isPersonal) {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Settings</h1>

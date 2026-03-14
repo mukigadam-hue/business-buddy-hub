@@ -55,6 +55,14 @@ export default function OrdersPage() {
   const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [checkoutOrders, setCheckoutOrders] = useState<any[]>([]);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
+  // Installment payment state
+  const [orderPaymentStatus, setOrderPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');
+  const [orderAmountPaid, setOrderAmountPaid] = useState('');
+  // Update payment dialog for existing orders
+  const [updatePaymentOrder, setUpdatePaymentOrder] = useState<Order | null>(null);
+  const [updatePaymentAmount, setUpdatePaymentAmount] = useState('');
+  // Proof viewer for confirming payment
+  const [confirmPaymentOrder, setConfirmPaymentOrder] = useState<Order | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [sellerName, setSellerName] = useState('');
   const [items, setItems] = useState<{ item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number }[]>([]);
@@ -502,6 +510,11 @@ export default function OrdersPage() {
   }
 
   async function confirmPaymentReceived(order: Order) {
+    // Show the proof viewer dialog first so supplier can review before confirming
+    setConfirmPaymentOrder(order);
+  }
+
+  async function doConfirmPayment(order: Order) {
     setSyncing(true);
     try {
       const res = await supabase.functions.invoke('sync-order-prices', {
@@ -510,12 +523,32 @@ export default function OrdersPage() {
       if (res.error || res.data?.error) {
         toast.error(res.data?.error || 'Failed to confirm payment');
       } else {
+        // Update payment tracking
+        await supabase.from('orders').update({
+          amount_paid: Number(order.grand_total),
+          balance: 0,
+          payment_status: 'paid',
+        } as any).eq('id', order.id);
         toast.success('Payment confirmed!');
         await refreshData();
       }
+      setConfirmPaymentOrder(null);
     } finally {
       setSyncing(false);
     }
+  }
+
+  async function updateOrderPayment(orderId: string, newAmountPaid: number, total: number) {
+    const status = newAmountPaid >= total ? 'paid' : newAmountPaid > 0 ? 'partial' : 'unpaid';
+    const balance = total - newAmountPaid;
+    await supabase.from('orders').update({
+      amount_paid: newAmountPaid,
+      balance: Math.max(0, balance),
+      payment_status: status,
+    } as any).eq('id', orderId);
+    toast.success('Payment updated!');
+    setUpdatePaymentOrder(null);
+    await refreshData();
   }
 
   function getStockStatus(itemName: string, category: string, quality: string) {
@@ -586,11 +619,19 @@ export default function OrdersPage() {
       }
 
       if (isB2BRequest) {
-        // Buyer submitting payment → update order and notify supplier
+        // Buyer submitting payment → calculate amount
+        const total = Number(completeDialog.grand_total);
+        const paidAmt = orderPaymentStatus === 'paid' ? total : (parseFloat(orderAmountPaid) || 0);
+        const bal = Math.max(0, total - paidAmt);
+        const pStatus = paidAmt >= total ? 'paid' : paidAmt > 0 ? 'partial' : 'unpaid';
+
         await supabase.from('orders').update({
           payment_method: paymentMethod,
           proof_url: proofUrl,
           status: 'payment_submitted',
+          amount_paid: paidAmt,
+          balance: bal,
+          payment_status: pStatus,
         } as any).eq('id', completeDialog.id);
 
         // Sync status to supplier's inbox order
@@ -621,14 +662,24 @@ export default function OrdersPage() {
         }
         toast.success('Receipt issued!');
       } else {
-        // Live order — original flow
+        // Live order — with installment support
+        const total = Number(completeDialog.grand_total);
+        const paidAmt = orderPaymentStatus === 'paid' ? total : (parseFloat(orderAmountPaid) || 0);
+        const bal = Math.max(0, total - paidAmt);
+        const pStatus = paidAmt >= total ? 'paid' : paidAmt > 0 ? 'partial' : 'unpaid';
+
         await supabase.from('orders').update({
           payment_method: paymentMethod,
           proof_url: proofUrl,
-          status: paymentMethod === 'card' || paymentMethod === 'cash' ? 'paid' : 'pending',
+          status: pStatus === 'paid' ? 'paid' : 'pending',
+          amount_paid: paidAmt,
+          balance: bal,
+          payment_status: pStatus,
         } as any).eq('id', completeDialog.id);
 
-        await completeOrderToSale(completeDialog.id, toTitleCase(completeBuyer.trim()), toTitleCase(completeSeller.trim()));
+        if (pStatus === 'paid') {
+          await completeOrderToSale(completeDialog.id, toTitleCase(completeBuyer.trim()), toTitleCase(completeSeller.trim()));
+        }
         
         if (currentBusiness) {
           await saveReceipt({
@@ -646,7 +697,7 @@ export default function OrdersPage() {
             code: completeDialog.code,
           });
         }
-        toast.success(paymentMethod === 'mobile_money' ? 'Order completed! Payment proof submitted.' : 'Order completed and paid!');
+        toast.success(pStatus === 'paid' ? 'Order completed and paid!' : pStatus === 'partial' ? 'Partial payment recorded. Balance outstanding.' : 'Order recorded as credit/unpaid.');
       }
 
       setCompleteDialog(null);
@@ -654,6 +705,8 @@ export default function OrdersPage() {
       setCompleteSeller('');
       setProofFile(null);
       setProofPreview(null);
+      setOrderPaymentStatus('paid');
+      setOrderAmountPaid('');
       await refreshData();
     } catch (err: any) {
       toast.error(err.message || 'Failed to complete order');
@@ -687,6 +740,27 @@ export default function OrdersPage() {
             {isRequest && order.grand_total === 0 ? 'Price Pending' : <span className="text-success bg-success/10 px-2 py-0.5 rounded-md">{fmt(Number(order.grand_total))}</span>}
           </span>
         </div>
+        {/* Payment status badge */}
+        {order.payment_status && order.payment_status !== 'unpaid' && order.grand_total > 0 && (
+          <div className="flex items-center gap-2">
+            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+              order.payment_status === 'paid' ? 'bg-success/10 text-success' :
+              order.payment_status === 'partial' ? 'bg-warning/10 text-warning' :
+              'bg-destructive/10 text-destructive'
+            }`}>
+              {order.payment_status === 'paid' ? '✅ Paid' : order.payment_status === 'partial' ? `⚠️ Partial (${fmt(Number(order.amount_paid))})` : '❌ Unpaid'}
+            </span>
+            {order.payment_status !== 'paid' && Number(order.balance) > 0 && (
+              <span className="text-xs font-semibold text-destructive">Balance: {fmt(Number(order.balance))}</span>
+            )}
+          </div>
+        )}
+        {order.payment_status === 'unpaid' && order.grand_total > 0 && order.status !== 'pending' && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold bg-destructive/10 text-destructive">❌ Unpaid</span>
+            <span className="text-xs font-semibold text-destructive">Balance: {fmt(Number(order.grand_total))}</span>
+          </div>
+        )}
 
         {/* Rejection reason banner */}
         {order.status === 'rejected' && rejectionReason && (
@@ -836,6 +910,13 @@ export default function OrdersPage() {
           {(order.type === 'inbox' || order.type === 'request') && (order.status === 'priced' || order.status === 'confirmed' || order.status === 'payment_submitted' || order.status === 'paid') && !order.transferred_to_sale && (
             <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
               <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
+            </Button>
+          )}
+
+          {/* Update Payment for orders with outstanding balance */}
+          {order.payment_status !== 'paid' && Number(order.balance) > 0 && order.grand_total > 0 && (
+            <Button size="sm" variant="outline" onClick={() => { setUpdatePaymentOrder(order); setUpdatePaymentAmount(String(order.amount_paid || 0)); }}>
+              💰 Update Payment
             </Button>
           )}
         </div>
@@ -1629,6 +1710,33 @@ export default function OrdersPage() {
                 </>
               )}
 
+              {/* Payment Status (Installment support) — for request and live orders */}
+              {(completeDialog.type === 'request' || completeDialog.type === 'my_order') && (
+                <div className="p-3 bg-muted/40 rounded-lg border space-y-2">
+                  <Label className="text-xs font-semibold">💰 Payment Status</Label>
+                  <div className="flex gap-2">
+                    {(['paid', 'partial', 'unpaid'] as const).map(s => (
+                      <button key={s} onClick={() => setOrderPaymentStatus(s)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${orderPaymentStatus === s
+                          ? s === 'paid' ? 'bg-success text-success-foreground' : s === 'partial' ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'
+                          : 'bg-muted text-muted-foreground'}`}>
+                        {s === 'paid' ? '✅ Paid Full' : s === 'partial' ? '⚠️ Partial' : '❌ Credit'}
+                      </button>
+                    ))}
+                  </div>
+                  {orderPaymentStatus !== 'paid' && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs whitespace-nowrap">Amount Paid:</Label>
+                      <Input type="number" min="0" step="0.01" value={orderAmountPaid} onChange={e => setOrderAmountPaid(e.target.value)}
+                        placeholder="0.00" className="w-32" />
+                      <span className="text-xs text-muted-foreground">
+                        Balance: <span className="font-bold text-destructive">{fmt(Number(completeDialog.grand_total) - (parseFloat(orderAmountPaid) || 0))}</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Inbox (supplier) — no payment section, just receipt */}
               {completeDialog.type === 'inbox' && (
                 <div className="p-3 bg-success/5 rounded-lg border border-success/20">
@@ -1746,6 +1854,92 @@ export default function OrdersPage() {
 
               <Button onClick={handleAllocateItems} className="w-full" disabled={allocating}>
                 {allocating ? 'Allocating...' : <><CheckCircle className="h-4 w-4 mr-2" />Confirm Allocation</>}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Payment with Proof Viewer Dialog (for supplier/inbox) */}
+      <Dialog open={!!confirmPaymentOrder} onOpenChange={o => { if (!o) setConfirmPaymentOrder(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Review & Confirm Payment</DialogTitle></DialogHeader>
+          {confirmPaymentOrder && (
+            <div className="space-y-4">
+              <div className="p-3 bg-muted/40 rounded-lg border space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Order</span>
+                  <span className="font-mono font-semibold">{confirmPaymentOrder.code}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Customer</span>
+                  <span className="font-medium">{confirmPaymentOrder.customer_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold">Total</span>
+                  <span className="font-bold text-success text-lg">{fmt(Number(confirmPaymentOrder.grand_total))}</span>
+                </div>
+                {confirmPaymentOrder.payment_method && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Payment Method</span>
+                    <span className="capitalize">{confirmPaymentOrder.payment_method === 'mobile_money' ? 'Mobile Money' : confirmPaymentOrder.payment_method}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Proof image */}
+              {confirmPaymentOrder.proof_url ? (
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">📸 Payment Proof Submitted by Buyer</Label>
+                  <img
+                    src={confirmPaymentOrder.proof_url}
+                    alt="Payment proof"
+                    className="w-full rounded-lg border max-h-64 object-contain"
+                    loading="eager"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                  />
+                </div>
+              ) : (
+                <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg text-center">
+                  <p className="text-sm text-muted-foreground">⚠️ No payment proof screenshot was attached by the buyer.</p>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
+                  onClick={() => confirmPaymentOrder && doConfirmPayment(confirmPaymentOrder)}
+                  disabled={syncing}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />{syncing ? 'Confirming...' : 'Confirm Payment Received'}
+                </Button>
+                <Button variant="outline" onClick={() => setConfirmPaymentOrder(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Payment Dialog (for installments) */}
+      <Dialog open={!!updatePaymentOrder} onOpenChange={o => { if (!o) setUpdatePaymentOrder(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Update Payment — {updatePaymentOrder?.code}</DialogTitle></DialogHeader>
+          {updatePaymentOrder && (
+            <div className="space-y-3">
+              <p className="text-sm">Total: <span className="font-bold">{fmt(Number(updatePaymentOrder.grand_total))}</span></p>
+              <p className="text-sm">Previously Paid: <span className="font-bold">{fmt(Number(updatePaymentOrder.amount_paid))}</span></p>
+              <div>
+                <Label>New Total Amount Paid</Label>
+                <Input type="number" min="0" step="0.01" value={updatePaymentAmount} onChange={e => setUpdatePaymentAmount(e.target.value)} />
+              </div>
+              <p className="text-sm">New Balance: <span className="font-bold text-destructive">{fmt(Number(updatePaymentOrder.grand_total) - (parseFloat(updatePaymentAmount) || 0))}</span></p>
+              <Button className="w-full" onClick={() => {
+                const amt = parseFloat(updatePaymentAmount) || 0;
+                updateOrderPayment(updatePaymentOrder.id, amt, Number(updatePaymentOrder.grand_total));
+              }}>
+                💰 Save Payment
               </Button>
             </div>
           )}

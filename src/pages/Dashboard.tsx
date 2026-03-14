@@ -17,7 +17,7 @@ import WorkerActivityTracker from '@/components/WorkerActivityTracker';
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const { currentBusiness, updateBusiness, stock, sales, services, purchases } = useBusiness();
+  const { currentBusiness, updateBusiness, stock, sales, services, purchases, orders } = useBusiness();
   const { fmt } = useCurrency();
 
   const activeStock = stock.filter(s => !s.deleted_at);
@@ -27,18 +27,23 @@ export default function Dashboard() {
   const lowStock = activeStock.filter(item => item.quantity > 0 && item.quantity <= item.min_stock_level);
   const outOfStock = activeStock.filter(item => item.quantity === 0);
 
-  // Debt tracking
+  // Debt tracking (sales, purchases, services, orders)
   const salesDebts = sales.filter(s => s.payment_status !== 'paid' && Number(s.balance) > 0);
   const purchaseDebts = purchases.filter(p => p.payment_status !== 'paid' && Number(p.balance) > 0);
   const serviceDebts = services.filter(s => s.payment_status !== 'paid' && Number(s.balance) > 0);
-  const totalOwedToYou = salesDebts.reduce((sum, s) => sum + Number(s.balance), 0) + serviceDebts.reduce((sum, s) => sum + Number(s.balance), 0);
-  const totalYouOwe = purchaseDebts.reduce((sum, p) => sum + Number(p.balance), 0);
+  const orderDebts = orders.filter(o => o.payment_status && o.payment_status !== 'paid' && Number(o.balance) > 0 && o.grand_total > 0);
+  const totalOwedToYou = salesDebts.reduce((sum, s) => sum + Number(s.balance), 0)
+    + serviceDebts.reduce((sum, s) => sum + Number(s.balance), 0)
+    + orderDebts.filter(o => o.type === 'inbox' || o.type === 'my_order').reduce((sum, o) => sum + Number(o.balance), 0);
+  const totalYouOwe = purchaseDebts.reduce((sum, p) => sum + Number(p.balance), 0)
+    + orderDebts.filter(o => o.type === 'request').reduce((sum, o) => sum + Number(o.balance), 0);
 
   const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
   const overdueSales = salesDebts.filter(s => (Date.now() - new Date(s.created_at).getTime()) > THREE_DAYS);
   const overduePurchases = purchaseDebts.filter(p => (Date.now() - new Date(p.created_at).getTime()) > THREE_DAYS);
   const overdueServices = serviceDebts.filter(s => (Date.now() - new Date(s.created_at).getTime()) > THREE_DAYS);
-  const hasOverdue = overdueSales.length > 0 || overduePurchases.length > 0 || overdueServices.length > 0;
+  const overdueOrders = orderDebts.filter(o => (Date.now() - new Date(o.created_at).getTime()) > THREE_DAYS);
+  const hasOverdue = overdueSales.length > 0 || overduePurchases.length > 0 || overdueServices.length > 0 || overdueOrders.length > 0;
 
   const itemCounts: Record<string, { name: string; category: string; quality: string; totalSold: number }> = {};
   sales.forEach(sale => {
@@ -205,6 +210,14 @@ export default function Dashboard() {
                 <p className="text-xs font-semibold uppercase text-destructive">{t('dashboard.youOweSuppliers')} ({t('nav.purchases')}):</p>
                 {overduePurchases.map(p => (
                   <div key={p.id} className="flex justify-between text-sm"><span>🏪 {p.supplier} — {new Date(p.created_at).toLocaleDateString()}</span><span className="font-bold text-destructive tabular-nums">{fmt(Number(p.balance))}</span></div>
+                ))}
+              </div>
+            )}
+            {overdueOrders.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase text-destructive">Overdue Orders:</p>
+                {overdueOrders.map(o => (
+                  <div key={o.id} className="flex justify-between text-sm"><span>📋 {o.customer_name} — {o.code} — {new Date(o.created_at).toLocaleDateString()}</span><span className="font-bold text-destructive tabular-nums">{fmt(Number(o.balance))}</span></div>
                 ))}
               </div>
             )}

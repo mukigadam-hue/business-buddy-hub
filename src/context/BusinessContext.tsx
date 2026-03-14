@@ -682,12 +682,28 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     const paid = amountPaid ?? grandTotal;
     const bal = Math.max(0, grandTotal - paid);
     const status = bal <= 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
-    const { data: purchaseData, error } = await supabase.from('purchases').insert({
+
+    const purchasePayload = {
       business_id: currentBusinessId, grand_total: grandTotal, supplier, recorded_by: recordedBy,
       payment_status: paymentStatus === 'paid' ? status : paymentStatus,
-      amount_paid: paid,
-      balance: bal,
-    } as any).select().single();
+      amount_paid: paid, balance: bal,
+    };
+
+    // If offline, queue and return optimistic result
+    if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const purchaseItems = items.map(item => ({
+        purchase_id: tempId, item_name: item.item_name, category: item.category,
+        quality: item.quality, quantity: item.quantity, unit_price: item.unit_price, subtotal: item.subtotal,
+      }));
+      enqueueOfflineOperation({ table: 'purchases', type: 'insert', data: purchasePayload });
+      const optimistic = { ...purchasePayload, id: tempId, created_at: new Date().toISOString(), items: purchaseItems as any } as Purchase;
+      setPurchases(prev => [optimistic, ...prev]);
+      toast.success('Purchase saved offline — will sync when online');
+      return;
+    }
+
+    const { data: purchaseData, error } = await supabase.from('purchases').insert(purchasePayload as any).select().single();
     if (error || !purchaseData) { toast.error(error?.message || 'Failed'); return; }
 
     const purchaseItems = items.map(item => ({

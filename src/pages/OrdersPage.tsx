@@ -799,7 +799,7 @@ export default function OrdersPage() {
               <Button size="sm" variant="ghost" onClick={() => setReceiptOrder(order)}>
                 <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
               </Button>
-              {order.type === 'inbox' && (
+              {(order.type === 'inbox' || order.type === 'request') && (
                 <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
                   <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
                 </Button>

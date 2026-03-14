@@ -273,7 +273,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   function getBusinessType(b: any) {
-    return b.business_type === 'factory' ? '🏭' : b.business_type === 'property' ? '🏠' : '🏪';
+    return b.business_type === 'personal' ? '👤' : b.business_type === 'factory' ? '🏭' : b.business_type === 'property' ? '🏠' : '🏪';
   }
 
   function getRoleBadge(role: string) {

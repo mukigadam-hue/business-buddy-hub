@@ -1039,6 +1039,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          amount_paid: number
+          balance: number
           business_id: string
           code: string
           created_at: string
@@ -1046,6 +1048,7 @@ export type Database = {
           grand_total: number
           id: string
           payment_method: string
+          payment_status: string
           proof_url: string | null
           sharing_code: string | null
           status: string
@@ -1053,6 +1056,8 @@ export type Database = {
           type: string
         }
         Insert: {
+          amount_paid?: number
+          balance?: number
           business_id: string
           code: string
           created_at?: string
@@ -1060,6 +1065,7 @@ export type Database = {
           grand_total?: number
           id?: string
           payment_method?: string
+          payment_status?: string
           proof_url?: string | null
           sharing_code?: string | null
           status?: string
@@ -1067,6 +1073,8 @@ export type Database = {
           type?: string
         }
         Update: {
+          amount_paid?: number
+          balance?: number
           business_id?: string
           code?: string
           created_at?: string
@@ -1074,6 +1082,7 @@ export type Database = {
           grand_total?: number
           id?: string
           payment_method?: string
+          payment_status?: string
           proof_url?: string | null
           sharing_code?: string | null
           status?: string

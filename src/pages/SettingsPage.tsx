@@ -989,7 +989,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Business Information */}
+      {/* Business Information - hidden for personal */}
+      {!isPersonal && (
       <Card className="shadow-card">
         <CardContent className="p-4">
           <h2 className="text-base font-semibold mb-3">Business Information — {currentBusiness?.name}</h2>
@@ -1002,7 +1003,7 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
-
+      )}
       {/* Delete Business */}
       {userRole === 'owner' && (() => {
         const ownedBusinesses = businesses.filter(b => memberships.find(m => m.business_id === b.id && m.role === 'owner'));

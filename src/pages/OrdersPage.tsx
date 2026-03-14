@@ -1710,6 +1710,33 @@ export default function OrdersPage() {
                 </>
               )}
 
+              {/* Payment Status (Installment support) — for request and live orders */}
+              {(completeDialog.type === 'request' || completeDialog.type === 'my_order') && (
+                <div className="p-3 bg-muted/40 rounded-lg border space-y-2">
+                  <Label className="text-xs font-semibold">💰 Payment Status</Label>
+                  <div className="flex gap-2">
+                    {(['paid', 'partial', 'unpaid'] as const).map(s => (
+                      <button key={s} onClick={() => setOrderPaymentStatus(s)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${orderPaymentStatus === s
+                          ? s === 'paid' ? 'bg-success text-success-foreground' : s === 'partial' ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'
+                          : 'bg-muted text-muted-foreground'}`}>
+                        {s === 'paid' ? '✅ Paid Full' : s === 'partial' ? '⚠️ Partial' : '❌ Credit'}
+                      </button>
+                    ))}
+                  </div>
+                  {orderPaymentStatus !== 'paid' && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs whitespace-nowrap">Amount Paid:</Label>
+                      <Input type="number" min="0" step="0.01" value={orderAmountPaid} onChange={e => setOrderAmountPaid(e.target.value)}
+                        placeholder="0.00" className="w-32" />
+                      <span className="text-xs text-muted-foreground">
+                        Balance: <span className="font-bold text-destructive">{fmt(Number(completeDialog.grand_total) - (parseFloat(orderAmountPaid) || 0))}</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Inbox (supplier) — no payment section, just receipt */}
               {completeDialog.type === 'inbox' && (
                 <div className="p-3 bg-success/5 rounded-lg border border-success/20">

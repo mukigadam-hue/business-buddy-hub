@@ -356,6 +356,24 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
                 </Link>
               );
             })}
+            {/* Register Personal Business for workers */}
+            {userRole === 'worker' && (
+              <button
+                onClick={async () => {
+                  const { signOut } = await import('@/context/AuthContext').then(() => ({ signOut }));
+                  // Navigate to setup by removing current business context
+                  const confirmed = window.confirm('This will open the registration flow to create your own business, factory, or property. Continue?');
+                  if (confirmed) {
+                    // Create a new business directly - redirect to setup
+                    window.localStorage.setItem('biztrack_register_personal', 'true');
+                    window.location.reload();
+                  }
+                }}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-sidebar-foreground hover:bg-sidebar-accent/50 w-full text-left"
+              >
+                <Plus className="h-4 w-4 shrink-0" /> Register My Business
+              </button>
+            )}
           </nav>
 
           <div className="p-3 border-t border-sidebar-border space-y-2">

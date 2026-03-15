@@ -266,7 +266,7 @@ export default function PropertyBrowse() {
     if (prefilledPropertyId) {
       loadPropertyAssets();
     } else {
-      searchAssets(); 
+      searchAssets(); // Auto-search on mount
     }
   }, []);
 

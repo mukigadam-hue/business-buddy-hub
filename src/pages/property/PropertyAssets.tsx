@@ -265,11 +265,12 @@ export default function PropertyAssets() {
             const totalRooms = (asset as any).total_rooms || 0;
             const occupiedRooms = asset.category === 'house' && totalRooms > 0 ? getOccupiedRooms(asset.id) : 0;
             const vacantRooms = totalRooms - occupiedRooms;
+            const activeBookingsCount = bookings.filter(b => b.asset_id === asset.id && (b.status === 'active' || b.status === 'confirmed')).length;
 
             return (
               <React.Fragment key={asset.id}>
                 {showAd && <div className="sm:col-span-2"><AdSpace variant="inline" /></div>}
-                <Card className="overflow-hidden">
+                <Card className={`overflow-hidden ${status === 'occupied' ? 'border-destructive/30' : 'border-success/30'}`}>
                   {asset.image_url_1 && (
                     <div className="h-32 overflow-hidden">
                       <img src={asset.image_url_1} alt={asset.name} className="w-full h-full object-cover" />
@@ -283,14 +284,14 @@ export default function PropertyAssets() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Badge variant={status === 'occupied' ? 'destructive' : 'default'} className="text-[10px]">
-                          {status === 'occupied' ? 'Occupied' : 'Vacant'}
+                          {status === 'occupied' ? '🔴 Rented' : '🟢 Available'}
                         </Badge>
-                        {!asset.is_available && <Badge variant="secondary" className="text-[10px]">Unavailable</Badge>}
+                        {!asset.is_available && <Badge variant="secondary" className="text-[10px]">Hidden</Badge>}
                       </div>
                     </div>
-                    <div className="flex gap-2 text-xs">
+                    <div className="flex gap-2 text-xs flex-wrap">
                       <span className="capitalize">{catIcon(asset.category)} {asset.sub_category || asset.category}</span>
-                      {asset.area_size > 0 && <span>· {asset.area_size} {asset.area_unit}</span>}
+                      {asset.area_size > 0 && <span>· 📐 {asset.area_size} {asset.area_unit}</span>}
                       {(asset as any).room_size && <span>· {(asset as any).room_size}</span>}
                     </div>
 
@@ -298,8 +299,15 @@ export default function PropertyAssets() {
                     {asset.category === 'house' && totalRooms > 0 && (
                       <div className="flex gap-2 text-xs">
                         <Badge variant="outline" className="text-[9px]">🚪 {totalRooms} rooms</Badge>
-                        <Badge variant="default" className="text-[9px] bg-green-500/10 text-green-700">{vacantRooms} vacant</Badge>
+                        <Badge variant="default" className="text-[9px] bg-success/10 text-success">{vacantRooms} vacant</Badge>
                         {occupiedRooms > 0 && <Badge variant="secondary" className="text-[9px]">{occupiedRooms} occupied</Badge>}
+                      </div>
+                    )}
+
+                    {/* Active bookings indicator for non-house assets */}
+                    {asset.category !== 'house' && activeBookingsCount > 0 && (
+                      <div className="text-[10px] text-muted-foreground">
+                        📋 {activeBookingsCount} active booking{activeBookingsCount > 1 ? 's' : ''}
                       </div>
                     )}
 

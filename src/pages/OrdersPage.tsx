@@ -887,16 +887,9 @@ export default function OrdersPage() {
 
           {/* Completed/Paid actions */}
           {(order.status === 'completed' || order.status === 'paid' || order.transferred_to_sale) && (
-            <>
-              <Button size="sm" variant="ghost" onClick={() => setReceiptOrder(order)}>
-                <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
-              </Button>
-              {(order.type === 'inbox' || order.type === 'request') && (
-                <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
-                  <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
-                </Button>
-              )}
-            </>
+            <Button size="sm" variant="ghost" onClick={() => setReceiptOrder(order)}>
+              <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
+            </Button>
           )}
 
           {/* Supplier can complete receipt after payment confirmed */}
@@ -906,10 +899,18 @@ export default function OrdersPage() {
             </Button>
           )}
 
-          {/* Allocate for confirmed/priced inbox or request orders */}
-          {(order.type === 'inbox' || order.type === 'request') && (order.status === 'priced' || order.status === 'confirmed' || order.status === 'payment_submitted' || order.status === 'paid') && !order.transferred_to_sale && (
+          {/* Allocate Items — single button for inbox/request orders that are priced or beyond */}
+          {(order.type === 'inbox' || order.type === 'request') && 
+           (order.status === 'priced' || order.status === 'confirmed' || order.status === 'payment_submitted' || order.status === 'paid' || order.status === 'completed' || order.transferred_to_sale) && (
             <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
               <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
+            </Button>
+          )}
+
+          {/* View payment proof for buyer's own orders */}
+          {order.type === 'request' && (order as any).proof_url && (
+            <Button size="sm" variant="ghost" onClick={() => setViewingProof((order as any).proof_url)}>
+              <Eye className="h-3.5 w-3.5 mr-1" />View Proof
             </Button>
           )}
 

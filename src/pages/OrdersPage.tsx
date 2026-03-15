@@ -346,6 +346,24 @@ export default function OrdersPage() {
       grandTotal, type === 'request' ? 'pending' : 'confirmed',
       recipientBusinessId, reqComment
     );
+
+    // Auto-save recipient to contacts after sending an order request
+    if (type === 'request' && recipientBusinessId && currentBusiness) {
+      try {
+        const { data: existing } = await supabase.from('business_contacts')
+          .select('id').eq('business_id', currentBusiness.id)
+          .eq('contact_business_id', recipientBusinessId).limit(1);
+        if (!existing || existing.length === 0) {
+          const contactName = recipientLookup?.name || contacts.find(c => c.contact_business_id === recipientBusinessId)?.business_name || '';
+          await supabase.from('business_contacts').insert({
+            business_id: currentBusiness.id,
+            contact_business_id: recipientBusinessId,
+            nickname: contactName,
+          });
+        }
+      } catch (e) { /* silent */ }
+    }
+
     setItems([]);
     setCustomerName('');
     setSellerName('');

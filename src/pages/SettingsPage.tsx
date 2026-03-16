@@ -427,18 +427,187 @@ export default function SettingsPage() {
     (r.code && r.code.toLowerCase().includes(receiptSearch.toLowerCase()))
   );
 
-  // Password gate for workers or when password is set (personal users always have access)
+  // Worker/renter view: show only My Businesses section with Leave button + Account
   if (!isOwnerOrAdmin && !isPersonal) {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Settings</h1>
+
+        {/* My Businesses Section - accessible to all */}
         <Card className="shadow-card">
-          <CardContent className="p-6 text-center space-y-4">
-            <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h2 className="text-lg font-semibold">Access Restricted</h2>
-            <p className="text-sm text-muted-foreground">Settings are only accessible to the business owner or admin.</p>
+          <CardContent className="p-4 space-y-4">
+            <h2 className="text-base font-semibold flex items-center gap-2"><Building2 className="h-4 w-4" /> My Businesses, Factories & Properties</h2>
+            {employedBusinesses.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">🏢 Employed At / Renting</p>
+                {employedBusinesses.map(b => {
+                  const isActive = b.id === currentBusiness?.id;
+                  const role = getRoleForBusiness(b.id);
+                  const isFact = (b as any).business_type === 'factory';
+                  const isProp = (b as any).business_type === 'property';
+                  return (
+                    <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${isActive ? 'bg-orange-500/10 border-2 border-orange-500' : 'bg-muted/30 border-2 border-transparent hover:border-orange-500/20'}`}>
+                      <button onClick={() => { navigate('/'); setCurrentBusinessId(b.id); }} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                        <span className="text-xl">{isProp ? '🏠' : isFact ? '🏭' : '🏪'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{b.name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{role} · {isProp ? 'Property' : isFact ? 'Factory' : 'Business'}</p>
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isActive && <span className="text-[10px] bg-orange-500 text-primary-foreground px-2 py-0.5 rounded-full">Active</span>}
+                        <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setShowLeaveDialog(b.id); }}>
+                          <LogOut className="h-3 w-3 mr-1" /> Leave
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <AddBusinessDialog onCreated={() => {}} />
           </CardContent>
         </Card>
+
+        {/* Language */}
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <LanguageSelector variant="full" />
+          </CardContent>
+        </Card>
+
+        {/* Account Management */}
+        <Card className="shadow-card border-muted">
+          <CardContent className="p-4 space-y-4">
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <User className="h-4 w-4" /> Account
+            </h2>
+            <p className="text-xs text-muted-foreground">Signed in as <strong>{user?.email}</strong></p>
+            <div className="grid grid-cols-1 gap-2">
+              <Button variant="outline" className="w-full justify-start" onClick={() => setShowChangeEmail(true)}>
+                <Mail className="h-4 w-4 mr-2" /> Change Email
+              </Button>
+              <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" onClick={() => setShowDeleteAccount(true)}>
+                <UserX className="h-4 w-4 mr-2" /> Delete Account
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" onClick={async () => { await signOut(); window.location.reload(); }}>
+                <LogOut className="h-4 w-4 mr-2" /> Sign Out
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Leave Business Dialog */}
+        <Dialog open={!!showLeaveDialog} onOpenChange={o => { if (!o) setShowLeaveDialog(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-destructive flex items-center gap-2">
+                <LogOut className="h-5 w-5" /> Leave {(() => {
+                  const b = businesses.find(b => b.id === showLeaveDialog);
+                  return b?.name || 'Entity';
+                })()}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <p className="text-sm text-muted-foreground">
+                You will be removed from this business/factory/property. You will lose access to all its data.
+              </p>
+              {(() => {
+                const totalEntities = businesses.length;
+                if (totalEntities <= 1) {
+                  return (
+                    <p className="text-xs text-warning bg-warning/10 border border-warning/20 rounded-lg p-2">
+                      ⚠️ This is your only entity. After leaving, you'll be taken back to the registration page.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => setShowLeaveDialog(null)}>Cancel</Button>
+                <Button variant="destructive" className="flex-1" disabled={leavingBusiness} onClick={async () => {
+                  if (!showLeaveDialog || !user) return;
+                  setLeavingBusiness(true);
+                  try {
+                    const { error } = await supabase.from('business_memberships').delete()
+                      .eq('user_id', user.id).eq('business_id', showLeaveDialog);
+                    if (error) throw error;
+                    toast.success('You have left successfully');
+                    setShowLeaveDialog(null);
+                    const remaining = businesses.filter(b => b.id !== showLeaveDialog);
+                    if (remaining.length > 0) {
+                      setCurrentBusinessId(remaining[0].id);
+                      await refreshData();
+                    } else {
+                      localStorage.removeItem('biztrack_current_business');
+                      localStorage.removeItem('biztrack_cache_businesses');
+                      localStorage.removeItem('biztrack_cache_memberships');
+                      window.location.reload();
+                    }
+                  } catch (err: any) {
+                    toast.error(err.message || 'Failed to leave');
+                  } finally {
+                    setLeavingBusiness(false);
+                  }
+                }}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  {leavingBusiness ? 'Leaving...' : 'Leave'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Change Email Dialog */}
+        <Dialog open={showChangeEmail} onOpenChange={o => { if (!o) setNewEmail(''); setShowChangeEmail(o); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> Change Email</DialogTitle></DialogHeader>
+            <div className="space-y-4 mt-2">
+              <p className="text-sm text-muted-foreground">Current: <strong>{user?.email}</strong></p>
+              <div><Label>New Email</Label><Input type="email" placeholder="newemail@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} className="mt-1" /></div>
+              <Button className="w-full" disabled={changingEmail || !newEmail.includes('@')} onClick={async () => {
+                setChangingEmail(true);
+                try {
+                  const res = await supabase.functions.invoke('change-email', { body: { newEmail: newEmail.trim() } });
+                  if (res.error) throw new Error(res.error.message || 'Failed');
+                  const resData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+                  if (resData.error) throw new Error(resData.error);
+                  toast.success('Email changed! Please sign in again.');
+                  setShowChangeEmail(false); setNewEmail('');
+                  await signOut();
+                } catch (err: any) { toast.error(err.message || 'Failed'); }
+                finally { setChangingEmail(false); }
+              }}>
+                <Mail className="h-4 w-4 mr-2" /> {changingEmail ? 'Changing...' : 'Change Email'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Account Dialog */}
+        <Dialog open={showDeleteAccount} onOpenChange={o => { if (!o) setDeleteAccountConfirm(''); setShowDeleteAccount(o); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle className="text-destructive flex items-center gap-2"><UserX className="h-5 w-5" /> Delete Account</DialogTitle></DialogHeader>
+            <div className="space-y-4 mt-2">
+              <p className="text-sm text-muted-foreground">This will permanently delete your account and all data. This <strong>cannot be undone</strong>.</p>
+              <div><Label>Type <strong>DELETE</strong> to confirm</Label><Input className="mt-1" placeholder="Type DELETE" value={deleteAccountConfirm} onChange={e => setDeleteAccountConfirm(e.target.value)} /></div>
+              <Button variant="destructive" className="w-full" disabled={deletingAccount || deleteAccountConfirm !== 'DELETE'} onClick={async () => {
+                setDeletingAccount(true);
+                try {
+                  const res = await supabase.functions.invoke('delete-account');
+                  if (res.error) throw new Error(res.error.message || 'Failed');
+                  const resData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+                  if (resData.error) throw new Error(resData.error);
+                  toast.success('Account deleted');
+                  localStorage.clear(); window.location.reload();
+                } catch (err: any) { toast.error(err.message || 'Failed'); }
+                finally { setDeletingAccount(false); }
+              }}>
+                <UserX className="h-4 w-4 mr-2" /> {deletingAccount ? 'Deleting...' : 'Permanently Delete Account'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

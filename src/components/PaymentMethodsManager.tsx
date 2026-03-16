@@ -73,11 +73,11 @@ export default function PaymentMethodsManager({ businessId }: { businessId: stri
 
   const fetchMethods = useCallback(async () => {
     const { data } = await supabase
-      .from('business_payment_methods' as any)
+      .from('business_payment_methods')
       .select('*')
       .eq('business_id', businessId)
       .order('created_at', { ascending: true });
-    setMethods((data as any[]) || []);
+    setMethods((data as PaymentMethod[]) || []);
   }, [businessId]);
 
   useEffect(() => { fetchMethods(); }, [fetchMethods]);

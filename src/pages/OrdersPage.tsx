@@ -12,13 +12,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine, Search, Building2, Package, Flame, RefreshCw, XCircle, Eye, ShieldCheck, ShoppingBag } from 'lucide-react';
+import { Plus, Trash2, Send, CheckCircle, Clock, FileText, Pencil, Receipt as ReceiptIcon, MessageSquare, Smartphone, CreditCard, Upload, ScanLine, Search, Building2, Package, Flame, RefreshCw, XCircle, Eye, ShieldCheck, ShoppingBag, AlertTriangle, Ban, Handshake } from 'lucide-react';
 import { toast } from 'sonner';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import type { Order, OrderItem } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
+import OrderDisputeDialog, { DisputeResponseDialog } from '@/components/OrderDisputeDialog';
+import { calculateMobileMoneyCharge } from '@/lib/mobileMoneyCharges';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -431,10 +433,105 @@ export default function OrdersPage() {
     setEditNewItem({ name: '', category: '', quality: '', quantity: '1', price: '' });
   }
 
-  // Reject dialog state
+  // Reject dialog state — enhanced with bargain/cancel options
   const [rejectComment, setRejectComment] = useState('');
   const [rejectingOrder, setRejectingOrder] = useState<Order | null>(null);
+  const [rejectMode, setRejectMode] = useState<'bargain' | 'cancel'>('bargain');
+  const [bargainItems, setBargainItems] = useState<OrderItem[]>([]);
   const [syncing, setSyncing] = useState(false);
+
+  // Dispute state
+  const [disputeOrder, setDisputeOrder] = useState<Order | null>(null);
+  const [disputes, setDisputes] = useState<any[]>([]);
+  const [respondingDispute, setRespondingDispute] = useState<any>(null);
+
+  // Bulk delete state
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+
+  // Mobile money charge display
+  const contactPhone = currentBusiness?.contact || '';
+
+  async function loadDisputes(orderId: string) {
+    const { data } = await supabase.from('order_disputes').select('*').eq('order_id', orderId).order('created_at', { ascending: false });
+    return data || [];
+  }
+
+  function openRejectDialog(order: Order) {
+    setRejectingOrder(order);
+    setRejectComment('');
+    setRejectMode('bargain');
+    setBargainItems([...order.items]);
+  }
+
+  async function handleBargain(order: Order) {
+    setSyncing(true);
+    try {
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: {
+          inboxOrderId: order.id,
+          action: 'bargain',
+          bargainItems: bargainItems.map(item => ({
+            item_name: item.item_name, category: item.category, quality: item.quality,
+            quantity: item.quantity, price_type: item.price_type,
+            unit_price: Number(item.unit_price), subtotal: item.quantity * Number(item.unit_price),
+          })),
+          bargainComment: rejectComment,
+        },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Failed to send bargain');
+      } else {
+        toast.success('Modified order sent back to supplier for re-pricing!');
+        setRejectingOrder(null);
+        await refreshData();
+      }
+    } finally { setSyncing(false); }
+  }
+
+  async function handleCancelOrder(order: Order) {
+    setSyncing(true);
+    try {
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: { inboxOrderId: order.id, action: 'cancel_order', comment: rejectComment || 'Order cancelled by buyer' },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Failed to cancel');
+      } else {
+        toast.success('Order cancelled. Both sides have been notified.');
+        setRejectingOrder(null);
+        await refreshData();
+      }
+    } finally { setSyncing(false); }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedOrderIds.size === 0) return;
+    const confirmed = window.confirm(`Move ${selectedOrderIds.size} order(s) to Recycle Bin? They will auto-delete after 10 days.`);
+    if (!confirmed) return;
+    
+    const now = new Date().toISOString();
+    for (const id of selectedOrderIds) {
+      await supabase.from('orders').update({ deleted_at: now } as any).eq('id', id);
+    }
+    toast.success(`${selectedOrderIds.size} order(s) moved to Recycle Bin`);
+    setSelectedOrderIds(new Set());
+    setBulkSelectMode(false);
+    await refreshData();
+  }
+
+  function toggleOrderSelection(id: string) {
+    setSelectedOrderIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllFinalized(orderList: Order[]) {
+    const finalized = orderList.filter(o => o.status === 'paid' || o.status === 'completed' || o.transferred_to_sale || o.status === 'cancelled');
+    setSelectedOrderIds(new Set(finalized.map(o => o.id)));
+  }
 
   function openPricing(order: Order) {
     setPricingOrder(order);
@@ -522,6 +619,7 @@ export default function OrdersPage() {
     }
   }
 
+  // rejectPrices kept for simple reject (no longer primary path)
   async function rejectPrices(order: Order) {
     setSyncing(true);
     try {
@@ -890,8 +988,8 @@ export default function OrdersPage() {
                   <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => confirmPricesAndPay(order)} disabled={syncing}>
                     <CheckCircle className="h-3.5 w-3.5 mr-1" />{syncing ? 'Processing...' : 'Accept & Pay'}
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={() => { setRejectingOrder(order); setRejectComment(''); }} disabled={syncing}>
-                    🔄 Reject & Re-price
+                  <Button size="sm" variant="destructive" onClick={() => openRejectDialog(order)} disabled={syncing}>
+                    🔄 Negotiate / Cancel
                   </Button>
                 </>
               )}
@@ -931,11 +1029,18 @@ export default function OrdersPage() {
             </Button>
           )}
 
-          {/* Allocate Items — single button for inbox/request orders that are priced or beyond */}
-          {(order.type === 'inbox' || order.type === 'request') && 
-           (order.status === 'priced' || order.status === 'confirmed' || order.status === 'payment_submitted' || order.status === 'paid' || order.status === 'completed' || order.transferred_to_sale) && (
+          {/* Allocate Items — only for REQUEST orders (buyer receiving items into stock), NOT for inbox/supplier */}
+          {order.type === 'request' && 
+           (order.status === 'paid' || order.status === 'completed' || order.transferred_to_sale) && (
             <Button size="sm" variant="outline" onClick={() => openAllocateDialog(order)}>
               <Package className="h-3.5 w-3.5 mr-1" />Allocate Items
+            </Button>
+          )}
+
+          {/* Report Issue — for buyer after order is paid/completed */}
+          {order.type === 'request' && (order.status === 'paid' || order.status === 'completed' || order.transferred_to_sale) && (
+            <Button size="sm" variant="outline" className="text-warning" onClick={() => setDisputeOrder(order)}>
+              <AlertTriangle className="h-3.5 w-3.5 mr-1" />Report Issue
             </Button>
           )}
 
@@ -1425,7 +1530,24 @@ export default function OrdersPage() {
           )}
         </TabsList>
         <TabsContent value="live_orders" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-2">Orders from walk-in customers, phone calls, or messages (WhatsApp/SMS). You pack items → customer pays → you give a receipt.</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">Orders from walk-in customers, phone calls, or messages.</p>
+            <div className="flex gap-1">
+              {liveOrders.some(o => o.status === 'paid' || o.status === 'completed' || o.transferred_to_sale || o.status === 'cancelled') && (
+                <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => { setBulkSelectMode(!bulkSelectMode); setSelectedOrderIds(new Set()); }}>
+                  {bulkSelectMode ? 'Cancel' : '🗑️ Clean Up'}
+                </Button>
+              )}
+              {bulkSelectMode && selectedOrderIds.size > 0 && (
+                <Button size="sm" variant="destructive" className="h-7 text-[10px]" onClick={handleBulkDelete}>
+                  <Trash2 className="h-3 w-3 mr-1" />Delete ({selectedOrderIds.size})
+                </Button>
+              )}
+              {bulkSelectMode && (
+                <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => selectAllFinalized(liveOrders)}>Select All Done</Button>
+              )}
+            </div>
+          </div>
           <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
             {liveOrders.length === 0 ? <p className="text-sm text-muted-foreground">No orders yet. Create one using the "New Order" button above.</p> : liveOrders.map(o => <OrderCard key={o.id} order={o} />)}
           </div>
@@ -1820,17 +1942,79 @@ export default function OrdersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Reject Prices Dialog */}
+      {/* Enhanced Reject/Negotiate Dialog */}
       <Dialog open={!!rejectingOrder} onOpenChange={o => { if (!o) setRejectingOrder(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Reject Prices</DialogTitle></DialogHeader>
-          <p className="text-xs text-muted-foreground">Tell the supplier why you're rejecting the prices so they can adjust.</p>
-          <Textarea value={rejectComment} onChange={e => setRejectComment(e.target.value)} placeholder="e.g. Prices too high, I expected wholesale rates..." className="min-h-[80px]" />
-          <Button variant="destructive" onClick={() => rejectingOrder && rejectPrices(rejectingOrder)} disabled={syncing} className="w-full">
-            {syncing ? 'Sending...' : '🔄 Reject & Request Re-pricing'}
-          </Button>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>🤝 Negotiate or Cancel Order</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setRejectMode('bargain')}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${rejectMode === 'bargain' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                <Handshake className="h-5 w-5 text-primary mb-1" />
+                <p className="font-semibold text-sm">Bargain</p>
+                <p className="text-[10px] text-muted-foreground">Modify items/quantities & negotiate prices</p>
+              </button>
+              <button onClick={() => setRejectMode('cancel')}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${rejectMode === 'cancel' ? 'border-destructive bg-destructive/5' : 'border-border'}`}>
+                <Ban className="h-5 w-5 text-destructive mb-1" />
+                <p className="font-semibold text-sm">Cancel Order</p>
+                <p className="text-[10px] text-muted-foreground">Cancel entirely, both sides notified</p>
+              </button>
+            </div>
+
+            {rejectMode === 'bargain' && rejectingOrder && (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">Remove items or reduce quantities, then send back for re-pricing.</p>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {bargainItems.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm border rounded-lg p-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{item.item_name}</p>
+                        <p className="text-[10px] text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>
+                      </div>
+                      <Input type="number" min="1" className="w-16 h-7 text-xs" value={item.quantity}
+                        onChange={e => setBargainItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: parseInt(e.target.value) || 1 } : it))} />
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setBargainItems(prev => prev.filter((_, idx) => idx !== i))}>
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs font-semibold">Comment {rejectMode === 'cancel' ? '(reason) *' : '(optional)'}</Label>
+              <Textarea value={rejectComment} onChange={e => setRejectComment(e.target.value)}
+                placeholder={rejectMode === 'bargain' ? 'e.g. Prices too high, reduced quantities...' : 'e.g. Cannot afford at this time...'}
+                className="min-h-[60px]" />
+            </div>
+
+            {rejectMode === 'bargain' ? (
+              <Button onClick={() => rejectingOrder && handleBargain(rejectingOrder)} disabled={syncing || bargainItems.length === 0} className="w-full">
+                {syncing ? 'Sending...' : <><Handshake className="h-4 w-4 mr-2" />Send Modified Order for Re-pricing</>}
+              </Button>
+            ) : (
+              <Button variant="destructive" onClick={() => rejectingOrder && handleCancelOrder(rejectingOrder)} disabled={syncing || !rejectComment.trim()} className="w-full">
+                {syncing ? 'Cancelling...' : <><Ban className="h-4 w-4 mr-2" />Cancel Order Permanently</>}
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
+
+      {/* Order Dispute Dialog */}
+      {disputeOrder && (
+        <OrderDisputeDialog
+          open={!!disputeOrder}
+          onOpenChange={o => { if (!o) setDisputeOrder(null); }}
+          orderId={disputeOrder.id}
+          orderCode={disputeOrder.code}
+          supplierBusinessId={disputeOrder.business_id}
+          reporterBusinessId={currentBusiness?.id || ''}
+          onSubmitted={() => refreshData()}
+        />
+      )}
 
       {/* Receipt Dialog */}
       <Dialog open={!!receiptOrder} onOpenChange={o => { if (!o) setReceiptOrder(null); }}>

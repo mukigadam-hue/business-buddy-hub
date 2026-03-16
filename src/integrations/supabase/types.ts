@@ -990,6 +990,73 @@ export type Database = {
         }
         Relationships: []
       }
+      order_disputes: {
+        Row: {
+          business_id: string
+          created_at: string
+          description: string
+          dispute_type: string
+          id: string
+          order_id: string
+          photo_urls: Json
+          reporter_business_id: string
+          resolution: string
+          resolved_at: string | null
+          status: string
+          supplier_response: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          description?: string
+          dispute_type?: string
+          id?: string
+          order_id: string
+          photo_urls?: Json
+          reporter_business_id: string
+          resolution?: string
+          resolved_at?: string | null
+          status?: string
+          supplier_response?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          description?: string
+          dispute_type?: string
+          id?: string
+          order_id?: string
+          photo_urls?: Json
+          reporter_business_id?: string
+          resolution?: string
+          resolved_at?: string | null
+          status?: string
+          supplier_response?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_disputes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_disputes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_disputes_reporter_business_id_fkey"
+            columns: ["reporter_business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           category: string
@@ -1042,9 +1109,11 @@ export type Database = {
           amount_paid: number
           balance: number
           business_id: string
+          cancelled_reason: string
           code: string
           created_at: string
           customer_name: string
+          deleted_at: string | null
           grand_total: number
           id: string
           payment_method: string
@@ -1059,9 +1128,11 @@ export type Database = {
           amount_paid?: number
           balance?: number
           business_id: string
+          cancelled_reason?: string
           code: string
           created_at?: string
           customer_name?: string
+          deleted_at?: string | null
           grand_total?: number
           id?: string
           payment_method?: string
@@ -1076,9 +1147,11 @@ export type Database = {
           amount_paid?: number
           balance?: number
           business_id?: string
+          cancelled_reason?: string
           code?: string
           created_at?: string
           customer_name?: string
+          deleted_at?: string | null
           grand_total?: number
           id?: string
           payment_method?: string

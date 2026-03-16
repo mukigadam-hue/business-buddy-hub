@@ -1014,20 +1014,18 @@ export default function SettingsPage() {
               <h2 className="text-base font-semibold text-destructive flex items-center gap-2">
                 <Trash2 className="h-4 w-4" /> Delete Business
               </h2>
-              {isLastOwned ? (
-                <p className="text-xs text-muted-foreground bg-destructive/5 border border-destructive/20 rounded-lg p-3">
-                  ⚠️ This is your only business. You must have at least one business to use BizTrack. Create another business first before deleting this one.
+              <p className="text-xs text-muted-foreground">
+                Permanently delete <strong>{currentBusiness?.name}</strong> and all its data. This action cannot be undone.
+                {isLastOwned && ' After deletion, you will be redirected to create a new business or use the app for personal needs.'}
+              </p>
+              {isLastOwned && (
+                <p className="text-xs text-warning bg-warning/10 border border-warning/20 rounded-lg p-2">
+                  ⚠️ This is your only business. After deleting, you'll be taken back to the registration page where you can choose personal use, or start a new business.
                 </p>
-              ) : (
-                <>
-                  <p className="text-xs text-muted-foreground">
-                    Permanently delete <strong>{currentBusiness?.name}</strong> and all its data. This action cannot be undone.
-                  </p>
-                  <Button variant="destructive" className="w-full" onClick={() => setShowDeleteDialog(true)}>
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete This Business
-                  </Button>
-                </>
               )}
+              <Button variant="destructive" className="w-full" onClick={() => setShowDeleteDialog(true)}>
+                <Trash2 className="h-4 w-4 mr-2" /> Delete This Business
+              </Button>
             </CardContent>
           </Card>
         );

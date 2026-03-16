@@ -528,8 +528,28 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const deleteBusiness = useCallback(async (businessId: string, reason: string): Promise<boolean> => {
     if (!user) return false;
-    // Log the deletion reason as a note (could also store in a table)
     console.log(`Business ${businessId} deleted. Reason: ${reason}`);
+
+    // Hide from discover before deletion
+    await supabase.from('businesses').update({ is_discoverable: false } as any).eq('id', businessId);
+
+    // Notify contacts that this business is closing
+    const { data: biz } = await supabase.from('businesses').select('name').eq('id', businessId).single();
+    const bizName = biz?.name || 'A business';
+    const { data: contactsData } = await supabase
+      .from('business_contacts')
+      .select('contact_business_id')
+      .eq('business_id', businessId);
+    if (contactsData && contactsData.length > 0) {
+      const notifications = contactsData.map(c => ({
+        business_id: c.contact_business_id,
+        type: 'business_closed',
+        title: `🔒 ${bizName} has closed`,
+        message: `${bizName} has permanently closed their business. They will no longer appear in Discover.`,
+      }));
+      await supabase.from('notifications').insert(notifications);
+    }
+
     const { error } = await supabase.from('businesses').delete().eq('id', businessId);
     if (error) { toast.error(error.message); return false; }
     toast.success('Business deleted permanently');
@@ -540,6 +560,8 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         setCurrentBusinessId(remaining[0].id);
       } else {
         setCurrentBusinessId('');
+        // Clear caches so user sees setup page
+        localStorage.removeItem('biztrack_current_business');
       }
     }
     await loadBusinesses();

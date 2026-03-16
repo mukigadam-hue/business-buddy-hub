@@ -919,6 +919,9 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium line-through text-muted-foreground">{item.name}</p>
                       {(item.category || item.quality) && <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>}
                       <p className="text-xs text-muted-foreground">Deleted: {new Date(item.deleted_at!).toLocaleString()}</p>
+                      {(item as any).deleted_by && (
+                        <p className="text-xs text-warning font-medium">👤 Deleted by: {(item as any).deleted_by}</p>
+                      )}
                     </div>
                     <div className="flex gap-2 shrink-0">
                       <Button size="sm" variant="outline" onClick={() => restoreStockItem(item.id)}><RotateCcw className="h-3 w-3 mr-1" />Restore</Button>

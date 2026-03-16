@@ -433,10 +433,105 @@ export default function OrdersPage() {
     setEditNewItem({ name: '', category: '', quality: '', quantity: '1', price: '' });
   }
 
-  // Reject dialog state
+  // Reject dialog state — enhanced with bargain/cancel options
   const [rejectComment, setRejectComment] = useState('');
   const [rejectingOrder, setRejectingOrder] = useState<Order | null>(null);
+  const [rejectMode, setRejectMode] = useState<'bargain' | 'cancel'>('bargain');
+  const [bargainItems, setBargainItems] = useState<OrderItem[]>([]);
   const [syncing, setSyncing] = useState(false);
+
+  // Dispute state
+  const [disputeOrder, setDisputeOrder] = useState<Order | null>(null);
+  const [disputes, setDisputes] = useState<any[]>([]);
+  const [respondingDispute, setRespondingDispute] = useState<any>(null);
+
+  // Bulk delete state
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+
+  // Mobile money charge display
+  const contactPhone = currentBusiness?.contact || '';
+
+  async function loadDisputes(orderId: string) {
+    const { data } = await supabase.from('order_disputes').select('*').eq('order_id', orderId).order('created_at', { ascending: false });
+    return data || [];
+  }
+
+  function openRejectDialog(order: Order) {
+    setRejectingOrder(order);
+    setRejectComment('');
+    setRejectMode('bargain');
+    setBargainItems([...order.items]);
+  }
+
+  async function handleBargain(order: Order) {
+    setSyncing(true);
+    try {
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: {
+          inboxOrderId: order.id,
+          action: 'bargain',
+          bargainItems: bargainItems.map(item => ({
+            item_name: item.item_name, category: item.category, quality: item.quality,
+            quantity: item.quantity, price_type: item.price_type,
+            unit_price: Number(item.unit_price), subtotal: item.quantity * Number(item.unit_price),
+          })),
+          bargainComment: rejectComment,
+        },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Failed to send bargain');
+      } else {
+        toast.success('Modified order sent back to supplier for re-pricing!');
+        setRejectingOrder(null);
+        await refreshData();
+      }
+    } finally { setSyncing(false); }
+  }
+
+  async function handleCancelOrder(order: Order) {
+    setSyncing(true);
+    try {
+      const res = await supabase.functions.invoke('sync-order-prices', {
+        body: { inboxOrderId: order.id, action: 'cancel_order', comment: rejectComment || 'Order cancelled by buyer' },
+      });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || 'Failed to cancel');
+      } else {
+        toast.success('Order cancelled. Both sides have been notified.');
+        setRejectingOrder(null);
+        await refreshData();
+      }
+    } finally { setSyncing(false); }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedOrderIds.size === 0) return;
+    const confirmed = window.confirm(`Move ${selectedOrderIds.size} order(s) to Recycle Bin? They will auto-delete after 10 days.`);
+    if (!confirmed) return;
+    
+    const now = new Date().toISOString();
+    for (const id of selectedOrderIds) {
+      await supabase.from('orders').update({ deleted_at: now } as any).eq('id', id);
+    }
+    toast.success(`${selectedOrderIds.size} order(s) moved to Recycle Bin`);
+    setSelectedOrderIds(new Set());
+    setBulkSelectMode(false);
+    await refreshData();
+  }
+
+  function toggleOrderSelection(id: string) {
+    setSelectedOrderIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllFinalized(orderList: Order[]) {
+    const finalized = orderList.filter(o => o.status === 'paid' || o.status === 'completed' || o.transferred_to_sale || o.status === 'cancelled');
+    setSelectedOrderIds(new Set(finalized.map(o => o.id)));
+  }
 
   function openPricing(order: Order) {
     setPricingOrder(order);

@@ -1002,25 +1002,28 @@ export default function SettingsPage() {
           )}
           {employedBusinesses.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">🏢 Employed At</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">🏢 Employed At / Renting</p>
               {employedBusinesses.map(b => {
                 const isActive = b.id === currentBusiness?.id;
                 const role = getRoleForBusiness(b.id);
                 const isFact = (b as any).business_type === 'factory';
+                const isProp = (b as any).business_type === 'property';
                 return (
-                  <button key={b.id} onClick={() => { navigate('/'); setCurrentBusinessId(b.id); }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isActive ? 'bg-orange-500/10 border-2 border-orange-500' : 'bg-muted/30 border-2 border-transparent hover:border-orange-500/20'}`}>
-                    <span className="text-xl">{isFact ? '🏭' : '🏪'}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{b.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{role} · {isFact ? 'Factory' : 'Business'}</p>
+                  <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${isActive ? 'bg-orange-500/10 border-2 border-orange-500' : 'bg-muted/30 border-2 border-transparent hover:border-orange-500/20'}`}>
+                    <button onClick={() => { navigate('/'); setCurrentBusinessId(b.id); }} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                      <span className="text-xl">{isProp ? '🏠' : isFact ? '🏭' : '🏪'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{b.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{role} · {isProp ? 'Property' : isFact ? 'Factory' : 'Business'}</p>
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isActive && <span className="text-[10px] bg-orange-500 text-primary-foreground px-2 py-0.5 rounded-full">Active</span>}
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setShowLeaveDialog(b.id); }}>
+                        <LogOut className="h-3 w-3 mr-1" /> Leave
+                      </Button>
                     </div>
-                    {isActive ? (
-                      <span className="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-full shrink-0">Active</span>
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                    )}
-                  </button>
+                  </div>
                 );
               })}
             </div>

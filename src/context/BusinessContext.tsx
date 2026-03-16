@@ -220,7 +220,7 @@ interface BusinessContextType {
   updateBusiness: (updates: Partial<Business>) => Promise<void>;
   addStockItem: (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at'| 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => Promise<void>;
   updateStockItem: (id: string, updates: Partial<StockItem>) => Promise<void>;
-  deleteStockItem: (id: string) => Promise<void>;
+  deleteStockItem: (id: string, deletedByName?: string) => Promise<void>;
   restoreStockItem: (id: string) => Promise<void>;
   permanentDeleteStockItem: (id: string) => Promise<void>;
   addSale: (

@@ -562,6 +562,39 @@ export default function ContactsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Send Message Dialog */}
+      <Dialog open={messageDialogOpen} onOpenChange={o => { if (!o) { setCustomMessage(''); setMessageTarget(null); } setMessageDialogOpen(o); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              {messageTarget ? `Message to ${messageTarget.nickname || messageTarget.profile?.name || 'Contact'}` : `Message All Contacts (${contacts.length})`}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm">Your message</Label>
+              <Textarea
+                value={customMessage}
+                onChange={e => setCustomMessage(e.target.value)}
+                placeholder="e.g. Hello! We have new stock available. Come check us out!"
+                className="mt-1.5"
+                rows={4}
+              />
+            </div>
+            {!messageTarget && (
+              <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                📢 This will send a notification to <strong>all {contacts.length}</strong> of your contacts at once.
+              </p>
+            )}
+            <Button className="w-full" disabled={sendingMessage || !customMessage.trim()} onClick={handleSendMessage}>
+              <Send className="h-4 w-4 mr-2" />
+              {sendingMessage ? 'Sending...' : messageTarget ? 'Send Message' : `Send to All (${contacts.length})`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

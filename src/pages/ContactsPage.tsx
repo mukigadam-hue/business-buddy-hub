@@ -407,6 +407,15 @@ export default function ContactsPage() {
         </div>
       )}
 
+      {/* Send Message to All / Individual */}
+      {contacts.length > 0 && (
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setMessageTarget(null); setCustomMessage(''); setMessageDialogOpen(true); }}>
+            <Users className="h-3.5 w-3.5" /> Message All ({contacts.length})
+          </Button>
+        </div>
+      )}
+
       <AdSpace variant="banner" />
 
       {/* Contacts List */}

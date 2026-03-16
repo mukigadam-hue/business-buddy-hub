@@ -240,6 +240,38 @@ export default function ContactsPage() {
     }
   }
 
+  async function handleSendMessage() {
+    if (!currentBusiness || !customMessage.trim()) return;
+    setSendingMessage(true);
+    try {
+      const body: any = {
+        senderBusinessId: currentBusiness.id,
+        senderBusinessName: currentBusiness.name,
+        customMessage: customMessage.trim(),
+      };
+      if (messageTarget) {
+        body.recipientBusinessId = messageTarget.contact_business_id;
+      } else {
+        // Send to all contacts
+        body.recipientIds = contacts.map(c => c.contact_business_id);
+      }
+      const res = await supabase.functions.invoke('poke-business', { body });
+      if (res.error || res.data?.error) {
+        toast.error(res.data?.error || res.error?.message || 'Failed to send');
+      } else {
+        const count = res.data?.sent || 1;
+        toast.success(`✅ Message sent to ${count} contact${count !== 1 ? 's' : ''}!`);
+        setMessageDialogOpen(false);
+        setCustomMessage('');
+        setMessageTarget(null);
+      }
+    } catch {
+      toast.error('Failed to send message');
+    } finally {
+      setSendingMessage(false);
+    }
+  }
+
   function getInteractionLabel(lastDate: string | null | undefined) {
     if (!lastDate) return { text: 'No interactions yet', color: 'text-muted-foreground', stale: true };
     const daysDiff = Math.floor((Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24));

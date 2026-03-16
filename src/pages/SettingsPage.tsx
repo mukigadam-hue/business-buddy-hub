@@ -296,6 +296,8 @@ export default function SettingsPage() {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deleteAccountConfirm, setDeleteAccountConfirm] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState<string | null>(null);
+  const [leavingBusiness, setLeavingBusiness] = useState(false);
 
   useEffect(() => {
     setForm({

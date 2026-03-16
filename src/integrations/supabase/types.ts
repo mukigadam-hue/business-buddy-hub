@@ -2014,6 +2014,7 @@ export type Database = {
           category: string
           created_at: string
           deleted_at: string | null
+          deleted_by: string
           id: string
           image_url_1: string | null
           image_url_2: string | null
@@ -2036,6 +2037,7 @@ export type Database = {
           category?: string
           created_at?: string
           deleted_at?: string | null
+          deleted_by?: string
           id?: string
           image_url_1?: string | null
           image_url_2?: string | null
@@ -2058,6 +2060,7 @@ export type Database = {
           category?: string
           created_at?: string
           deleted_at?: string | null
+          deleted_by?: string
           id?: string
           image_url_1?: string | null
           image_url_2?: string | null

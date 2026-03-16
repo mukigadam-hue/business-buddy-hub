@@ -25,6 +25,7 @@ export interface StockItem {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  deleted_by: string;
 }
 
 export interface SaleItem {
@@ -218,9 +219,9 @@ interface BusinessContextType {
   createBusiness: (name: string, address: string, contact: string, email: string, countryCode?: string) => Promise<void>;
   deleteBusiness: (businessId: string, reason: string) => Promise<boolean>;
   updateBusiness: (updates: Partial<Business>) => Promise<void>;
-  addStockItem: (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at'| 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => Promise<void>;
+  addStockItem: (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at' | 'deleted_by' | 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => Promise<void>;
   updateStockItem: (id: string, updates: Partial<StockItem>) => Promise<void>;
-  deleteStockItem: (id: string) => Promise<void>;
+  deleteStockItem: (id: string, deletedByName?: string) => Promise<void>;
   restoreStockItem: (id: string) => Promise<void>;
   permanentDeleteStockItem: (id: string) => Promise<void>;
   addSale: (
@@ -576,7 +577,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     toast.success('Business updated!');
   }, [currentBusinessId]);
 
-  const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at' | 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => {
+  const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at' | 'deleted_by' | 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => {
     if (!currentBusinessId) return;
     const { data, error } = await supabase.from('stock_items').insert({ ...item, business_id: currentBusinessId } as any).select().single();
     if (error) { toast.error(error.message); return; }
@@ -593,10 +594,13 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     toast.success('Stock item updated!');
   }, []);
 
-  // Soft delete
-  const deleteStockItem = useCallback(async (id: string) => {
-    const { error } = await supabase.from('stock_items').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+  // Soft delete — track who deleted it
+  const deleteStockItem = useCallback(async (id: string, deletedByName?: string) => {
+    const updateData: any = { deleted_at: new Date().toISOString() };
+    if (deletedByName) updateData.deleted_by = deletedByName;
+    const { error } = await supabase.from('stock_items').update(updateData).eq('id', id);
     if (error) { toast.error(error.message); return; }
+    setStock(prev => prev.map(s => s.id === id ? { ...s, ...updateData } as StockItem : s));
     toast.success('Item moved to recycle bin');
   }, []);
 

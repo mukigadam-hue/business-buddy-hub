@@ -1,0 +1,1 @@
+ALTER TABLE public.stock_items ADD COLUMN IF NOT EXISTS deleted_by text NOT NULL DEFAULT '';

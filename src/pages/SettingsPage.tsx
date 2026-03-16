@@ -296,6 +296,8 @@ export default function SettingsPage() {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deleteAccountConfirm, setDeleteAccountConfirm] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState<string | null>(null);
+  const [leavingBusiness, setLeavingBusiness] = useState(false);
 
   useEffect(() => {
     setForm({
@@ -919,6 +921,9 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium line-through text-muted-foreground">{item.name}</p>
                       {(item.category || item.quality) && <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>}
                       <p className="text-xs text-muted-foreground">Deleted: {new Date(item.deleted_at!).toLocaleString()}</p>
+                      {(item as any).deleted_by && (
+                        <p className="text-xs text-warning font-medium">👤 Deleted by: {(item as any).deleted_by}</p>
+                      )}
                     </div>
                     <div className="flex gap-2 shrink-0">
                       <Button size="sm" variant="outline" onClick={() => restoreStockItem(item.id)}><RotateCcw className="h-3 w-3 mr-1" />Restore</Button>
@@ -997,25 +1002,28 @@ export default function SettingsPage() {
           )}
           {employedBusinesses.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">🏢 Employed At</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">🏢 Employed At / Renting</p>
               {employedBusinesses.map(b => {
                 const isActive = b.id === currentBusiness?.id;
                 const role = getRoleForBusiness(b.id);
                 const isFact = (b as any).business_type === 'factory';
+                const isProp = (b as any).business_type === 'property';
                 return (
-                  <button key={b.id} onClick={() => { navigate('/'); setCurrentBusinessId(b.id); }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isActive ? 'bg-orange-500/10 border-2 border-orange-500' : 'bg-muted/30 border-2 border-transparent hover:border-orange-500/20'}`}>
-                    <span className="text-xl">{isFact ? '🏭' : '🏪'}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{b.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{role} · {isFact ? 'Factory' : 'Business'}</p>
+                  <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${isActive ? 'bg-orange-500/10 border-2 border-orange-500' : 'bg-muted/30 border-2 border-transparent hover:border-orange-500/20'}`}>
+                    <button onClick={() => { navigate('/'); setCurrentBusinessId(b.id); }} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                      <span className="text-xl">{isProp ? '🏠' : isFact ? '🏭' : '🏪'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{b.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{role} · {isProp ? 'Property' : isFact ? 'Factory' : 'Business'}</p>
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isActive && <span className="text-[10px] bg-orange-500 text-primary-foreground px-2 py-0.5 rounded-full">Active</span>}
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setShowLeaveDialog(b.id); }}>
+                        <LogOut className="h-3 w-3 mr-1" /> Leave
+                      </Button>
                     </div>
-                    {isActive ? (
-                      <span className="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-full shrink-0">Active</span>
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                    )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -1115,6 +1123,73 @@ export default function SettingsPage() {
               <Trash2 className="h-4 w-4 mr-2" />
               {deleting ? 'Deleting...' : 'Permanently Delete'}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Leave Business Dialog */}
+      <Dialog open={!!showLeaveDialog} onOpenChange={o => { if (!o) setShowLeaveDialog(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <LogOut className="h-5 w-5" /> Leave {(() => {
+                const b = businesses.find(b => b.id === showLeaveDialog);
+                return b?.name || 'Business';
+              })()}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              You will be removed from this business/property. You will lose access to all its data.
+            </p>
+            {(() => {
+              // Check if this is the user's last entity
+              const totalEntities = businesses.length;
+              if (totalEntities <= 1) {
+                return (
+                  <p className="text-xs text-warning bg-warning/10 border border-warning/20 rounded-lg p-2">
+                    ⚠️ This is your only business/employment. After leaving, you'll be taken back to the registration page where you can choose personal use, or start a new entity.
+                  </p>
+                );
+              }
+              return null;
+            })()}
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setShowLeaveDialog(null)}>Cancel</Button>
+              <Button variant="destructive" className="flex-1" disabled={leavingBusiness} onClick={async () => {
+                if (!showLeaveDialog || !user) return;
+                setLeavingBusiness(true);
+                try {
+                  // Remove own membership
+                  const { error } = await supabase.from('business_memberships').delete()
+                    .eq('user_id', user.id).eq('business_id', showLeaveDialog);
+                  if (error) throw error;
+
+                  toast.success('You have left the business');
+                  setShowLeaveDialog(null);
+
+                  // Check if user has remaining businesses
+                  const remaining = businesses.filter(b => b.id !== showLeaveDialog);
+                  if (remaining.length > 0) {
+                    setCurrentBusinessId(remaining[0].id);
+                    await refreshData();
+                  } else {
+                    // No businesses left — clear everything and redirect to setup
+                    localStorage.removeItem('biztrack_current_business');
+                    localStorage.removeItem('biztrack_cache_businesses');
+                    localStorage.removeItem('biztrack_cache_memberships');
+                    window.location.reload();
+                  }
+                } catch (err: any) {
+                  toast.error(err.message || 'Failed to leave');
+                } finally {
+                  setLeavingBusiness(false);
+                }
+              }}>
+                <LogOut className="h-4 w-4 mr-2" />
+                {leavingBusiness ? 'Leaving...' : 'Leave'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

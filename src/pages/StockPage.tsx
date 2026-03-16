@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useBusiness } from '@/context/BusinessContext';
+import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -76,7 +77,8 @@ function ItemGalleryDialog({ item, open, onOpenChange }: { item: StockItem; open
 }
 
 export default function StockPage() {
-  const { stock, addStockItem, updateStockItem, deleteStockItem, restoreStockItem, permanentDeleteStockItem } = useBusiness();
+  const { stock, addStockItem, updateStockItem, deleteStockItem, restoreStockItem, permanentDeleteStockItem, userRole } = useBusiness();
+  const { user } = useAuth();
   const { fmt } = useCurrency();
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
@@ -87,6 +89,7 @@ export default function StockPage() {
   const [viewGalleryItem, setViewGalleryItem] = useState<StockItem | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 
   useEffect(() => {
     const mainEl = document.querySelector('main');
@@ -168,7 +171,9 @@ export default function StockPage() {
 
   async function handleSoftDelete(id: string) {
     setConfirmDelete(null);
-    await deleteStockItem(id);
+    // Track who deleted the item (user's profile name or email)
+    const deletedByName = user?.user_metadata?.full_name || user?.email || 'Unknown';
+    await deleteStockItem(id, deletedByName);
   }
 
   function handleBarcodeScan(code: string) {
@@ -289,11 +294,17 @@ export default function StockPage() {
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!confirmDelete} onOpenChange={o => { if (!o) setConfirmDelete(null); }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" />Confirm Delete</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">This item will be moved to the Recycle Bin. You can restore it later from Settings.</p>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" />{isOwnerOrAdmin ? 'Confirm Delete' : 'Cross Out Item'}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {isOwnerOrAdmin
+              ? 'This item will be moved to the Recycle Bin. You can restore it later from Settings.'
+              : 'This item will be crossed out and sent to the Recycle Bin. The business owner will review it and can restore or permanently delete it.'}
+          </p>
           <div className="flex gap-3 mt-2">
             <Button variant="outline" className="flex-1" onClick={() => setConfirmDelete(null)}>Cancel</Button>
-            <Button variant="destructive" className="flex-1" onClick={() => confirmDelete && handleSoftDelete(confirmDelete)}>Move to Bin</Button>
+            <Button variant="destructive" className="flex-1" onClick={() => confirmDelete && handleSoftDelete(confirmDelete)}>
+              {isOwnerOrAdmin ? 'Move to Bin' : 'Cross Out'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -469,15 +480,20 @@ export default function StockPage() {
                       <p className="text-sm font-medium line-through text-muted-foreground">{item.name}</p>
                       {(item.category || item.quality) && <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>}
                       <p className="text-xs text-muted-foreground">Deleted: {new Date(item.deleted_at!).toLocaleString()}</p>
+                      {(item as any).deleted_by && (
+                        <p className="text-xs text-warning font-medium">👤 Deleted by: {(item as any).deleted_by}</p>
+                      )}
                     </div>
-                    <div className="flex gap-2 shrink-0">
-                      <Button size="sm" variant="outline" onClick={() => restoreStockItem(item.id)}>
-                        <RotateCcw className="h-3 w-3 mr-1" />Restore
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => permanentDeleteStockItem(item.id)}>
-                        <Trash2 className="h-3 w-3 mr-1" />Delete Forever
-                      </Button>
-                    </div>
+                    {isOwnerOrAdmin && (
+                      <div className="flex gap-2 shrink-0">
+                        <Button size="sm" variant="outline" onClick={() => restoreStockItem(item.id)}>
+                          <RotateCcw className="h-3 w-3 mr-1" />Restore
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => permanentDeleteStockItem(item.id)}>
+                          <Trash2 className="h-3 w-3 mr-1" />Delete Forever
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

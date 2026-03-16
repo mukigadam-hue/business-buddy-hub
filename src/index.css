@@ -158,3 +158,20 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
+
+/* Hide html5-qrcode default UI elements for custom overlay */
+#barcode-reader img[alt="Info icon"],
+#barcode-reader > div:last-child {
+  display: none !important;
+}
+#barcode-reader video {
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+#barcode-reader {
+  border: none !important;
+}
+/* Hide the built-in scan region shading */
+#qr-shaded-region {
+  display: none !important;
+}

@@ -93,12 +93,18 @@ export default {
           from: { transform: "translateX(-100%)" },
           to: { transform: "translateX(0)" },
         },
+        "scan-line": {
+          "0%": { top: "8px", opacity: "1" },
+          "50%": { top: "calc(100% - 10px)", opacity: "0.8" },
+          "100%": { top: "8px", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
         "slide-in": "slide-in 0.3s ease-out",
+        "scan-line": "scan-line 2s ease-in-out infinite",
       },
     },
   },

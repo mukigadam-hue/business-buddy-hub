@@ -518,7 +518,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
                 <span>📞</span>
                 <a href="mailto:ndamson8@gmail.com" className="hover:text-primary transition-colors truncate">ndamson8@gmail.com</a>
                 <span>·</span>
-                <a href="https://x.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">𝕏</a>
+                <a href="https://x.com/mukigaDam" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">𝕏</a>
                 <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">📘</a>
               </div>
               <div className="flex items-center justify-between mt-1">

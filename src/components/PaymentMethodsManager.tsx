@@ -115,7 +115,7 @@ export default function PaymentMethodsManager({ businessId }: { businessId: stri
   }
 
   async function deleteMethod(id: string) {
-    await supabase.from('business_payment_methods' as any).delete().eq('id', id);
+    await supabase.from('business_payment_methods').delete().eq('id', id);
     toast.success('Payment method removed');
     fetchMethods();
   }

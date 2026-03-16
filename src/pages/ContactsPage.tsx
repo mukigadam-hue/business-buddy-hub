@@ -57,6 +57,10 @@ export default function ContactsPage() {
   const [pokingId, setPokingId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent');
   const [filterQuery, setFilterQuery] = useState('');
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [messageTarget, setMessageTarget] = useState<EnrichedContact | null>(null); // null = send to all
+  const [customMessage, setCustomMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   const businessId = currentBusiness?.id;
 

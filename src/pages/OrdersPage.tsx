@@ -1530,7 +1530,24 @@ export default function OrdersPage() {
           )}
         </TabsList>
         <TabsContent value="live_orders" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-2">Orders from walk-in customers, phone calls, or messages (WhatsApp/SMS). You pack items → customer pays → you give a receipt.</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">Orders from walk-in customers, phone calls, or messages.</p>
+            <div className="flex gap-1">
+              {liveOrders.some(o => o.status === 'paid' || o.status === 'completed' || o.transferred_to_sale || o.status === 'cancelled') && (
+                <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => { setBulkSelectMode(!bulkSelectMode); setSelectedOrderIds(new Set()); }}>
+                  {bulkSelectMode ? 'Cancel' : '🗑️ Clean Up'}
+                </Button>
+              )}
+              {bulkSelectMode && selectedOrderIds.size > 0 && (
+                <Button size="sm" variant="destructive" className="h-7 text-[10px]" onClick={handleBulkDelete}>
+                  <Trash2 className="h-3 w-3 mr-1" />Delete ({selectedOrderIds.size})
+                </Button>
+              )}
+              {bulkSelectMode && (
+                <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => selectAllFinalized(liveOrders)}>Select All Done</Button>
+              )}
+            </div>
+          </div>
           <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
             {liveOrders.length === 0 ? <p className="text-sm text-muted-foreground">No orders yet. Create one using the "New Order" button above.</p> : liveOrders.map(o => <OrderCard key={o.id} order={o} />)}
           </div>

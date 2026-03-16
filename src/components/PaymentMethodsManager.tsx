@@ -305,12 +305,12 @@ export function PaymentMethodsViewer({ businessId, onSelectMethod }: {
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.from('business_payment_methods' as any)
+    supabase.from('business_payment_methods')
       .select('*')
       .eq('business_id', businessId)
       .eq('is_active', true)
       .order('provider_type', { ascending: true })
-      .then(({ data }) => setMethods((data as any[]) || []));
+      .then(({ data }) => setMethods((data as PaymentMethod[]) || []));
   }, [businessId]);
 
   if (methods.length === 0) {

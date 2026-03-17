@@ -43,8 +43,9 @@ export default function FactoryPurchases() {
       unit_type: form.unit_type,
       quantity: parseFloat(form.quantity) || 1,
       unit_price: parseFloat(form.unit_price) || 0,
+      serial_numbers: form.serial_numbers.trim() || undefined,
     }]);
-    setForm({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '' });
+    setForm({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '', serial_numbers: '' });
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }

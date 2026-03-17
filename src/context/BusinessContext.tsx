@@ -701,7 +701,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, [currentBusinessId, stock]);
 
   const addPurchase = useCallback(async (
-    items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number; pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }[],
+    items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number; serial_numbers?: string; pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }[],
     grandTotal: number, supplier: string, recordedBy: string,
     paymentStatus: string = 'paid', amountPaid?: number
   ) => {

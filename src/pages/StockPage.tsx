@@ -400,18 +400,19 @@ export default function StockPage() {
                   <TableHead></TableHead>
                   <TableHead>Item</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Quality</TableHead>
-                  {showBuyingPrice && <TableHead className="text-right bg-info/10 text-info font-semibold">💰 Buying Price</TableHead>}
-                  <TableHead className="text-right">Wholesale</TableHead>
-                  <TableHead className="text-right">Retail</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={showBuyingPrice ? 10 : 9} className="text-center text-muted-foreground py-8">No items found. Add your first stock item.</TableCell></TableRow>
+                   <TableHead>Quality</TableHead>
+                   <TableHead>Unit</TableHead>
+                   {showBuyingPrice && <TableHead className="text-right bg-info/10 text-info font-semibold">💰 Buying Price</TableHead>}
+                   <TableHead className="text-right">Wholesale</TableHead>
+                   <TableHead className="text-right">Retail</TableHead>
+                   <TableHead className="text-right">Qty</TableHead>
+                   <TableHead>Status</TableHead>
+                   <TableHead className="text-right">Actions</TableHead>
+                 </TableRow>
+               </TableHeader>
+               <TableBody>
+                 {filtered.length === 0 ? (
+                   <TableRow><TableCell colSpan={showBuyingPrice ? 11 : 10} className="text-center text-muted-foreground py-8">No items found. Add your first stock item.</TableCell></TableRow>
                 ) : (
                   filtered.map(item => {
                     const thumb = item.image_url_1 || item.image_url_2 || item.image_url_3;

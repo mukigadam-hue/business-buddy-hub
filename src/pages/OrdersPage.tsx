@@ -324,8 +324,9 @@ export default function OrdersPage() {
       quantity: parseInt(form.quantity) || 1,
       price_type: form.priceType,
       unit_price: unitPrice,
+      serial_numbers: form.serial_numbers.trim() || undefined,
     }]);
-    setForm(f => ({ name: '', category: '', quality: '', quantity: '1', priceType: f.priceType, unitPrice: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' }));
+    setForm(f => ({ name: '', category: '', quality: '', quantity: '1', priceType: f.priceType, unitPrice: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0', serial_numbers: '' }));
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }

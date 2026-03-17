@@ -120,6 +120,10 @@ export default function AuthPage() {
               {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
             </button>
           </div>
+
+          <div className="flex justify-center pt-1">
+            <LegalHelpModal defaultTab="guide" />
+          </div>
         </CardContent>
       </Card>
     </div>

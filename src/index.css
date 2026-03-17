@@ -4,59 +4,59 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 222 47% 11%;
+    --background: 216 25% 96%;
+    --foreground: 222 47% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 222 47% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 222 47% 8%;
 
-    --primary: 222 60% 22%;
+    --primary: 217 72% 18%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 220 14% 92%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 216 18% 90%;
+    --secondary-foreground: 222 47% 8%;
 
-    --muted: 220 14% 95%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 216 18% 93%;
+    --muted-foreground: 220 12% 42%;
 
-    --accent: 38 92% 50%;
+    --accent: 42 100% 50%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 78% 52%;
     --destructive-foreground: 210 40% 98%;
 
-    --success: 142 71% 35%;
+    --success: 152 69% 31%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 42 100% 50%;
     --warning-foreground: 0 0% 100%;
 
     --info: 210 100% 50%;
     --info-foreground: 0 0% 100%;
 
-    --border: 220 13% 88%;
-    --input: 220 13% 88%;
-    --ring: 222 60% 22%;
+    --border: 216 16% 86%;
+    --input: 216 16% 86%;
+    --ring: 217 72% 18%;
 
     --radius: 0.625rem;
 
-    --sidebar-background: 222 60% 16%;
-    --sidebar-foreground: 220 20% 90%;
-    --sidebar-primary: 38 92% 50%;
+    --sidebar-background: 217 72% 12%;
+    --sidebar-foreground: 216 25% 92%;
+    --sidebar-primary: 42 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 50% 24%;
-    --sidebar-accent-foreground: 220 20% 95%;
-    --sidebar-border: 222 40% 26%;
-    --sidebar-ring: 38 92% 50%;
-    --sidebar-muted: 222 30% 36%;
+    --sidebar-accent: 217 55% 20%;
+    --sidebar-accent-foreground: 216 25% 96%;
+    --sidebar-border: 217 45% 22%;
+    --sidebar-ring: 42 100% 50%;
+    --sidebar-muted: 217 30% 32%;
 
-    --chart-1: 222 60% 22%;
-    --chart-2: 38 92% 50%;
-    --chart-3: 142 71% 35%;
-    --chart-4: 0 72% 51%;
+    --chart-1: 217 72% 18%;
+    --chart-2: 42 100% 50%;
+    --chart-3: 152 69% 31%;
+    --chart-4: 0 78% 52%;
     --chart-5: 210 100% 50%;
   }
 

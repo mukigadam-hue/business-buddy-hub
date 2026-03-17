@@ -27,7 +27,10 @@ export default function AuthPage() {
       if (isSignUp) {
         const { error } = await signUp(email, password, fullName);
         if (error) throw error;
-        toast.success('Account created! You are now signed in.');
+        toast.success('Account created! Please check your email to confirm your account before signing in.', { duration: 8000 });
+        setIsSignUp(false);
+        setPassword('');
+        return;
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;

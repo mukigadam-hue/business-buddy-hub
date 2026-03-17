@@ -137,6 +137,7 @@ export default function StockPage() {
       name: toSentenceCase(form.name.trim()),
       category: toSentenceCase(form.category.trim()),
       quality: toSentenceCase(form.quality.trim()),
+      unit_type: form.unit_type,
       barcode: form.barcode.trim(),
       buying_price: parseFloat(form.buying_price) || 0,
       wholesale_price: parseFloat(form.wholesale_price) || 0,

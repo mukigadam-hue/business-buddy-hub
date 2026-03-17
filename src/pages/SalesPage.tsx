@@ -549,6 +549,7 @@ export default function SalesPage() {
               items={receiptSale.items.map(i => ({
                 itemName: i.item_name, category: i.category, quality: i.quality,
                 quantity: i.quantity, priceType: i.price_type, unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal),
+                serialNumbers: (i as any).serial_numbers || undefined,
               }))}
               grandTotal={Number(receiptSale.grand_total)}
               buyerName={receiptSale.customer_name}

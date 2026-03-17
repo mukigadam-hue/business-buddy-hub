@@ -140,6 +140,7 @@ export default function FactorySales() {
         price_type: 'service',
         unit_price: svc.cost,
         subtotal: svc.cost,
+        serial_numbers: '' as string | undefined,
       })),
       ...serviceParts.map(part => ({
         stock_item_id: part.stock_item_id,
@@ -150,6 +151,7 @@ export default function FactorySales() {
         price_type: 'part',
         unit_price: part.unit_price,
         subtotal: part.subtotal,
+        serial_numbers: '' as string | undefined,
       })),
     ];
 

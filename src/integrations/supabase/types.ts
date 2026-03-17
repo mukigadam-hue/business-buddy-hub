@@ -1067,6 +1067,7 @@ export type Database = {
           price_type: string
           quality: string
           quantity: number
+          serial_numbers: string
           subtotal: number
           unit_price: number
         }
@@ -1079,6 +1080,7 @@ export type Database = {
           price_type?: string
           quality?: string
           quantity?: number
+          serial_numbers?: string
           subtotal?: number
           unit_price?: number
         }
@@ -1091,6 +1093,7 @@ export type Database = {
           price_type?: string
           quality?: string
           quantity?: number
+          serial_numbers?: string
           subtotal?: number
           unit_price?: number
         }
@@ -1594,6 +1597,7 @@ export type Database = {
           purchase_id: string
           quality: string
           quantity: number
+          serial_numbers: string
           subtotal: number
           unit_price: number
         }
@@ -1605,6 +1609,7 @@ export type Database = {
           purchase_id: string
           quality?: string
           quantity?: number
+          serial_numbers?: string
           subtotal?: number
           unit_price?: number
         }
@@ -1616,6 +1621,7 @@ export type Database = {
           purchase_id?: string
           quality?: string
           quantity?: number
+          serial_numbers?: string
           subtotal?: number
           unit_price?: number
         }
@@ -1754,6 +1760,7 @@ export type Database = {
           quality: string
           quantity: number
           sale_id: string
+          serial_numbers: string
           stock_item_id: string | null
           subtotal: number
           unit_price: number
@@ -1767,6 +1774,7 @@ export type Database = {
           quality?: string
           quantity?: number
           sale_id: string
+          serial_numbers?: string
           stock_item_id?: string | null
           subtotal?: number
           unit_price?: number
@@ -1780,6 +1788,7 @@ export type Database = {
           quality?: string
           quantity?: number
           sale_id?: string
+          serial_numbers?: string
           stock_item_id?: string | null
           subtotal?: number
           unit_price?: number

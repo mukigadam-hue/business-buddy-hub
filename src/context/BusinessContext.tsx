@@ -225,7 +225,7 @@ interface BusinessContextType {
   restoreStockItem: (id: string) => Promise<void>;
   permanentDeleteStockItem: (id: string) => Promise<void>;
   addSale: (
-    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[],
+    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; serial_numbers?: string }[],
     grandTotal: number,
     recordedBy: string,
     customerName: string,
@@ -234,10 +234,10 @@ interface BusinessContextType {
     paymentStatus?: string,
     amountPaid?: number
   ) => Promise<Sale | null>;
-  addPurchase: (items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number }[], grandTotal: number, supplier: string, recordedBy: string, paymentStatus?: string, amountPaid?: number) => Promise<void>;
+  addPurchase: (items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number; serial_numbers?: string }[], grandTotal: number, supplier: string, recordedBy: string, paymentStatus?: string, amountPaid?: number) => Promise<void>;
   updateSalePayment: (saleId: string, amountPaid: number, paymentStatus: string) => Promise<void>;
   updatePurchasePayment: (purchaseId: string, amountPaid: number, paymentStatus: string) => Promise<void>;
-  addOrder: (type: string, customerName: string, items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[], grandTotal: number, status: string, recipientBusinessId?: string, comment?: string) => Promise<void>;
+  addOrder: (type: string, customerName: string, items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; serial_numbers?: string }[], grandTotal: number, status: string, recipientBusinessId?: string, comment?: string) => Promise<void>;
   updateOrder: (id: string, items: OrderItem[], grandTotal: number, status?: string) => Promise<void>;
   completeOrderToSale: (orderId: string, buyerName: string, sellerName: string) => Promise<void>;
   addService: (service: Omit<ServiceRecord, 'id' | 'business_id' | 'created_at' | 'items_used'>, itemsUsed?: { stock_item_id: string; item_name: string; category: string; quality: string; quantity: number; unit_price: number; subtotal: number }[]) => Promise<ServiceRecord | null>;
@@ -617,7 +617,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addSale = useCallback(async (
-    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[],
+    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; serial_numbers?: string }[],
     grandTotal: number,
     recordedBy: string,
     customerName: string,
@@ -672,6 +672,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       price_type: item.price_type,
       unit_price: item.unit_price,
       subtotal: item.subtotal,
+      serial_numbers: item.serial_numbers || '',
     }));
     await supabase.from('sale_items').insert(saleItems);
 
@@ -700,7 +701,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, [currentBusinessId, stock]);
 
   const addPurchase = useCallback(async (
-    items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number; pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }[],
+    items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number; serial_numbers?: string; pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }[],
     grandTotal: number, supplier: string, recordedBy: string,
     paymentStatus: string = 'paid', amountPaid?: number
   ) => {
@@ -735,6 +736,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     const purchaseItems = items.map(item => ({
       purchase_id: purchaseData.id, item_name: item.item_name, category: item.category,
       quality: item.quality, quantity: item.quantity, unit_price: item.unit_price, subtotal: item.subtotal,
+      serial_numbers: item.serial_numbers || '',
     }));
     await supabase.from('purchase_items').insert(purchaseItems);
 
@@ -780,7 +782,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const addOrder = useCallback(async (
     type: string, customerName: string,
-    items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[],
+    items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; serial_numbers?: string }[],
     grandTotal: number, status: string, recipientBusinessId?: string, comment?: string
   ) => {
     if (!currentBusinessId) return;
@@ -852,6 +854,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       order_id: orderData.id, item_name: item.item_name, category: item.category,
       quality: item.quality, quantity: item.quantity, price_type: item.price_type,
       unit_price: item.unit_price, subtotal: item.subtotal,
+      serial_numbers: item.serial_numbers || '',
     }));
     await supabase.from('order_items').insert(orderItems);
 

@@ -30,7 +30,9 @@ export default function SalesPage() {
   const [items, setItems] = useState<{
     stock_item_id: string; item_name: string; category: string;
     quality: string; quantity: number; price_type: string; unit_price: number;
+    serial_numbers?: string;
   }[]>([]);
+  const [serialInput, setSerialInput] = useState('');
   const [serviceItems, setServiceItems] = useState<{
     service_name: string; description: string; cost: number;
   }[]>([]);
@@ -75,9 +77,11 @@ export default function SalesPage() {
       quantity: qty,
       price_type: priceType,
       unit_price: unitPrice,
+      serial_numbers: serialInput.trim() || undefined,
     }]);
     setSelectedStock('');
     setQuantity('1');
+    setSerialInput('');
     // Keep priceType sticky — don't reset it
   }
 
@@ -125,7 +129,7 @@ export default function SalesPage() {
     if (!canSave) return;
 
     const allItems = [
-      ...items.map(item => ({ ...item, subtotal: item.quantity * item.unit_price })),
+      ...items.map(item => ({ ...item, subtotal: item.quantity * item.unit_price, serial_numbers: item.serial_numbers || '' })),
       ...serviceItems.map(svc => ({
         stock_item_id: undefined as any,
         item_name: `[Service] ${svc.service_name}`,
@@ -135,6 +139,7 @@ export default function SalesPage() {
         price_type: 'service',
         unit_price: svc.cost,
         subtotal: svc.cost,
+        serial_numbers: '',
       })),
       ...serviceParts.map(part => ({
         stock_item_id: part.stock_item_id,
@@ -145,6 +150,7 @@ export default function SalesPage() {
         price_type: 'part',
         unit_price: part.unit_price,
         subtotal: part.subtotal,
+        serial_numbers: '',
       })),
     ];
 
@@ -163,6 +169,7 @@ export default function SalesPage() {
         items: allItems.map(i => ({
           itemName: i.item_name, category: i.category, quality: i.quality,
           quantity: i.quantity, priceType: i.price_type, unitPrice: i.unit_price, subtotal: i.subtotal,
+          serialNumbers: i.serial_numbers || undefined,
         })),
         business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
         code: null,
@@ -315,6 +322,12 @@ export default function SalesPage() {
               </div>
               <Button onClick={addItem} disabled={!selectedStock} className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
             </div>
+            {selectedStock && (
+              <div className="mt-2">
+                <Label className="text-xs text-muted-foreground">Serial Number (optional)</Label>
+                <Input value={serialInput} onChange={e => setSerialInput(e.target.value)} placeholder="e.g. IMEI, S/N..." className="max-w-xs" />
+              </div>
+            )}
           </div>
 
           {/* Service Items */}
@@ -538,6 +551,7 @@ export default function SalesPage() {
               items={receiptSale.items.map(i => ({
                 itemName: i.item_name, category: i.category, quality: i.quality,
                 quantity: i.quantity, priceType: i.price_type, unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal),
+                serialNumbers: (i as any).serial_numbers || undefined,
               }))}
               grandTotal={Number(receiptSale.grand_total)}
               buyerName={receiptSale.customer_name}

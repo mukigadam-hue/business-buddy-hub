@@ -26,7 +26,9 @@ export default function FactorySales() {
   const [items, setItems] = useState<{
     stock_item_id: string; item_name: string; category: string; quality: string;
     quantity: number; price_type: string; unit_price: number; subtotal: number;
+    serial_numbers?: string;
   }[]>([]);
+  const [serialInput, setSerialInput] = useState('');
   const [serviceItems, setServiceItems] = useState<{
     service_name: string; description: string; cost: number;
   }[]>([]);
@@ -67,8 +69,9 @@ export default function FactorySales() {
       stock_item_id: product.id, item_name: product.name, category: product.category,
       quality: product.quality, quantity: q, price_type: priceType,
       unit_price: price, subtotal: q * price,
+      serial_numbers: serialInput.trim() || undefined,
     }]);
-    setSelectedProduct(''); setQty('1');
+    setSelectedProduct(''); setQty('1'); setSerialInput('');
   }
 
   function addServiceItem() {
@@ -137,6 +140,7 @@ export default function FactorySales() {
         price_type: 'service',
         unit_price: svc.cost,
         subtotal: svc.cost,
+        serial_numbers: '' as string | undefined,
       })),
       ...serviceParts.map(part => ({
         stock_item_id: part.stock_item_id,
@@ -147,6 +151,7 @@ export default function FactorySales() {
         price_type: 'part',
         unit_price: part.unit_price,
         subtotal: part.subtotal,
+        serial_numbers: '' as string | undefined,
       })),
     ];
 
@@ -156,6 +161,7 @@ export default function FactorySales() {
       const receiptItems = allItems.map(i => ({
         itemName: i.item_name, category: i.category, quality: i.quality,
         quantity: i.quantity, priceType: i.price_type, unitPrice: i.unit_price, subtotal: i.subtotal,
+        serialNumbers: i.serial_numbers || undefined,
       }));
       await saveReceipt({
         business_id: currentBusiness.id, receipt_type: 'sale', transaction_id: sale.id,
@@ -224,6 +230,12 @@ export default function FactorySales() {
               </div>
               <Button onClick={addItem} disabled={!selectedProduct}><Plus className="h-4 w-4 mr-1" />Add</Button>
             </div>
+            {selectedProduct && (
+              <div className="mt-2">
+                <Label className="text-xs text-muted-foreground">Serial Number (optional)</Label>
+                <Input value={serialInput} onChange={e => setSerialInput(e.target.value)} placeholder="e.g. IMEI, S/N..." className="max-w-xs" />
+              </div>
+            )}
           </div>
 
           {/* Service section removed for factory */}

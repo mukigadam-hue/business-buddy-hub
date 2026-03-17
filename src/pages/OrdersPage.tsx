@@ -69,8 +69,8 @@ export default function OrdersPage() {
   const [confirmPaymentOrder, setConfirmPaymentOrder] = useState<Order | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [sellerName, setSellerName] = useState('');
-  const [items, setItems] = useState<{ item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number }[]>([]);
-  const [form, setForm] = useState({ name: '', category: '', quality: '', quantity: '1', priceType: 'retail' as string, unitPrice: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
+  const [items, setItems] = useState<{ item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; serial_numbers?: string }[]>([]);
+  const [form, setForm] = useState({ name: '', category: '', quality: '', quantity: '1', priceType: 'retail' as string, unitPrice: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0', serial_numbers: '' });
   const [requestComment, setRequestComment] = useState('');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editItems, setEditItems] = useState<OrderItem[]>([]);
@@ -324,8 +324,9 @@ export default function OrdersPage() {
       quantity: parseInt(form.quantity) || 1,
       price_type: form.priceType,
       unit_price: unitPrice,
+      serial_numbers: form.serial_numbers.trim() || undefined,
     }]);
-    setForm(f => ({ name: '', category: '', quality: '', quantity: '1', priceType: f.priceType, unitPrice: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' }));
+    setForm(f => ({ name: '', category: '', quality: '', quantity: '1', priceType: f.priceType, unitPrice: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0', serial_numbers: '' }));
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
@@ -1439,6 +1440,10 @@ export default function OrdersPage() {
                 <div className="w-24"><Label>Price</Label><Input type="number" min="0" step="0.01" value={form.unitPrice} onChange={e => setForm(f => ({ ...f, unitPrice: e.target.value }))} placeholder="Auto" /></div>
               )}
               <Button onClick={addItem} disabled={!form.name.trim()}><Plus className="h-4 w-4 mr-1" />Add</Button>
+            </div>
+            <div className="mt-2">
+              <Label className="text-xs text-muted-foreground">Serial Number (optional)</Label>
+              <Input value={form.serial_numbers} onChange={e => setForm(f => ({ ...f, serial_numbers: e.target.value }))} placeholder="e.g. IMEI, S/N..." className="max-w-xs" />
             </div>
             <BulkPackagingFields
               piecesPerCarton={form.pieces_per_carton}

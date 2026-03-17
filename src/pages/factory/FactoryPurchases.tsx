@@ -24,10 +24,11 @@ export default function FactoryPurchases() {
   const [items, setItems] = useState<{
     item_name: string; category: string; unit_type: string;
     quantity: number; unit_price: number;
+    serial_numbers?: string;
   }[]>([]);
   const [supplier, setSupplier] = useState('');
   const [recordedBy, setRecordedBy] = useState('');
-  const [form, setForm] = useState({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '' });
+  const [form, setForm] = useState({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '', serial_numbers: '' });
   const [scannerOpen, setScannerOpen] = useState(false);
 
   const activeRM = rawMaterials.filter(r => !r.deleted_at);
@@ -42,8 +43,9 @@ export default function FactoryPurchases() {
       unit_type: form.unit_type,
       quantity: parseFloat(form.quantity) || 1,
       unit_price: parseFloat(form.unit_price) || 0,
+      serial_numbers: form.serial_numbers.trim() || undefined,
     }]);
-    setForm({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '' });
+    setForm({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '', serial_numbers: '' });
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
@@ -139,6 +141,10 @@ export default function FactoryPurchases() {
             <div className="w-20"><Label>Qty</Label><Input type="number" min="0.01" step="0.01" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} /></div>
             <div className="w-24"><Label>Unit Cost</Label><Input type="number" min="0" step="0.01" value={form.unit_price} onChange={e => setForm(f => ({ ...f, unit_price: e.target.value }))} /></div>
             <Button onClick={addItem} disabled={!form.name.trim()}><Plus className="h-4 w-4 mr-1" />Add</Button>
+          </div>
+          <div className="mt-2">
+            <Label className="text-xs text-muted-foreground">Serial Number (optional)</Label>
+            <Input value={form.serial_numbers} onChange={e => setForm(f => ({ ...f, serial_numbers: e.target.value }))} placeholder="e.g. IMEI, S/N..." className="max-w-xs" />
           </div>
 
           {items.length > 0 && (

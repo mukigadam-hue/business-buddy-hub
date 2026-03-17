@@ -25,6 +25,7 @@ export default function PurchasesPage() {
   const [items, setItems] = useState<{
     item_name: string; category: string; quality: string;
     quantity: number; unit_price: number; wholesale_price: number; retail_price: number;
+    serial_numbers?: string;
   }[]>([]);
   const [supplier, setSupplier] = useState('');
   const [recordedBy, setRecordedBy] = useState(userFullName);
@@ -32,6 +33,7 @@ export default function PurchasesPage() {
     name: '', category: '', quality: '', quantity: '1',
     unit_price: '', wholesale_price: '', retail_price: '',
     pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0',
+    serial_numbers: '',
   });
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');
@@ -64,8 +66,9 @@ export default function PurchasesPage() {
       pieces_per_carton: parseInt(form.pieces_per_carton) || 0,
       cartons_per_box: parseInt(form.cartons_per_box) || 0,
       boxes_per_container: parseInt(form.boxes_per_container) || 0,
+      serial_numbers: form.serial_numbers.trim() || undefined,
     }]);
-    setForm({ name: '', category: '', quality: '', quantity: '1', unit_price: '', wholesale_price: '', retail_price: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
+    setForm({ name: '', category: '', quality: '', quantity: '1', unit_price: '', wholesale_price: '', retail_price: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0', serial_numbers: '' });
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
@@ -80,6 +83,7 @@ export default function PurchasesPage() {
         quantity: item.quantity, unit_price: item.unit_price,
         wholesale_price: item.wholesale_price, retail_price: item.retail_price,
         subtotal: item.quantity * item.unit_price,
+        serial_numbers: item.serial_numbers || '',
       })),
       grandTotal, supplier.trim() || 'Unknown',
       toTitleCase(recordedBy.trim()) || 'Staff',
@@ -189,6 +193,10 @@ export default function PurchasesPage() {
             <div className="w-24"><Label>Wholesale</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} placeholder="Auto" /></div>
             <div className="w-24"><Label>Retail</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} placeholder="Auto" /></div>
             <Button onClick={addItem} disabled={!form.name.trim()}><Plus className="h-4 w-4 mr-1" />Add</Button>
+          </div>
+          <div className="mt-2">
+            <Label className="text-xs text-muted-foreground">Serial Number (optional)</Label>
+            <Input value={form.serial_numbers} onChange={e => setForm(f => ({ ...f, serial_numbers: e.target.value }))} placeholder="e.g. IMEI, S/N..." className="max-w-xs" />
           </div>
           <BulkPackagingFields
             piecesPerCarton={form.pieces_per_carton}

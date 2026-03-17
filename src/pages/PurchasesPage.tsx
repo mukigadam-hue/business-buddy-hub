@@ -66,8 +66,9 @@ export default function PurchasesPage() {
       pieces_per_carton: parseInt(form.pieces_per_carton) || 0,
       cartons_per_box: parseInt(form.cartons_per_box) || 0,
       boxes_per_container: parseInt(form.boxes_per_container) || 0,
+      serial_numbers: form.serial_numbers.trim() || undefined,
     }]);
-    setForm({ name: '', category: '', quality: '', quantity: '1', unit_price: '', wholesale_price: '', retail_price: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
+    setForm({ name: '', category: '', quality: '', quantity: '1', unit_price: '', wholesale_price: '', retail_price: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0', serial_numbers: '' });
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }

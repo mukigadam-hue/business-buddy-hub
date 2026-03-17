@@ -106,7 +106,7 @@ export default function StockPage() {
     document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
   }
   const [form, setForm] = useState({
-    name: '', category: '', quality: '', barcode: '',
+    name: '', category: '', quality: '', unit_type: 'Pieces', barcode: '',
     buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5',
     pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0',
   });

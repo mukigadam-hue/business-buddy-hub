@@ -2034,6 +2034,7 @@ export type Database = {
           quality: string
           quantity: number
           retail_price: number
+          unit_type: string
           updated_at: string
           wholesale_price: number
         }
@@ -2057,6 +2058,7 @@ export type Database = {
           quality?: string
           quantity?: number
           retail_price?: number
+          unit_type?: string
           updated_at?: string
           wholesale_price?: number
         }
@@ -2080,6 +2082,7 @@ export type Database = {
           quality?: string
           quantity?: number
           retail_price?: number
+          unit_type?: string
           updated_at?: string
           wholesale_price?: number
         }

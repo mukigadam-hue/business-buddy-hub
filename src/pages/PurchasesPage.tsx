@@ -219,19 +219,20 @@ export default function PurchasesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Item</TableHead><TableHead>Category</TableHead><TableHead>Quality</TableHead>
-                      <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Cost/Unit</TableHead>
-                      <TableHead className="text-right">Wholesale</TableHead><TableHead className="text-right">Retail</TableHead>
-                      <TableHead className="text-right">Subtotal</TableHead><TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">{item.item_name}</TableCell>
-                        <TableCell>{item.category}</TableCell>
-                        <TableCell>{item.quality}</TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
+                       <TableHead>Item</TableHead><TableHead>Category</TableHead><TableHead>Quality</TableHead><TableHead>Unit</TableHead>
+                       <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Cost/Unit</TableHead>
+                       <TableHead className="text-right">Wholesale</TableHead><TableHead className="text-right">Retail</TableHead>
+                       <TableHead className="text-right">Subtotal</TableHead><TableHead></TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {items.map((item, i) => (
+                       <TableRow key={i}>
+                         <TableCell className="font-medium">{item.item_name}</TableCell>
+                         <TableCell>{item.category}</TableCell>
+                         <TableCell>{item.quality}</TableCell>
+                         <TableCell className="capitalize">{item.unit_type}</TableCell>
+                         <TableCell className="text-right">{item.quantity}</TableCell>
                         <TableCell className="text-right tabular-nums">{fmt(item.unit_price)}</TableCell>
                         <TableCell className="text-right tabular-nums">{fmt(item.wholesale_price)}</TableCell>
                         <TableCell className="text-right tabular-nums">{fmt(item.retail_price)}</TableCell>

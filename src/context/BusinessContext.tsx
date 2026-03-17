@@ -225,7 +225,7 @@ interface BusinessContextType {
   restoreStockItem: (id: string) => Promise<void>;
   permanentDeleteStockItem: (id: string) => Promise<void>;
   addSale: (
-    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[],
+    items: { stock_item_id?: string; item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; serial_numbers?: string }[],
     grandTotal: number,
     recordedBy: string,
     customerName: string,

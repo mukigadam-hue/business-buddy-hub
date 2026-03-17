@@ -26,14 +26,14 @@ export default function PurchasesPage() {
   const userFullName = user?.user_metadata?.full_name || '';
   const roleLabel = userRole === 'owner' ? '(Owner)' : userRole === 'admin' ? '(Admin)' : '(Worker)';
   const [items, setItems] = useState<{
-    item_name: string; category: string; quality: string;
+    item_name: string; category: string; quality: string; unit_type: string;
     quantity: number; unit_price: number; wholesale_price: number; retail_price: number;
     serial_numbers?: string;
   }[]>([]);
   const [supplier, setSupplier] = useState('');
   const [recordedBy, setRecordedBy] = useState(userFullName);
   const [form, setForm] = useState({
-    name: '', category: '', quality: '', quantity: '1',
+    name: '', category: '', quality: '', unit_type: 'Pieces', quantity: '1',
     unit_price: '', wholesale_price: '', retail_price: '',
     pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0',
     serial_numbers: '',

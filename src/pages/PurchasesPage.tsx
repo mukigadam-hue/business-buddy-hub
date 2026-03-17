@@ -33,6 +33,7 @@ export default function PurchasesPage() {
     name: '', category: '', quality: '', quantity: '1',
     unit_price: '', wholesale_price: '', retail_price: '',
     pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0',
+    serial_numbers: '',
   });
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');

@@ -84,6 +84,7 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
         name: form.name.trim(),
         category: form.category.trim(),
         quality: form.quality.trim(),
+        unit_type: form.unit_type,
         buying_price: Number(form.buying_price) || 0,
         wholesale_price: Number(form.wholesale_price) || 0,
         retail_price: Number(form.retail_price) || 0,
@@ -96,7 +97,7 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
       toast.success('Item added to stock with images!');
     }
     setImages([]);
-    setForm({ name: '', category: '', quality: '', buying_price: '', wholesale_price: '', retail_price: '', quantity: '' });
+    setForm({ name: '', category: '', quality: '', unit_type: 'Pieces', buying_price: '', wholesale_price: '', retail_price: '', quantity: '' });
     setSelectedStockId('');
     onOpenChange(false);
   }

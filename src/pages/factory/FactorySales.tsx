@@ -26,7 +26,9 @@ export default function FactorySales() {
   const [items, setItems] = useState<{
     stock_item_id: string; item_name: string; category: string; quality: string;
     quantity: number; price_type: string; unit_price: number; subtotal: number;
+    serial_numbers?: string;
   }[]>([]);
+  const [serialInput, setSerialInput] = useState('');
   const [serviceItems, setServiceItems] = useState<{
     service_name: string; description: string; cost: number;
   }[]>([]);

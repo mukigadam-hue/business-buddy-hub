@@ -782,7 +782,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const addOrder = useCallback(async (
     type: string, customerName: string,
-    items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number }[],
+    items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; serial_numbers?: string }[],
     grandTotal: number, status: string, recipientBusinessId?: string, comment?: string
   ) => {
     if (!currentBusinessId) return;

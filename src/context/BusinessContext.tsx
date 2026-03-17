@@ -672,6 +672,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       price_type: item.price_type,
       unit_price: item.unit_price,
       subtotal: item.subtotal,
+      serial_numbers: item.serial_numbers || '',
     }));
     await supabase.from('sale_items').insert(saleItems);
 

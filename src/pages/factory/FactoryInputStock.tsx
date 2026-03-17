@@ -15,7 +15,7 @@ import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagi
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
-const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls'];
+const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
 const CATEGORIES = ['Chemicals', 'Fabrics', 'Metals', 'Plastics', 'Wood', 'Electronics', 'Agricultural', 'Packaging', 'Other'];
 
 export default function FactoryInputStock() {

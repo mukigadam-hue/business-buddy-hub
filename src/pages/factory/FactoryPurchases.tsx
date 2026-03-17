@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
-const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls'];
+const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
 
 export default function FactoryPurchases() {
   const { rawMaterials, addRawMaterial, updateRawMaterial, refreshFactory } = useFactory();

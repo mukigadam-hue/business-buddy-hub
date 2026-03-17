@@ -241,7 +241,7 @@ export default function PurchasesPage() {
                       </TableRow>
                     ))}
                     <TableRow>
-                      <TableCell colSpan={7} className="text-right font-bold">Grand Total</TableCell>
+                      <TableCell colSpan={8} className="text-right font-bold">Grand Total</TableCell>
                       <TableCell className="text-right font-bold text-lg text-success tabular-nums">{fmt(grandTotal)}</TableCell>
                       <TableCell></TableCell>
                     </TableRow>

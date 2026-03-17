@@ -97,68 +97,77 @@ function TermsContent() {
 
 function UsageGuideContent() {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 pb-6">
       <p className="text-xs text-muted-foreground italic mb-3">A step-by-step guide to help you get the most out of BizTrack.</p>
 
       <SectionTitle icon={LogIn}>Getting Started</SectionTitle>
       <GuideStep step={1} icon={UserPlus} title="Create Your Account"
-        description="Sign up with your email or Google account. You'll be prompted to set up your first business right away." />
-      <GuideStep step={2} icon={Store} title="Register Your Business"
-        description="Choose between Business (shop/store), Factory (manufacturing), or FlexRent (property rental). Enter your business name, country, and contact info." />
+        description="Sign up with your email or Google account. You'll be prompted to choose how you want to use the app." />
+      <GuideStep step={2} icon={Store} title="Choose Your Account Type"
+        description="Pick from: Business (shop/store), Factory (manufacturing), FlexRent (property rental), or Personal Use. Personal Use is for individuals who just want to make orders to businesses or book properties — no business registration needed." />
       <GuideStep step={3} icon={Settings} title="Configure Settings"
-        description="Go to Settings to set your currency, add a settings password for security, and customize your business profile." />
+        description="Go to Settings to set your currency, add a settings password for security, and customize your profile." />
+
+      <SectionTitle icon={UserPlus}>Personal Use Account</SectionTitle>
+      <GuideStep step={4} icon={ShoppingCart} title="Order from Businesses"
+        description="As a personal user, you can browse and discover businesses on BizTrack, send orders directly to them, and track your order status." />
+      <GuideStep step={5} icon={Home} title="Book Properties"
+        description="Browse available properties (rooms, houses, event spaces) listed on FlexRent and make bookings directly from your personal account." />
+      <GuideStep step={6} icon={Store} title="Upgrade Anytime"
+        description="If you decide to start a business later, use the 'Add Business' option to register a commercial entity without losing your personal data." />
 
       <SectionTitle icon={Package}>Managing Your Stock</SectionTitle>
-      <GuideStep step={4} icon={Package} title="Add Stock Items"
+      <GuideStep step={7} icon={Package} title="Add Stock Items"
         description="Go to 'My Stock' and tap 'Add Item'. Enter the item name, buying price, wholesale price, retail price, and quantity. You can also add photos and barcodes." />
-      <GuideStep step={5} icon={BarChart3} title="Track Stock Levels"
+      <GuideStep step={8} icon={BarChart3} title="Track Stock Levels"
         description="Set minimum stock levels to get alerts when items run low. The dashboard shows stock alerts so you never run out of popular items." />
 
       <SectionTitle icon={TrendingUp}>Recording Sales</SectionTitle>
-      <GuideStep step={6} icon={TrendingUp} title="Record a Sale"
+      <GuideStep step={9} icon={TrendingUp} title="Record a Sale"
         description="Go to 'Sales', select items from your stock, set quantities and prices (retail/wholesale/custom). Add the customer name and choose payment status (Paid, Partial, or Credit)." />
-      <GuideStep step={7} icon={Receipt} title="Serial Numbers & Receipts"
+      <GuideStep step={10} icon={Receipt} title="Serial Numbers & Receipts"
         description="For items with serial numbers (phones, electronics), enter them in the optional serial number field. After completing a sale, a receipt is generated automatically — serial numbers included!" />
 
       <SectionTitle icon={ShoppingCart}>Recording Purchases</SectionTitle>
-      <GuideStep step={8} icon={ShoppingCart} title="Record Purchases"
+      <GuideStep step={11} icon={ShoppingCart} title="Record Purchases"
         description="Go to 'Purchases' to log what you buy from suppliers. Enter item details, prices, and quantities. Items are automatically added to your stock." />
 
       <SectionTitle icon={ClipboardList}>Orders (B2B)</SectionTitle>
-      <GuideStep step={9} icon={ClipboardList} title="Create & Send Orders"
+      <GuideStep step={12} icon={ClipboardList} title="Create & Send Orders"
         description="Use 'Orders' to create purchase orders and send them to other BizTrack businesses. Track order status from pending to completed. You can also receive orders from other businesses." />
 
       <SectionTitle icon={Wrench}>Services</SectionTitle>
-      <GuideStep step={10} icon={Wrench} title="Record Services"
+      <GuideStep step={13} icon={Wrench} title="Record Services"
         description="If you offer services (repairs, installations, etc.), go to 'Services' to log them. You can track parts used from stock and charge separately." />
 
       <SectionTitle icon={Flame}>Expenses</SectionTitle>
-      <GuideStep step={11} icon={Flame} title="Track Expenses"
+      <GuideStep step={14} icon={Flame} title="Track Expenses"
         description="Record all business expenses (rent, utilities, transport, etc.) in the 'Expenses' section. Categorize them for better financial overview." />
 
       <SectionTitle icon={Users}>Team Management</SectionTitle>
-      <GuideStep step={12} icon={Users} title="Add Team Members"
+      <GuideStep step={15} icon={Users} title="Add Team Members"
         description="Go to 'Team' to add workers. Set their salary, payment frequency, and track advances. You can also invite workers via invite codes so they can access the business on their own device." />
 
       <SectionTitle icon={Globe}>Discover & Contacts</SectionTitle>
-      <GuideStep step={13} icon={Globe} title="Find Other Businesses"
+      <GuideStep step={16} icon={Globe} title="Find Other Businesses"
         description="Use 'Discover' to find other businesses on BizTrack. Add them as contacts to easily send orders or communicate." />
 
       <SectionTitle icon={Factory}>Factory Mode</SectionTitle>
-      <GuideStep step={14} icon={Factory} title="Manufacturing Features"
+      <GuideStep step={17} icon={Factory} title="Manufacturing Features"
         description="Factory mode adds Input Stock (raw materials), Product Stock (finished goods), and Production tracking. Record production batches, track material usage, and manage waste." />
 
       <SectionTitle icon={Home}>FlexRent (Property)</SectionTitle>
-      <GuideStep step={15} icon={Home} title="Property Management"
+      <GuideStep step={18} icon={Home} title="Property Management"
         description="FlexRent lets you list properties for rent (rooms, houses, event spaces). Manage bookings, check-ins/check-outs, and communicate with renters directly in the app." />
 
       <SectionTitle icon={Bell}>Pro Tips</SectionTitle>
-      <ul className="space-y-2 text-xs text-muted-foreground">
+      <ul className="space-y-2 text-xs text-muted-foreground pb-4">
         <li className="flex items-start gap-2"><span className="text-primary font-bold">💡</span> Use the barcode scanner for faster stock lookups and sales.</li>
         <li className="flex items-start gap-2"><span className="text-primary font-bold">💡</span> Check the Dashboard daily for overdue debts and stock alerts.</li>
         <li className="flex items-start gap-2"><span className="text-primary font-bold">💡</span> Set a settings password to protect sensitive business data.</li>
         <li className="flex items-start gap-2"><span className="text-primary font-bold">💡</span> Use the Proof Video button to record evidence of deliveries or transactions.</li>
         <li className="flex items-start gap-2"><span className="text-primary font-bold">💡</span> You can manage multiple businesses from one account — switch between them using the sidebar.</li>
+        <li className="flex items-start gap-2"><span className="text-primary font-bold">💡</span> Personal users can upgrade to a business account anytime without losing data.</li>
       </ul>
     </div>
   );

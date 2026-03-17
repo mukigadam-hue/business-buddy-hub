@@ -159,6 +159,11 @@
   }
 }
 
+/* Auth page branded gradient background */
+.auth-gradient {
+  background: linear-gradient(145deg, hsl(217 72% 12%) 0%, hsl(217 72% 18%) 35%, hsl(210 60% 25%) 65%, hsl(42 80% 45%) 100%);
+}
+
 /* Hide html5-qrcode default UI elements for custom overlay */
 #barcode-reader img[alt="Info icon"],
 #barcode-reader > div:last-child {

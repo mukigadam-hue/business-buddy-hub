@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { LogIn, UserPlus, Eye, EyeOff, HelpCircle } from 'lucide-react';
 import LegalHelpModal from '@/components/LegalHelpModal';
 
 export default function AuthPage() {
@@ -54,11 +54,14 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-card">
+    <div className="min-h-screen flex items-center justify-center p-4 auth-gradient">
+      <Card className="w-full max-w-md shadow-xl border-0 bg-card/95 backdrop-blur-sm">
         <CardContent className="p-6 space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold">📦 BizTrack</h1>
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground text-3xl mb-2">
+              📦
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">BizTrack</h1>
             <p className="text-sm text-muted-foreground">
               {isSignUp ? 'Create your account' : 'Sign in to your business'}
             </p>
@@ -122,7 +125,14 @@ export default function AuthPage() {
           </div>
 
           <div className="flex justify-center pt-1">
-            <LegalHelpModal defaultTab="guide" />
+            <LegalHelpModal
+              defaultTab="guide"
+              trigger={
+                <Button variant="outline" size="sm" className="gap-2 text-xs border-primary/30 text-primary hover:bg-primary/10">
+                  <HelpCircle className="h-4 w-4" /> Help & Legal
+                </Button>
+              }
+            />
           </div>
         </CardContent>
       </Card>

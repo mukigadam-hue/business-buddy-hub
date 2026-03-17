@@ -190,14 +190,14 @@ export default function LegalHelpModal({ trigger, defaultTab = 'guide' }: LegalH
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0">
-        <DialogHeader className="p-4 pb-0">
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-4 pb-0 shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" /> Help & Legal
           </DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue={defaultTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-4 grid grid-cols-2">
+        <Tabs defaultValue={defaultTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <TabsList className="mx-4 grid grid-cols-2 shrink-0">
             <TabsTrigger value="guide" className="gap-1.5 text-xs">
               <BookOpen className="h-3.5 w-3.5" /> Usage Guide
             </TabsTrigger>
@@ -205,14 +205,14 @@ export default function LegalHelpModal({ trigger, defaultTab = 'guide' }: LegalH
               <Shield className="h-3.5 w-3.5" /> Terms & Conditions
             </TabsTrigger>
           </TabsList>
-          <ScrollArea className="flex-1 px-4 pb-4">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
             <TabsContent value="guide" className="mt-3">
               <UsageGuideContent />
             </TabsContent>
             <TabsContent value="terms" className="mt-3">
               <TermsContent />
             </TabsContent>
-          </ScrollArea>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>

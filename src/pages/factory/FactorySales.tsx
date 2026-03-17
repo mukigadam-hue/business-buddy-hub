@@ -69,8 +69,9 @@ export default function FactorySales() {
       stock_item_id: product.id, item_name: product.name, category: product.category,
       quality: product.quality, quantity: q, price_type: priceType,
       unit_price: price, subtotal: q * price,
+      serial_numbers: serialInput.trim() || undefined,
     }]);
-    setSelectedProduct(''); setQty('1');
+    setSelectedProduct(''); setQty('1'); setSerialInput('');
   }
 
   function addServiceItem() {

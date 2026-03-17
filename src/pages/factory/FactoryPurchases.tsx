@@ -24,6 +24,7 @@ export default function FactoryPurchases() {
   const [items, setItems] = useState<{
     item_name: string; category: string; unit_type: string;
     quantity: number; unit_price: number;
+    serial_numbers?: string;
   }[]>([]);
   const [supplier, setSupplier] = useState('');
   const [recordedBy, setRecordedBy] = useState('');

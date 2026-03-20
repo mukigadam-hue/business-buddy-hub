@@ -1181,18 +1181,21 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          is_premium: boolean
         }
         Insert: {
           created_at?: string
           email?: string
           full_name?: string
           id: string
+          is_premium?: boolean
         }
         Update: {
           created_at?: string
           email?: string
           full_name?: string
           id?: string
+          is_premium?: boolean
         }
         Relationships: []
       }
@@ -2146,6 +2149,24 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       video_requests: {
         Row: {
           business_id: string
@@ -2198,6 +2219,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_profiles: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_premium: boolean
+        }[]
+      }
+      admin_set_premium: {
+        Args: { _is_premium: boolean; _user_id: string }
+        Returns: undefined
+      }
       check_booking_conflict: {
         Args: {
           _asset_id: string
@@ -2244,6 +2279,13 @@ export type Database = {
       get_user_role_in_business: {
         Args: { _business_id: string; _user_id: string }
         Returns: string
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       is_business_member: {
         Args: { _business_id: string; _user_id: string }
@@ -2338,6 +2380,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       business_role: "owner" | "admin" | "worker"
     }
     CompositeTypes: {
@@ -2466,6 +2509,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       business_role: ["owner", "admin", "worker"],
     },
   },

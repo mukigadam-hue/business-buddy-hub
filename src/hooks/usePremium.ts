@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useBusiness } from '@/context/BusinessContext';
+import { useAuth } from '@/context/AuthContext';
 
 export interface PremiumLimits {
   isPremium: boolean;
   loading: boolean;
-  /** Business / Factory limits */
-  maxWorkers: number;       // 3 for free, Infinity for premium
-  maxContacts: number;      // 15 for free, Infinity for premium
+  maxWorkers: number;
+  maxContacts: number;
   canUploadItemPhotos: boolean;
   canShareReceipts: boolean;
   canDownloadReceipts: boolean;
@@ -15,10 +14,9 @@ export interface PremiumLimits {
   canUseScanner: boolean;
   canScreenshot: boolean;
   showAds: boolean;
-  /** Property / FlexRent limits */
-  maxAssets: number;          // 3 for free, Infinity for premium
-  maxPropertyWorkers: number; // 1 for free, Infinity for premium
-  maxRenters: number;         // 15 for free, Infinity for premium
+  maxAssets: number;
+  maxPropertyWorkers: number;
+  maxRenters: number;
   canUploadAssetPhotos: boolean;
 }
 
@@ -59,28 +57,32 @@ const PREMIUM_LIMITS: PremiumLimits = {
 };
 
 export function usePremium(): PremiumLimits {
-  // Premium enforcement is disabled for now — all users get full access.
-  // The subscription table still exists in the database for future use.
-  // To re-enable, restore the original logic that checks is_premium RPC.
-  //
-  // FREE PLAN LIMITS (per business/factory/property):
-  //   Business & Factory:
-  //     - maxWorkers: 3 team members
-  //     - maxContacts: 15 contacts
-  //     - canUploadItemPhotos: false (except business logo)
-  //     - canDownloadReceipts / canPrintReceipts: false
-  //     - canUseScanner / canScreenshot: false
-  //     - showAds: true
-  //   Property / FlexRent:
-  //     - maxAssets: 3 assets
-  //     - maxPropertyWorkers: 1 staff member in Team
-  //     - maxRenters: 15 tenants/renters
-  //     - canUploadAssetPhotos: false (except business logo)
-  //     - canDownloadReceipts / canPrintReceipts: false
-  //     - showAds: true
-  //
-  // NOTE: Limits apply per-entity. A free user can create multiple
-  // businesses/factories/properties, each getting fresh limits.
-  // This maximises ad impressions across entities.
-  return PREMIUM_LIMITS;
+  const [isPremium, setIsPremium] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function check() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) { setLoading(false); return; }
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_premium')
+        .eq('id', user.id)
+        .single();
+
+      if (!cancelled) {
+        setIsPremium(data?.is_premium ?? false);
+        setLoading(false);
+      }
+    }
+
+    check();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) return { ...FREE_LIMITS, loading: true };
+  return isPremium ? PREMIUM_LIMITS : FREE_LIMITS;
 }

@@ -57,13 +57,13 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 auth-gradient overflow-y-auto">
+    <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 overflow-y-auto" style={{ background: 'linear-gradient(145deg, hsl(217 72% 12%) 0%, hsl(217 72% 18%) 35%, hsl(210 60% 25%) 65%, hsl(42 80% 45%) 100%)' }}>
       {/* Hero Section */}
       <div className="w-full max-w-md sm:max-w-xl text-center pt-8 sm:pt-14 pb-6 sm:pb-10 px-2">
-        <h1 className="text-3xl sm:text-5xl font-extrabold text-primary-foreground drop-shadow-lg leading-tight mb-3 sm:mb-5">
+        <h1 className="text-3xl sm:text-5xl font-extrabold drop-shadow-lg leading-tight mb-3 sm:mb-5" style={{ color: 'hsl(210, 40%, 98%)' }}>
           Grow Your Business with BizTrack
         </h1>
-        <p className="text-base sm:text-lg text-primary-foreground/85 leading-relaxed max-w-md mx-auto font-medium">
+        <p className="text-base sm:text-lg leading-relaxed max-w-md mx-auto font-medium" style={{ color: 'hsla(210, 40%, 98%, 0.85)' }}>
           The all-in-one dashboard to track sales, manage expenses, and stay organized.
         </p>
       </div>

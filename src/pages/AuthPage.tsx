@@ -137,11 +137,14 @@ export default function AuthPage() {
             </button>
           </div>
 
-          <div className="flex justify-center pt-1">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center space-y-2">
+            <p className="text-xs font-medium text-foreground leading-relaxed">
+              ✨ Before you leave or continue, tap <strong>Help & Legal</strong> below to discover everything this app can do for your business!
+            </p>
             <LegalHelpModal
               defaultTab="guide"
               trigger={
-                <Button variant="outline" size="sm" className="gap-2 text-xs border-primary/30 text-primary hover:bg-primary/10">
+                <Button variant="default" size="sm" className="gap-2 text-xs animate-pulse">
                   <HelpCircle className="h-4 w-4" /> Help & Legal
                 </Button>
               }

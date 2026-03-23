@@ -320,8 +320,16 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user) {
-      setBusinesses([]);
-      setMemberships([]);
+      // Only clear cache if actually signed out (no stored session)
+      // Don't clear on transient auth loading
+      const hasSession = localStorage.getItem('sb-evuswzfmrfkmlcdsphgu-auth-token');
+      if (!hasSession) {
+        setBusinesses([]);
+        setMemberships([]);
+        localStorage.removeItem('biztrack_cache_businesses');
+        localStorage.removeItem('biztrack_cache_memberships');
+        localStorage.removeItem('biztrack_current_business');
+      }
       setLoading(false);
       return;
     }

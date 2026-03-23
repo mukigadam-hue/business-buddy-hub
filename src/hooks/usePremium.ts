@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 
 export interface PremiumLimits {
   isPremium: boolean;
@@ -56,7 +55,16 @@ const PREMIUM_LIMITS: PremiumLimits = {
   canUploadAssetPhotos: true,
 };
 
-export function usePremium(): PremiumLimits {
+/**
+ * Premium is determined by the BUSINESS OWNER's subscription, not the current user.
+ * - If a worker is at a premium-subscribed business, they get premium features THERE.
+ * - If that worker switches to their own non-premium business, they lose premium features.
+ * - If a premium user is working at a non-premium boss's business, no premium there.
+ * 
+ * Pass businessOwnerId to check that specific business owner's premium status.
+ * If not provided, falls back to the current user's own premium status.
+ */
+export function usePremium(businessOwnerId?: string): PremiumLimits {
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -67,10 +75,13 @@ export function usePremium(): PremiumLimits {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) { setLoading(false); return; }
 
+      // Check the business owner's premium status (or current user if no owner specified)
+      const checkId = businessOwnerId || user.id;
+
       const { data } = await supabase
         .from('profiles')
         .select('is_premium')
-        .eq('id', user.id)
+        .eq('id', checkId)
         .single();
 
       if (!cancelled) {
@@ -81,7 +92,7 @@ export function usePremium(): PremiumLimits {
 
     check();
     return () => { cancelled = true; };
-  }, []);
+  }, [businessOwnerId]);
 
   if (loading) return { ...FREE_LIMITS, loading: true };
   return isPremium ? PREMIUM_LIMITS : FREE_LIMITS;

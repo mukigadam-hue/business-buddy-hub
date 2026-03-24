@@ -120,10 +120,10 @@ export default function ProofVideoRecorder({
         ? 'video/webm'
         : 'video/mp4';
 
-    // Low bitrate for small file size and smooth recording on weak devices
+    // Ultra-low bitrate for maximum compatibility with old devices
     const recorder = new MediaRecorder(streamRef.current, {
       mimeType,
-      videoBitsPerSecond: 500_000, // 500kbps — light but clear
+      videoBitsPerSecond: 250_000, // 250kbps — very light but usable for evidence
     });
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);

@@ -270,7 +270,7 @@ export default function StockPage() {
                       </Button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full">{editItem ? 'Update Item' : 'Add Item'}</Button>
+                  <Button type="submit" className="w-full" disabled={submitLocked}>{submitLocked ? 'Saving...' : (editItem ? 'Update Item' : 'Add Item')}</Button>
                 </form>
               </DialogContent>
             </Dialog>

@@ -45,6 +45,7 @@ export default function PurchasesPage() {
   const [editPaymentPurchase, setEditPaymentPurchase] = useState<typeof purchases[0] | null>(null);
   const [editAmountPaid, setEditAmountPaid] = useState('');
 
+  const { locked: submitLocked, withLock } = useSubmitLock();
   const [scannerOpen, setScannerOpen] = useState(false);
   const activeStock = stock.filter(s => !s.deleted_at);
   const suggestions = activeStock.map(s => s.name);

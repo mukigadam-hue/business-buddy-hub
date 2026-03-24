@@ -17,6 +17,7 @@ import AdSpace from '@/components/AdSpace';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { useSubmitLock } from '@/hooks/useSubmitLock';
 
 export default function SalesPage() {
   const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment, userRole } = useBusiness();
@@ -58,6 +59,7 @@ export default function SalesPage() {
   const [selectedPartStock, setSelectedPartStock] = useState('');
   const [partQty, setPartQty] = useState('1');
 
+  const { locked: submitLocked, withLock } = useSubmitLock();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [partScannerOpen, setPartScannerOpen] = useState(false);
   const activeStock = stock.filter(s => !s.deleted_at);
@@ -500,8 +502,8 @@ export default function SalesPage() {
               {!buyerName.trim() || !sellerName.trim() ? (
                 <p className="text-xs text-destructive text-center">⚠️ Buyer name and Seller name are required before saving.</p>
               ) : null}
-              <Button onClick={handleSave} className="w-full" disabled={!canSave}>
-                <ShoppingCart className="h-4 w-4 mr-2" />Record Sale — {fmt(grandTotal)}
+              <Button onClick={() => withLock(handleSave)} className="w-full" disabled={!canSave || submitLocked}>
+                <ShoppingCart className="h-4 w-4 mr-2" />{submitLocked ? 'Saving...' : `Record Sale — ${fmt(grandTotal)}`}
               </Button>
             </>
           )}

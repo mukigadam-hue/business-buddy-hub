@@ -16,6 +16,7 @@ import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { useSubmitLock } from '@/hooks/useSubmitLock';
 
 const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
 
@@ -44,6 +45,7 @@ export default function PurchasesPage() {
   const [editPaymentPurchase, setEditPaymentPurchase] = useState<typeof purchases[0] | null>(null);
   const [editAmountPaid, setEditAmountPaid] = useState('');
 
+  const { locked: submitLocked, withLock } = useSubmitLock();
   const [scannerOpen, setScannerOpen] = useState(false);
   const activeStock = stock.filter(s => !s.deleted_at);
   const suggestions = activeStock.map(s => s.name);
@@ -272,8 +274,8 @@ export default function PurchasesPage() {
                   </div>
                 )}
               </div>
-              <Button onClick={handleSave} className="w-full">
-                <Package className="h-4 w-4 mr-2" />Record Purchase — {fmt(grandTotal)}
+              <Button onClick={() => withLock(handleSave)} className="w-full" disabled={submitLocked}>
+                <Package className="h-4 w-4 mr-2" />{submitLocked ? 'Saving...' : `Record Purchase — ${fmt(grandTotal)}`}
               </Button>
             </>
           )}

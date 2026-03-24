@@ -493,6 +493,17 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
           setStock(prev => prev.filter(s => s.id !== (payload.old as any).id));
         }
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'businesses', filter: `id=eq.${currentBusinessId}` }, (payload) => {
+        if (payload.new) {
+          setBusinesses(prev => prev.map(b => b.id === currentBusinessId ? { ...b, ...payload.new } as Business : b));
+          // Sync currency across devices
+          const newCurrency = (payload.new as any).currency_symbol;
+          if (newCurrency) {
+            localStorage.setItem('biztrack_currency_symbol', newCurrency);
+            window.dispatchEvent(new CustomEvent('biztrack_currency_changed', { detail: newCurrency }));
+          }
+        }
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('sales', reloadSales))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('purchases', reloadPurchases))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('orders', reloadOrders))
@@ -587,6 +598,17 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at' | 'deleted_by' | 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => {
     if (!currentBusinessId) return;
+
+    // Offline: optimistic insert + queue
+    if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const optimistic = { ...item, id: tempId, business_id: currentBusinessId, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deleted_at: null, deleted_by: '', pieces_per_carton: item.pieces_per_carton || 0, cartons_per_box: item.cartons_per_box || 0, boxes_per_container: item.boxes_per_container || 0 } as StockItem;
+      setStock(prev => [...prev, optimistic].sort((a, b) => a.name.localeCompare(b.name)));
+      enqueueOfflineOperation({ table: 'stock_items', type: 'insert', data: { ...item, business_id: currentBusinessId } });
+      toast.success('Item saved offline — will sync when online');
+      return;
+    }
+
     const { data, error } = await supabase.from('stock_items').insert({ ...item, business_id: currentBusinessId } as any).select().single();
     if (error) { toast.error(error.message); return; }
     // Optimistic insert

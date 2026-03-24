@@ -16,10 +16,12 @@ import type { Sale } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { useSubmitLock } from '@/hooks/useSubmitLock';
 
 export default function FactorySales() {
   const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment } = useBusiness();
   const { fmt } = useCurrency();
+  const { locked: submitLocked, withLock } = useSubmitLock();
 
   const activeProducts = stock.filter(s => !s.deleted_at);
 
@@ -296,8 +298,8 @@ export default function FactorySales() {
                   </div>
                 )}
               </div>
-              <Button onClick={handleSave} className="w-full" disabled={!canSave}>
-                <TrendingUp className="h-4 w-4 mr-2" />Complete Sale — {fmt(grandTotal)}
+              <Button onClick={() => withLock(handleSave)} className="w-full" disabled={!canSave || submitLocked}>
+                <TrendingUp className="h-4 w-4 mr-2" />{submitLocked ? 'Saving...' : `Complete Sale — ${fmt(grandTotal)}`}
               </Button>
             </>
           )}

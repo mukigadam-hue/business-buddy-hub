@@ -533,6 +533,7 @@ export type Database = {
           contact: string
           country_code: string
           created_at: string
+          currency_symbol: string
           email: string
           id: string
           is_discoverable: boolean
@@ -550,6 +551,7 @@ export type Database = {
           contact?: string
           country_code?: string
           created_at?: string
+          currency_symbol?: string
           email?: string
           id?: string
           is_discoverable?: boolean
@@ -567,6 +569,7 @@ export type Database = {
           contact?: string
           country_code?: string
           created_at?: string
+          currency_symbol?: string
           email?: string
           id?: string
           is_discoverable?: boolean

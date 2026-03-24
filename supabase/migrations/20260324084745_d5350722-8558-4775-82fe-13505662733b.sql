@@ -1,0 +1,1 @@
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS currency_symbol text NOT NULL DEFAULT 'KSh';

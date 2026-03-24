@@ -51,15 +51,15 @@ export default function ProofVideoRecorder({
     stopStream();
     setError(null);
     try {
-      // Use low resolution for old/weak phones
+      // Ultra-low resolution for old/weak phones — prioritize stability over quality
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment',
-          width: { ideal: 640, max: 640 },
-          height: { ideal: 480, max: 480 },
-          frameRate: { ideal: 15, max: 20 },
+          width: { ideal: 320, max: 480 },
+          height: { ideal: 240, max: 360 },
+          frameRate: { ideal: 12, max: 15 },
         },
-        audio: { echoCancellation: true, noiseSuppression: true },
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 22050 },
       });
       streamRef.current = stream;
 
@@ -120,10 +120,10 @@ export default function ProofVideoRecorder({
         ? 'video/webm'
         : 'video/mp4';
 
-    // Low bitrate for small file size and smooth recording on weak devices
+    // Ultra-low bitrate for maximum compatibility with old devices
     const recorder = new MediaRecorder(streamRef.current, {
       mimeType,
-      videoBitsPerSecond: 500_000, // 500kbps — light but clear
+      videoBitsPerSecond: 250_000, // 250kbps — very light but usable for evidence
     });
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);

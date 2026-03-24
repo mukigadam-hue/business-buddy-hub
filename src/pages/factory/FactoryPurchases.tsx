@@ -14,12 +14,14 @@ import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { useSubmitLock } from '@/hooks/useSubmitLock';
 const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
 
 export default function FactoryPurchases() {
   const { rawMaterials, addRawMaterial, updateRawMaterial, refreshFactory } = useFactory();
   const { purchases, addPurchase, stock } = useBusiness();
   const { fmt } = useCurrency();
+  const { locked: submitLocked, withLock } = useSubmitLock();
 
   const [items, setItems] = useState<{
     item_name: string; category: string; unit_type: string;
@@ -178,8 +180,8 @@ export default function FactoryPurchases() {
                   </TableBody>
                 </Table>
               </div>
-              <Button onClick={handleSave} className="w-full">
-                <ShoppingCart className="h-4 w-4 mr-2" />Record Purchase — {fmt(grandTotal)}
+              <Button onClick={() => withLock(handleSave)} className="w-full" disabled={submitLocked}>
+                <ShoppingCart className="h-4 w-4 mr-2" />{submitLocked ? 'Saving...' : `Record Purchase — ${fmt(grandTotal)}`}
               </Button>
             </>
           )}

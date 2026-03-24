@@ -17,6 +17,7 @@ import AdSpace from '@/components/AdSpace';
 import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase } from '@/lib/utils';
+import { useSubmitLock } from '@/hooks/useSubmitLock';
 
 const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
 
@@ -92,6 +93,7 @@ export default function StockPage() {
   const [viewGalleryItem, setViewGalleryItem] = useState<StockItem | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const { locked: submitLocked, withLock } = useSubmitLock();
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 
   useEffect(() => {
@@ -210,7 +212,7 @@ export default function StockPage() {
                 <DialogHeader>
                   <DialogTitle>{editItem ? 'Edit Item' : 'Add New Item'}</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-3">
+                <form onSubmit={(e) => { e.preventDefault(); withLock(() => handleSubmit(e)); }} className="space-y-3">
                   <div>
                     <Label>Item Name</Label>
                     <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => setForm(f => ({ ...f, name: toSentenceCase(f.name) }))} required />
@@ -268,7 +270,7 @@ export default function StockPage() {
                       </Button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full">{editItem ? 'Update Item' : 'Add Item'}</Button>
+                  <Button type="submit" className="w-full" disabled={submitLocked}>{submitLocked ? 'Saving...' : (editItem ? 'Update Item' : 'Add Item')}</Button>
                 </form>
               </DialogContent>
             </Dialog>

@@ -408,9 +408,13 @@ export default function SettingsPage() {
     toast.success('Settings password updated!');
   }
 
-  function handleSaveCurrency() {
+  async function handleSaveCurrency() {
     const sym = currencyInput.trim() || 'KSh';
     setCurrency(sym);
+    // Also save to business for cross-device sync
+    if (currentBusiness) {
+      await updateBusiness({ currency_symbol: sym } as any);
+    }
     toast.success(`Currency set to: ${sym}`);
   }
 

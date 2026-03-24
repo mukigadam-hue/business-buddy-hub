@@ -24,6 +24,7 @@ import { calculateMobileMoneyCharge } from '@/lib/mobileMoneyCharges';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { useSubmitLock } from '@/hooks/useSubmitLock';
 
 export default function OrdersPage() {
   const { stock, orders, addOrder, updateOrder, completeOrderToSale, saveReceipt, currentBusiness, addStockItem, addExpense, refreshData, notifications, userRole } = useBusiness();
@@ -32,6 +33,7 @@ export default function OrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState('live_orders');
   const isAdmin = userRole === 'owner' || userRole === 'admin';
+  const { locked: submitLocked, withLock } = useSubmitLock();
   const userFullName = user?.user_metadata?.full_name || '';
   const roleLabel = userRole === 'owner' ? 'Owner' : userRole === 'admin' ? 'Admin' : 'Worker';
   const highlightNotificationId = searchParams.get('highlight_notification');
@@ -1491,9 +1493,13 @@ export default function OrdersPage() {
                     </TableBody>
                   </Table>
                 </div>
-                <Button onClick={() => handleCreateOrder(orderMode)} className="w-full">
-                  {orderMode === 'my_order' && <><FileText className="h-4 w-4 mr-2" />Save Order — {fmt(grandTotal)}</>}
-                  {orderMode === 'request' && <><Send className="h-4 w-4 mr-2" />Send to Supplier ({items.length} items)</>}
+                <Button onClick={() => withLock(() => handleCreateOrder(orderMode))} className="w-full" disabled={submitLocked}>
+                  {submitLocked ? 'Saving...' : (
+                    <>
+                      {orderMode === 'my_order' && <><FileText className="h-4 w-4 mr-2" />Save Order — {fmt(grandTotal)}</>}
+                      {orderMode === 'request' && <><Send className="h-4 w-4 mr-2" />Send to Supplier ({items.length} items)</>}
+                    </>
+                  )}
                 </Button>
               </>
             )}

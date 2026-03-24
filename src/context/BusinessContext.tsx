@@ -493,6 +493,11 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
           setStock(prev => prev.filter(s => s.id !== (payload.old as any).id));
         }
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'businesses', filter: `id=eq.${currentBusinessId}` }, (payload) => {
+        if (payload.new) {
+          setBusinesses(prev => prev.map(b => b.id === currentBusinessId ? { ...b, ...payload.new } as Business : b));
+        }
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('sales', reloadSales))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('purchases', reloadPurchases))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('orders', reloadOrders))

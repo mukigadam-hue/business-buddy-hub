@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Video, Square, X, Loader2 } from 'lucide-react';
+import { Video, Square, X, Loader2, Flashlight, FlashlightOff } from 'lucide-react';
 
 interface ProofVideoRecorderProps {
   open: boolean;
@@ -27,11 +27,13 @@ export default function ProofVideoRecorder({
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
 
   const stopStream = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
+      try { mediaRecorderRef.current.stop(); } catch {}
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
@@ -41,17 +43,37 @@ export default function ProofVideoRecorder({
     setReady(false);
     setRecording(false);
     setElapsed(0);
+    setTorchOn(false);
+    setTorchSupported(false);
   }, []);
 
   const startCamera = useCallback(async () => {
     stopStream();
     setError(null);
     try {
+      // Use low resolution for old/weak phones
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: true,
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 640, max: 640 },
+          height: { ideal: 480, max: 480 },
+          frameRate: { ideal: 15, max: 20 },
+        },
+        audio: { echoCancellation: true, noiseSuppression: true },
       });
       streamRef.current = stream;
+
+      // Check torch support
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        try {
+          const caps = videoTrack.getCapabilities?.();
+          if (caps && 'torch' in caps) {
+            setTorchSupported(true);
+          }
+        } catch {}
+      }
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => setReady(true);
@@ -61,16 +83,26 @@ export default function ProofVideoRecorder({
     }
   }, [stopStream]);
 
+  const toggleTorch = useCallback(async () => {
+    if (!streamRef.current) return;
+    const videoTrack = streamRef.current.getVideoTracks()[0];
+    if (!videoTrack) return;
+    try {
+      const newState = !torchOn;
+      await videoTrack.applyConstraints({ advanced: [{ torch: newState } as any] });
+      setTorchOn(newState);
+    } catch {}
+  }, [torchOn]);
+
   useEffect(() => {
     if (open) {
-      const t = setTimeout(() => startCamera(), 200);
+      const t = setTimeout(() => startCamera(), 150);
       return () => { clearTimeout(t); stopStream(); };
     } else {
       stopStream();
     }
   }, [open]);
 
-  // Auto-stop at max duration
   useEffect(() => {
     if (elapsed >= maxDurationSec && recording) {
       handleStop();
@@ -81,20 +113,25 @@ export default function ProofVideoRecorder({
     if (!streamRef.current) return;
     chunksRef.current = [];
 
-    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
-      ? 'video/webm;codecs=vp9,opus'
+    // Pick a lightweight codec that old devices support
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+      ? 'video/webm;codecs=vp8,opus'
       : MediaRecorder.isTypeSupported('video/webm')
         ? 'video/webm'
         : 'video/mp4';
 
-    const recorder = new MediaRecorder(streamRef.current, { mimeType });
+    // Low bitrate for small file size and smooth recording on weak devices
+    const recorder = new MediaRecorder(streamRef.current, {
+      mimeType,
+      videoBitsPerSecond: 500_000, // 500kbps — light but clear
+    });
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
     recorder.onstop = () => {
       saveToDevice();
     };
-    recorder.start(1000); // collect data every second
+    recorder.start(2000); // collect every 2s to reduce overhead
     mediaRecorderRef.current = recorder;
     setRecording(true);
     setElapsed(0);
@@ -107,7 +144,7 @@ export default function ProofVideoRecorder({
   function handleStop() {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
+      try { mediaRecorderRef.current.stop(); } catch {}
     }
     setRecording(false);
   }
@@ -149,27 +186,29 @@ export default function ProofVideoRecorder({
         <DialogHeader className="p-3 pb-0">
           <DialogTitle className="flex items-center gap-2 text-sm">
             <Video className="h-4 w-4 text-destructive" />
-            📹 Proof Video Recording
+            📹 Proof Video
           </DialogTitle>
         </DialogHeader>
         <div className="px-3 pb-3">
           {requestMessage && (
             <div className="bg-warning/10 border border-warning/30 rounded-lg p-2 mb-2">
-              <p className="text-xs text-warning font-medium">📋 Request: {requestMessage}</p>
+              <p className="text-xs text-warning font-medium">📋 {requestMessage}</p>
             </div>
           )}
 
-          <div className="relative w-full rounded-lg overflow-hidden bg-black min-h-[200px] flex items-center justify-center">
+          <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ minHeight: 180, maxHeight: 260 }}>
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
               className="w-full h-auto rounded-lg"
-              style={{ display: ready ? 'block' : 'none' }}
+              style={{ display: ready ? 'block' : 'none', maxHeight: 260, objectFit: 'cover' }}
             />
             {!ready && !error && (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
             )}
             {error && (
               <p className="text-sm text-destructive p-4 text-center">{error}</p>
@@ -180,13 +219,24 @@ export default function ProofVideoRecorder({
                 REC {formatTime(elapsed)}
               </div>
             )}
+            {/* Torch toggle */}
+            {torchSupported && ready && (
+              <button
+                type="button"
+                onClick={toggleTorch}
+                className="absolute top-2 left-2 bg-black/50 text-white rounded-full p-1.5"
+                aria-label={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+              >
+                {torchOn ? <FlashlightOff className="h-4 w-4" /> : <Flashlight className="h-4 w-4" />}
+              </button>
+            )}
           </div>
 
           {recording && (
             <div className="mt-2">
-              <Progress value={progress} className="h-2" />
+              <Progress value={progress} className="h-1.5" />
               <p className="text-[10px] text-muted-foreground text-center mt-1">
-                {formatTime(elapsed)} / {formatTime(maxDurationSec)} — Video saves directly to your device
+                {formatTime(elapsed)} / {formatTime(maxDurationSec)}
               </p>
             </div>
           )}
@@ -194,17 +244,17 @@ export default function ProofVideoRecorder({
           <div className="flex gap-2 mt-2">
             {!recording ? (
               <Button size="sm" className="flex-1 bg-destructive hover:bg-destructive/90" onClick={handleStartRecording} disabled={!ready}>
-                <Video className="h-3.5 w-3.5 mr-1" /> Start Recording
+                <Video className="h-3.5 w-3.5 mr-1" /> Record
               </Button>
             ) : (
               <Button size="sm" variant="outline" className="flex-1 border-destructive text-destructive" onClick={handleStop}>
                 <Square className="h-3.5 w-3.5 mr-1" /> Stop & Save
               </Button>
             )}
+            <Button variant="outline" size="sm" onClick={handleCancel}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
           </div>
-          <Button variant="outline" size="sm" className="w-full mt-2" onClick={handleCancel}>
-            <X className="h-3.5 w-3.5 mr-1" /> Cancel
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

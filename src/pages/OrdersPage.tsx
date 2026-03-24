@@ -33,6 +33,7 @@ export default function OrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState('live_orders');
   const isAdmin = userRole === 'owner' || userRole === 'admin';
+  const { locked: submitLocked, withLock } = useSubmitLock();
   const userFullName = user?.user_metadata?.full_name || '';
   const roleLabel = userRole === 'owner' ? 'Owner' : userRole === 'admin' ? 'Admin' : 'Worker';
   const highlightNotificationId = searchParams.get('highlight_notification');

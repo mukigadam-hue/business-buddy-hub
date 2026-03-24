@@ -17,6 +17,7 @@ import AdSpace from '@/components/AdSpace';
 import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 
 import { toSentenceCase } from '@/lib/utils';
+import { useSubmitLock } from '@/hooks/useSubmitLock';
 
 const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
 

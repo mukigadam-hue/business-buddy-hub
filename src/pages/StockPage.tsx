@@ -212,7 +212,7 @@ export default function StockPage() {
                 <DialogHeader>
                   <DialogTitle>{editItem ? 'Edit Item' : 'Add New Item'}</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-3">
+                <form onSubmit={(e) => { e.preventDefault(); withLock(() => handleSubmit(e)); }} className="space-y-3">
                   <div>
                     <Label>Item Name</Label>
                     <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => setForm(f => ({ ...f, name: toSentenceCase(f.name) }))} required />

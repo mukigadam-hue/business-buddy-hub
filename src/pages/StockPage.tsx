@@ -93,6 +93,7 @@ export default function StockPage() {
   const [viewGalleryItem, setViewGalleryItem] = useState<StockItem | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const { locked: submitLocked, withLock } = useSubmitLock();
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 
   useEffect(() => {

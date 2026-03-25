@@ -206,9 +206,9 @@ export default function BarcodeScanHandler({
 
           {/* Auto-naming hint */}
           {autoHint && (
-            <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm">
-              <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
-              <span className="text-amber-700 dark:text-amber-300">{autoHint}</span>
+            <div className="flex items-center gap-2 p-2 bg-warning/10 border border-warning/30 rounded-lg text-sm">
+              <Lightbulb className="h-4 w-4 text-warning shrink-0" />
+              <span className="text-warning-foreground">{autoHint}</span>
             </div>
           )}
 

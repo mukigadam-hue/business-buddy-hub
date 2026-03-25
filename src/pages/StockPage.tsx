@@ -272,6 +272,15 @@ export default function StockPage() {
                     <div><Label>Min Stock Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
                   </div>
                   <div>
+                    <Label>Tax Rate (%)</Label>
+                    <Input type="number" min="0" step="0.1" value={form.tax_rate} onChange={e => setForm(f => ({ ...f, tax_rate: e.target.value }))} placeholder="0" />
+                    {parseFloat(form.tax_rate) > 0 && parseFloat(form.retail_price) > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Price incl. tax: <strong>{fmt((parseFloat(form.retail_price) || 0) * (1 + (parseFloat(form.tax_rate) || 0) / 100))}</strong>
+                      </p>
+                    )}
+                  </div>
+                  <div>
                     <Label>Barcode (Optional)</Label>
                     <div className="flex gap-1.5">
                       <Input className="flex-1" value={form.barcode} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Scan or type barcode..." />

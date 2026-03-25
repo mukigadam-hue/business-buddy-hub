@@ -132,9 +132,9 @@ export default function BarcodeScanHandler({
       image_url_3: '',
     };
 
-    const created = await addStockItem(itemData as any);
+    await addStockItem(itemData as any);
     toast.success(`${itemData.name} added to inventory!`);
-    onNewItemCreated?.(created || (itemData as any));
+    onNewItemCreated?.(itemData as any);
     resetAll();
   }
 

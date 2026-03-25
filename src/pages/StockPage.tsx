@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Search, Pencil, Trash2, RotateCcw, AlertTriangle, Image, X, ScanLine, ArrowUp } from 'lucide-react';
-import BarcodeScanner from '@/components/BarcodeScanner';
+import BarcodeScanHandler from '@/components/BarcodeScanHandler';
 import type { StockItem } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagingInfo';
@@ -110,6 +110,7 @@ export default function StockPage() {
   const [form, setForm] = useState({
     name: '', category: '', quality: '', unit_type: 'Pieces', barcode: '',
     buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5',
+    tax_rate: '0',
     pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0',
   });
 
@@ -129,7 +130,7 @@ export default function StockPage() {
   const existingCategories = [...new Set(stock.map(s => s.category).filter(Boolean))];
 
   function resetForm() {
-    setForm({ name: '', category: '', quality: '', unit_type: 'Pieces', barcode: '', buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
+    setForm({ name: '', category: '', quality: '', unit_type: 'Pieces', barcode: '', buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5', tax_rate: '0', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
     setEditItem(null);
   }
 
@@ -146,6 +147,7 @@ export default function StockPage() {
       retail_price: parseFloat(form.retail_price) || 0,
       quantity: parseInt(form.quantity) || 0,
       min_stock_level: parseInt(form.min_stock_level) || 5,
+      tax_rate: parseFloat(form.tax_rate) || 0,
       image_url_1: editItem?.image_url_1 || '',
       image_url_2: editItem?.image_url_2 || '',
       image_url_3: editItem?.image_url_3 || '',
@@ -170,6 +172,7 @@ export default function StockPage() {
       barcode: item.barcode || '',
       buying_price: String(item.buying_price), wholesale_price: String(item.wholesale_price), retail_price: String(item.retail_price),
       quantity: String(item.quantity), min_stock_level: String(item.min_stock_level),
+      tax_rate: String((item as any).tax_rate || 0),
       pieces_per_carton: String((item as any).pieces_per_carton || 0),
       cartons_per_box: String((item as any).cartons_per_box || 0),
       boxes_per_container: String((item as any).boxes_per_container || 0),
@@ -184,19 +187,26 @@ export default function StockPage() {
     await deleteStockItem(id, deletedByName);
   }
 
-  function handleBarcodeScan(code: string) {
-    const match = stock.find(s => s.barcode && s.barcode === code && !s.deleted_at);
-    if (match) {
-      openEdit(match);
-      toast.success(`Found: ${match.name}`);
-    } else {
-      toast.error(`No stock item found for barcode: ${code}`);
-    }
+  function handleScanExistingItem(item: StockItem, quantity: number) {
+    openEdit(item);
+    setForm(f => ({ ...f, quantity: String(Number(f.quantity) + quantity) }));
+    toast.success(`${item.name} loaded — update quantity`);
+  }
+
+  function handleScanNewItem() {
+    // Item was already created by BarcodeScanHandler, just reload
+    toast.success('New item added to stock!');
   }
 
   return (
     <div className="space-y-4">
-      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
+      <BarcodeScanHandler
+        scannerOpen={scannerOpen}
+        onScannerOpenChange={setScannerOpen}
+        mode="stock"
+        onExistingItemFound={handleScanExistingItem}
+        onNewItemCreated={handleScanNewItem}
+      />
       <div className="sticky top-0 space-y-1.5 pb-2 bg-background z-20 -mx-3 px-3 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6 -mt-3 pt-2 sm:-mt-4 sm:pt-3 md:-mt-6 md:pt-4 border-b border-border/40">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-lg font-bold">My Stock</h1>
@@ -260,6 +270,15 @@ export default function StockPage() {
                       {parseInt(form.pieces_per_carton) > 0 && <p className="text-[10px] text-muted-foreground mt-0.5">Auto-calculated from bulk</p>}
                     </div>
                     <div><Label>Min Stock Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
+                  </div>
+                  <div>
+                    <Label>Tax Rate (%)</Label>
+                    <Input type="number" min="0" step="0.1" value={form.tax_rate} onChange={e => setForm(f => ({ ...f, tax_rate: e.target.value }))} placeholder="0" />
+                    {parseFloat(form.tax_rate) > 0 && parseFloat(form.retail_price) > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Price incl. tax: <strong>{fmt((parseFloat(form.retail_price) || 0) * (1 + (parseFloat(form.tax_rate) || 0) / 100))}</strong>
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Barcode (Optional)</Label>

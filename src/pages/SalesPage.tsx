@@ -251,21 +251,51 @@ export default function SalesPage() {
 
   const availablePartsStock = activeStock.filter(s => s.quantity > 0);
 
-  function handleBarcodeScan(code: string) {
-    const match = activeStock.find(s => s.barcode && s.barcode === code && s.quantity > 0);
-    if (match) { setSelectedStock(match.id); toast.success(`Found: ${match.name}`); }
-    else { toast.error(`No stock item found for barcode: ${code}`); }
+  function handleScanExistingItem(item: any, quantity: number) {
+    const unitPrice = priceType === 'wholesale' ? Number(item.wholesale_price) : Number(item.retail_price);
+    setItems(prev => [...prev, {
+      stock_item_id: item.id,
+      item_name: item.name,
+      category: item.category,
+      quality: item.quality,
+      quantity,
+      price_type: priceType,
+      unit_price: unitPrice,
+    }]);
+    toast.success(`${item.name} × ${quantity} added to sale`);
   }
-  function handlePartBarcodeScan(code: string) {
-    const match = availablePartsStock.find(s => s.barcode && s.barcode === code);
-    if (match) { setSelectedPartStock(match.id); toast.success(`Found: ${match.name}`); }
-    else { toast.error(`No stock item found for barcode: ${code}`); }
+  function handleScanNewItem() {
+    toast.success('New item created — scan again to add to sale');
+  }
+  function handlePartScanExisting(item: any, quantity: number) {
+    setServiceParts(prev => [...prev, {
+      stock_item_id: item.id,
+      item_name: item.name,
+      category: item.category,
+      quality: item.quality,
+      quantity,
+      unit_price: Number(item.retail_price),
+      subtotal: quantity * Number(item.retail_price),
+    }]);
+    toast.success(`Part: ${item.name} × ${quantity} added`);
   }
 
   return (
     <div className="space-y-6">
-      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
-      <BarcodeScanner open={partScannerOpen} onOpenChange={setPartScannerOpen} onScan={handlePartBarcodeScan} />
+      <BarcodeScanHandler
+        scannerOpen={scannerOpen}
+        onScannerOpenChange={setScannerOpen}
+        mode="sale"
+        onExistingItemFound={handleScanExistingItem}
+        onNewItemCreated={handleScanNewItem}
+      />
+      <BarcodeScanHandler
+        scannerOpen={partScannerOpen}
+        onScannerOpenChange={setPartScannerOpen}
+        mode="sale"
+        onExistingItemFound={handlePartScanExisting}
+        onNewItemCreated={handleScanNewItem}
+      />
       <h1 className="text-2xl font-bold">Sales</h1>
 
       <Card className="shadow-card">

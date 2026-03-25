@@ -141,19 +141,33 @@ export default function PurchasesPage() {
     );
   }
 
-  function handleBarcodeScan(code: string) {
-    const match = activeStock.find(s => s.barcode && s.barcode === code);
-    if (match) {
-      setForm(f => ({ ...f, name: match.name, category: match.category, quality: match.quality }));
-      toast.success(`Found: ${match.name}`);
-    } else {
-      toast.error(`No stock item found for barcode: ${code}`);
-    }
+  function handleScanExistingItem(item: any, quantity: number) {
+    setForm(f => ({
+      ...f,
+      name: item.name,
+      category: item.category,
+      quality: item.quality,
+      unit_price: String(item.buying_price || ''),
+      wholesale_price: String(item.wholesale_price || ''),
+      retail_price: String(item.retail_price || ''),
+      quantity: String(quantity),
+    }));
+    toast.success(`${item.name} loaded — adjust quantity & cost`);
+  }
+
+  function handleScanNewItem() {
+    toast.success('New item added to inventory!');
   }
 
   return (
     <div className="space-y-6">
-      <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
+      <BarcodeScanHandler
+        scannerOpen={scannerOpen}
+        onScannerOpenChange={setScannerOpen}
+        mode="purchase"
+        onExistingItemFound={handleScanExistingItem}
+        onNewItemCreated={handleScanNewItem}
+      />
       <h1 className="text-2xl font-bold">Purchases</h1>
 
       <Card className="shadow-card">

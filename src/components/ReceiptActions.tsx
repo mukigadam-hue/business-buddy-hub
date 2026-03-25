@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { Share2, Download, Image, FileText, Printer, Loader2, MessageCircle, Mail, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
@@ -29,7 +30,7 @@ interface ReceiptActionsProps {
 
 export default function ReceiptActions({ receiptRef, fileName = 'receipt', canShare = true, canDownload = true, canPrint = true }: ReceiptActionsProps) {
   const [busy, setBusy] = useState(false);
-  const [shareDialog, setShareDialog] = useState<{ blob: Blob; name: string; type: 'image' | 'pdf' } | null>(null);
+  const [shareDialog, setShareDialog] = useState<{ blob: Blob; name: string; type: 'image' | 'pdf'; url?: string } | null>(null);
 
   async function getCanvas() {
     if (!receiptRef.current) return null;
@@ -67,6 +68,17 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  async function uploadShareFile(blob: Blob, name: string) {
+    const ext = name.split('.').pop() || (blob.type === 'application/pdf' ? 'pdf' : 'png');
+    const path = `receipts/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('payment-proofs').upload(path, blob, {
+      contentType: blob.type || 'application/octet-stream',
+      upsert: false,
+    });
+    if (error) throw error;
+    return supabase.storage.from('payment-proofs').getPublicUrl(path).data.publicUrl;
   }
 
   async function tryNativeShare(blob: Blob, name: string, type: string): Promise<boolean> {
@@ -115,35 +127,44 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     }
   }
 
-  function handlePlatformShare(platform: string) {
+  async function handlePlatformShare(platform: string) {
     if (!shareDialog) return;
-    // Download the file first so user can attach it
-    downloadBlob(shareDialog.blob, shareDialog.name);
+    setBusy(true);
+    try {
+      const shareUrl = shareDialog.url || await uploadShareFile(shareDialog.blob, shareDialog.name);
+      setShareDialog(current => current ? { ...current, url: shareUrl } : current);
 
-    const message = encodeURIComponent('Here is your receipt 🧾');
-    let url = '';
+      const message = encodeURIComponent(`Here is your receipt 🧾\n${shareUrl}`);
+      const shareUrlEncoded = encodeURIComponent(shareUrl);
+      let url = '';
 
-    switch (platform) {
-      case 'whatsapp':
-        url = `https://wa.me/?text=${message}`;
-        break;
-      case 'telegram':
-        url = `https://t.me/share/url?text=${message}`;
-        break;
-      case 'email':
-        url = `mailto:?subject=${encodeURIComponent('Receipt')}&body=${message}`;
-        break;
-      case 'x':
-        url = `https://x.com/intent/tweet?text=${message}`;
-        break;
-      case 'facebook':
-        url = `https://www.facebook.com/sharer/sharer.php?quote=${message}`;
-        break;
+      switch (platform) {
+        case 'whatsapp':
+          url = `https://wa.me/?text=${message}`;
+          break;
+        case 'telegram':
+          url = `https://t.me/share/url?url=${shareUrlEncoded}&text=${encodeURIComponent('Here is your receipt 🧾')}`;
+          break;
+        case 'email':
+          url = `mailto:?subject=${encodeURIComponent('Receipt')}&body=${message}`;
+          break;
+        case 'x':
+          url = `https://x.com/intent/tweet?text=${encodeURIComponent('Here is your receipt 🧾')}&url=${shareUrlEncoded}`;
+          break;
+        case 'facebook':
+          url = `https://www.facebook.com/sharer/sharer.php?u=${shareUrlEncoded}`;
+          break;
+      }
+
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      toast.success('Receipt file link is ready and included in the share.');
+      setShareDialog(null);
+    } catch {
+      downloadBlob(shareDialog.blob, shareDialog.name);
+      toast.error('Could not create a shareable receipt link, so the file was downloaded instead.');
+    } finally {
+      setBusy(false);
     }
-
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
-    toast.success(`File downloaded! Attach it in ${platform.charAt(0).toUpperCase() + platform.slice(1)}.`);
-    setShareDialog(null);
   }
 
   async function handleSaveImage() {
@@ -281,7 +302,7 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
           <DialogHeader>
             <DialogTitle className="text-center">Share Receipt</DialogTitle>
             <DialogDescription className="text-center text-sm text-muted-foreground">
-              Choose a platform. The receipt will download first — attach it in the app.
+                Choose a platform. The exact JPG or PDF receipt file will be shared through a direct file link.
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-2 pt-2">
@@ -290,6 +311,7 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
                 key={p.id}
                 size="sm"
                 className={`gap-2 ${p.color}`}
+                  disabled={busy}
                 onClick={() => handlePlatformShare(p.id)}
               >
                 <p.icon className="h-4 w-4" />

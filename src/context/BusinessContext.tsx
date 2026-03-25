@@ -343,6 +343,26 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentBusinessId, user]);
 
+  useEffect(() => {
+    const handleOfflineSyncComplete = (event: Event) => {
+      const optimisticIds = new Set((event as CustomEvent<{ optimisticIds?: string[] }>).detail?.optimisticIds || []);
+
+      if (optimisticIds.size > 0) {
+        setStock(prev => prev.filter(item => !optimisticIds.has(item.id)));
+        setSales(prev => prev.filter(item => !optimisticIds.has(item.id)));
+        setPurchases(prev => prev.filter(item => !optimisticIds.has(item.id)));
+        setOrders(prev => prev.filter(item => !optimisticIds.has(item.id)));
+      }
+
+      if (currentBusinessId && navigator.onLine) {
+        loadBusinessData();
+      }
+    };
+
+    window.addEventListener('biztrack_offline_sync_complete', handleOfflineSyncComplete as EventListener);
+    return () => window.removeEventListener('biztrack_offline_sync_complete', handleOfflineSyncComplete as EventListener);
+  }, [currentBusinessId, user]);
+
   async function loadBusinesses() {
     if (!user) return;
     // Only show loading if no cached data
@@ -604,7 +624,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       const tempId = crypto.randomUUID();
       const optimistic = { ...item, id: tempId, business_id: currentBusinessId, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deleted_at: null, deleted_by: '', pieces_per_carton: item.pieces_per_carton || 0, cartons_per_box: item.cartons_per_box || 0, boxes_per_container: item.boxes_per_container || 0 } as StockItem;
       setStock(prev => [...prev, optimistic].sort((a, b) => a.name.localeCompare(b.name)));
-      enqueueOfflineOperation({ table: 'stock_items', type: 'insert', data: { ...item, business_id: currentBusinessId } });
+      enqueueOfflineOperation({ action: 'create_stock_item', payload: { item: { ...item, business_id: currentBusinessId } }, optimisticIds: [tempId] });
       toast.success('Item saved offline — will sync when online');
       return;
     }
@@ -683,12 +703,23 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       const saleItems = items.map(item => ({
         sale_id: tempId, stock_item_id: item.stock_item_id || null,
         item_name: item.item_name, category: item.category, quality: item.quality,
-        quantity: item.quantity, price_type: item.price_type, unit_price: item.unit_price, subtotal: item.subtotal,
+        quantity: item.quantity, price_type: item.price_type, unit_price: item.unit_price, subtotal: item.subtotal, serial_numbers: item.serial_numbers || '',
       }));
-      enqueueOfflineOperation({ table: 'sales', type: 'insert', data: salePayload });
-      // Queue items separately — they'll need the real sale_id, so we queue them together
+      enqueueOfflineOperation({ action: 'create_sale', payload: { sale: salePayload, items, businessId: currentBusinessId }, optimisticIds: [tempId] });
       const optimistic = { ...salePayload, id: tempId, created_at: new Date().toISOString(), items: saleItems as any } as Sale;
       setSales(prev => [optimistic, ...prev]);
+      setStock(prev => prev.map(stockItem => {
+        const matchedItem = items.find(item => {
+          if (item.price_type === 'service') return false;
+          if (item.stock_item_id) return item.stock_item_id === stockItem.id;
+          return stockItem.name.toLowerCase() === item.item_name.toLowerCase()
+            && (stockItem.category || '').toLowerCase() === (item.category || '').toLowerCase()
+            && (stockItem.quality || '').toLowerCase() === (item.quality || '').toLowerCase();
+        }) || items.find(item => !item.stock_item_id && stockItem.name.toLowerCase() === item.item_name.toLowerCase());
+
+        if (!matchedItem) return stockItem;
+        return { ...stockItem, quantity: Math.max(0, Number(stockItem.quantity) - Number(matchedItem.quantity)) } as StockItem;
+      }));
       toast.success('Sale saved offline — will sync when online');
       return optimistic;
     }
@@ -753,13 +784,65 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     // If offline, queue and return optimistic result
     if (!navigator.onLine) {
       const tempId = crypto.randomUUID();
+      const optimisticIds = [tempId];
       const purchaseItems = items.map(item => ({
         purchase_id: tempId, item_name: item.item_name, category: item.category,
-        quality: item.quality, quantity: item.quantity, unit_price: item.unit_price, subtotal: item.subtotal,
+        quality: item.quality, quantity: item.quantity, unit_price: item.unit_price, subtotal: item.subtotal, serial_numbers: item.serial_numbers || '',
       }));
-      enqueueOfflineOperation({ table: 'purchases', type: 'insert', data: purchasePayload });
       const optimistic = { ...purchasePayload, id: tempId, created_at: new Date().toISOString(), items: purchaseItems as any } as Purchase;
       setPurchases(prev => [optimistic, ...prev]);
+      setStock(prev => {
+        const next = [...prev];
+
+        for (const item of items) {
+          const existingIndex = next.findIndex(stockItem =>
+            stockItem.name.toLowerCase() === item.item_name.toLowerCase() &&
+            (stockItem.category || '').toLowerCase() === (item.category || '').toLowerCase() &&
+            (stockItem.quality || '').toLowerCase() === (item.quality || '').toLowerCase()
+          );
+
+          if (existingIndex >= 0) {
+            const existing = next[existingIndex];
+            next[existingIndex] = {
+              ...existing,
+              quantity: Number(existing.quantity) + Number(item.quantity),
+              buying_price: Number(item.unit_price),
+              wholesale_price: Number(item.wholesale_price ?? item.unit_price),
+              retail_price: Number(item.retail_price ?? item.unit_price),
+              updated_at: new Date().toISOString(),
+            } as StockItem;
+          } else {
+            const stockTempId = crypto.randomUUID();
+            optimisticIds.push(stockTempId);
+            next.push({
+              id: stockTempId,
+              business_id: currentBusinessId,
+              name: item.item_name,
+              category: item.category,
+              quality: item.quality,
+              buying_price: Number(item.unit_price),
+              wholesale_price: Number(item.wholesale_price ?? item.unit_price),
+              retail_price: Number(item.retail_price ?? item.unit_price),
+              quantity: Number(item.quantity),
+              min_stock_level: 5,
+              barcode: '',
+              image_url_1: '',
+              image_url_2: '',
+              image_url_3: '',
+              pieces_per_carton: 0,
+              cartons_per_box: 0,
+              boxes_per_container: 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              deleted_at: null,
+              deleted_by: '',
+            } as StockItem);
+          }
+        }
+
+        return next.sort((a, b) => a.name.localeCompare(b.name));
+      });
+      enqueueOfflineOperation({ action: 'create_purchase', payload: { purchase: purchasePayload, items, businessId: currentBusinessId }, optimisticIds });
       toast.success('Purchase saved offline — will sync when online');
       return;
     }
@@ -822,6 +905,72 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     if (!currentBusinessId) return;
     const code = generateCode();
     const sharingCode = recipientBusinessId ? 'SHR-' + Math.random().toString(36).substring(2, 10).toUpperCase() : null;
+
+    if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const optimistic = {
+        id: tempId,
+        business_id: currentBusinessId,
+        type,
+        customer_name: customerName,
+        grand_total: grandTotal,
+        status,
+        code,
+        transferred_to_sale: false,
+        sharing_code: sharingCode,
+        payment_method: 'pending',
+        proof_url: null,
+        payment_status: 'unpaid',
+        amount_paid: 0,
+        balance: grandTotal,
+        created_at: new Date().toISOString(),
+        items: items.map(item => ({
+          id: crypto.randomUUID(),
+          order_id: tempId,
+          item_name: item.item_name,
+          category: item.category,
+          quality: item.quality,
+          quantity: item.quantity,
+          price_type: item.price_type,
+          unit_price: item.unit_price,
+          subtotal: item.subtotal,
+          created_at: new Date().toISOString(),
+          serial_numbers: item.serial_numbers || '',
+        })) as any,
+      } as Order;
+
+      setOrders(prev => [optimistic, ...prev]);
+
+      if (recipientBusinessId && type === 'request') {
+        enqueueOfflineOperation({
+          action: 'send_b2b_order',
+          payload: {
+            senderBusinessId: currentBusinessId,
+            recipientBusinessId,
+            customerName: customerName || 'Walk-in',
+            items,
+            code,
+            sharingCode,
+            comment: comment || '',
+          },
+          optimisticIds: [tempId],
+        });
+        toast.success('Request saved offline — it will send when online');
+        return;
+      }
+
+      enqueueOfflineOperation({
+        action: 'create_order',
+        payload: {
+          order: { business_id: currentBusinessId, type, customer_name: customerName, grand_total: grandTotal, status, code, sharing_code: sharingCode },
+          items,
+          notification: type === 'inbox' ? { business_id: currentBusinessId, type: 'new_order', title: '📥 New Order Received', message: `Order ${code} from ${customerName} — ${items.length} item(s)` } : null,
+        },
+        optimisticIds: [tempId],
+      });
+      toast.success('Order saved offline — will sync when online');
+      return;
+    }
 
     // If sending to a recipient business, use edge function to bypass RLS
     if (recipientBusinessId && type === 'request') {

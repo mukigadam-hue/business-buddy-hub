@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/hooks/useCurrency';
+import { enqueueOfflineOperation } from '@/hooks/useOfflineQueue';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -85,15 +86,8 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
     else if (durationType === 'daily') units = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
     else units = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (86400000 * 30)));
 
-    const { data: hasConflict } = await supabase.rpc('check_booking_conflict', {
-      _asset_id: asset.id,
-      _start: start.toISOString(),
-      _end: end.toISOString(),
-    });
-    if (hasConflict) { toast.error('This asset is already booked for these dates'); setSubmitting(false); return; }
-
     const totalPrice = price * units;
-    const { error } = await supabase.from('property_bookings').insert({
+    const bookingData = {
       asset_id: asset.id,
       business_id: asset.business_id,
       renter_id: user!.id,
@@ -112,7 +106,33 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
       gender: renterGender,
       age: renterAge ? parseInt(renterAge) : null,
       expected_payment_date: end.toISOString(),
-    } as any);
+    };
+
+    if (!navigator.onLine) {
+      enqueueOfflineOperation({
+        action: 'create_property_booking',
+        payload: {
+          booking: bookingData,
+          notify: {
+            title: '📅 New Booking Request',
+            message: `${toTitleCase(renterName.trim())} wants to rent "${asset.name}" from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}. Total: ${totalPrice}. Payment: ${paymentFrequency}.`,
+          },
+        },
+      });
+      toast.success('Booking saved offline — it will send when internet returns');
+      setSubmitting(false);
+      onClose();
+      return;
+    }
+
+    const { data: hasConflict } = await supabase.rpc('check_booking_conflict', {
+      _asset_id: asset.id,
+      _start: start.toISOString(),
+      _end: end.toISOString(),
+    });
+    if (hasConflict) { toast.error('This asset is already booked for these dates'); setSubmitting(false); return; }
+
+    const { error } = await supabase.from('property_bookings').insert(bookingData as any);
     if (error) { toast.error(error.message); setSubmitting(false); return; }
 
     // Auto-save property owner as contact

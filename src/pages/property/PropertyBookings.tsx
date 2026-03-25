@@ -21,6 +21,7 @@ import Receipt from '@/components/Receipt';
 import { toast } from 'sonner';
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import AdSpace from '@/components/AdSpace';
+import { enqueueOfflineOperation } from '@/hooks/useOfflineQueue';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },
@@ -410,6 +411,23 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
       gender: renterGender, age: renterAge ? parseInt(renterAge) : null,
       expected_payment_date: end.toISOString(),
     };
+
+    if (!navigator.onLine) {
+      enqueueOfflineOperation({
+        action: 'create_property_booking',
+        payload: {
+          booking: bookingData,
+          notify: {
+            title: '📅 New Booking Request',
+            message: `${toTitleCase(renterName.trim())} wants to rent "${foundAsset.name}" from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}. Total: ${totalPrice}. Payment: ${paymentFrequency}.`,
+          },
+        },
+      });
+      toast.success('Booking saved offline — it will send when internet returns');
+      setSubmitting(false);
+      onClose();
+      return;
+    }
 
     const { error } = await supabase.from('property_bookings').insert(bookingData as any);
     if (error) { toast.error(error.message); setSubmitting(false); return; }

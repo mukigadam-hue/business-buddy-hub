@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { toTitleCase, toSentenceCase } from '@/lib/utils';
 import AdSpace, { withInlineAds } from '@/components/AdSpace';
 import { PaymentMethodsViewer } from '@/components/PaymentMethodsManager';
+import ImageLightbox from '@/components/ImageLightbox';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },
@@ -271,6 +272,8 @@ export default function PropertyBrowse() {
   const [results, setResults] = useState<SearchAsset[]>([]);
   const [loading, setLoading] = useState(false);
   const [contactAsset, setContactAsset] = useState<SearchAsset | null>(null);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxTitle, setLightboxTitle] = useState('');
 
   // Booking dialog state
   const [bookingAsset, setBookingAsset] = useState<any>(null);
@@ -286,9 +289,9 @@ export default function PropertyBrowse() {
     if (prefilledPropertyId) {
       loadPropertyAssets();
     } else {
-      searchAssets(); // Auto-search on mount
+      searchAssets(); // Auto-search on mount and filter changes
     }
-  }, []);
+  }, [category, location]);
 
   async function loadPropertyAssets() {
     if (!prefilledPropertyId) return;
@@ -357,9 +360,9 @@ export default function PropertyBrowse() {
             {propertyAssets.map((asset: any) => (
               <Card key={asset.id} className="overflow-hidden">
                 {asset.image_url_1 && (
-                  <div className="h-36 overflow-hidden">
+                  <button className="h-36 overflow-hidden w-full" onClick={() => { setLightboxImages([asset.image_url_1, asset.image_url_2, asset.image_url_3].filter(Boolean)); setLightboxTitle(asset.name); }}>
                     <img src={asset.image_url_1} alt={asset.name} className="w-full h-full object-cover" />
-                  </div>
+                  </button>
                 )}
                 <CardContent className="p-3 space-y-2">
                   <h3 className="font-semibold text-sm">{asset.name}</h3>
@@ -422,9 +425,9 @@ export default function PropertyBrowse() {
           {withInlineAds(results, (asset) => (
             <Card key={asset.id} className="overflow-hidden">
               {asset.image_url_1 && (
-                <div className="h-36 overflow-hidden">
+                <button className="h-36 overflow-hidden w-full" onClick={() => { setLightboxImages([asset.image_url_1].filter(Boolean)); setLightboxTitle(asset.name); }}>
                   <img src={asset.image_url_1} alt={asset.name} className="w-full h-full object-cover" />
-                </div>
+                </button>
               )}
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-start justify-between">
@@ -489,6 +492,13 @@ export default function PropertyBrowse() {
         onClose={() => setBookingAsset(null)}
         asset={bookingAsset}
         propertyName={bookingPropertyName}
+      />
+
+      <ImageLightbox
+        images={lightboxImages}
+        open={lightboxImages.length > 0}
+        onOpenChange={(o) => { if (!o) setLightboxImages([]); }}
+        title={lightboxTitle}
       />
     </div>
   );

@@ -39,10 +39,10 @@ export default function BulkPackagingInfo({
   pieces = remaining % piecesPerCarton;
 
   const parts: string[] = [];
-  if (containers > 0) parts.push(`${containers} container${containers !== 1 ? 's' : ''}`);
-  if (boxes > 0) parts.push(`${boxes} box${boxes !== 1 ? 'es' : ''}`);
-  if (cartons > 0) parts.push(`${cartons} carton${cartons !== 1 ? 's' : ''}`);
-  if (pieces > 0) parts.push(`${pieces} pc${pieces !== 1 ? 's' : ''}`);
+  if (containers > 0) parts.push(`${containers} pallet${containers !== 1 ? 's' : ''}`);
+  if (boxes > 0) parts.push(`${boxes} pack${boxes !== 1 ? 's' : ''}`);
+  if (cartons > 0) parts.push(`${cartons} inner pack${cartons !== 1 ? 's' : ''}`);
+  if (pieces > 0) parts.push(`${pieces} unit${pieces !== 1 ? 's' : ''}`);
 
   if (parts.length === 0) return null;
 
@@ -58,22 +58,22 @@ export default function BulkPackagingInfo({
     <div className="flex flex-wrap gap-1.5 mt-0.5">
       {containers > 0 && (
         <span className="text-[10px] font-medium bg-accent/10 text-accent px-1.5 py-0.5 rounded">
-          📦 {containers} Container{containers !== 1 ? 's' : ''}
+          🚛 {containers} Pallet{containers !== 1 ? 's' : ''}
         </span>
       )}
       {boxes > 0 && (
         <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-          📦 {boxes} Box{boxes !== 1 ? 'es' : ''}
+          📦 {boxes} Pack{boxes !== 1 ? 's' : ''}
         </span>
       )}
       {cartons > 0 && (
         <span className="text-[10px] font-medium bg-warning/10 text-warning px-1.5 py-0.5 rounded">
-          📋 {cartons} Carton{cartons !== 1 ? 's' : ''}
+          📋 {cartons} Inner Pack{cartons !== 1 ? 's' : ''}
         </span>
       )}
       {pieces > 0 && (
         <span className="text-[10px] font-medium bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-          🔹 {pieces} Piece{pieces !== 1 ? 's' : ''}
+          🔹 {pieces} Unit{pieces !== 1 ? 's' : ''}
         </span>
       )}
     </div>
@@ -186,13 +186,13 @@ export function BulkPackagingFields({
       {bulkEnabled && (
         <>
           <p className="text-[10px] text-muted-foreground">
-            Define packaging structure, then fill how many of each you have. Total pieces auto-calculates.
+            Define packaging structure (works for boxes, crates, drums, sacks, bundles, etc.), then fill how many of each. Total units auto-calculate.
           </p>
 
           {/* Packaging structure definition */}
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="text-[10px] font-medium text-muted-foreground">Pieces / Carton</label>
+              <label className="text-[10px] font-medium text-muted-foreground">Units / Inner Pack</label>
               <input
                 type="number" min="1" value={piecesPerCarton}
                 onChange={e => handlePackagingChange('pieces_per_carton', e.target.value)}
@@ -201,7 +201,7 @@ export function BulkPackagingFields({
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-muted-foreground">Cartons / Box</label>
+              <label className="text-[10px] font-medium text-muted-foreground">Inner Packs / Pack</label>
               <input
                 type="number" min="0" value={cartonsPerBox}
                 onChange={e => handlePackagingChange('cartons_per_box', e.target.value)}
@@ -210,7 +210,7 @@ export function BulkPackagingFields({
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-muted-foreground">Boxes / Container</label>
+              <label className="text-[10px] font-medium text-muted-foreground">Packs / Pallet</label>
               <input
                 type="number" min="0" value={boxesPerContainer}
                 onChange={e => handlePackagingChange('boxes_per_container', e.target.value)}
@@ -222,9 +222,9 @@ export function BulkPackagingFields({
 
           {ppc > 0 && (
             <p className="text-[10px] text-muted-foreground italic">
-              ℹ️ 1 Carton = {ppc} pcs
-              {cpb > 0 && ` · 1 Box = ${cpb} cartons (${ppc * cpb} pcs)`}
-              {cpb > 0 && bpc > 0 && ` · 1 Container = ${bpc} boxes (${ppc * cpb * bpc} pcs)`}
+              ℹ️ 1 Inner Pack = {ppc} units
+              {cpb > 0 && ` · 1 Pack = ${cpb} inner packs (${ppc * cpb} units)`}
+              {cpb > 0 && bpc > 0 && ` · 1 Pallet = ${bpc} packs (${ppc * cpb * bpc} units)`}
             </p>
           )}
 
@@ -235,7 +235,7 @@ export function BulkPackagingFields({
               <div className="grid grid-cols-2 gap-2">
                 {bpc > 0 && cpb > 0 && (
                   <div>
-                    <label className="text-[10px] font-medium text-muted-foreground">🚛 Containers</label>
+                    <label className="text-[10px] font-medium text-muted-foreground">🚛 Pallets</label>
                     <input
                       type="number" min="0" value={bulkQty.containers}
                       onChange={e => handleBulkQtyChange('containers', e.target.value)}
@@ -245,7 +245,7 @@ export function BulkPackagingFields({
                 )}
                 {cpb > 0 && (
                   <div>
-                    <label className="text-[10px] font-medium text-muted-foreground">📦 Boxes</label>
+                    <label className="text-[10px] font-medium text-muted-foreground">📦 Packs</label>
                     <input
                       type="number" min="0" value={bulkQty.boxes}
                       onChange={e => handleBulkQtyChange('boxes', e.target.value)}
@@ -254,7 +254,7 @@ export function BulkPackagingFields({
                   </div>
                 )}
                 <div>
-                  <label className="text-[10px] font-medium text-muted-foreground">📋 Cartons</label>
+                  <label className="text-[10px] font-medium text-muted-foreground">📋 Inner Packs</label>
                   <input
                     type="number" min="0" value={bulkQty.cartons}
                     onChange={e => handleBulkQtyChange('cartons', e.target.value)}
@@ -262,7 +262,7 @@ export function BulkPackagingFields({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-medium text-muted-foreground">🔹 Loose Pieces</label>
+                  <label className="text-[10px] font-medium text-muted-foreground">🔹 Loose Units</label>
                   <input
                     type="number" min="0" value={bulkQty.loosePieces}
                     onChange={e => handleBulkQtyChange('loosePieces', e.target.value)}
@@ -273,7 +273,7 @@ export function BulkPackagingFields({
               {/* Show calculated total */}
               {currentQuantity !== undefined && (
                 <div className="bg-primary/10 text-primary rounded-md px-3 py-1.5 text-sm font-semibold text-center">
-                  Total: {currentQuantity} pieces (auto-calculated)
+                  Total: {currentQuantity} units (auto-calculated)
                 </div>
               )}
             </div>

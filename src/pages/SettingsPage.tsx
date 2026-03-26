@@ -1280,7 +1280,7 @@ export default function SettingsPage() {
             <Button
               variant="destructive"
               className="w-full"
-              disabled={deleting || !deleteReason.trim() || deleteConfirmName !== currentBusiness?.name}
+              disabled={deleting || !deleteReason.trim() || deleteConfirmName.trim().toLowerCase() !== currentBusiness?.name?.toLowerCase()}
               onClick={async () => {
                 setDeleting(true);
                 const success = await deleteBusiness(currentBusiness!.id, deleteReason.trim());
@@ -1289,6 +1289,8 @@ export default function SettingsPage() {
                   setShowDeleteDialog(false);
                   setDeleteReason('');
                   setDeleteConfirmName('');
+                  localStorage.removeItem('biztrack_current_business');
+                  navigate('/setup');
                   window.location.reload();
                 }
               }}

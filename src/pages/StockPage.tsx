@@ -19,7 +19,7 @@ import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagi
 import { toSentenceCase } from '@/lib/utils';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
 
-const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
+const UNIT_TYPES = ['Pieces', 'Kilograms', 'Grams', 'Litres', 'Millilitres', 'Metres', 'Centimetres', 'Feet', 'Inches', 'Tonnes', 'Rolls', 'Bags', 'Sacks', 'Boxes', 'Crates', 'Drums', 'Jerrycans', 'Tins', 'Bottles', 'Packets', 'Pairs', 'Sets', 'Bundles', 'Sheets', 'Bars', 'Tubes', 'Gallons', 'Dozen', 'Reams', 'Pallets'];
 
 function ItemGalleryDialog({ item, open, onOpenChange }: { item: StockItem; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { fmt } = useCurrency();

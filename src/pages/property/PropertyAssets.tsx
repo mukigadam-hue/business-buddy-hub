@@ -20,7 +20,7 @@ import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import AdSpace from '@/components/AdSpace';
 
 const CATEGORIES = [
-  { value: 'house', label: '🏠 House / Apartment', subs: ['apartment', 'single-room', 'bedsitter', 'studio', 'duplex', 'mansion', 'hostel'] },
+  { value: 'house', label: '🏠 House / Apartment', subs: ['apartment', 'single-room', 'bedsitter', 'studio', 'duplex', 'mansion', 'hostel', 'commercial'] },
   { value: 'land', label: '🏞️ Land', subs: ['plot', 'farm', 'parking'] },
   { value: 'vehicle', label: '🚗 Vehicle', subs: ['car', 'motorcycle', 'trailer', 'truck', 'bus'] },
   { value: 'vessel', label: '🚢 Water Vessel', subs: ['boat', 'yacht', 'canoe', 'jet-ski'] },

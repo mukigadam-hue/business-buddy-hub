@@ -493,6 +493,13 @@ export default function PropertyBrowse() {
         asset={bookingAsset}
         propertyName={bookingPropertyName}
       />
+
+      <ImageLightbox
+        images={lightboxImages}
+        open={lightboxImages.length > 0}
+        onOpenChange={(o) => { if (!o) setLightboxImages([]); }}
+        title={lightboxTitle}
+      />
     </div>
   );
 }

@@ -360,9 +360,9 @@ export default function PropertyBrowse() {
             {propertyAssets.map((asset: any) => (
               <Card key={asset.id} className="overflow-hidden">
                 {asset.image_url_1 && (
-                  <div className="h-36 overflow-hidden">
+                  <button className="h-36 overflow-hidden w-full" onClick={() => { setLightboxImages([asset.image_url_1, asset.image_url_2, asset.image_url_3].filter(Boolean)); setLightboxTitle(asset.name); }}>
                     <img src={asset.image_url_1} alt={asset.name} className="w-full h-full object-cover" />
-                  </div>
+                  </button>
                 )}
                 <CardContent className="p-3 space-y-2">
                   <h3 className="font-semibold text-sm">{asset.name}</h3>
@@ -425,9 +425,9 @@ export default function PropertyBrowse() {
           {withInlineAds(results, (asset) => (
             <Card key={asset.id} className="overflow-hidden">
               {asset.image_url_1 && (
-                <div className="h-36 overflow-hidden">
+                <button className="h-36 overflow-hidden w-full" onClick={() => { setLightboxImages([asset.image_url_1].filter(Boolean)); setLightboxTitle(asset.name); }}>
                   <img src={asset.image_url_1} alt={asset.name} className="w-full h-full object-cover" />
-                </div>
+                </button>
               )}
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-start justify-between">

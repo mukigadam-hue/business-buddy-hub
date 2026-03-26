@@ -201,6 +201,8 @@ export default function PropertyAssets() {
   const [filterCat, setFilterCat] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editAsset, setEditAsset] = useState<PropertyAsset | undefined>();
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxTitle, setLightboxTitle] = useState('');
 
   const filtered = assets.filter(a => {
     const matchSearch = !search || a.name.toLowerCase().includes(search.toLowerCase()) || a.location.toLowerCase().includes(search.toLowerCase());
@@ -273,9 +275,9 @@ export default function PropertyAssets() {
                 {showAd && <div className="sm:col-span-2"><AdSpace variant="inline" /></div>}
                 <Card className={`overflow-hidden ${status === 'occupied' ? 'border-destructive/30' : 'border-success/30'}`}>
                   {asset.image_url_1 && (
-                    <div className="h-32 overflow-hidden">
+                    <button className="h-32 overflow-hidden w-full" onClick={() => { setLightboxImages([asset.image_url_1, asset.image_url_2, asset.image_url_3].filter(Boolean)); setLightboxTitle(asset.name); }}>
                       <img src={asset.image_url_1} alt={asset.name} className="w-full h-full object-cover" />
-                    </div>
+                    </button>
                   )}
                   <CardContent className="p-3 space-y-2">
                     <div className="flex items-start justify-between">

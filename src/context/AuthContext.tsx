@@ -14,13 +14,24 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Restore user from cached session immediately to avoid flicker/redirect
+    try {
+      const stored = localStorage.getItem('sb-evuswzfmrfkmlcdsphgu-auth-token');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const session = parsed?.currentSession || parsed;
+        if (session?.user) return session.user as User;
+      }
+    } catch {}
+    return null;
+  });
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Safety timeout to prevent infinite loading
-    const timeout = setTimeout(() => setLoading(false), 5000);
+    // Safety timeout — resolve loading even if network is down
+    const timeout = setTimeout(() => setLoading(false), 3000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -31,7 +42,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      // Only clear user if we got a definitive "no session" response while online
+      if (session) {
+        setUser(session.user);
+      } else if (navigator.onLine) {
+        setUser(null);
+      }
+      // If offline and no session returned, keep the cached user
+      setLoading(false);
+      clearTimeout(timeout);
+    }).catch(() => {
+      // Network error — keep cached user, stop loading
       setLoading(false);
       clearTimeout(timeout);
     });

@@ -368,19 +368,32 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     // Only show loading if no cached data
     if (businesses.length === 0) setLoading(true);
     try {
-      const { data: membershipData } = await supabase
+      const { data: membershipData, error: membershipError } = await supabase
         .from('business_memberships')
         .select('*')
         .eq('user_id', user.id);
       
+      // If network error, keep cached data
+      if (membershipError) {
+        console.warn('Failed to load memberships (offline?):', membershipError.message);
+        setLoading(false);
+        return;
+      }
+
       if (membershipData && membershipData.length > 0) {
         setMemberships(membershipData as BusinessMembership[]);
         const businessIds = membershipData.map(m => m.business_id);
-        const { data: businessData } = await supabase
+        const { data: businessData, error: bizError } = await supabase
           .from('businesses')
           .select('*')
           .in('id', businessIds);
         
+        if (bizError) {
+          console.warn('Failed to load businesses (offline?):', bizError.message);
+          setLoading(false);
+          return;
+        }
+
         if (businessData) {
           setBusinesses(businessData as Business[]);
           if (!currentBusinessId || !businessIds.includes(currentBusinessId)) {
@@ -393,6 +406,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       console.error('Error loading businesses:', err);
+      // Keep cached data on network failure
     } finally {
       setLoading(false);
     }

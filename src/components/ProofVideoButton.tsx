@@ -148,6 +148,9 @@ export default function ProofVideoButton() {
     if (isOwnerOrAdmin) loadTargets();
     if (!businessId) return;
 
+    // Poll every 5 seconds for faster delivery of proof video requests
+    const pollInterval = setInterval(() => loadPendingRequest(), 5000);
+
     const channel = supabase
       .channel(`video-req-${businessId}`)
       .on('postgres_changes', {
@@ -160,7 +163,7 @@ export default function ProofVideoButton() {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { clearInterval(pollInterval); supabase.removeChannel(channel); };
   }, [businessId, loadPendingRequest, isOwnerOrAdmin, loadTargets]);
 
   // Vibrate when new request comes in

@@ -1367,15 +1367,15 @@ export default function OrdersPage() {
                 {/* Supplier products list when pre-filled */}
                 {supplierProducts.length > 0 && (
                   <div className="bg-muted/30 border rounded-md p-3">
-                    <p className="text-xs font-semibold text-foreground mb-2">📦 Available items from {prefilledSupplierName || 'supplier'} ({supplierProducts.length}):</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-64 overflow-y-auto">
+                    <p className="text-sm font-bold text-foreground mb-2">📦 Available items from {prefilledSupplierName || 'supplier'} ({supplierProducts.length}):</p>
+                    <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto">
                       {supplierProducts.map((p, i) => (
-                        <button key={i} className="text-sm px-3 py-2.5 rounded-lg border bg-background hover:bg-accent hover:border-primary/40 transition-colors text-left flex items-center gap-2 min-h-[44px]"
+                        <button key={i} className="text-base px-4 py-3.5 rounded-lg border-2 bg-background hover:bg-accent hover:border-primary/40 transition-colors text-left flex flex-col gap-1 min-h-[56px]"
                           onClick={() => setForm(f => ({ ...f, name: p.name, category: p.category || '', quality: p.quality || '' }))}>
-                          <span className="font-semibold text-foreground">{p.name}</span>
+                          <span className="font-bold text-foreground text-base">{p.name}</span>
                           {(p.category || p.quality) && (
-                            <span className="text-muted-foreground text-xs shrink-0">
-                              {p.category ? `· ${p.category}` : ''}{p.quality ? ` · ${p.quality}` : ''}
+                            <span className="text-muted-foreground text-sm">
+                              {p.category ? `${p.category}` : ''}{p.quality ? ` · ${p.quality}` : ''}
                             </span>
                           )}
                         </button>

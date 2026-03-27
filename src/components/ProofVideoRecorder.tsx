@@ -51,16 +51,22 @@ export default function ProofVideoRecorder({
     stopStream();
     setError(null);
     try {
-      // Ultra-low resolution for old/weak phones — prioritize stability over quality
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 320, max: 480 },
-          height: { ideal: 240, max: 360 },
-          frameRate: { ideal: 12, max: 15 },
-        },
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 22050 },
-      });
+      // Try progressively lower constraints for maximum old-device compatibility
+      let stream: MediaStream | null = null;
+      const configs = [
+        { video: { facingMode: 'environment', width: { ideal: 320, max: 480 }, height: { ideal: 240, max: 360 }, frameRate: { ideal: 12, max: 15 } }, audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 22050 } },
+        { video: { facingMode: 'environment', width: { ideal: 240 }, height: { ideal: 180 }, frameRate: { ideal: 10, max: 12 } }, audio: true },
+        { video: { facingMode: 'environment' }, audio: true },
+        { video: true, audio: true },
+        { video: true, audio: false },
+      ];
+      for (const cfg of configs) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(cfg);
+          break;
+        } catch { /* try next */ }
+      }
+      if (!stream) throw new Error('No compatible camera config');
       streamRef.current = stream;
 
       // Check torch support
@@ -113,32 +119,33 @@ export default function ProofVideoRecorder({
     if (!streamRef.current) return;
     chunksRef.current = [];
 
-    // Pick a lightweight codec that old devices support
-    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
-      ? 'video/webm;codecs=vp8,opus'
-      : MediaRecorder.isTypeSupported('video/webm')
-        ? 'video/webm'
-        : 'video/mp4';
+    // Pick a lightweight codec — try multiple for old device compat
+    let mimeType = '';
+    for (const mt of ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4', '']) {
+      if (!mt || MediaRecorder.isTypeSupported(mt)) { mimeType = mt; break; }
+    }
 
-    // Ultra-low bitrate for maximum compatibility with old devices
-    const recorder = new MediaRecorder(streamRef.current, {
-      mimeType,
-      videoBitsPerSecond: 250_000, // 250kbps — very light but usable for evidence
-    });
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
-    recorder.onstop = () => {
-      saveToDevice();
-    };
-    recorder.start(2000); // collect every 2s to reduce overhead
-    mediaRecorderRef.current = recorder;
-    setRecording(true);
-    setElapsed(0);
+    try {
+      const opts: MediaRecorderOptions = { videoBitsPerSecond: 200_000 };
+      if (mimeType) opts.mimeType = mimeType;
+      const recorder = new MediaRecorder(streamRef.current, opts);
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        saveToDevice();
+      };
+      recorder.start(2000);
+      mediaRecorderRef.current = recorder;
+      setRecording(true);
+      setElapsed(0);
 
-    timerRef.current = setInterval(() => {
-      setElapsed(prev => prev + 1);
-    }, 1000);
+      timerRef.current = setInterval(() => {
+        setElapsed(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      setError('Recording not supported on this device. Try a different browser.');
+    }
   }
 
   function handleStop() {

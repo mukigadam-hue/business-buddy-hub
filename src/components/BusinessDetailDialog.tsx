@@ -16,6 +16,7 @@ import {
   Package, MessageSquare, Send, Loader2, ShoppingCart, CalendarCheck, Home,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import ImageLightbox from './ImageLightbox';
 
 interface BusinessInfo {
   id: string;
@@ -55,6 +56,44 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOrderOrBook?: (biz: BusinessInfo) => void;
+}
+
+function ProductsWithLightbox({ products, fmt }: { products: Product[]; fmt: (n: number) => string }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIdx, setLightboxIdx] = useState(0);
+
+  function openImage(url: string) {
+    setLightboxImages([url]);
+    setLightboxIdx(0);
+    setLightboxOpen(true);
+  }
+
+  return (
+    <div className="space-y-2 mt-2">
+      {products.map(p => (
+        <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+          {p.image_url_1 ? (
+            <img src={p.image_url_1} alt={p.name} className="h-12 w-12 rounded object-cover border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => openImage(p.image_url_1!)} />
+          ) : (
+            <div className="h-12 w-12 rounded bg-muted flex items-center justify-center text-base">📦</div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate">{p.name}</p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {p.category && <span>{p.category}</span>}
+              {p.quality && <span>• {p.quality}</span>}
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-sm font-semibold text-primary">{fmt(p.retail_price)}</p>
+            <p className="text-[10px] text-muted-foreground">{p.quantity > 0 ? `${p.quantity} in stock` : 'Out of stock'}</p>
+          </div>
+        </div>
+      ))}
+      <ImageLightbox images={lightboxImages} initialIndex={lightboxIdx} open={lightboxOpen} onOpenChange={setLightboxOpen} title="Product photo" />
+    </div>
+  );
 }
 
 export default function BusinessDetailDialog({ business, open, onOpenChange, onOrderOrBook }: Props) {
@@ -220,31 +259,12 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
                 <p className="text-sm text-muted-foreground">No {isProperty ? 'assets' : 'products'} listed yet</p>
               </div>
             ) : (
-              <div className="space-y-2 mt-2">
-                {products.map(p => (
-                  <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg border bg-card">
-                    {p.image_url_1 ? (
-                      <img src={p.image_url_1} alt={p.name} className="h-10 w-10 rounded object-cover border" />
-                    ) : (
-                      <div className="h-10 w-10 rounded bg-muted flex items-center justify-center text-sm">📦</div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{p.name}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {p.category && <span>{p.category}</span>}
-                        {p.quality && <span>• {p.quality}</span>}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-semibold text-primary">{fmt(p.retail_price)}</p>
-                      <p className="text-[10px] text-muted-foreground">{p.quantity > 0 ? `${p.quantity} in stock` : 'Out of stock'}</p>
-                    </div>
-                  </div>
-                ))}
+              <>
+                <ProductsWithLightbox products={products} fmt={fmt} />
                 <p className="text-[10px] text-muted-foreground text-center pt-2">
                   💡 Use the "{actionLabel}" button above to start {isProperty ? 'a booking' : 'an order'}
                 </p>
-              </div>
+              </>
             )}
           </TabsContent>
 

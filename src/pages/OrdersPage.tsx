@@ -940,8 +940,19 @@ export default function OrdersPage() {
           </div>
         )}
         {order.type === 'inbox' && order.status === 'payment_submitted' && (
-          <div className="bg-success/10 border border-success/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
-            <span>💳 Buyer submitted payment! Review and <strong>Confirm Payment Received</strong>.</span>
+          <div className="bg-success/10 border border-success/20 rounded-md px-3 py-2 text-xs space-y-1">
+            <div className="flex items-center gap-2">
+              <span>💳 Buyer submitted payment! Review and <strong>Confirm Payment Received</strong>.</span>
+            </div>
+            {Number(order.amount_paid) > 0 && Number(order.amount_paid) < Number(order.grand_total) && (
+              <div className="flex items-center gap-3 mt-1 text-sm font-semibold">
+                <span className="text-success">Paid: {fmt(Number(order.amount_paid))}</span>
+                <span className="text-destructive">Balance: {fmt(Number(order.balance))}</span>
+              </div>
+            )}
+            {Number(order.amount_paid) >= Number(order.grand_total) && (
+              <p className="text-sm font-semibold text-success mt-1">✅ Full amount paid: {fmt(Number(order.amount_paid))}</p>
+            )}
           </div>
         )}
 

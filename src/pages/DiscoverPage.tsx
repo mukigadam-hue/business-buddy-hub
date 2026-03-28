@@ -29,7 +29,9 @@ export default function DiscoverPage() {
   const navigate = useNavigate();
   const { currentBusiness } = useBusiness();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<DiscoveredBusiness[]>([]);
+  const [results, setResults] = useState<DiscoveredBusiness[]>(() => {
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_discover') || '[]'); } catch { return []; }
+  });
   const [loading, setLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);

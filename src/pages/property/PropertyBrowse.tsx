@@ -308,6 +308,19 @@ export default function PropertyBrowse() {
   }
 
   async function searchAssets() {
+    if (!navigator.onLine) {
+      // Offline: filter cached results
+      const cached: SearchAsset[] = (() => { try { return JSON.parse(localStorage.getItem('biztrack_cache_browse') || '[]'); } catch { return []; } })();
+      const q = (query || '').toLowerCase();
+      const filtered = cached.filter(a =>
+        (!q || a.name.toLowerCase().includes(q) || a.description?.toLowerCase().includes(q) || a.location?.toLowerCase().includes(q)) &&
+        (category === 'all' || a.category === category) &&
+        (!location || a.location?.toLowerCase().includes(location.toLowerCase()))
+      );
+      setResults(filtered);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('search_property_assets', {
@@ -315,8 +328,21 @@ export default function PropertyBrowse() {
         _category: category === 'all' ? '' : category,
         _location: location || '',
       });
-      if (!error) setResults((data || []) as SearchAsset[]);
-      else console.error('Search error:', error);
+      if (!error) {
+        const allResults = (data || []) as SearchAsset[];
+        setResults(allResults);
+        // Merge into cache for offline use
+        try {
+          const existing: SearchAsset[] = JSON.parse(localStorage.getItem('biztrack_cache_browse') || '[]');
+          const merged = [...existing];
+          for (const asset of allResults) {
+            const idx = merged.findIndex(a => a.id === asset.id);
+            if (idx >= 0) merged[idx] = asset;
+            else merged.push(asset);
+          }
+          localStorage.setItem('biztrack_cache_browse', JSON.stringify(merged.slice(-200)));
+        } catch {}
+      } else console.error('Search error:', error);
     } catch (err) {
       console.error('Search failed:', err);
       setResults([]);

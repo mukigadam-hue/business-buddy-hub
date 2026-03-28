@@ -511,9 +511,9 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
     // Targeted debounced reloaders — only reload the specific table that changed
     const timers: Record<string, ReturnType<typeof setTimeout>> = {};
-    const debounce = (key: string, fn: () => void) => {
+    const debounce = (key: string, fn: () => void, delay = 400) => {
       if (timers[key]) clearTimeout(timers[key]);
-      timers[key] = setTimeout(fn, 400);
+      timers[key] = setTimeout(fn, delay);
     };
 
     const channel = supabase
@@ -540,7 +540,8 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('sales', reloadSales))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('purchases', reloadPurchases))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('orders', reloadOrders))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('orders', reloadOrders, 100))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => debounce('order_items', reloadOrders, 150))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'services', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('services', async () => {
         const { data } = await supabase.from('services').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false });
         setServices((data || []) as ServiceRecord[]);

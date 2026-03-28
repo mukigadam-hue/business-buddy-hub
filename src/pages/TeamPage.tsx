@@ -50,7 +50,30 @@ function ShareButtons({ code, type }: { code: string; type: 'worker' }) {
   const message = `You've been invited to join our business as a Worker! Use this invite code in the BizTrack app: ${code}`;
   const encoded = encodeURIComponent(message);
 
+  async function handleNativeShare() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Worker Invite Code', text: message });
+        toast.success('Shared successfully!');
+      } else {
+        await navigator.clipboard.writeText(message);
+        toast.success('Message copied — paste it in any app!');
+      }
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        await navigator.clipboard.writeText(message);
+        toast.success('Message copied to clipboard!');
+      }
+    }
+  }
+
   const platforms = [
+    {
+      name: 'Share',
+      icon: <Share2 className="h-4 w-4" />,
+      action: handleNativeShare,
+      bg: 'bg-primary hover:bg-primary/90 text-primary-foreground',
+    },
     {
       name: 'WhatsApp',
       icon: <MessageCircle className="h-4 w-4" />,
@@ -58,14 +81,16 @@ function ShareButtons({ code, type }: { code: string; type: 'worker' }) {
       bg: 'bg-green-600 hover:bg-green-700 text-white',
     },
     {
-      name: 'X',
-      icon: (
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-        </svg>
-      ),
-      url: `https://twitter.com/intent/tweet?text=${encoded}`,
-      bg: 'bg-black hover:bg-gray-800 text-white',
+      name: 'Telegram',
+      icon: <Send className="h-4 w-4" />,
+      url: `https://t.me/share/url?url=&text=${encoded}`,
+      bg: 'bg-blue-500 hover:bg-blue-600 text-white',
+    },
+    {
+      name: 'SMS',
+      icon: <MessageCircle className="h-4 w-4" />,
+      url: `sms:?body=${encoded}`,
+      bg: 'bg-muted hover:bg-muted/80 text-foreground',
     },
     {
       name: 'Copy',

@@ -29,7 +29,9 @@ export default function DiscoverPage() {
   const navigate = useNavigate();
   const { currentBusiness } = useBusiness();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<DiscoveredBusiness[]>([]);
+  const [results, setResults] = useState<DiscoveredBusiness[]>(() => {
+    try { return JSON.parse(localStorage.getItem('biztrack_cache_discover') || '[]'); } catch { return []; }
+  });
   const [loading, setLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -40,6 +42,19 @@ export default function DiscoverPage() {
   const myCountry = (currentBusiness as any)?.country_code || '';
 
   const searchBusinesses = useCallback(async (searchQuery: string) => {
+    if (!navigator.onLine) {
+      // Offline: filter cached results
+      const cached: DiscoveredBusiness[] = (() => { try { return JSON.parse(localStorage.getItem('biztrack_cache_discover') || '[]'); } catch { return []; } })();
+      const q = searchQuery.toLowerCase();
+      const filtered = cached.filter(b =>
+        (!q || b.name.toLowerCase().includes(q) || b.address?.toLowerCase().includes(q) || b.products_description?.toLowerCase().includes(q)) &&
+        (filterType === 'all' || b.business_type === filterType) &&
+        (!filterCountry || !myCountry || b.country_code === myCountry)
+      );
+      setResults(filtered);
+      setHasSearched(true);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await (supabase.rpc as any)('search_businesses', {
@@ -50,8 +65,20 @@ export default function DiscoverPage() {
       });
       if (error) throw error;
       const allResults = (data as DiscoveredBusiness[]) || [];
-      setResults(filterType === 'all' ? allResults : allResults.filter(b => b.business_type === filterType));
+      const displayResults = filterType === 'all' ? allResults : allResults.filter(b => b.business_type === filterType);
+      setResults(displayResults);
       setHasSearched(true);
+      // Merge into cache for offline use
+      try {
+        const existing: DiscoveredBusiness[] = JSON.parse(localStorage.getItem('biztrack_cache_discover') || '[]');
+        const merged = [...existing];
+        for (const biz of allResults) {
+          const idx = merged.findIndex(b => b.id === biz.id);
+          if (idx >= 0) merged[idx] = biz;
+          else merged.push(biz);
+        }
+        localStorage.setItem('biztrack_cache_discover', JSON.stringify(merged.slice(-200)));
+      } catch {}
     } catch (err) {
       console.error('Search error:', err);
       toast.error('Failed to search businesses');

@@ -296,6 +296,12 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const currentBusiness = businesses.find(b => b.id === currentBusinessId) || null;
   const userRole = memberships.find(m => m.business_id === currentBusinessId)?.role || null;
 
+  useEffect(() => {
+    if (!currentBusinessId && businesses.length > 0) {
+      setCurrentBusinessId(businesses[0].id);
+    }
+  }, [businesses, currentBusinessId, setCurrentBusinessId]);
+
   const setCurrentBusinessId = useCallback((id: string) => {
     const nextId = id || null;
     setCurrentBusinessIdState(nextId);

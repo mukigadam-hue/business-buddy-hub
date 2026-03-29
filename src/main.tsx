@@ -1,8 +1,16 @@
 import { createRoot } from "react-dom/client";
 import React from "react";
+import { registerSW } from 'virtual:pwa-register';
 import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
+
+registerSW({
+  immediate: true,
+  onRegisterError(error) {
+    console.error('Service worker registration failed:', error);
+  },
+});
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },

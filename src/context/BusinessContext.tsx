@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { enqueueOfflineOperation } from '@/hooks/useOfflineQueue';
+import { readJson, removeStorageKeys, writeJson } from '@/lib/localCache';
 
 export interface StockItem {
   id: string;
@@ -260,75 +261,84 @@ interface BusinessContextType {
 
 const BusinessContext = createContext<BusinessContextType | null>(null);
 
+const BUSINESS_CACHE_KEYS = {
+  businesses: 'biztrack_cache_businesses',
+  memberships: 'biztrack_cache_memberships',
+  stock: 'biztrack_cache_stock',
+  sales: 'biztrack_cache_sales',
+  purchases: 'biztrack_cache_purchases',
+  orders: 'biztrack_cache_orders',
+  services: 'biztrack_cache_services',
+  expenses: 'biztrack_cache_expenses',
+  currentBusiness: 'biztrack_current_business',
+} as const;
+
+const EMPTY_NOTIFICATIONS: Notification[] = [];
+
 function generateCode(): string {
   return 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
 export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [businesses, setBusinesses] = useState<Business[]>(() => {
-    try { return JSON.parse(localStorage.getItem('biztrack_cache_businesses') || '[]'); } catch { return []; }
-  });
-  const [memberships, setMemberships] = useState<BusinessMembership[]>(() => {
-    try { return JSON.parse(localStorage.getItem('biztrack_cache_memberships') || '[]'); } catch { return []; }
-  });
-  const [currentBusinessId, setCurrentBusinessId] = useState<string | null>(() => {
-    return localStorage.getItem('biztrack_current_business');
-  });
-  const [stock, setStock] = useState<StockItem[]>(() => {
-    try { return JSON.parse(localStorage.getItem('biztrack_cache_stock') || '[]'); } catch { return []; }
-  });
-  const [sales, setSales] = useState<Sale[]>(() => {
-    try { return JSON.parse(localStorage.getItem('biztrack_cache_sales') || '[]'); } catch { return []; }
-  });
-  const [purchases, setPurchases] = useState<Purchase[]>(() => {
-    try { return JSON.parse(localStorage.getItem('biztrack_cache_purchases') || '[]'); } catch { return []; }
-  });
-  const [orders, setOrders] = useState<Order[]>(() => {
-    try { return JSON.parse(localStorage.getItem('biztrack_cache_orders') || '[]'); } catch { return []; }
-  });
-  const [services, setServices] = useState<ServiceRecord[]>(() => {
-    try { return JSON.parse(localStorage.getItem('biztrack_cache_services') || '[]'); } catch { return []; }
-  });
-  const [expenses, setExpenses] = useState<BusinessExpense[]>(() => {
-    try { return JSON.parse(localStorage.getItem('biztrack_cache_expenses') || '[]'); } catch { return []; }
-  });
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(() => {
-    // If we have cached businesses, skip the loading state
-    try { return JSON.parse(localStorage.getItem('biztrack_cache_businesses') || '[]').length === 0; } catch { return true; }
-  });
+  const [businesses, setBusinesses] = useState<Business[]>(() => readJson(BUSINESS_CACHE_KEYS.businesses, []));
+  const [memberships, setMemberships] = useState<BusinessMembership[]>(() => readJson(BUSINESS_CACHE_KEYS.memberships, []));
+  const [currentBusinessId, setCurrentBusinessIdState] = useState<string | null>(() => readJson<string | null>(BUSINESS_CACHE_KEYS.currentBusiness, null));
+  const [stock, setStock] = useState<StockItem[]>(() => readJson(BUSINESS_CACHE_KEYS.stock, []));
+  const [sales, setSales] = useState<Sale[]>(() => readJson(BUSINESS_CACHE_KEYS.sales, []));
+  const [purchases, setPurchases] = useState<Purchase[]>(() => readJson(BUSINESS_CACHE_KEYS.purchases, []));
+  const [orders, setOrders] = useState<Order[]>(() => readJson(BUSINESS_CACHE_KEYS.orders, []));
+  const [services, setServices] = useState<ServiceRecord[]>(() => readJson(BUSINESS_CACHE_KEYS.services, []));
+  const [expenses, setExpenses] = useState<BusinessExpense[]>(() => readJson(BUSINESS_CACHE_KEYS.expenses, []));
+  const [notifications, setNotifications] = useState<Notification[]>(EMPTY_NOTIFICATIONS);
+  const [loading, setLoading] = useState(() => readJson<Business[]>(BUSINESS_CACHE_KEYS.businesses, []).length === 0 && navigator.onLine);
+
+  const setCurrentBusinessId = useCallback((id: string) => {
+    const nextId = id || null;
+    setCurrentBusinessIdState(nextId);
+    if (nextId) {
+      writeJson(BUSINESS_CACHE_KEYS.currentBusiness, nextId);
+    } else {
+      removeStorageKeys([BUSINESS_CACHE_KEYS.currentBusiness]);
+    }
+  }, []);
 
   const currentBusiness = businesses.find(b => b.id === currentBusinessId) || null;
   const userRole = memberships.find(m => m.business_id === currentBusinessId)?.role || null;
 
-  // Persist cache on data change
-  useEffect(() => { try { localStorage.setItem('biztrack_cache_businesses', JSON.stringify(businesses)); } catch {} }, [businesses]);
-  useEffect(() => { try { localStorage.setItem('biztrack_cache_memberships', JSON.stringify(memberships)); } catch {} }, [memberships]);
-  useEffect(() => { try { localStorage.setItem('biztrack_cache_stock', JSON.stringify(stock)); } catch {} }, [stock]);
-  useEffect(() => { try { localStorage.setItem('biztrack_cache_sales', JSON.stringify(sales)); } catch {} }, [sales]);
-  useEffect(() => { try { localStorage.setItem('biztrack_cache_purchases', JSON.stringify(purchases)); } catch {} }, [purchases]);
-  useEffect(() => { try { localStorage.setItem('biztrack_cache_orders', JSON.stringify(orders)); } catch {} }, [orders]);
-  useEffect(() => { try { localStorage.setItem('biztrack_cache_services', JSON.stringify(services)); } catch {} }, [services]);
-  useEffect(() => { try { localStorage.setItem('biztrack_cache_expenses', JSON.stringify(expenses)); } catch {} }, [expenses]);
-
   useEffect(() => {
-    if (currentBusinessId) {
-      localStorage.setItem('biztrack_current_business', currentBusinessId);
+    if (!currentBusinessId && businesses.length > 0) {
+      setCurrentBusinessId(businesses[0].id);
     }
-  }, [currentBusinessId]);
+  }, [businesses, currentBusinessId, setCurrentBusinessId]);
+
+  // Persist cache on data change
+  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.businesses, businesses); }, [businesses]);
+  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.memberships, memberships); }, [memberships]);
+  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.stock, stock); }, [stock]);
+  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.sales, sales); }, [sales]);
+  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.purchases, purchases); }, [purchases]);
+  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.orders, orders); }, [orders]);
+  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.services, services); }, [services]);
+  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.expenses, expenses); }, [expenses]);
 
   useEffect(() => {
     if (!user) {
-      // Only clear cache if actually signed out (no stored session)
-      // Don't clear on transient auth loading
-      const hasSession = localStorage.getItem('sb-evuswzfmrfkmlcdsphgu-auth-token');
+      const hasSession = Object.keys(localStorage).some((key) => key.startsWith('sb-') && key.endsWith('-auth-token'));
       if (!hasSession) {
         setBusinesses([]);
         setMemberships([]);
-        localStorage.removeItem('biztrack_cache_businesses');
-        localStorage.removeItem('biztrack_cache_memberships');
-        localStorage.removeItem('biztrack_current_business');
+        removeStorageKeys([
+          BUSINESS_CACHE_KEYS.businesses,
+          BUSINESS_CACHE_KEYS.memberships,
+          BUSINESS_CACHE_KEYS.currentBusiness,
+          BUSINESS_CACHE_KEYS.stock,
+          BUSINESS_CACHE_KEYS.sales,
+          BUSINESS_CACHE_KEYS.purchases,
+          BUSINESS_CACHE_KEYS.orders,
+          BUSINESS_CACHE_KEYS.services,
+          BUSINESS_CACHE_KEYS.expenses,
+        ]);
       }
       setLoading(false);
       return;
@@ -365,7 +375,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   async function loadBusinesses() {
     if (!user) return;
-    // Only show loading if no cached data
     if (businesses.length === 0) setLoading(true);
     try {
       const { data: membershipData, error: membershipError } = await supabase
@@ -373,7 +382,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         .select('*')
         .eq('user_id', user.id);
       
-      // If network error, keep cached data
       if (membershipError) {
         console.warn('Failed to load memberships (offline?):', membershipError.message);
         setLoading(false);
@@ -414,59 +422,69 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   async function loadBusinessData() {
     if (!currentBusinessId) return;
-    
-    const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes, expensesRes, notifRes] = await Promise.all([
-      supabase.from('stock_items').select('*').eq('business_id', currentBusinessId).order('name').limit(2000),
-      supabase.from('sales').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
-      supabase.from('purchases').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
-      supabase.from('orders').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
-      supabase.from('services').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
-      supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
-      supabase.from('notifications').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(50),
-    ]);
+    try {
+      const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes, expensesRes, notifRes] = await Promise.all([
+        supabase.from('stock_items').select('*').eq('business_id', currentBusinessId).order('name').limit(2000),
+        supabase.from('sales').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
+        supabase.from('purchases').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
+        supabase.from('orders').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
+        supabase.from('services').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
+        supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
+        supabase.from('notifications').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(50),
+      ]);
 
-    setStock((stockRes.data || []) as StockItem[]);
-    setNotifications((notifRes.data || []) as Notification[]);
-    setServices((servicesRes.data || []) as ServiceRecord[]);
-    setExpenses((expensesRes.data || []) as any[]);
+      if (stockRes.error || salesRes.error || purchasesRes.error || ordersRes.error || servicesRes.error || expensesRes.error || notifRes.error) {
+        throw stockRes.error || salesRes.error || purchasesRes.error || ordersRes.error || servicesRes.error || expensesRes.error || notifRes.error;
+      }
 
-    // Load all item sub-tables in PARALLEL (not sequential)
-    const salesData = (salesRes.data || []) as any[];
-    const purchasesData = (purchasesRes.data || []) as any[];
-    const ordersData = (ordersRes.data || []) as any[];
+      setStock((stockRes.data || []) as StockItem[]);
+      setNotifications((notifRes.data || []) as Notification[]);
+      setServices((servicesRes.data || []) as ServiceRecord[]);
+      setExpenses((expensesRes.data || []) as any[]);
 
-    const [saleItemsRes, purchaseItemsRes, orderItemsRes] = await Promise.all([
-      salesData.length > 0
-        ? supabase.from('sale_items').select('*').in('sale_id', salesData.map(s => s.id))
-        : Promise.resolve({ data: [] }),
-      purchasesData.length > 0
-        ? supabase.from('purchase_items').select('*').in('purchase_id', purchasesData.map(p => p.id))
-        : Promise.resolve({ data: [] }),
-      ordersData.length > 0
-        ? supabase.from('order_items').select('*').in('order_id', ordersData.map(o => o.id))
-        : Promise.resolve({ data: [] }),
-    ]);
+      const salesData = (salesRes.data || []) as any[];
+      const purchasesData = (purchasesRes.data || []) as any[];
+      const ordersData = (ordersRes.data || []) as any[];
 
-    const saleItemsMap = new Map<string, any[]>();
-    (saleItemsRes.data || []).forEach((si: any) => {
-      if (!saleItemsMap.has(si.sale_id)) saleItemsMap.set(si.sale_id, []);
-      saleItemsMap.get(si.sale_id)!.push(si);
-    });
-    setSales(salesData.map(s => ({ ...s, items: saleItemsMap.get(s.id) || [] })) as Sale[]);
+      const [saleItemsRes, purchaseItemsRes, orderItemsRes] = await Promise.all([
+        salesData.length > 0
+          ? supabase.from('sale_items').select('*').in('sale_id', salesData.map(s => s.id))
+          : Promise.resolve({ data: [], error: null }),
+        purchasesData.length > 0
+          ? supabase.from('purchase_items').select('*').in('purchase_id', purchasesData.map(p => p.id))
+          : Promise.resolve({ data: [], error: null }),
+        ordersData.length > 0
+          ? supabase.from('order_items').select('*').in('order_id', ordersData.map(o => o.id))
+          : Promise.resolve({ data: [], error: null }),
+      ]);
 
-    const purchaseItemsMap = new Map<string, any[]>();
-    (purchaseItemsRes.data || []).forEach((pi: any) => {
-      if (!purchaseItemsMap.has(pi.purchase_id)) purchaseItemsMap.set(pi.purchase_id, []);
-      purchaseItemsMap.get(pi.purchase_id)!.push(pi);
-    });
-    setPurchases(purchasesData.map(p => ({ ...p, items: purchaseItemsMap.get(p.id) || [] })) as Purchase[]);
+      if (saleItemsRes.error || purchaseItemsRes.error || orderItemsRes.error) {
+        throw saleItemsRes.error || purchaseItemsRes.error || orderItemsRes.error;
+      }
 
-    const orderItemsMap = new Map<string, any[]>();
-    (orderItemsRes.data || []).forEach((oi: any) => {
-      if (!orderItemsMap.has(oi.order_id)) orderItemsMap.set(oi.order_id, []);
-      orderItemsMap.get(oi.order_id)!.push(oi);
-    });
-    setOrders(ordersData.map(o => ({ ...o, items: orderItemsMap.get(o.id) || [] })) as Order[]);
+      const saleItemsMap = new Map<string, any[]>();
+      (saleItemsRes.data || []).forEach((si: any) => {
+        if (!saleItemsMap.has(si.sale_id)) saleItemsMap.set(si.sale_id, []);
+        saleItemsMap.get(si.sale_id)!.push(si);
+      });
+      setSales(salesData.map(s => ({ ...s, items: saleItemsMap.get(s.id) || [] })) as Sale[]);
+
+      const purchaseItemsMap = new Map<string, any[]>();
+      (purchaseItemsRes.data || []).forEach((pi: any) => {
+        if (!purchaseItemsMap.has(pi.purchase_id)) purchaseItemsMap.set(pi.purchase_id, []);
+        purchaseItemsMap.get(pi.purchase_id)!.push(pi);
+      });
+      setPurchases(purchasesData.map(p => ({ ...p, items: purchaseItemsMap.get(p.id) || [] })) as Purchase[]);
+
+      const orderItemsMap = new Map<string, any[]>();
+      (orderItemsRes.data || []).forEach((oi: any) => {
+        if (!orderItemsMap.has(oi.order_id)) orderItemsMap.set(oi.order_id, []);
+        orderItemsMap.get(oi.order_id)!.push(oi);
+      });
+      setOrders(ordersData.map(o => ({ ...o, items: orderItemsMap.get(o.id) || [] })) as Order[]);
+    } catch (error) {
+      console.warn('Failed to load business data (offline?):', error);
+    }
   }
 
   // Targeted loaders for realtime — only reload the specific table that changed
@@ -614,9 +632,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       if (remaining.length > 0) {
         setCurrentBusinessId(remaining[0].id);
       } else {
-        setCurrentBusinessId('');
-        // Clear caches so user sees setup page
-        localStorage.removeItem('biztrack_current_business');
+          setCurrentBusinessId('');
       }
     }
     await loadBusinesses();
@@ -1385,6 +1401,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, [services, currentBusiness]);
 
   const refreshData = useCallback(async () => {
+    if (!navigator.onLine) return;
     await loadBusinessData();
   }, [currentBusinessId]);
 

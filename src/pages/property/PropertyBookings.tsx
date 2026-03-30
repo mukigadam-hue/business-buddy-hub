@@ -413,7 +413,7 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
     };
 
     if (!navigator.onLine) {
-      enqueueOfflineOperation({
+      addToOfflineQueue({
         action: 'create_property_booking',
         payload: {
           booking: bookingData,

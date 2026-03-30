@@ -110,7 +110,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
     };
 
     if (!navigator.onLine) {
-      enqueueOfflineOperation({
+      addToOfflineQueue({
         action: 'create_property_booking',
         payload: {
           booking: bookingData,

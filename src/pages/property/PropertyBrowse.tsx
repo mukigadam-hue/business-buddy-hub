@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/hooks/useCurrency';
-import { enqueueOfflineOperation } from '@/hooks/useOfflineQueue';
+import { addToOfflineQueue } from '@/lib/offlineStore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,7 +110,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
     };
 
     if (!navigator.onLine) {
-      enqueueOfflineOperation({
+      addToOfflineQueue({
         action: 'create_property_booking',
         payload: {
           booking: bookingData,

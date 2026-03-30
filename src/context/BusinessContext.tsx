@@ -1,9 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
-import { enqueueOfflineOperation } from '@/hooks/useOfflineQueue';
-import { readJson, removeStorageKeys, writeJson } from '@/lib/localCache';
+import { CACHE_KEYS, cachePersist, readJsonSync, writeJsonSync, removeJsonSync, addToOfflineQueue } from '@/lib/offlineStore';
 
 export interface StockItem {
   id: string;
@@ -235,7 +234,7 @@ interface BusinessContextType {
     paymentStatus?: string,
     amountPaid?: number
   ) => Promise<Sale | null>;
-  addPurchase: (items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number; serial_numbers?: string }[], grandTotal: number, supplier: string, recordedBy: string, paymentStatus?: string, amountPaid?: number) => Promise<void>;
+  addPurchase: (items: { item_name: string; category: string; quality: string; quantity: number; unit_price: number; wholesale_price?: number; retail_price?: number; subtotal: number; serial_numbers?: string; pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }[], grandTotal: number, supplier: string, recordedBy: string, paymentStatus?: string, amountPaid?: number) => Promise<void>;
   updateSalePayment: (saleId: string, amountPaid: number, paymentStatus: string) => Promise<void>;
   updatePurchasePayment: (purchaseId: string, amountPaid: number, paymentStatus: string) => Promise<void>;
   addOrder: (type: string, customerName: string, items: { item_name: string; category: string; quality: string; quantity: number; price_type: string; unit_price: number; subtotal: number; serial_numbers?: string }[], grandTotal: number, status: string, recipientBusinessId?: string, comment?: string) => Promise<void>;
@@ -261,18 +260,6 @@ interface BusinessContextType {
 
 const BusinessContext = createContext<BusinessContextType | null>(null);
 
-const BUSINESS_CACHE_KEYS = {
-  businesses: 'biztrack_cache_businesses',
-  memberships: 'biztrack_cache_memberships',
-  stock: 'biztrack_cache_stock',
-  sales: 'biztrack_cache_sales',
-  purchases: 'biztrack_cache_purchases',
-  orders: 'biztrack_cache_orders',
-  services: 'biztrack_cache_services',
-  expenses: 'biztrack_cache_expenses',
-  currentBusiness: 'biztrack_current_business',
-} as const;
-
 const EMPTY_NOTIFICATIONS: Notification[] = [];
 
 function generateCode(): string {
@@ -281,25 +268,25 @@ function generateCode(): string {
 
 export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [businesses, setBusinesses] = useState<Business[]>(() => readJson(BUSINESS_CACHE_KEYS.businesses, []));
-  const [memberships, setMemberships] = useState<BusinessMembership[]>(() => readJson(BUSINESS_CACHE_KEYS.memberships, []));
-  const [currentBusinessId, setCurrentBusinessIdState] = useState<string | null>(() => readJson<string | null>(BUSINESS_CACHE_KEYS.currentBusiness, null));
-  const [stock, setStock] = useState<StockItem[]>(() => readJson(BUSINESS_CACHE_KEYS.stock, []));
-  const [sales, setSales] = useState<Sale[]>(() => readJson(BUSINESS_CACHE_KEYS.sales, []));
-  const [purchases, setPurchases] = useState<Purchase[]>(() => readJson(BUSINESS_CACHE_KEYS.purchases, []));
-  const [orders, setOrders] = useState<Order[]>(() => readJson(BUSINESS_CACHE_KEYS.orders, []));
-  const [services, setServices] = useState<ServiceRecord[]>(() => readJson(BUSINESS_CACHE_KEYS.services, []));
-  const [expenses, setExpenses] = useState<BusinessExpense[]>(() => readJson(BUSINESS_CACHE_KEYS.expenses, []));
+  const [businesses, setBusinesses] = useState<Business[]>(() => readJsonSync(CACHE_KEYS.businesses, []));
+  const [memberships, setMemberships] = useState<BusinessMembership[]>(() => readJsonSync(CACHE_KEYS.memberships, []));
+  const [currentBusinessId, setCurrentBusinessIdState] = useState<string | null>(() => readJsonSync<string | null>(CACHE_KEYS.currentBusiness, null));
+  const [stock, setStock] = useState<StockItem[]>(() => readJsonSync(CACHE_KEYS.stock, []));
+  const [sales, setSales] = useState<Sale[]>(() => readJsonSync(CACHE_KEYS.sales, []));
+  const [purchases, setPurchases] = useState<Purchase[]>(() => readJsonSync(CACHE_KEYS.purchases, []));
+  const [orders, setOrders] = useState<Order[]>(() => readJsonSync(CACHE_KEYS.orders, []));
+  const [services, setServices] = useState<ServiceRecord[]>(() => readJsonSync(CACHE_KEYS.services, []));
+  const [expenses, setExpenses] = useState<BusinessExpense[]>(() => readJsonSync(CACHE_KEYS.expenses, []));
   const [notifications, setNotifications] = useState<Notification[]>(EMPTY_NOTIFICATIONS);
-  const [loading, setLoading] = useState(() => readJson<Business[]>(BUSINESS_CACHE_KEYS.businesses, []).length === 0 && navigator.onLine);
+  const [loading, setLoading] = useState(() => readJsonSync<Business[]>(CACHE_KEYS.businesses, []).length === 0 && navigator.onLine);
 
   const setCurrentBusinessId = useCallback((id: string) => {
     const nextId = id || null;
     setCurrentBusinessIdState(nextId);
     if (nextId) {
-      writeJson(BUSINESS_CACHE_KEYS.currentBusiness, nextId);
+      cachePersist(CACHE_KEYS.currentBusiness, nextId);
     } else {
-      removeStorageKeys([BUSINESS_CACHE_KEYS.currentBusiness]);
+      removeJsonSync(CACHE_KEYS.currentBusiness);
     }
   }, []);
 
@@ -312,15 +299,15 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }
   }, [businesses, currentBusinessId, setCurrentBusinessId]);
 
-  // Persist cache on data change
-  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.businesses, businesses); }, [businesses]);
-  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.memberships, memberships); }, [memberships]);
-  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.stock, stock); }, [stock]);
-  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.sales, sales); }, [sales]);
-  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.purchases, purchases); }, [purchases]);
-  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.orders, orders); }, [orders]);
-  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.services, services); }, [services]);
-  useEffect(() => { writeJson(BUSINESS_CACHE_KEYS.expenses, expenses); }, [expenses]);
+  // Persist cache on data change — write to both IndexedDB and localStorage
+  useEffect(() => { cachePersist(CACHE_KEYS.businesses, businesses); }, [businesses]);
+  useEffect(() => { cachePersist(CACHE_KEYS.memberships, memberships); }, [memberships]);
+  useEffect(() => { cachePersist(CACHE_KEYS.stock, stock); }, [stock]);
+  useEffect(() => { cachePersist(CACHE_KEYS.sales, sales); }, [sales]);
+  useEffect(() => { cachePersist(CACHE_KEYS.purchases, purchases); }, [purchases]);
+  useEffect(() => { cachePersist(CACHE_KEYS.orders, orders); }, [orders]);
+  useEffect(() => { cachePersist(CACHE_KEYS.services, services); }, [services]);
+  useEffect(() => { cachePersist(CACHE_KEYS.expenses, expenses); }, [expenses]);
 
   useEffect(() => {
     if (!user) {
@@ -328,17 +315,9 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       if (!hasSession) {
         setBusinesses([]);
         setMemberships([]);
-        removeStorageKeys([
-          BUSINESS_CACHE_KEYS.businesses,
-          BUSINESS_CACHE_KEYS.memberships,
-          BUSINESS_CACHE_KEYS.currentBusiness,
-          BUSINESS_CACHE_KEYS.stock,
-          BUSINESS_CACHE_KEYS.sales,
-          BUSINESS_CACHE_KEYS.purchases,
-          BUSINESS_CACHE_KEYS.orders,
-          BUSINESS_CACHE_KEYS.services,
-          BUSINESS_CACHE_KEYS.expenses,
-        ]);
+        [CACHE_KEYS.businesses, CACHE_KEYS.memberships, CACHE_KEYS.currentBusiness,
+         CACHE_KEYS.stock, CACHE_KEYS.sales, CACHE_KEYS.purchases,
+         CACHE_KEYS.orders, CACHE_KEYS.services, CACHE_KEYS.expenses].forEach(k => removeJsonSync(k));
       }
       setLoading(false);
       return;
@@ -414,7 +393,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       console.error('Error loading businesses:', err);
-      // Keep cached data on network failure
     } finally {
       setLoading(false);
     }
@@ -487,7 +465,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Targeted loaders for realtime — only reload the specific table that changed
   async function reloadSales() {
     if (!currentBusinessId) return;
     const { data: salesData } = await supabase.from('sales').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false });
@@ -527,7 +504,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   function setupRealtimeSubscriptions() {
     if (!currentBusinessId) return;
 
-    // Targeted debounced reloaders — only reload the specific table that changed
     const timers: Record<string, ReturnType<typeof setTimeout>> = {};
     const debounce = (key: string, fn: () => void, delay = 400) => {
       if (timers[key]) clearTimeout(timers[key]);
@@ -548,7 +524,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'businesses', filter: `id=eq.${currentBusinessId}` }, (payload) => {
         if (payload.new) {
           setBusinesses(prev => prev.map(b => b.id === currentBusinessId ? { ...b, ...payload.new } as Business : b));
-          // Sync currency across devices
           const newCurrency = (payload.new as any).currency_symbol;
           if (newCurrency) {
             localStorage.setItem('biztrack_currency_symbol', newCurrency);
@@ -603,10 +578,8 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     if (!user) return false;
     console.log(`Business ${businessId} deleted. Reason: ${reason}`);
 
-    // Hide from discover before deletion
     await supabase.from('businesses').update({ is_discoverable: false } as any).eq('id', businessId);
 
-    // Notify contacts that this business is closing
     const { data: biz } = await supabase.from('businesses').select('name').eq('id', businessId).single();
     const bizName = biz?.name || 'A business';
     const { data: contactsData } = await supabase
@@ -632,7 +605,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       if (remaining.length > 0) {
         setCurrentBusinessId(remaining[0].id);
       } else {
-          setCurrentBusinessId('');
+        setCurrentBusinessId('');
       }
     }
     await loadBusinesses();
@@ -650,32 +623,28 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at' | 'deleted_by' | 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => {
     if (!currentBusinessId) return;
 
-    // Offline: optimistic insert + queue
     if (!navigator.onLine) {
       const tempId = crypto.randomUUID();
       const optimistic = { ...item, id: tempId, business_id: currentBusinessId, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deleted_at: null, deleted_by: '', pieces_per_carton: item.pieces_per_carton || 0, cartons_per_box: item.cartons_per_box || 0, boxes_per_container: item.boxes_per_container || 0 } as StockItem;
       setStock(prev => [...prev, optimistic].sort((a, b) => a.name.localeCompare(b.name)));
-      enqueueOfflineOperation({ action: 'create_stock_item', payload: { item: { ...item, business_id: currentBusinessId } }, optimisticIds: [tempId] });
+      await addToOfflineQueue({ action: 'create_stock_item', payload: { item: { ...item, business_id: currentBusinessId } }, optimisticIds: [tempId] });
       toast.success('Item saved offline — will sync when online');
       return;
     }
 
     const { data, error } = await supabase.from('stock_items').insert({ ...item, business_id: currentBusinessId } as any).select().single();
     if (error) { toast.error(error.message); return; }
-    // Optimistic insert
     if (data) setStock(prev => [...prev, data as unknown as StockItem].sort((a, b) => a.name.localeCompare(b.name)));
     toast.success('Item added to stock!');
   }, [currentBusinessId]);
 
   const updateStockItem = useCallback(async (id: string, updates: Partial<StockItem>) => {
-    // Optimistic update
     setStock(prev => prev.map(s => s.id === id ? { ...s, ...updates } as StockItem : s));
     const { error } = await supabase.from('stock_items').update(updates).eq('id', id);
     if (error) { toast.error(error.message); return; }
     toast.success('Stock item updated!');
   }, []);
 
-  // Soft delete — track who deleted it
   const deleteStockItem = useCallback(async (id: string, deletedByName?: string) => {
     const updateData: any = { deleted_at: new Date().toISOString() };
     if (deletedByName) updateData.deleted_by = deletedByName;
@@ -688,7 +657,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const restoreStockItem = useCallback(async (id: string) => {
     const { error } = await supabase.from('stock_items').update({ deleted_at: null, deleted_by: '' }).eq('id', id);
     if (error) { toast.error(error.message); return; }
-    // Optimistic UI update
     setStock(prev => prev.map(s => s.id === id ? { ...s, deleted_at: null, deleted_by: '' } as StockItem : s));
     toast.success('Item restored to stock!');
   }, []);
@@ -696,7 +664,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const permanentDeleteStockItem = useCallback(async (id: string) => {
     const { error } = await supabase.from('stock_items').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
-    // Optimistic UI update — remove from local state immediately
     setStock(prev => prev.filter(s => s.id !== id));
     toast.success('Item permanently deleted');
   }, []);
@@ -728,7 +695,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       balance: bal,
     };
 
-    // If offline, queue and return optimistic result
     if (!navigator.onLine) {
       const tempId = crypto.randomUUID();
       const saleItems = items.map(item => ({
@@ -736,7 +702,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         item_name: item.item_name, category: item.category, quality: item.quality,
         quantity: item.quantity, price_type: item.price_type, unit_price: item.unit_price, subtotal: item.subtotal, serial_numbers: item.serial_numbers || '',
       }));
-      enqueueOfflineOperation({ action: 'create_sale', payload: { sale: salePayload, items, businessId: currentBusinessId }, optimisticIds: [tempId] });
+      await addToOfflineQueue({ action: 'create_sale', payload: { sale: salePayload, items, businessId: currentBusinessId }, optimisticIds: [tempId] });
       const optimistic = { ...salePayload, id: tempId, created_at: new Date().toISOString(), items: saleItems as any } as Sale;
       setSales(prev => [optimistic, ...prev]);
       setStock(prev => prev.map(stockItem => {
@@ -772,7 +738,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }));
     await supabase.from('sale_items').insert(saleItems);
 
-    // Deduct from stock
     const currentStock = stock;
     for (const item of items) {
       if (item.price_type === 'service') continue;
@@ -812,7 +777,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       amount_paid: paid, balance: bal,
     };
 
-    // If offline, queue and return optimistic result
     if (!navigator.onLine) {
       const tempId = crypto.randomUUID();
       const optimisticIds = [tempId];
@@ -824,14 +788,12 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       setPurchases(prev => [optimistic, ...prev]);
       setStock(prev => {
         const next = [...prev];
-
         for (const item of items) {
           const existingIndex = next.findIndex(stockItem =>
             stockItem.name.toLowerCase() === item.item_name.toLowerCase() &&
             (stockItem.category || '').toLowerCase() === (item.category || '').toLowerCase() &&
             (stockItem.quality || '').toLowerCase() === (item.quality || '').toLowerCase()
           );
-
           if (existingIndex >= 0) {
             const existing = next[existingIndex];
             next[existingIndex] = {
@@ -846,34 +808,22 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
             const stockTempId = crypto.randomUUID();
             optimisticIds.push(stockTempId);
             next.push({
-              id: stockTempId,
-              business_id: currentBusinessId,
-              name: item.item_name,
-              category: item.category,
-              quality: item.quality,
+              id: stockTempId, business_id: currentBusinessId, name: item.item_name,
+              category: item.category, quality: item.quality,
               buying_price: Number(item.unit_price),
               wholesale_price: Number(item.wholesale_price ?? item.unit_price),
               retail_price: Number(item.retail_price ?? item.unit_price),
-              quantity: Number(item.quantity),
-              min_stock_level: 5,
-              barcode: '',
-              image_url_1: '',
-              image_url_2: '',
-              image_url_3: '',
-              pieces_per_carton: 0,
-              cartons_per_box: 0,
-              boxes_per_container: 0,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              deleted_at: null,
-              deleted_by: '',
+              quantity: Number(item.quantity), min_stock_level: 5, barcode: '',
+              image_url_1: '', image_url_2: '', image_url_3: '',
+              pieces_per_carton: 0, cartons_per_box: 0, boxes_per_container: 0,
+              created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+              deleted_at: null, deleted_by: '',
             } as StockItem);
           }
         }
-
         return next.sort((a, b) => a.name.localeCompare(b.name));
       });
-      enqueueOfflineOperation({ action: 'create_purchase', payload: { purchase: purchasePayload, items, businessId: currentBusinessId }, optimisticIds });
+      await addToOfflineQueue({ action: 'create_purchase', payload: { purchase: purchasePayload, items, businessId: currentBusinessId }, optimisticIds });
       toast.success('Purchase saved offline — will sync when online');
       return;
     }
@@ -888,10 +838,8 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }));
     await supabase.from('purchase_items').insert(purchaseItems);
 
-    // Notify
     await addNotification('new_purchase', '🛒 New Purchase Recorded', `${items.length} item(s) from ${supplier} — Total: recorded by ${recordedBy}`);
 
-    // Update stock
     const currentStock = stock;
     for (const item of items) {
       const existingStock = currentStock.find(s =>
@@ -900,7 +848,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         s.quality.toLowerCase() === item.quality.toLowerCase()
       ) || currentStock.find(s => s.name.toLowerCase() === item.item_name.toLowerCase() && !item.category && !item.quality);
 
-      const buyPrice = item.unit_price; // purchase cost = buying price
+      const buyPrice = item.unit_price;
       const ws = item.wholesale_price ?? item.unit_price;
       const ret = item.retail_price ?? item.unit_price;
       const packagingUpdate: any = {};
@@ -911,9 +859,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       if (existingStock) {
         await supabase.from('stock_items').update({
           quantity: existingStock.quantity + item.quantity,
-          buying_price: buyPrice,
-          wholesale_price: ws,
-          retail_price: ret,
+          buying_price: buyPrice, wholesale_price: ws, retail_price: ret,
           ...packagingUpdate,
         }).eq('id', existingStock.id);
       } else {
@@ -940,32 +886,16 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     if (!navigator.onLine) {
       const tempId = crypto.randomUUID();
       const optimistic = {
-        id: tempId,
-        business_id: currentBusinessId,
-        type,
-        customer_name: customerName,
-        grand_total: grandTotal,
-        status,
-        code,
-        transferred_to_sale: false,
-        sharing_code: sharingCode,
-        payment_method: 'pending',
-        proof_url: null,
-        payment_status: 'unpaid',
-        amount_paid: 0,
-        balance: grandTotal,
+        id: tempId, business_id: currentBusinessId, type, customer_name: customerName,
+        grand_total: grandTotal, status, code, transferred_to_sale: false,
+        sharing_code: sharingCode, payment_method: 'pending', proof_url: null,
+        payment_status: 'unpaid', amount_paid: 0, balance: grandTotal,
         created_at: new Date().toISOString(),
         items: items.map(item => ({
-          id: crypto.randomUUID(),
-          order_id: tempId,
-          item_name: item.item_name,
-          category: item.category,
-          quality: item.quality,
-          quantity: item.quantity,
-          price_type: item.price_type,
-          unit_price: item.unit_price,
-          subtotal: item.subtotal,
-          created_at: new Date().toISOString(),
+          id: crypto.randomUUID(), order_id: tempId,
+          item_name: item.item_name, category: item.category, quality: item.quality,
+          quantity: item.quantity, price_type: item.price_type, unit_price: item.unit_price,
+          subtotal: item.subtotal, created_at: new Date().toISOString(),
           serial_numbers: item.serial_numbers || '',
         })) as any,
       } as Order;
@@ -973,15 +903,11 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       setOrders(prev => [optimistic, ...prev]);
 
       if (recipientBusinessId && type === 'request') {
-        enqueueOfflineOperation({
+        await addToOfflineQueue({
           action: 'send_b2b_order',
           payload: {
-            senderBusinessId: currentBusinessId,
-            recipientBusinessId,
-            customerName: customerName || 'Walk-in',
-            items,
-            code,
-            sharingCode,
+            senderBusinessId: currentBusinessId, recipientBusinessId,
+            customerName: customerName || 'Walk-in', items, code, sharingCode,
             comment: comment || '',
           },
           optimisticIds: [tempId],
@@ -990,7 +916,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      enqueueOfflineOperation({
+      await addToOfflineQueue({
         action: 'create_order',
         payload: {
           order: { business_id: currentBusinessId, type, customer_name: customerName, grand_total: grandTotal, status, code, sharing_code: sharingCode },
@@ -1003,7 +929,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // If sending to a recipient business, use edge function to bypass RLS
     if (recipientBusinessId && type === 'request') {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
@@ -1011,44 +936,23 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
       const res = await supabase.functions.invoke('send-b2b-order', {
         body: {
-          senderBusinessId: currentBusinessId,
-          recipientBusinessId,
-          customerName: customerName || 'Walk-in',
-          items,
-          code,
-          sharingCode,
+          senderBusinessId: currentBusinessId, recipientBusinessId,
+          customerName: customerName || 'Walk-in', items, code, sharingCode,
           comment: comment || '',
         },
       });
 
-      if (res.error) {
-        toast.error(res.error.message || 'Failed to send order');
-        return;
-      }
-      if (res.data?.error) {
-        toast.error(res.data.error);
-        return;
-      }
+      if (res.error) { toast.error(res.error.message || 'Failed to send order'); return; }
+      if (res.data?.error) { toast.error(res.data.error); return; }
 
-      // Auto-add recipient to contacts if not already saved
       const { data: existingContact } = await supabase
-        .from('business_contacts')
-        .select('id')
-        .eq('business_id', currentBusinessId)
-        .eq('contact_business_id', recipientBusinessId)
-        .maybeSingle();
+        .from('business_contacts').select('id')
+        .eq('business_id', currentBusinessId).eq('contact_business_id', recipientBusinessId).maybeSingle();
       if (!existingContact) {
-        // Fetch recipient business name for nickname
-        const { data: recipientBiz } = await supabase
-          .from('businesses')
-          .select('name')
-          .eq('id', recipientBusinessId)
-          .maybeSingle();
+        const { data: recipientBiz } = await supabase.from('businesses').select('name').eq('id', recipientBusinessId).maybeSingle();
         await supabase.from('business_contacts').insert({
-          business_id: currentBusinessId,
-          contact_business_id: recipientBusinessId,
-          nickname: recipientBiz?.name || '',
-          notes: 'Auto-added from order request',
+          business_id: currentBusinessId, contact_business_id: recipientBusinessId,
+          nickname: recipientBiz?.name || '', notes: 'Auto-added from order request',
         });
       }
 
@@ -1057,7 +961,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Non-B2B order (live order or direct inbox)
     const { data: orderData, error } = await supabase.from('orders').insert({
       business_id: currentBusinessId, type, customer_name: customerName,
       grand_total: grandTotal, status, code, sharing_code: sharingCode,
@@ -1072,7 +975,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }));
     await supabase.from('order_items').insert(orderItems);
 
-    // Notify for direct inbox orders
     if (type === 'inbox') {
       await addNotification('new_order', '📥 New Order Received', `Order ${code} from ${customerName} — ${items.length} item(s)`);
     }
@@ -1084,7 +986,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     const updates: any = { grand_total: grandTotal };
     if (status) updates.status = status;
     await supabase.from('orders').update(updates).eq('id', id);
-    // Delete old items and insert new ones
     await supabase.from('order_items').delete().eq('order_id', id);
     const orderItems = items.map(item => ({
       order_id: id, item_name: item.item_name, category: item.category,
@@ -1101,7 +1002,6 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const completeOrderToSale = useCallback(async (orderId: string, buyerName: string, sellerName: string) => {
     let order = orders.find(o => o.id === orderId);
     
-    // If not in local state, fetch from DB (e.g. checkout orders)
     if (!order) {
       const { data: orderData } = await supabase.from('orders').select('*').eq('id', orderId).single();
       if (orderData) {
@@ -1120,11 +1020,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         quantity: item.quantity, price_type: item.price_type, unit_price: item.unit_price,
         subtotal: item.subtotal,
       })),
-      order.grand_total,
-      sellerName,
-      buyerName,
-      order.id,
-      order.code
+      order.grand_total, sellerName, buyerName, order.id, order.code
     );
 
     toast.success(`Order ${order.code} transferred to sales!`);
@@ -1137,26 +1033,18 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   ): Promise<ServiceRecord | null> => {
     if (!currentBusinessId) return null;
     const { data, error } = await supabase.from('services').insert({
-      ...service,
-      business_id: currentBusinessId,
+      ...service, business_id: currentBusinessId,
     } as any).select().single();
     if (error || !data) { toast.error(error?.message || 'Failed'); return null; }
 
-    // Save items used and deduct from stock
     if (itemsUsed && itemsUsed.length > 0) {
       const serviceItemRows = itemsUsed.map(item => ({
-        service_id: data.id,
-        stock_item_id: item.stock_item_id,
-        item_name: item.item_name,
-        category: item.category,
-        quality: item.quality,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        subtotal: item.subtotal,
+        service_id: data.id, stock_item_id: item.stock_item_id,
+        item_name: item.item_name, category: item.category, quality: item.quality,
+        quantity: item.quantity, unit_price: item.unit_price, subtotal: item.subtotal,
       }));
       await supabase.from('service_items').insert(serviceItemRows);
 
-      // Deduct from stock
       const currentStock = stock;
       for (const item of itemsUsed) {
         const stockItem = currentStock.find(s => s.id === item.stock_item_id);
@@ -1180,8 +1068,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const getReceipts = useCallback(async (): Promise<ReceiptRecord[]> => {
     if (!currentBusinessId) return [];
     const { data } = await supabase
-      .from('receipts')
-      .select('*')
+      .from('receipts').select('*')
       .eq('business_id', currentBusinessId)
       .order('created_at', { ascending: false });
     return (data || []) as any[];
@@ -1226,21 +1113,11 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const getMembers = useCallback(async () => {
     if (!currentBusinessId) return [];
-
-    const { data, error } = await supabase.rpc('get_business_members', {
-      _business_id: currentBusinessId,
-    });
-
-    if (error) {
-      toast.error(error.message);
-      return [];
-    }
-
+    const { data, error } = await supabase.rpc('get_business_members', { _business_id: currentBusinessId });
+    if (error) { toast.error(error.message); return []; }
     return (data || []).map((member: any) => ({
-      user_id: member.user_id,
-      role: member.role,
-      email: member.email || '',
-      full_name: member.full_name || '',
+      user_id: member.user_id, role: member.role,
+      email: member.email || '', full_name: member.full_name || '',
     }));
   }, [currentBusinessId]);
 
@@ -1250,18 +1127,15 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       .eq('user_id', userId).eq('business_id', currentBusinessId);
     if (error) { toast.error(error.message); return; }
 
-    // Also look up the user's profile name and deactivate matching team member records
     const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
     if (profile?.full_name) {
       const name = profile.full_name.trim().toLowerCase();
-      // Deactivate in business_team_members
       const { data: btm } = await supabase.from('business_team_members')
         .select('id, full_name').eq('business_id', currentBusinessId).eq('is_active', true);
       const matchBtm = (btm || []).find((m: any) => m.full_name?.trim().toLowerCase() === name);
       if (matchBtm) {
         await supabase.from('business_team_members').update({ is_active: false }).eq('id', matchBtm.id);
       }
-      // Deactivate in factory_team_members
       const { data: ftm } = await supabase.from('factory_team_members')
         .select('id, full_name').eq('business_id', currentBusinessId).eq('is_active', true);
       const matchFtm = (ftm || []).find((m: any) => m.full_name?.trim().toLowerCase() === name);
@@ -1287,8 +1161,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const getCustomers = useCallback(async () => {
     if (!currentBusinessId) return [];
     const { data } = await supabase
-      .from('business_customers')
-      .select('*')
+      .from('business_customers').select('*')
       .eq('business_id', currentBusinessId)
       .order('created_at', { ascending: false });
     return (data || []) as any[];
@@ -1302,6 +1175,16 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const addExpense = useCallback(async (expense: { category: string; description: string; amount: number; recorded_by: string; expense_date: string; from_order_id?: string }) => {
     if (!currentBusinessId) return;
+
+    if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const optimistic = { ...expense, id: tempId, business_id: currentBusinessId, created_at: new Date().toISOString(), from_order_id: expense.from_order_id || null } as BusinessExpense;
+      setExpenses(prev => [optimistic, ...prev]);
+      await addToOfflineQueue({ action: 'create_expense' as any, payload: { expense: { ...expense, business_id: currentBusinessId } }, optimisticIds: [tempId] });
+      toast.success('Expense saved offline — will sync when online');
+      return;
+    }
+
     const { error } = await supabase.from('business_expenses').insert({ ...expense, business_id: currentBusinessId } as any);
     if (error) { toast.error(error.message); return; }
     toast.success('Expense recorded!');
@@ -1325,14 +1208,10 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }).eq('id', saleId);
     if (error) { toast.error(error.message); return; }
     setSales(prev => prev.map(s => s.id === saleId ? { ...s, amount_paid: amountPaid, balance: bal, payment_status: status } : s));
-    // Auto-archive receipt when fully settled
     if (status === 'paid' && currentBusiness) {
       await saveReceipt({
-        business_id: currentBusiness.id,
-        receipt_type: 'sale',
-        transaction_id: saleId,
-        buyer_name: sale.customer_name,
-        seller_name: sale.recorded_by,
+        business_id: currentBusiness.id, receipt_type: 'sale', transaction_id: saleId,
+        buyer_name: sale.customer_name, seller_name: sale.recorded_by,
         grand_total: Number(sale.grand_total),
         items: sale.items.map(i => ({ itemName: i.item_name, category: i.category, quality: i.quality, quantity: i.quantity, priceType: i.price_type, unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal) })),
         business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
@@ -1354,14 +1233,10 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     } as any).eq('id', purchaseId);
     if (error) { toast.error(error.message); return; }
     setPurchases(prev => prev.map(p => p.id === purchaseId ? { ...p, amount_paid: amountPaid, balance: bal, payment_status: status } : p));
-    // Auto-archive receipt when fully settled
     if (status === 'paid' && currentBusiness) {
       await saveReceipt({
-        business_id: currentBusiness.id,
-        receipt_type: 'purchase',
-        transaction_id: purchaseId,
-        buyer_name: currentBusiness.name,
-        seller_name: purchase.supplier,
+        business_id: currentBusiness.id, receipt_type: 'purchase', transaction_id: purchaseId,
+        buyer_name: currentBusiness.name, seller_name: purchase.supplier,
         grand_total: Number(purchase.grand_total),
         items: purchase.items.map(i => ({ itemName: i.item_name, category: i.category, quality: i.quality, quantity: i.quantity, priceType: 'purchase', unitPrice: Number(i.unit_price), subtotal: Number(i.subtotal) })),
         business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },
@@ -1383,14 +1258,10 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }).eq('id', serviceId);
     if (error) { toast.error(error.message); return; }
     setServices(prev => prev.map(s => s.id === serviceId ? { ...s, amount_paid: amountPaid, balance: bal, payment_status: status } : s));
-    // Auto-archive receipt when fully settled
     if (status === 'paid' && currentBusiness) {
       await saveReceipt({
-        business_id: currentBusiness.id,
-        receipt_type: 'service',
-        transaction_id: serviceId,
-        buyer_name: service.customer_name,
-        seller_name: service.seller_name,
+        business_id: currentBusiness.id, receipt_type: 'service', transaction_id: serviceId,
+        buyer_name: service.customer_name, seller_name: service.seller_name,
         grand_total: Number(service.cost),
         items: [{ itemName: service.service_name, category: 'Service', quality: service.description || '-', quantity: 1, priceType: 'service', unitPrice: Number(service.cost), subtotal: Number(service.cost) }],
         business_info: { name: currentBusiness.name, address: currentBusiness.address, contact: currentBusiness.contact, email: currentBusiness.email },

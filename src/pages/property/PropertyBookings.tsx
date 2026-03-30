@@ -21,7 +21,7 @@ import Receipt from '@/components/Receipt';
 import { toast } from 'sonner';
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import AdSpace from '@/components/AdSpace';
-import { enqueueOfflineOperation } from '@/hooks/useOfflineQueue';
+import { addToOfflineQueue } from '@/lib/offlineStore';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },
@@ -413,7 +413,7 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
     };
 
     if (!navigator.onLine) {
-      enqueueOfflineOperation({
+      addToOfflineQueue({
         action: 'create_property_booking',
         payload: {
           booking: bookingData,

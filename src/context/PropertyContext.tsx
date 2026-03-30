@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from './BusinessContext';
 import { useAuth } from './AuthContext';
+import { CACHE_KEYS, cachePersist, readJsonSync } from '@/lib/offlineStore';
+import { addToOfflineQueue } from '@/lib/offlineStore';
 
 export interface PropertyAsset {
   id: string;
@@ -105,16 +107,21 @@ const PropertyContext = createContext<PropertyContextType | null>(null);
 export function PropertyProvider({ children }: { children: React.ReactNode }) {
   const { currentBusiness } = useBusiness();
   const { user } = useAuth();
-  const [assets, setAssets] = useState<PropertyAsset[]>([]);
-  const [bookings, setBookings] = useState<PropertyBooking[]>([]);
-  const [conversations, setConversations] = useState<PropertyConversation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [assets, setAssets] = useState<PropertyAsset[]>(() => readJsonSync(CACHE_KEYS.propertyAssets, []));
+  const [bookings, setBookings] = useState<PropertyBooking[]>(() => readJsonSync(CACHE_KEYS.propertyBookings, []));
+  const [conversations, setConversations] = useState<PropertyConversation[]>(() => readJsonSync(CACHE_KEYS.propertyConversations, []));
+  const [loading, setLoading] = useState(() => readJsonSync<PropertyAsset[]>(CACHE_KEYS.propertyAssets, []).length === 0 && navigator.onLine);
 
   const businessId = currentBusiness?.id;
 
+  // Persist to IndexedDB + localStorage
+  useEffect(() => { cachePersist(CACHE_KEYS.propertyAssets, assets); }, [assets]);
+  useEffect(() => { cachePersist(CACHE_KEYS.propertyBookings, bookings); }, [bookings]);
+  useEffect(() => { cachePersist(CACHE_KEYS.propertyConversations, conversations); }, [conversations]);
+
   const loadData = useCallback(async () => {
     if (!businessId) return;
-    setLoading(true);
+    if (assets.length === 0) setLoading(true);
     try {
       const [assetsRes, bookingsRes, convsRes] = await Promise.all([
         supabase.from('property_assets').select('*').eq('business_id', businessId).is('deleted_at', null).order('created_at', { ascending: false }),
@@ -125,7 +132,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       setBookings((bookingsRes.data || []) as PropertyBooking[]);
       setConversations((convsRes.data || []) as PropertyConversation[]);
     } catch (err) {
-      console.error('Error loading property data:', err);
+      console.warn('Failed to load property data (offline?):', err);
     } finally {
       setLoading(false);
     }
@@ -134,15 +141,12 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (businessId) {
       loadData();
-
-      // Realtime subscriptions
       const channel = supabase
         .channel(`property-${businessId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'property_assets', filter: `business_id=eq.${businessId}` }, () => loadData())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'property_bookings', filter: `business_id=eq.${businessId}` }, () => loadData())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'property_messages' }, () => loadData())
         .subscribe();
-
       return () => { supabase.removeChannel(channel); };
     }
   }, [businessId, loadData]);
@@ -171,7 +175,27 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
 
   async function addBooking(booking: Partial<PropertyBooking>): Promise<boolean> {
     if (!businessId || !user) return false;
-    // Check for conflicts
+
+    if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const optimistic = {
+        ...booking, id: tempId, business_id: businessId, renter_id: user.id,
+        created_at: new Date().toISOString(), status: booking.status || 'pending',
+        payment_status: booking.payment_status || 'unpaid', amount_paid: booking.amount_paid || 0,
+      } as PropertyBooking;
+      setBookings(prev => [optimistic, ...prev]);
+      await addToOfflineQueue({
+        action: 'create_property_booking',
+        payload: {
+          booking: { ...booking, business_id: businessId, renter_id: user.id },
+          notify: { title: '📅 New Booking Request', message: `Booking from ${booking.renter_name || 'a renter'}` },
+        },
+        optimisticIds: [tempId],
+      });
+      toast.success('Booking saved offline — will sync when online');
+      return true;
+    }
+
     const { data: hasConflict } = await supabase.rpc('check_booking_conflict', {
       _asset_id: booking.asset_id!,
       _start: booking.start_date!,
@@ -182,9 +206,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
     const { error } = await supabase.from('property_bookings').insert({
-      ...booking,
-      business_id: businessId,
-      renter_id: user.id,
+      ...booking, business_id: businessId, renter_id: user.id,
     } as any);
     if (error) { toast.error(error.message); return false; }
     toast.success('Booking request sent!');
@@ -218,7 +240,6 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
 
   async function getMessages(conversationId: string): Promise<PropertyMessage[]> {
     const { data } = await supabase.from('property_messages').select('*').eq('conversation_id', conversationId).order('created_at');
-    // Mark as read
     if (user) {
       await supabase.from('property_messages').update({ is_read: true } as any)
         .eq('conversation_id', conversationId)
@@ -231,30 +252,20 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   async function sendMessage(conversationId: string, message: string) {
     if (!user) return;
     const { error } = await supabase.from('property_messages').insert({
-      conversation_id: conversationId,
-      sender_id: user.id,
-      message,
+      conversation_id: conversationId, sender_id: user.id, message,
     } as any);
     if (error) { toast.error(error.message); return; }
-    // Update last_message_at
     await supabase.from('property_conversations').update({ last_message_at: new Date().toISOString() } as any).eq('id', conversationId);
   }
 
   async function startConversation(assetId: string, ownerBusinessId: string): Promise<string | null> {
     if (!user) return null;
-    // Check if conversation already exists
     const { data: existing } = await supabase.from('property_conversations')
-      .select('id')
-      .eq('asset_id', assetId)
-      .eq('renter_id', user.id)
-      .eq('business_id', ownerBusinessId)
-      .limit(1);
+      .select('id').eq('asset_id', assetId).eq('renter_id', user.id)
+      .eq('business_id', ownerBusinessId).limit(1);
     if (existing && existing.length > 0) return existing[0].id;
-    
     const { data, error } = await supabase.from('property_conversations').insert({
-      asset_id: assetId,
-      business_id: ownerBusinessId,
-      renter_id: user.id,
+      asset_id: assetId, business_id: ownerBusinessId, renter_id: user.id,
     } as any).select('id').single();
     if (error) { toast.error(error.message); return null; }
     return data?.id || null;

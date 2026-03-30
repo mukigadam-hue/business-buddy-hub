@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from './BusinessContext';
+import { CACHE_KEYS, cachePersist, readJsonSync } from '@/lib/offlineStore';
+import { addToOfflineQueue } from '@/lib/offlineStore';
 
 export interface RawMaterial {
   id: string;
@@ -119,34 +121,47 @@ const FactoryContext = createContext<FactoryContextType | null>(null);
 
 export function FactoryProvider({ children }: { children: React.ReactNode }) {
   const { currentBusiness } = useBusiness();
-  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
-  const [expenses, setExpenses] = useState<FactoryExpense[]>([]);
-  const [teamMembers, setTeamMembers] = useState<FactoryTeamMember[]>([]);
-  const [production, setProduction] = useState<ProductionRecord[]>([]);
-  const [workerPayments, setWorkerPayments] = useState<WorkerPayment[]>([]);
-  const [workerAdvances, setWorkerAdvances] = useState<WorkerAdvance[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(() => readJsonSync(CACHE_KEYS.rawMaterials, []));
+  const [expenses, setExpenses] = useState<FactoryExpense[]>(() => readJsonSync(CACHE_KEYS.factoryExpenses, []));
+  const [teamMembers, setTeamMembers] = useState<FactoryTeamMember[]>(() => readJsonSync(CACHE_KEYS.factoryTeam, []));
+  const [production, setProduction] = useState<ProductionRecord[]>(() => readJsonSync(CACHE_KEYS.factoryProduction, []));
+  const [workerPayments, setWorkerPayments] = useState<WorkerPayment[]>(() => readJsonSync(CACHE_KEYS.factoryWorkerPayments, []));
+  const [workerAdvances, setWorkerAdvances] = useState<WorkerAdvance[]>(() => readJsonSync(CACHE_KEYS.factoryWorkerAdvances, []));
+  const [loading, setLoading] = useState(() => readJsonSync<RawMaterial[]>(CACHE_KEYS.rawMaterials, []).length === 0 && navigator.onLine);
 
   const businessId = currentBusiness?.id;
 
+  // Persist to IndexedDB + localStorage
+  useEffect(() => { cachePersist(CACHE_KEYS.rawMaterials, rawMaterials); }, [rawMaterials]);
+  useEffect(() => { cachePersist(CACHE_KEYS.factoryExpenses, expenses); }, [expenses]);
+  useEffect(() => { cachePersist(CACHE_KEYS.factoryTeam, teamMembers); }, [teamMembers]);
+  useEffect(() => { cachePersist(CACHE_KEYS.factoryProduction, production); }, [production]);
+  useEffect(() => { cachePersist(CACHE_KEYS.factoryWorkerPayments, workerPayments); }, [workerPayments]);
+  useEffect(() => { cachePersist(CACHE_KEYS.factoryWorkerAdvances, workerAdvances); }, [workerAdvances]);
+
   const loadData = useCallback(async () => {
     if (!businessId) return;
-    setLoading(true);
-    const [rmRes, expRes, teamRes, prodRes, payRes, advRes] = await Promise.all([
-      supabase.from('factory_raw_materials').select('*').eq('business_id', businessId).order('name'),
-      supabase.from('factory_expenses').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
-      supabase.from('factory_team_members').select('*').eq('business_id', businessId).order('full_name'),
-      supabase.from('factory_production').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
-      supabase.from('factory_worker_payments').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
-      supabase.from('factory_worker_advances').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
-    ]);
-    setRawMaterials((rmRes.data || []) as any[]);
-    setExpenses((expRes.data || []) as any[]);
-    setTeamMembers((teamRes.data || []) as any[]);
-    setProduction((prodRes.data || []) as any[]);
-    setWorkerPayments((payRes.data || []) as any[]);
-    setWorkerAdvances((advRes.data || []) as any[]);
-    setLoading(false);
+    if (rawMaterials.length === 0) setLoading(true);
+    try {
+      const [rmRes, expRes, teamRes, prodRes, payRes, advRes] = await Promise.all([
+        supabase.from('factory_raw_materials').select('*').eq('business_id', businessId).order('name'),
+        supabase.from('factory_expenses').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
+        supabase.from('factory_team_members').select('*').eq('business_id', businessId).order('full_name'),
+        supabase.from('factory_production').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
+        supabase.from('factory_worker_payments').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
+        supabase.from('factory_worker_advances').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
+      ]);
+      setRawMaterials((rmRes.data || []) as any[]);
+      setExpenses((expRes.data || []) as any[]);
+      setTeamMembers((teamRes.data || []) as any[]);
+      setProduction((prodRes.data || []) as any[]);
+      setWorkerPayments((payRes.data || []) as any[]);
+      setWorkerAdvances((advRes.data || []) as any[]);
+    } catch (err) {
+      console.warn('Failed to load factory data (offline?):', err);
+    } finally {
+      setLoading(false);
+    }
   }, [businessId]);
 
   useEffect(() => {
@@ -169,6 +184,14 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
 
   const addRawMaterial = useCallback(async (item: Omit<RawMaterial, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
     if (!businessId) return;
+    if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const optimistic = { ...item, id: tempId, business_id: businessId, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deleted_at: null } as RawMaterial;
+      setRawMaterials(prev => [...prev, optimistic].sort((a, b) => a.name.localeCompare(b.name)));
+      await addToOfflineQueue({ action: 'create_raw_material' as any, payload: { item: { ...item, business_id: businessId } }, optimisticIds: [tempId] });
+      toast.success('Raw material saved offline — will sync when online');
+      return;
+    }
     const { error } = await supabase.from('factory_raw_materials').insert({ ...item, business_id: businessId } as any);
     if (error) { toast.error(error.message); return; }
     toast.success('Raw material added!');
@@ -189,6 +212,14 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
 
   const addExpense = useCallback(async (expense: Omit<FactoryExpense, 'id' | 'business_id' | 'created_at'>) => {
     if (!businessId) return;
+    if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const optimistic = { ...expense, id: tempId, business_id: businessId, created_at: new Date().toISOString() } as FactoryExpense;
+      setExpenses(prev => [optimistic, ...prev]);
+      await addToOfflineQueue({ action: 'create_factory_expense' as any, payload: { expense: { ...expense, business_id: businessId } }, optimisticIds: [tempId] });
+      toast.success('Expense saved offline — will sync when online');
+      return;
+    }
     const { error } = await supabase.from('factory_expenses').insert({ ...expense, business_id: businessId } as any);
     if (error) { toast.error(error.message); return; }
     toast.success('Expense recorded!');
@@ -210,7 +241,6 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
   const updateTeamMember = useCallback(async (id: string, updates: Partial<FactoryTeamMember>) => {
     const { error } = await supabase.from('factory_team_members').update(updates as any).eq('id', id);
     if (error) { toast.error(error.message); return; }
-    // If deactivating, also remove matching membership
     if (updates.is_active === false) {
       const { data: member } = await supabase.from('factory_team_members').select('full_name, business_id').eq('id', id).single();
       if (member) {
@@ -228,11 +258,9 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteTeamMember = useCallback(async (id: string) => {
-    // Get the member name before deleting to clean up memberships
     const { data: member } = await supabase.from('factory_team_members').select('full_name, business_id').eq('id', id).single();
     const { error } = await supabase.from('factory_team_members').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
-    // Also remove matching membership by name
     if (member) {
       const { data: profiles } = await supabase.from('profiles').select('id, full_name').ilike('full_name', member.full_name);
       if (profiles) {
@@ -247,12 +275,19 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
 
   const addProduction = useCallback(async (record: Omit<ProductionRecord, 'id' | 'business_id' | 'created_at'>) => {
     if (!businessId) return;
+    if (!navigator.onLine) {
+      const tempId = crypto.randomUUID();
+      const optimistic = { ...record, id: tempId, business_id: businessId, created_at: new Date().toISOString() } as ProductionRecord;
+      setProduction(prev => [optimistic, ...prev]);
+      await addToOfflineQueue({ action: 'create_production' as any, payload: { record: { ...record, business_id: businessId } }, optimisticIds: [tempId] });
+      toast.success('Production saved offline — will sync when online');
+      return;
+    }
     const { error } = await supabase.from('factory_production').insert({ ...record, business_id: businessId } as any);
     if (error) { toast.error(error.message); return; }
     toast.success('Production recorded!');
   }, [businessId]);
 
-  // Worker Payments
   const addWorkerPayment = useCallback(async (payment: Omit<WorkerPayment, 'id' | 'business_id' | 'created_at'>) => {
     if (!businessId) return;
     const { error } = await supabase.from('factory_worker_payments').insert({ ...payment, business_id: businessId } as any);
@@ -273,7 +308,6 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
     toast.success('Payment deleted');
   }, []);
 
-  // Worker Advances
   const addWorkerAdvance = useCallback(async (advance: Omit<WorkerAdvance, 'id' | 'business_id' | 'created_at'>) => {
     if (!businessId) return;
     const { error } = await supabase.from('factory_worker_advances').insert({ ...advance, business_id: businessId } as any);
@@ -294,7 +328,6 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
     toast.success('Advance deleted');
   }, []);
 
-  // Helper: Get worker balance
   const getWorkerBalance = useCallback((workerId: string) => {
     const activeAdvances = workerAdvances.filter(a => a.worker_id === workerId && a.status === 'active');
     const totalAdvances = activeAdvances.reduce((sum, a) => sum + a.remaining_balance, 0);
@@ -303,22 +336,17 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
     return { totalAdvances, totalOwed, pendingPayments, activeAdvances };
   }, [workerAdvances, workerPayments]);
 
-  // Helper: Get payment reminders
   const getDuePayments = useCallback(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().slice(0, 10);
-    
     const threeDaysFromNow = new Date(today);
     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
     const threeDaysStr = threeDaysFromNow.toISOString().slice(0, 10);
-    
     const activeMembers = teamMembers.filter(m => m.is_active);
-    
     const overdue = activeMembers.filter(m => m.next_payment_due && m.next_payment_due < todayStr);
     const dueToday = activeMembers.filter(m => m.next_payment_due === todayStr);
     const dueSoon = activeMembers.filter(m => m.next_payment_due && m.next_payment_due > todayStr && m.next_payment_due <= threeDaysStr);
-    
     return { overdue, dueToday, dueSoon };
   }, [teamMembers]);
 

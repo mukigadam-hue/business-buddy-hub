@@ -158,16 +158,26 @@ export default function OrderDisputeDialog({
                 </div>
               ))}
               {photos.length < 5 && (
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  className="w-16 h-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 transition-colors"
-                >
-                  <Camera className="h-4 w-4" />
-                  <span className="text-[8px]">Add</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="w-16 h-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 transition-colors"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span className="text-[8px]">Upload</span>
+                  </button>
+                  <button
+                    onClick={() => cameraRef.current?.click()}
+                    className="w-16 h-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 transition-colors"
+                  >
+                    <Camera className="h-4 w-4" />
+                    <span className="text-[8px]">Camera</span>
+                  </button>
+                </>
               )}
             </div>
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
+            <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFiles} />
           </div>
 
           <Button onClick={handleSubmit} className="w-full" disabled={submitting || !description.trim()}>

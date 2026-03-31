@@ -463,6 +463,7 @@ export default function OrdersPage() {
   const [disputeOrder, setDisputeOrder] = useState<Order | null>(null);
   const [disputes, setDisputes] = useState<any[]>([]);
   const [respondingDispute, setRespondingDispute] = useState<any>(null);
+  const [disputeViewOrder, setDisputeViewOrder] = useState<Order | null>(null);
 
   // Bulk delete state
   const [bulkSelectMode, setBulkSelectMode] = useState(false);

@@ -45,9 +45,10 @@ export default function WastePage() {
     date: new Date().toISOString().slice(0, 10),
   });
 
-  // Load waste records from expenses with category 'Waste'
+  // Load waste records from expenses with waste categories — exclude order allocation expenses
   const wasteExpenses = expenses.filter(e => 
-    WASTE_TYPES.includes(e.category) || e.category === 'Waste'
+    (WASTE_TYPES.includes(e.category) || e.category === 'Waste') &&
+    !e.from_order_id
   );
 
   const todayWaste = wasteExpenses.filter(e => new Date(e.expense_date).toDateString() === new Date().toDateString());

@@ -2069,6 +2069,68 @@ export default function OrdersPage() {
         />
       )}
 
+      {/* Supplier Dispute Viewer Dialog */}
+      <Dialog open={!!disputeViewOrder} onOpenChange={o => { if (!o) { setDisputeViewOrder(null); setDisputes([]); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Disputes — {disputeViewOrder?.code}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {disputes.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No disputes found.</p>
+            ) : disputes.map((d: any) => (
+              <div key={d.id} className="border rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold capitalize bg-warning/10 text-warning px-2 py-0.5 rounded-full">⚠️ {d.dispute_type}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${d.status === 'responded' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
+                    {d.status === 'responded' ? '✅ Responded' : '🔴 Open'}
+                  </span>
+                </div>
+                <p className="text-sm">{d.description}</p>
+                <p className="text-[10px] text-muted-foreground">📅 {new Date(d.created_at).toLocaleString()}</p>
+                {d.photo_urls && (d.photo_urls as string[]).length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {(d.photo_urls as string[]).map((url: string, i: number) => (
+                      <img key={i} src={url} alt="Dispute photo" className="w-20 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(url, '_blank')} />
+                    ))}
+                  </div>
+                )}
+                {d.supplier_response && (
+                  <div className="bg-muted/50 rounded-md p-2 text-xs space-y-1">
+                    <p className="font-semibold">💬 Your Response:</p>
+                    <p>{d.supplier_response}</p>
+                    {d.resolution && <p className="text-muted-foreground">Resolution: {d.resolution}</p>}
+                  </div>
+                )}
+                {d.status !== 'responded' && (
+                  <Button size="sm" variant="outline" className="w-full" onClick={() => { setRespondingDispute(d); }}>
+                    <MessageSquare className="h-3.5 w-3.5 mr-1" />Respond
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dispute Response Dialog */}
+      {respondingDispute && (
+        <DisputeResponseDialog
+          open={!!respondingDispute}
+          onOpenChange={o => { if (!o) setRespondingDispute(null); }}
+          dispute={respondingDispute}
+          onResponded={async () => {
+            if (disputeViewOrder) {
+              const d = await loadDisputes(disputeViewOrder.id);
+              setDisputes(d);
+            }
+            setRespondingDispute(null);
+          }}
+        />
+      )}
+
       {/* Receipt Dialog */}
       <Dialog open={!!receiptOrder} onOpenChange={o => { if (!o) setReceiptOrder(null); }}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">

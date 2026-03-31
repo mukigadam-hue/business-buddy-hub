@@ -623,6 +623,38 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at' | 'deleted_by' | 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => {
     if (!currentBusinessId) return;
 
+    // Check for existing duplicate (same name, category, quality) and merge
+    const existing = stock.find(s =>
+      !s.deleted_at &&
+      s.name.trim().toLowerCase() === (item.name || '').trim().toLowerCase() &&
+      (s.category || '').trim().toLowerCase() === (item.category || '').trim().toLowerCase() &&
+      (s.quality || '').trim().toLowerCase() === (item.quality || '').trim().toLowerCase()
+    );
+
+    if (existing) {
+      const mergedQty = existing.quantity + (item.quantity || 0);
+      const updates: any = { quantity: mergedQty };
+      if (item.buying_price && Number(item.buying_price) > 0) updates.buying_price = item.buying_price;
+      if (item.wholesale_price && Number(item.wholesale_price) > 0) updates.wholesale_price = item.wholesale_price;
+      if (item.retail_price && Number(item.retail_price) > 0) updates.retail_price = item.retail_price;
+      // Merge images if new ones provided and existing slots empty
+      if (item.image_url_1 && !existing.image_url_1) updates.image_url_1 = item.image_url_1;
+      if (item.image_url_2 && !existing.image_url_2) updates.image_url_2 = item.image_url_2;
+      if (item.image_url_3 && !existing.image_url_3) updates.image_url_3 = item.image_url_3;
+
+      if (!navigator.onLine) {
+        setStock(prev => prev.map(s => s.id === existing.id ? { ...s, ...updates } as StockItem : s));
+        await addToOfflineQueue({ action: 'update_stock_item', payload: { id: existing.id, updates }, optimisticIds: [] });
+        toast.success(`Merged with existing "${existing.name}" (qty: ${mergedQty})`);
+        return;
+      }
+      const { error } = await supabase.from('stock_items').update(updates).eq('id', existing.id);
+      if (error) { toast.error(error.message); return; }
+      setStock(prev => prev.map(s => s.id === existing.id ? { ...s, ...updates } as StockItem : s));
+      toast.success(`Merged with existing "${existing.name}" (qty: ${mergedQty})`);
+      return;
+    }
+
     if (!navigator.onLine) {
       const tempId = crypto.randomUUID();
       const optimistic = { ...item, id: tempId, business_id: currentBusinessId, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deleted_at: null, deleted_by: '', pieces_per_carton: item.pieces_per_carton || 0, cartons_per_box: item.cartons_per_box || 0, boxes_per_container: item.boxes_per_container || 0 } as StockItem;
@@ -636,7 +668,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     if (error) { toast.error(error.message); return; }
     if (data) setStock(prev => [...prev, data as unknown as StockItem].sort((a, b) => a.name.localeCompare(b.name)));
     toast.success('Item added to stock!');
-  }, [currentBusinessId]);
+  }, [currentBusinessId, stock]);
 
   const updateStockItem = useCallback(async (id: string, updates: Partial<StockItem>) => {
     setStock(prev => prev.map(s => s.id === id ? { ...s, ...updates } as StockItem : s));

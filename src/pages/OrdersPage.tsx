@@ -38,7 +38,9 @@ export default function OrdersPage() {
   const roleLabel = userRole === 'owner' ? 'Owner' : userRole === 'admin' ? 'Admin' : 'Worker';
   const highlightNotificationId = searchParams.get('highlight_notification');
 
-  // Auto-switch to relevant tab based on notification
+   // Auto-switch to relevant tab based on notification
+  const [highlightOrderCode, setHighlightOrderCode] = useState<string | null>(null);
+
   useEffect(() => {
     if (highlightNotificationId) {
       const notification = notifications.find(n => n.id === highlightNotificationId);
@@ -47,14 +49,28 @@ export default function OrdersPage() {
         else if (notification.type === 'order_priced' || notification.type === 'order_rejected') setTab('my_requests');
         else if (notification.type === 'payment_submitted') setTab('verify_payments');
         else if (notification.type === 'payment_confirmed') setTab('my_requests');
+        else if (notification.type === 'order_dispute') setTab('inbox');
+        else if (notification.type === 'dispute_response') setTab('my_requests');
+
+        // Extract order code from notification message for highlighting
+        const codeMatch = notification.message?.match(/order\s+([A-Z0-9-]+)/i);
+        if (codeMatch) setHighlightOrderCode(codeMatch[1]);
       }
       // Clear the param after processing
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('highlight_notification');
-      newParams.delete('checkout'); // Don't redirect to checkout
+      newParams.delete('checkout');
       setSearchParams(newParams, { replace: true });
     }
   }, [highlightNotificationId]);
+
+  // Clear highlight after 5 seconds
+  useEffect(() => {
+    if (highlightOrderCode) {
+      const timer = setTimeout(() => setHighlightOrderCode(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightOrderCode]);
 
   // Payment verification state
   const [verifyFilter, setVerifyFilter] = useState<'pending' | 'paid' | 'all'>('pending');

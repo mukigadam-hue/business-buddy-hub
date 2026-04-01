@@ -4,11 +4,18 @@ import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((error) => {
-      console.error('Service worker registration failed:', error);
-    });
+// PWA: VitePWA handles SW registration automatically via registerType: "autoUpdate"
+// Guard against iframe/preview contexts where SW causes issues
+const isInIframe = (() => {
+  try { return window.self !== window.top; } catch { return true; }
+})();
+const isPreviewHost =
+  window.location.hostname.includes("id-preview--") ||
+  window.location.hostname.includes("lovableproject.com");
+
+if (isPreviewHost || isInIframe) {
+  navigator.serviceWorker?.getRegistrations().then((regs) => {
+    regs.forEach((r) => r.unregister());
   });
 }
 

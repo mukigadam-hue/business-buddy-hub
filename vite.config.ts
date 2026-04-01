@@ -32,19 +32,53 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "placeholder.svg"],
+      devOptions: {
+        enabled: false,
+      },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/.*supabase\.co\/rest\/.*/i,
             handler: "NetworkFirst",
             options: {
-              cacheName: "api-cache",
-              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+              cacheName: "supabase-api",
+              expiration: { maxEntries: 100, maxAgeSeconds: 600 },
+              networkTimeoutSeconds: 5,
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*supabase\.co\/auth\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "supabase-auth",
+              expiration: { maxEntries: 10, maxAgeSeconds: 300 },
+              networkTimeoutSeconds: 5,
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*supabase\.co\/storage\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "supabase-storage",
+              expiration: { maxEntries: 200, maxAgeSeconds: 86400 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\.(png|jpg|jpeg|webp|gif|svg|ico)$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "images",
+              expiration: { maxEntries: 100, maxAgeSeconds: 86400 * 7 },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
         ],
-        navigateFallbackDenylist: [/^\/~oauth/],
       },
       manifest: {
         name: "Business Manager",

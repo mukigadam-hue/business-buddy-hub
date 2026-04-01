@@ -169,7 +169,7 @@ function getNotificationRoute(type: string): string {
     case 'order_completed': return '/orders';
     case 'new_purchase': return '/purchases';
     case 'payment_submitted': return '/orders';
-    case 'payment_confirmed': return '/checkout';
+    case 'payment_confirmed': return '/orders';
     case 'booking_confirmed': return '/bookings';
     case 'booking_completed': return '/bookings';
     case 'poke': return '/contacts';

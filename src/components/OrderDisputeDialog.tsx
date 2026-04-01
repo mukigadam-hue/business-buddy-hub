@@ -54,15 +54,23 @@ export default function OrderDisputeDialog({
     if (!description.trim()) { toast.error('Please describe the issue'); return; }
     setSubmitting(true);
     try {
-      // Upload photos
+      // Upload photos — skip gracefully if offline
       const photoUrls: string[] = [];
-      for (const photo of photos) {
-        const ext = photo.name.split('.').pop();
-        const fileName = `disputes/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('payment-proofs').upload(fileName, photo);
-        if (upErr) throw upErr;
-        const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
-        photoUrls.push(urlData.publicUrl);
+      if (navigator.onLine) {
+        for (const photo of photos) {
+          try {
+            const ext = photo.name.split('.').pop();
+            const fileName = `disputes/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+            const { error: upErr } = await supabase.storage.from('payment-proofs').upload(fileName, photo);
+            if (upErr) throw upErr;
+            const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
+            photoUrls.push(urlData.publicUrl);
+          } catch (uploadErr) {
+            console.warn('Photo upload failed, continuing without:', uploadErr);
+          }
+        }
+      } else if (photos.length > 0) {
+        toast.info('Photos will be uploaded when back online');
       }
 
       // Create dispute
@@ -78,8 +86,10 @@ export default function OrderDisputeDialog({
 
       // Get reporter business name for the notification
       let reporterName = 'A customer';
-      const { data: reporterBiz } = await supabase.from('businesses').select('name').eq('id', reporterBusinessId).single();
-      if (reporterBiz) reporterName = reporterBiz.name;
+      try {
+        const { data: reporterBiz } = await supabase.from('businesses').select('name').eq('id', reporterBusinessId).single();
+        if (reporterBiz) reporterName = reporterBiz.name;
+      } catch {}
 
       // Send notification to supplier with complainant name and order code
       await supabase.from('notifications').insert({
@@ -97,7 +107,11 @@ export default function OrderDisputeDialog({
       setDisputeType('missing');
       onSubmitted();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to submit dispute');
+      if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError') || !navigator.onLine) {
+        toast.error('You are offline. Please try again when connected.');
+      } else {
+        toast.error(err.message || 'Failed to submit dispute');
+      }
     } finally {
       setSubmitting(false);
     }

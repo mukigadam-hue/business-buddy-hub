@@ -20,29 +20,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(() => !getStoredUser());
 
   useEffect(() => {
+    const cachedUser = getStoredUser();
+
     const resolveSession = (nextSession: Session | null) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
     };
 
-    const timeout = setTimeout(() => setLoading(false), 1500);
+    // Generous timeout — if we have a cached user, stay signed in
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, cachedUser ? 5000 : 3000);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      resolveSession(session);
-      clearTimeout(timeout);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only clear user on explicit sign-out events
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        clearTimeout(timeout);
+        return;
+      }
+
+      if (session) {
+        resolveSession(session);
+        clearTimeout(timeout);
+      }
+      // For other events with null session (TOKEN_REFRESHED failure, etc.),
+      // keep the cached user to avoid random sign-outs
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         resolveSession(session);
-      } else if (navigator.onLine) {
+      } else if (!cachedUser) {
+        // Only clear if there's no cached user — truly a new/signed-out user
         setSession(null);
         setUser(null);
         setLoading(false);
       }
+      // If we have a cached user but no session, keep showing the app.
+      // The onAuthStateChange listener will handle token refresh or SIGNED_OUT.
       clearTimeout(timeout);
     }).catch(() => {
+      // Network error — keep cached user, don't sign out
       setLoading(false);
       clearTimeout(timeout);
     });

@@ -710,6 +710,17 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-accent" /><p className="text-sm font-semibold">3. Expected Stock Value (Wholesale)</p></div>
             <p className="text-xs text-muted-foreground mb-1">Sum of (Wholesale Price × Quantity) for all active stock</p>
             <p className="text-2xl font-bold tabular-nums">{fmt(wholesaleCapital)}</p>
+            {wholesaleCapital > retailCapital && (
+              <div className="mt-1.5 p-2 rounded bg-destructive/10 border border-destructive/20">
+                <p className="text-xs text-destructive font-medium">⚠️ Wholesale value is higher than Retail — some items may have incorrect prices.</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Check your stock items and ensure Retail Price ≥ Wholesale Price for each item.</p>
+                <div className="mt-1 space-y-0.5">
+                  {activeStock.filter(s => Number(s.wholesale_price) > Number(s.retail_price) && s.quantity > 0).slice(0, 5).map(s => (
+                    <p key={s.id} className="text-[10px] text-destructive">• {s.name}: Wholesale {fmt(Number(s.wholesale_price))} &gt; Retail {fmt(Number(s.retail_price))}</p>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 4. Stock Value (Retail) */}

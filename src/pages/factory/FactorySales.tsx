@@ -65,7 +65,7 @@ export default function FactorySales() {
   function addItem() {
     const product = activeProducts.find(p => p.id === selectedProduct);
     if (!product) return;
-    const q = parseInt(qty) || 1;
+    const q = parseFloat(qty) || 1;
     const price = priceType === 'wholesale' ? Number(product.wholesale_price) : Number(product.retail_price);
     setItems(prev => [...prev, {
       stock_item_id: product.id, item_name: product.name, category: product.category,

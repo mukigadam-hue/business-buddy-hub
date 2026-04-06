@@ -151,9 +151,9 @@ export default function StockPage() {
       image_url_1: editItem?.image_url_1 || '',
       image_url_2: editItem?.image_url_2 || '',
       image_url_3: editItem?.image_url_3 || '',
-      pieces_per_carton: parseInt(form.pieces_per_carton) || 0,
-      cartons_per_box: parseInt(form.cartons_per_box) || 0,
-      boxes_per_container: parseInt(form.boxes_per_container) || 0,
+      pieces_per_carton: parseFloat(form.pieces_per_carton) || 0,
+      cartons_per_box: parseFloat(form.cartons_per_box) || 0,
+      boxes_per_container: parseFloat(form.boxes_per_container) || 0,
     };
     if (editItem) {
       await updateStockItem(editItem.id, itemData);

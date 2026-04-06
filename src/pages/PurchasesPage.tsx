@@ -65,7 +65,7 @@ export default function PurchasesPage() {
       category: toSentenceCase(form.category.trim()),
       quality: toSentenceCase(form.quality.trim()),
       unit_type: form.unit_type,
-      quantity: parseInt(form.quantity) || 1,
+      quantity: parseFloat(form.quantity) || 1,
       unit_price: parseFloat(form.unit_price) || 0,
       wholesale_price: parseFloat(form.wholesale_price) || parseFloat(form.unit_price) || 0,
       retail_price: parseFloat(form.retail_price) || parseFloat(form.unit_price) || 0,

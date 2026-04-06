@@ -214,6 +214,9 @@ export default function StockPage() {
             <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowBuyingPrice(v => !v)}>
               {showBuyingPrice ? '← Hide' : '💰 Show'} Buying Price
             </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setScannerOpen(true)}>
+              <ScanLine className="h-3.5 w-3.5 mr-1" /> Scan
+            </Button>
             <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-7 text-xs"><Plus className="h-3.5 w-3.5 mr-1" /> Add Item</Button>

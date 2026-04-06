@@ -23,6 +23,7 @@ interface DiscoveredBusiness {
   business_code: string | null;
   products_description: string;
   country_code: string;
+  district: string;
 }
 
 export default function DiscoverPage() {

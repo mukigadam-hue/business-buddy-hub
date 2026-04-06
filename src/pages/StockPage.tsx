@@ -146,7 +146,7 @@ export default function StockPage() {
       wholesale_price: parseFloat(form.wholesale_price) || 0,
       retail_price: parseFloat(form.retail_price) || 0,
       quantity: parseFloat(form.quantity) || 0,
-      min_stock_level: parseInt(form.min_stock_level) || 5,
+      min_stock_level: parseFloat(form.min_stock_level) || 5,
       tax_rate: parseFloat(form.tax_rate) || 0,
       image_url_1: editItem?.image_url_1 || '',
       image_url_2: editItem?.image_url_2 || '',

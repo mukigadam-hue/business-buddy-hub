@@ -45,13 +45,13 @@ export default function DiscoverPage() {
 
   const searchBusinesses = useCallback(async (searchQuery: string) => {
     if (!navigator.onLine) {
-      // Offline: filter cached results
       const cached: DiscoveredBusiness[] = (() => { try { return JSON.parse(localStorage.getItem('biztrack_cache_discover') || '[]'); } catch { return []; } })();
       const q = searchQuery.toLowerCase();
       const filtered = cached.filter(b =>
-        (!q || b.name.toLowerCase().includes(q) || b.address?.toLowerCase().includes(q) || b.products_description?.toLowerCase().includes(q)) &&
+        (!q || b.name.toLowerCase().includes(q) || b.address?.toLowerCase().includes(q) || b.products_description?.toLowerCase().includes(q) || (b.district && b.district.toLowerCase().includes(q))) &&
         (filterType === 'all' || b.business_type === filterType) &&
-        (!filterCountry || !myCountry || b.country_code === myCountry)
+        (!filterCountry || !myCountry || b.country_code === myCountry) &&
+        (!districtFilter || (b.district && b.district.toLowerCase().includes(districtFilter.toLowerCase())))
       );
       setResults(filtered);
       setHasSearched(true);
@@ -64,13 +64,13 @@ export default function DiscoverPage() {
         _limit: 30,
         _offset: 0,
         _country_code: filterCountry ? myCountry : '',
+        _district: districtFilter.trim(),
       });
       if (error) throw error;
       const allResults = (data as DiscoveredBusiness[]) || [];
       const displayResults = filterType === 'all' ? allResults : allResults.filter(b => b.business_type === filterType);
       setResults(displayResults);
       setHasSearched(true);
-      // Merge into cache for offline use
       try {
         const existing: DiscoveredBusiness[] = JSON.parse(localStorage.getItem('biztrack_cache_discover') || '[]');
         const merged = [...existing];
@@ -87,7 +87,7 @@ export default function DiscoverPage() {
     } finally {
       setLoading(false);
     }
-  }, [filterCountry, filterType, myCountry]);
+  }, [filterCountry, filterType, myCountry, districtFilter]);
 
   useEffect(() => {
     searchBusinesses('');

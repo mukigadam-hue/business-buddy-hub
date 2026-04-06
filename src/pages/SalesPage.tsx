@@ -265,18 +265,18 @@ export default function SalesPage() {
 
   const availablePartsStock = activeStock.filter(s => s.quantity > 0);
 
-  function handleScanExistingItem(item: any, quantity: number) {
+  function handleScanExistingItem(item: any, qty: number) {
     const unitPrice = priceType === 'wholesale' ? Number(item.wholesale_price) : Number(item.retail_price);
     setItems(prev => [...prev, {
       stock_item_id: item.id,
       item_name: item.name,
       category: item.category,
       quality: item.quality,
-      quantity,
+      quantity: qty,
       price_type: priceType,
       unit_price: unitPrice,
     }]);
-    toast.success(`${item.name} × ${quantity} added to sale`);
+    toast.success(`${item.name} × ${qty} added to sale`);
   }
   function handleScanNewItem() {
     toast.success('New item created — scan again to add to sale');

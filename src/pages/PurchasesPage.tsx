@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Trash2, Package, ScanLine } from 'lucide-react';
+import { Plus, Trash2, Package, ScanLine, Search } from 'lucide-react';
 import BarcodeScanHandler from '@/components/BarcodeScanHandler';
 import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
@@ -44,18 +44,40 @@ export default function PurchasesPage() {
   const [amountPaid, setAmountPaid] = useState('');
   const [editPaymentPurchase, setEditPaymentPurchase] = useState<typeof purchases[0] | null>(null);
   const [editAmountPaid, setEditAmountPaid] = useState('');
+  const [stockSearch, setStockSearch] = useState('');
+  const [showStockPicker, setShowStockPicker] = useState(false);
 
   const { locked: submitLocked, withLock } = useSubmitLock();
   const [scannerOpen, setScannerOpen] = useState(false);
   const activeStock = stock.filter(s => !s.deleted_at);
-  const suggestions = activeStock.map(s => s.name);
   const existingCategories = [...new Set(activeStock.map(s => s.category).filter(Boolean))];
+
+  // Filtered stock for the smart picker
+  const filteredStockItems = activeStock.filter(s => {
+    if (!stockSearch) return true;
+    const q = stockSearch.toLowerCase();
+    return s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || (s.quality || '').toLowerCase().includes(q);
+  });
 
   const todayPurchases = purchases.filter(p => new Date(p.created_at).toDateString() === new Date().toDateString());
   const previousPurchases = purchases.filter(p => new Date(p.created_at).toDateString() !== new Date().toDateString());
 
   function applyCase(field: 'name' | 'category' | 'quality') {
     setForm(f => ({ ...f, [field]: toSentenceCase(f[field]) }));
+  }
+
+  function selectStockItem(s: typeof activeStock[0]) {
+    setForm(f => ({
+      ...f,
+      name: s.name,
+      category: s.category,
+      quality: s.quality || '',
+      unit_price: String(s.buying_price || ''),
+      wholesale_price: String(s.wholesale_price || ''),
+      retail_price: String(s.retail_price || ''),
+    }));
+    setShowStockPicker(false);
+    setStockSearch('');
   }
 
   function addItem() {
@@ -185,16 +207,59 @@ export default function PurchasesPage() {
             </div>
           </div>
 
+          {/* Smart Stock Item Picker */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-1.5">
+              <Search className="h-3.5 w-3.5" /> Select from Stock or Type New
+            </Label>
+            <div className="flex gap-1.5">
+              <Input
+                className="flex-1"
+                value={stockSearch}
+                onChange={e => { setStockSearch(e.target.value); setShowStockPicker(true); }}
+                onFocus={() => setShowStockPicker(true)}
+                placeholder="🔍 Search stock items by name, category, quality..."
+              />
+              <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
+                <ScanLine className="h-4 w-4" />
+              </Button>
+            </div>
+            {showStockPicker && (
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-card shadow-md">
+                {filteredStockItems.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">No matching items in stock</p>
+                ) : (
+                  filteredStockItems.map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => selectStockItem(s)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 text-sm border-b border-border last:border-0"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-foreground">{s.name}</span>
+                        {s.category && <span className="text-xs ml-1.5 text-muted-foreground">· {s.category}</span>}
+                        {s.quality && <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary">{s.quality}</span>}
+                      </div>
+                      <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">Qty: {s.quantity}</span>
+                    </button>
+                  ))
+                )}
+                <button
+                  type="button"
+                  onClick={() => { setShowStockPicker(false); setForm(f => ({ ...f, name: stockSearch })); setStockSearch(''); }}
+                  className="w-full px-3 py-2 text-left text-sm text-primary font-medium hover:bg-primary/5 border-t border-border"
+                >
+                  ➕ Add as new item: "{stockSearch || '...'}"
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[150px]">
               <Label>Item Name</Label>
-              <div className="flex gap-1.5">
-                <Input className="flex-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => applyCase('name')} list="stock-suggestions" placeholder="Type or select..." />
-                <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
-                  <ScanLine className="h-4 w-4" />
-                </Button>
-              </div>
-              <datalist id="stock-suggestions">{suggestions.map(s => <option key={s} value={s} />)}</datalist>
+              <Input className="flex-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => applyCase('name')} placeholder="Item name (auto-filled from picker)" />
             </div>
             <div className="w-28">
               <Label>Category</Label>

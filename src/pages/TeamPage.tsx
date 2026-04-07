@@ -157,11 +157,10 @@ function ReceivedInviteCodeSection({ onJoined }: { onJoined: () => Promise<void>
         </p>
         <div className="flex gap-2">
           <Input
-            placeholder="Enter invite code (e.g. ABC123)"
+            placeholder="Enter invite code (e.g. UG-ABC123)"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             className="font-mono tracking-wider uppercase"
-            maxLength={10}
           />
           <Button onClick={handleRedeem} disabled={loading || !code.trim()}>
             {loading ? 'Joining...' : 'Join'}

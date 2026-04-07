@@ -96,8 +96,8 @@ function ReceivedInviteCodeSection({ onJoined }: { onJoined: () => Promise<void>
         <h2 className="text-base font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> 📩 I Received an Invite Code</h2>
         <p className="text-sm text-muted-foreground">If a <strong>property owner or business owner</strong> sent you a code, enter it here to join their team.</p>
         <div className="flex gap-2">
-          <Input placeholder="Enter invite code (e.g. ABC123)" value={code} onChange={e => setCode(e.target.value.toUpperCase())}
-            className="font-mono tracking-wider uppercase" maxLength={10} />
+          <Input placeholder="Enter invite code (e.g. UG-ABC123)" value={code} onChange={e => setCode(e.target.value.toUpperCase())}
+            className="font-mono tracking-wider uppercase" />
           <Button onClick={handleRedeem} disabled={loading || !code.trim()}>{loading ? 'Joining...' : 'Join'}</Button>
         </div>
       </CardContent>

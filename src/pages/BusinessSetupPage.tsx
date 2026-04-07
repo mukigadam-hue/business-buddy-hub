@@ -340,7 +340,7 @@ export default function BusinessSetupPage() {
               <div>
                 <Label>Invite Code from {businessType === 'property' ? 'Manager' : 'Owner'}</Label>
                 <Input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())}
-                  required placeholder="Enter the code you received" maxLength={6}
+                  required placeholder="Enter the code you received (e.g. UG-ABC123)"
                   className="text-center text-lg tracking-widest font-mono" />
                 <p className="text-xs text-muted-foreground mt-1">
                   Ask your {businessType === 'property' ? 'property manager' : 'business/factory owner'} for the invite code.

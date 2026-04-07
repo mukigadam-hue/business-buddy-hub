@@ -232,7 +232,7 @@ export default function FactoryTeam() {
               <h2 className="text-sm font-semibold flex items-center gap-2"><Send className="h-4 w-4" /> 📩 I Received an Invite Code</h2>
               <p className="text-xs text-muted-foreground">If your <strong>boss or factory owner</strong> sent you a code, enter it here to join their team as a worker.</p>
               <div className="flex gap-2">
-                <Input placeholder="Enter invite code" value={redeemCode} onChange={e => setRedeemCode(e.target.value.toUpperCase())} className="font-mono" maxLength={10} />
+                <Input placeholder="Enter invite code (e.g. UG-ABC123)" value={redeemCode} onChange={e => setRedeemCode(e.target.value.toUpperCase())} className="font-mono" />
                 <Button onClick={handleRedeem} disabled={loading || !redeemCode.trim()} size="sm">{loading ? 'Joining...' : 'Join'}</Button>
               </div>
             </CardContent>

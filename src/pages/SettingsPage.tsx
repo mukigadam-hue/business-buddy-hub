@@ -125,6 +125,11 @@ function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated:
           </div>
           <div><Label>{nameLabel} *</Label><Input placeholder={namePlaceholder} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
           <div><Label>Address</Label><Input placeholder="Location" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
+          <div>
+            <Label>District / Region / Province</Label>
+            <Input placeholder="e.g. Kampala, Nairobi, Lagos..." value={form.district} onChange={e => setForm(f => ({ ...f, district: e.target.value }))} />
+            <p className="text-[10px] text-muted-foreground mt-0.5">Helps nearby customers discover your business</p>
+          </div>
           <div><Label>Contact</Label><Input placeholder={selectedCountry ? `${selectedCountry.phonePrefix} ...` : 'Phone number'} value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} /></div>
           <div><Label>Email</Label><Input type="email" placeholder="email@example.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
           <Button type="submit" className="w-full" disabled={loading}>

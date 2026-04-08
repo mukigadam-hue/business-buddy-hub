@@ -57,7 +57,7 @@ function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated:
         }
       }
     }
-    setForm({ name: '', address: '', contact: '', email: '' });
+    setForm({ name: '', address: '', contact: '', email: '', district: '' });
     setOpen(false);
     setLoading(false);
     onCreated();

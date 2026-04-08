@@ -1230,9 +1230,16 @@ export default function SettingsPage() {
           <form onSubmit={handleSubmit} className="space-y-3">
             <div><Label>Business Name</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
             <div><Label>Address</Label><Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
+            <div>
+              <Label>District / Region / Province</Label>
+              <Input value={form.district} onChange={e => setForm(f => ({ ...f, district: e.target.value }))} placeholder="e.g. Kampala, Nairobi, Lagos..." />
+              <p className="text-[10px] text-muted-foreground mt-0.5">Helps nearby customers discover your business</p>
+            </div>
             <div><Label>Contact</Label><Input value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} /></div>
             <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-            <Button type="submit" className="w-full"><Save className="h-4 w-4 mr-2" />Save Changes</Button>
+            <Button type="submit" className="w-full" disabled={saving}>
+              <Save className="h-4 w-4 mr-2" />{saving ? 'Saving...' : 'Save Changes'}
+            </Button>
           </form>
         </CardContent>
       </Card>

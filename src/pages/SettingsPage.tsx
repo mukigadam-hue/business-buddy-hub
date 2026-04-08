@@ -400,9 +400,13 @@ export default function SettingsPage() {
     return role !== null && role !== 'owner';
   });
 
+  const [saving, setSaving] = useState(false);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await updateBusiness({ name: form.name.trim(), address: form.address.trim(), contact: form.contact.trim(), email: form.email.trim() });
+    setSaving(true);
+    await updateBusiness({ name: form.name.trim(), address: form.address.trim(), contact: form.contact.trim(), email: form.email.trim(), district: form.district.trim() } as any);
+    setSaving(false);
   }
 
   async function handleSavePassword() {

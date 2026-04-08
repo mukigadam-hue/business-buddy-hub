@@ -131,37 +131,39 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     if (!shareDialog) return;
     setBusy(true);
     try {
+      // Upload the actual file to get a direct public URL to the image/pdf
       const shareUrl = shareDialog.url || await uploadShareFile(shareDialog.blob, shareDialog.name);
       setShareDialog(current => current ? { ...current, url: shareUrl } : current);
 
-      const message = encodeURIComponent(`Here is your receipt 🧾\n${shareUrl}`);
-      const shareUrlEncoded = encodeURIComponent(shareUrl);
+      // For WhatsApp: share the direct file URL so it renders as an image/pdf preview
+      const fileUrl = shareUrl;
       let url = '';
 
       switch (platform) {
         case 'whatsapp':
-          url = `https://wa.me/?text=${message}`;
+          // Send just the file URL so WhatsApp renders an image/pdf preview
+          url = `https://wa.me/?text=${encodeURIComponent(fileUrl)}`;
           break;
         case 'telegram':
-          url = `https://t.me/share/url?url=${shareUrlEncoded}&text=${encodeURIComponent('Here is your receipt 🧾')}`;
+          url = `https://t.me/share/url?url=${encodeURIComponent(fileUrl)}`;
           break;
         case 'email':
-          url = `mailto:?subject=${encodeURIComponent('Receipt')}&body=${message}`;
+          url = `mailto:?subject=${encodeURIComponent('Receipt')}&body=${encodeURIComponent('Here is your receipt:\n' + fileUrl)}`;
           break;
         case 'x':
-          url = `https://x.com/intent/tweet?text=${encodeURIComponent('Here is your receipt 🧾')}&url=${shareUrlEncoded}`;
+          url = `https://x.com/intent/tweet?url=${encodeURIComponent(fileUrl)}`;
           break;
         case 'facebook':
-          url = `https://www.facebook.com/sharer/sharer.php?u=${shareUrlEncoded}`;
+          url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(fileUrl)}`;
           break;
       }
 
       if (url) window.open(url, '_blank', 'noopener,noreferrer');
-      toast.success('Receipt file link is ready and included in the share.');
+      toast.success('Receipt shared!');
       setShareDialog(null);
     } catch {
       downloadBlob(shareDialog.blob, shareDialog.name);
-      toast.error('Could not create a shareable receipt link, so the file was downloaded instead.');
+      toast.error('Could not create a shareable link. File downloaded instead.');
     } finally {
       setBusy(false);
     }

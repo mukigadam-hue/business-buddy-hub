@@ -85,12 +85,12 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     try {
       const file = new File([blob], name, { type });
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Receipt', text: 'Here is your receipt' });
+        await navigator.share({ files: [file], title: 'Receipt' });
         toast.success('Shared successfully!');
         return true;
       }
     } catch (err: any) {
-      if (err.name === 'AbortError') return true; // user cancelled, don't show fallback
+      if (err.name === 'AbortError') return true;
     }
     return false;
   }

@@ -306,6 +306,7 @@ export default function SettingsPage() {
       address: currentBusiness?.address || '',
       contact: currentBusiness?.contact || '',
       email: currentBusiness?.email || '',
+      district: (currentBusiness as any)?.district || '',
     });
     setSettingsPassword(currentBusiness?.settings_password || '');
   }, [currentBusiness?.id]);

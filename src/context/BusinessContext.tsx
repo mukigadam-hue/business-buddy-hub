@@ -614,10 +614,15 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const updateBusiness = useCallback(async (updates: Partial<Business>) => {
     if (!currentBusinessId) return;
-    const { error } = await supabase.from('businesses').update(updates).eq('id', currentBusinessId);
-    if (error) { toast.error(error.message); return; }
+    // Optimistic update — show changes immediately
     setBusinesses(prev => prev.map(b => b.id === currentBusinessId ? { ...b, ...updates } : b));
     toast.success('Business updated!');
+    const { error } = await supabase.from('businesses').update(updates).eq('id', currentBusinessId);
+    if (error) {
+      toast.error('Save failed: ' + error.message);
+      // Revert on error
+      await loadBusinesses();
+    }
   }, [currentBusinessId]);
 
   const addStockItem = useCallback(async (item: Omit<StockItem, 'id' | 'business_id' | 'created_at' | 'updated_at' | 'deleted_at' | 'deleted_by' | 'pieces_per_carton' | 'cartons_per_box' | 'boxes_per_container'> & { pieces_per_carton?: number; cartons_per_box?: number; boxes_per_container?: number }) => {

@@ -288,7 +288,7 @@ export default function SettingsPage() {
     address: currentBusiness?.address || '',
     contact: currentBusiness?.contact || '',
     email: currentBusiness?.email || '',
-    district: (currentBusiness as any)?.district || '',
+    district: currentBusiness?.district || '',
   });
   const [settingsPassword, setSettingsPassword] = useState(currentBusiness?.settings_password || '');
   const [currencyInput, setCurrencyInput] = useState(currency);
@@ -316,7 +316,7 @@ export default function SettingsPage() {
       address: currentBusiness?.address || '',
       contact: currentBusiness?.contact || '',
       email: currentBusiness?.email || '',
-      district: (currentBusiness as any)?.district || '',
+      district: currentBusiness?.district || '',
     });
     setSettingsPassword(currentBusiness?.settings_password || '');
   }, [currentBusiness?.id]);

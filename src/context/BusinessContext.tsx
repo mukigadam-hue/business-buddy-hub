@@ -155,6 +155,10 @@ export interface Business {
   business_code: string;
   settings_password: string;
   country_code: string;
+  district: string;
+  currency_symbol: string;
+  products_description: string;
+  is_discoverable: boolean;
   created_at: string;
 }
 

@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
 import { Share2, Download, Image, FileText, Printer, Loader2, MessageCircle, Mail, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
@@ -9,16 +8,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 
 interface ReceiptActionsProps {
   receiptRef: React.RefObject<HTMLDivElement>;
@@ -30,16 +21,31 @@ interface ReceiptActionsProps {
 
 export default function ReceiptActions({ receiptRef, fileName = 'receipt', canShare = true, canDownload = true, canPrint = true }: ReceiptActionsProps) {
   const [busy, setBusy] = useState(false);
-  const [shareDialog, setShareDialog] = useState<{ blob: Blob; name: string; type: 'image' | 'pdf'; url?: string } | null>(null);
+  // Pre-generate canvas on mount for instant sharing
+  const cachedCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    // Pre-render canvas after a short delay to ensure receipt is painted
+    const timer = setTimeout(async () => {
+      if (receiptRef.current) {
+        try {
+          cachedCanvasRef.current = await html2canvas(receiptRef.current, {
+            scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
+          });
+        } catch { /* silent */ }
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [receiptRef]);
 
   async function getCanvas() {
+    if (cachedCanvasRef.current) return cachedCanvasRef.current;
     if (!receiptRef.current) return null;
-    return html2canvas(receiptRef.current, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
+    const canvas = await html2canvas(receiptRef.current, {
+      scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
     });
+    cachedCanvasRef.current = canvas;
+    return canvas;
   }
 
   async function generateImageBlob(): Promise<Blob | null> {
@@ -70,40 +76,27 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     URL.revokeObjectURL(url);
   }
 
-  async function uploadShareFile(blob: Blob, name: string) {
-    const ext = name.split('.').pop() || (blob.type === 'application/pdf' ? 'pdf' : 'png');
-    const path = `receipts/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from('payment-proofs').upload(path, blob, {
-      contentType: blob.type || 'application/octet-stream',
-      upsert: false,
-    });
-    if (error) throw error;
-    return supabase.storage.from('payment-proofs').getPublicUrl(path).data.publicUrl;
-  }
-
-  async function tryNativeShare(blob: Blob, name: string, type: string): Promise<boolean> {
-    try {
-      const file = new File([blob], name, { type });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Receipt' });
-        toast.success('Shared successfully!');
-        return true;
-      }
-    } catch (err: any) {
-      if (err.name === 'AbortError') return true;
-    }
-    return false;
-  }
-
   async function handleShareAsImage() {
     setBusy(true);
     try {
       const blob = await generateImageBlob();
       if (!blob) { toast.error('Failed to generate image'); return; }
-      const shared = await tryNativeShare(blob, `${fileName}.png`, 'image/png');
-      if (!shared) {
-        setShareDialog({ blob, name: `${fileName}.png`, type: 'image' });
+      const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
+      
+      // Always try native file share first — sends actual image file, not a link
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'Receipt' });
+          toast.success('Shared successfully!');
+          return;
+        } catch (err: any) {
+          if (err.name === 'AbortError') return;
+        }
       }
+      
+      // Fallback: download the file directly
+      downloadBlob(blob, `${fileName}.png`);
+      toast.success('Receipt image downloaded — share it from your gallery!');
     } catch {
       toast.error('Share failed');
     } finally {
@@ -116,54 +109,22 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     try {
       const blob = await generatePDFBlob();
       if (!blob) { toast.error('Failed to generate PDF'); return; }
-      const shared = await tryNativeShare(blob, `${fileName}.pdf`, 'application/pdf');
-      if (!shared) {
-        setShareDialog({ blob, name: `${fileName}.pdf`, type: 'pdf' });
+      const file = new File([blob], `${fileName}.pdf`, { type: 'application/pdf' });
+      
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'Receipt' });
+          toast.success('Shared successfully!');
+          return;
+        } catch (err: any) {
+          if (err.name === 'AbortError') return;
+        }
       }
+      
+      downloadBlob(blob, `${fileName}.pdf`);
+      toast.success('Receipt PDF downloaded — share it from your files!');
     } catch {
       toast.error('Share failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handlePlatformShare(platform: string) {
-    if (!shareDialog) return;
-    setBusy(true);
-    try {
-      // Upload the actual file to get a direct public URL to the image/pdf
-      const shareUrl = shareDialog.url || await uploadShareFile(shareDialog.blob, shareDialog.name);
-      setShareDialog(current => current ? { ...current, url: shareUrl } : current);
-
-      // For WhatsApp: share the direct file URL so it renders as an image/pdf preview
-      const fileUrl = shareUrl;
-      let url = '';
-
-      switch (platform) {
-        case 'whatsapp':
-          // Send just the file URL so WhatsApp renders an image/pdf preview
-          url = `https://wa.me/?text=${encodeURIComponent(fileUrl)}`;
-          break;
-        case 'telegram':
-          url = `https://t.me/share/url?url=${encodeURIComponent(fileUrl)}`;
-          break;
-        case 'email':
-          url = `mailto:?subject=${encodeURIComponent('Receipt')}&body=${encodeURIComponent('Here is your receipt:\n' + fileUrl)}`;
-          break;
-        case 'x':
-          url = `https://x.com/intent/tweet?url=${encodeURIComponent(fileUrl)}`;
-          break;
-        case 'facebook':
-          url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(fileUrl)}`;
-          break;
-      }
-
-      if (url) window.open(url, '_blank', 'noopener,noreferrer');
-      toast.success('Receipt shared!');
-      setShareDialog(null);
-    } catch {
-      downloadBlob(shareDialog.blob, shareDialog.name);
-      toast.error('Could not create a shareable link. File downloaded instead.');
     } finally {
       setBusy(false);
     }
@@ -206,43 +167,40 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     if (!receiptRef.current) return;
     setBusy(true);
     try {
-      // Generate image and print it — works reliably across devices and with receipt printers
       const canvas = await getCanvas();
       if (!canvas) { toast.error('Failed to generate receipt for printing'); return; }
       const imgData = canvas.toDataURL('image/png');
 
-      const printWindow = window.open('', '_blank', 'width=400,height=600');
-      if (!printWindow) {
-        // Fallback: try native share with print-capable apps
-        const blob = await generateImageBlob();
-        if (blob) {
-          const shared = await tryNativeShare(blob, `${fileName}.png`, 'image/png');
-          if (!shared) {
-            downloadBlob(blob, `${fileName}.png`);
-            toast.info('Pop-up blocked. Receipt image downloaded — open it and print from your gallery.');
+      // Try native share first — this allows sharing to printer apps on mobile
+      const blob = await generateImageBlob();
+      if (blob) {
+        const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
+        if (navigator.canShare?.({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'Print Receipt' });
+            toast.success('Receipt sent to printer app!');
+            return;
+          } catch (err: any) {
+            if (err.name === 'AbortError') return;
+            // Fall through to window.print approach
           }
         }
-        return;
       }
 
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html><head><title>Receipt</title>
-        <style>
-          * { margin: 0; padding: 0; }
-          body { display: flex; justify-content: center; background: white; }
-          img { max-width: 100%; height: auto; }
-          @media print { 
-            body { margin: 0; }
-            img { width: 80mm; }
-          }
-        </style>
-        </head><body><img src="${imgData}" /></body></html>
-      `);
-      printWindow.document.close();
-      printWindow.onload = () => {
-        setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
-      };
+      // Fallback: open in new window and trigger print
+      const printWindow = window.open('', '_blank', 'width=400,height=600');
+      if (printWindow) {
+        printWindow.document.write(`<!DOCTYPE html><html><head><title>Receipt</title>
+          <style>*{margin:0;padding:0}body{display:flex;justify-content:center;background:#fff}img{max-width:100%;height:auto}@media print{body{margin:0}img{width:80mm}}</style>
+          </head><body><img src="${imgData}" onload="setTimeout(function(){window.print();window.close()},200)" /></body></html>`);
+        printWindow.document.close();
+      } else {
+        // Pop-up blocked: download instead
+        if (blob) {
+          downloadBlob(blob, `${fileName}.png`);
+          toast.info('Pop-up blocked. Receipt downloaded — open it and print from your gallery.');
+        }
+      }
     } catch {
       toast.error('Print failed');
     } finally {
@@ -250,114 +208,66 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     }
   }
 
-  const socialPlatforms = [
-    { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, color: 'bg-green-500 hover:bg-green-600 text-white' },
-    { id: 'telegram', label: 'Telegram', icon: Send, color: 'bg-blue-500 hover:bg-blue-600 text-white' },
-    { id: 'facebook', label: 'Facebook', icon: Share2, color: 'bg-blue-700 hover:bg-blue-800 text-white' },
-    { id: 'x', label: 'X (Twitter)', icon: Share2, color: 'bg-gray-900 hover:bg-black text-white' },
-    { id: 'email', label: 'Email', icon: Mail, color: 'bg-amber-500 hover:bg-amber-600 text-white' },
-  ];
-
   const premiumToast = () => toast.info('Premium feature — upgrade for $52/year to unlock.');
 
   return (
-    <>
-      <div className="flex gap-2 justify-center pt-3 flex-wrap">
-        {/* Share dropdown */}
-        {canShare ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" className="gap-1.5" disabled={busy}>
-                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />} Share
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center">
-              <DropdownMenuItem onClick={handleShareAsImage} className="gap-2">
-                <Image className="h-4 w-4" /> Share as Image
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleShareAsPDF} className="gap-2">
-                <FileText className="h-4 w-4" /> Share as PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button size="sm" variant="outline" className="gap-1.5 opacity-60" onClick={premiumToast}>
-            <Share2 className="h-3.5 w-3.5" /> Share 🔒
-          </Button>
-        )}
+    <div className="flex gap-2 justify-center pt-3 flex-wrap">
+      {/* Share dropdown */}
+      {canShare ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="gap-1.5" disabled={busy}>
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />} Share
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center">
+            <DropdownMenuItem onClick={handleShareAsImage} className="gap-2">
+              <Image className="h-4 w-4" /> Share as Image
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleShareAsPDF} className="gap-2">
+              <FileText className="h-4 w-4" /> Share as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <Button size="sm" variant="outline" className="gap-1.5 opacity-60" onClick={premiumToast}>
+          <Share2 className="h-3.5 w-3.5" /> Share 🔒
+        </Button>
+      )}
 
-        {/* Save dropdown */}
-        {canDownload ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" className="gap-1.5" disabled={busy}>
-                <Download className="h-3.5 w-3.5" /> Save
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center">
-              <DropdownMenuItem onClick={handleSaveImage} className="gap-2">
-                <Image className="h-4 w-4" /> Save as Image
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSavePDF} className="gap-2">
-                <FileText className="h-4 w-4" /> Save as PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button size="sm" variant="outline" className="gap-1.5 opacity-60" onClick={premiumToast}>
-            <Download className="h-3.5 w-3.5" /> Save 🔒
-          </Button>
-        )}
+      {/* Save dropdown */}
+      {canDownload ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="gap-1.5" disabled={busy}>
+              <Download className="h-3.5 w-3.5" /> Save
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center">
+            <DropdownMenuItem onClick={handleSaveImage} className="gap-2">
+              <Image className="h-4 w-4" /> Save as Image
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSavePDF} className="gap-2">
+              <FileText className="h-4 w-4" /> Save as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <Button size="sm" variant="outline" className="gap-1.5 opacity-60" onClick={premiumToast}>
+          <Download className="h-3.5 w-3.5" /> Save 🔒
+        </Button>
+      )}
 
-        {/* Print */}
-        {canPrint ? (
-          <Button size="sm" variant="outline" onClick={handlePrint} className="gap-1.5" disabled={busy}>
-            <Printer className="h-3.5 w-3.5" /> Print
-          </Button>
-        ) : (
-          <Button size="sm" variant="outline" className="gap-1.5 opacity-60" onClick={premiumToast}>
-            <Printer className="h-3.5 w-3.5" /> Print 🔒
-          </Button>
-        )}
-      </div>
-
-      {/* Social media share dialog (fallback when native share isn't available) */}
-      <Dialog open={!!shareDialog} onOpenChange={(open) => !open && setShareDialog(null)}>
-        <DialogContent className="max-w-xs">
-          <DialogHeader>
-            <DialogTitle className="text-center">Share Receipt</DialogTitle>
-            <DialogDescription className="text-center text-sm text-muted-foreground">
-                Choose a platform. The exact JPG or PDF receipt file will be shared through a direct file link.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-2 pt-2">
-            {socialPlatforms.map((p) => (
-              <Button
-                key={p.id}
-                size="sm"
-                className={`gap-2 ${p.color}`}
-                  disabled={busy}
-                onClick={() => handlePlatformShare(p.id)}
-              >
-                <p.icon className="h-4 w-4" />
-                {p.label}
-              </Button>
-            ))}
-          </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="mt-1"
-            onClick={() => {
-              if (shareDialog) downloadBlob(shareDialog.blob, shareDialog.name);
-              toast.success('File downloaded!');
-              setShareDialog(null);
-            }}
-          >
-            <Download className="h-4 w-4 mr-1.5" /> Just download
-          </Button>
-        </DialogContent>
-      </Dialog>
-    </>
+      {/* Print */}
+      {canPrint ? (
+        <Button size="sm" variant="outline" onClick={handlePrint} className="gap-1.5" disabled={busy}>
+          <Printer className="h-3.5 w-3.5" /> Print
+        </Button>
+      ) : (
+        <Button size="sm" variant="outline" className="gap-1.5 opacity-60" onClick={premiumToast}>
+          <Printer className="h-3.5 w-3.5" /> Print 🔒
+        </Button>
+      )}
+    </div>
   );
 }

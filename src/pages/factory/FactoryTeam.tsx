@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit2, Trash2, Users, UserPlus, Send, Calendar, Clock, User, Wallet, Shield, Crown, AlertTriangle, ArrowDownCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, UserPlus, Send, Calendar, Clock, User, Wallet, Shield, Crown, AlertTriangle, ArrowDownCircle, Share2, MessageCircle } from 'lucide-react';
 import WorkerPaymentManager from '@/components/factory/WorkerPaymentManager';
 import AdSpace from '@/components/AdSpace';
 import { toTitleCase } from '@/lib/utils';
@@ -28,6 +28,28 @@ interface AppMember {
 }
 
 const RANKS = ['Supervisor', 'Inspector', 'Maintenance', 'Security', 'Worker', 'Operator', 'Quality Control', 'Driver'];
+
+function FactoryShareButtons({ code }: { code: string }) {
+  const message = `You've been invited to join our factory team! Use this invite code in the BizTrack app: ${code}`;
+  const encoded = encodeURIComponent(message);
+  async function handleNativeShare() {
+    try {
+      if (navigator.share) { await navigator.share({ title: 'Factory Invite Code', text: message }); toast.success('Shared!'); }
+      else { await navigator.clipboard.writeText(message); toast.success('Message copied!'); }
+    } catch (err: any) { if (err?.name !== 'AbortError') { await navigator.clipboard.writeText(message); toast.success('Copied!'); } }
+  }
+  return (
+    <div className="flex items-center gap-2 flex-wrap mt-2">
+      <span className="text-xs text-muted-foreground">Share via:</span>
+      <button className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleNativeShare}><Share2 className="h-4 w-4" />Share</button>
+      <button className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(`https://wa.me/?text=${encoded}`, '_blank', 'noopener,noreferrer')}><MessageCircle className="h-4 w-4" />WhatsApp</button>
+      <button className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white" onClick={() => window.open(`https://t.me/share/url?url=&text=${encoded}`, '_blank', 'noopener,noreferrer')}><Send className="h-4 w-4" />Telegram</button>
+      <button className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-gray-900 hover:bg-black text-white" onClick={() => window.open(`https://x.com/intent/tweet?text=${encoded}`, '_blank', 'noopener,noreferrer')}><Share2 className="h-4 w-4" />X</button>
+      <button className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted hover:bg-muted/80 text-foreground" onClick={() => window.open(`sms:?body=${encoded}`, '_blank')}><MessageCircle className="h-4 w-4" />SMS</button>
+      <button className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted hover:bg-muted/80 text-foreground" onClick={() => { navigator.clipboard.writeText(code); toast.success('Code copied!'); }}><Share2 className="h-4 w-4" />Copy</button>
+    </div>
+  );
+}
 
 export default function FactoryTeam() {
   const { teamMembers, addTeamMember, updateTeamMember, deleteTeamMember } = useFactory();
@@ -215,9 +237,12 @@ export default function FactoryTeam() {
                 <h2 className="text-sm font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> 👔 Invite My Worker to App</h2>
                 <p className="text-xs text-muted-foreground">As the <strong>owner/boss</strong>, generate a code and send it to your worker. They will enter it on their phone to join your factory team.</p>
                 {workerCode ? (
-                  <div className="rounded-lg p-3 text-center bg-primary/5">
-                    <span className="text-2xl font-mono font-bold tracking-widest">{workerCode}</span>
-                    <p className="text-xs text-muted-foreground mt-1">🔐 Send this code to your worker — Expires in 7 days</p>
+                  <div className="space-y-2">
+                    <div className="rounded-lg p-3 text-center bg-primary/5">
+                      <span className="text-2xl font-mono font-bold tracking-widest">{workerCode}</span>
+                      <p className="text-xs text-muted-foreground mt-1">🔐 Send this code to your worker — Expires in 7 days</p>
+                    </div>
+                    <FactoryShareButtons code={workerCode} />
                   </div>
                 ) : (
                   <Button onClick={handleGenCode} disabled={loading} size="sm">Generate Code for My Worker</Button>

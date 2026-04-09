@@ -217,9 +217,9 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
               <Select value={durationType} onValueChange={setDurationType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {asset.hourly_price > 0 && <SelectItem value="hourly">Hourly ({fmt(asset.hourly_price)}/hr)</SelectItem>}
-                  {asset.daily_price > 0 && <SelectItem value="daily">Daily ({fmt(asset.daily_price)}/day)</SelectItem>}
-                  {asset.monthly_price > 0 && <SelectItem value="monthly">Monthly ({fmt(asset.monthly_price)}/mo)</SelectItem>}
+                  {(asset.hourly_price > 0 || (!asset.daily_price && !asset.monthly_price)) && <SelectItem value="hourly">Hourly ({fmt(asset.hourly_price || 0)}/hr)</SelectItem>}
+                  {(asset.daily_price > 0 || (!asset.hourly_price && !asset.monthly_price)) && <SelectItem value="daily">Daily ({fmt(asset.daily_price || 0)}/day)</SelectItem>}
+                  {(asset.monthly_price > 0 || (!asset.hourly_price && !asset.daily_price)) && <SelectItem value="monthly">Monthly ({fmt(asset.monthly_price || 0)}/mo)</SelectItem>}
                 </SelectContent>
               </Select>
             </div>

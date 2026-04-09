@@ -87,6 +87,12 @@ function ShareButtons({ code, type }: { code: string; type: 'worker' }) {
       bg: 'bg-blue-500 hover:bg-blue-600 text-white',
     },
     {
+      name: 'X',
+      icon: <Share2 className="h-4 w-4" />,
+      url: `https://x.com/intent/tweet?text=${encoded}`,
+      bg: 'bg-gray-900 hover:bg-black text-white',
+    },
+    {
       name: 'SMS',
       icon: <MessageCircle className="h-4 w-4" />,
       url: `sms:?body=${encoded}`,

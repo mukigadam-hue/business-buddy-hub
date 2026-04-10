@@ -41,6 +41,20 @@ interface Product {
   image_url_1: string | null;
 }
 
+interface PropertyAssetPreview {
+  id: string;
+  business_id: string;
+  name: string;
+  description: string;
+  category: string;
+  sub_category: string;
+  location: string;
+  hourly_price: number;
+  daily_price: number;
+  monthly_price: number;
+  image_url_1: string | null;
+}
+
 interface Review {
   id: string;
   reviewer_id: string;
@@ -96,11 +110,57 @@ function ProductsWithLightbox({ products, fmt }: { products: Product[]; fmt: (n:
   );
 }
 
+function PropertyAssetsWithLightbox({ assets, fmt }: { assets: PropertyAssetPreview[]; fmt: (n: number) => string }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIdx, setLightboxIdx] = useState(0);
+
+  function openImage(url: string) {
+    setLightboxImages([url]);
+    setLightboxIdx(0);
+    setLightboxOpen(true);
+  }
+
+  return (
+    <div className="space-y-2 mt-2">
+      {assets.map((asset) => {
+        const prices = [asset.hourly_price, asset.daily_price, asset.monthly_price].filter((price) => Number(price) > 0);
+        const fromPrice = prices.length > 0 ? Math.min(...prices) : 0;
+
+        return (
+          <div key={asset.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+            {asset.image_url_1 ? (
+              <img src={asset.image_url_1} alt={asset.name} className="h-12 w-12 rounded object-cover border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => openImage(asset.image_url_1!)} />
+            ) : (
+              <div className="h-12 w-12 rounded bg-muted flex items-center justify-center text-base">🏠</div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate">{asset.name}</p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="capitalize">{asset.sub_category || asset.category}</span>
+                {asset.location && <span>• {asset.location}</span>}
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-semibold text-primary">{fromPrice > 0 ? `From ${fmt(fromPrice)}` : 'Contact owner'}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {asset.hourly_price > 0 ? 'Hourly' : asset.daily_price > 0 ? 'Daily' : asset.monthly_price > 0 ? 'Monthly' : 'Custom'}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+      <ImageLightbox images={lightboxImages} initialIndex={lightboxIdx} open={lightboxOpen} onOpenChange={setLightboxOpen} title="Asset photo" />
+    </div>
+  );
+}
+
 export default function BusinessDetailDialog({ business, open, onOpenChange, onOrderOrBook }: Props) {
   const { user } = useAuth();
   const { currentBusiness } = useBusiness();
   const { fmt } = useCurrency();
   const [products, setProducts] = useState<Product[]>([]);
+  const [propertyAssets, setPropertyAssets] = useState<PropertyAssetPreview[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [likedReviews, setLikedReviews] = useState<Set<string>>(new Set());
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -109,14 +169,31 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
   const [newRating, setNewRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const isProperty = business?.business_type === 'property';
+  const isFactory = business?.business_type === 'factory';
 
   const loadProducts = useCallback(async () => {
     if (!business) return;
     setLoadingProducts(true);
     try {
+      if (business.business_type === 'property') {
+        const { data, error } = await supabase.rpc('search_property_assets', {
+          _query: '',
+          _category: '',
+          _location: '',
+          _limit: 200,
+          _offset: 0,
+        });
+        if (error) throw error;
+        setPropertyAssets(((data as PropertyAssetPreview[]) || []).filter((asset) => asset.business_id === business.id));
+        setProducts([]);
+        return;
+      }
+
       const { data, error } = await supabase.rpc('get_business_public_products', { _business_id: business.id });
       if (error) throw error;
       setProducts((data as Product[]) || []);
+      setPropertyAssets([]);
     } catch { /* ignore */ } finally { setLoadingProducts(false); }
   }, [business]);
 
@@ -176,12 +253,11 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
   if (!business) return null;
 
   const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
-  const isProperty = business.business_type === 'property';
-  const isFactory = business.business_type === 'factory';
   const actionLabel = isProperty ? 'Book Now' : 'Order Now';
   const actionIcon = isProperty ? <CalendarCheck className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />;
   const typeIcon = isProperty ? '🏠' : isFactory ? '🏭' : '🏪';
   const typeLabel = isProperty ? 'Property' : isFactory ? 'Factory' : 'Business';
+  const listedItemsCount = isProperty ? propertyAssets.length : products.length;
 
   function handleAction() {
     if (!business) return;
@@ -246,21 +322,25 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
 
         <Tabs defaultValue="products" className="px-4 pb-4">
           <TabsList className="w-full">
-            <TabsTrigger value="products" className="flex-1 gap-1 text-xs"><Package className="h-3.5 w-3.5" />{isProperty ? 'Assets' : 'Products'} ({products.length})</TabsTrigger>
+            <TabsTrigger value="products" className="flex-1 gap-1 text-xs"><Package className="h-3.5 w-3.5" />{isProperty ? 'Assets' : 'Products'} ({listedItemsCount})</TabsTrigger>
             <TabsTrigger value="reviews" className="flex-1 gap-1 text-xs"><MessageSquare className="h-3.5 w-3.5" />Reviews ({reviews.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products">
             {loadingProducts ? (
               <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
-            ) : products.length === 0 ? (
+            ) : listedItemsCount === 0 ? (
               <div className="text-center py-8">
                 <Package className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
                 <p className="text-sm text-muted-foreground">No {isProperty ? 'assets' : 'products'} listed yet</p>
               </div>
             ) : (
               <>
-                <ProductsWithLightbox products={products} fmt={fmt} />
+                {isProperty ? (
+                  <PropertyAssetsWithLightbox assets={propertyAssets} fmt={fmt} />
+                ) : (
+                  <ProductsWithLightbox products={products} fmt={fmt} />
+                )}
                 <p className="text-[10px] text-muted-foreground text-center pt-2">
                   💡 Use the "{actionLabel}" button above to start {isProperty ? 'a booking' : 'an order'}
                 </p>

@@ -378,8 +378,15 @@ export default function PropertySettings() {
   }
 
   async function handleSavePassword() {
-    await updateBusiness({ settings_password: settingsPassword } as any);
-    toast.success('Settings password updated!');
+    if (!currentBusiness?.id) return;
+    const { error } = await supabase
+      .from('business_secrets')
+      .upsert({ business_id: currentBusiness.id, settings_password: settingsPassword }, { onConflict: 'business_id' });
+    if (error) {
+      toast.error('Failed to save password');
+    } else {
+      toast.success('Settings password updated!');
+    }
   }
 
   function handleSaveCurrency() {

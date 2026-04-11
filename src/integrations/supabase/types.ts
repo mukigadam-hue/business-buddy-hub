@@ -2367,6 +2367,8 @@ export type Database = {
         Returns: {
           area_size: number
           area_unit: string
+          available_units: number
+          booked_units: number
           business_contact: string
           business_id: string
           business_name: string

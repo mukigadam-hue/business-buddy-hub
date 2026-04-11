@@ -347,7 +347,12 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
               </h1>
               <p className="text-xs text-sidebar-muted mt-1">{isPersonal ? 'Personal Account' : isProperty ? t('nav.propertyManager', 'Property Manager') : isFactory ? t('nav.factoryManager') : t('nav.businessManager')}</p>
             </div>
-            <NotificationsPanel />
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={refreshing} title="Refresh all data">
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </Button>
+              <NotificationsPanel />
+            </div>
           </div>
 
           <div className="px-3 pt-3 space-y-2">

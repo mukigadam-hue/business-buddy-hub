@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, ShoppingCart, ScanLine } from 'lucide-react';
+import { Plus, Trash2, ShoppingCart, ScanLine, Search } from 'lucide-react';
 import { useBusiness } from '@/context/BusinessContext';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
@@ -32,10 +32,34 @@ export default function FactoryPurchases() {
   const [recordedBy, setRecordedBy] = useState('');
   const [form, setForm] = useState({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '', serial_numbers: '' });
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [stockSearch, setStockSearch] = useState('');
+  const [showStockPicker, setShowStockPicker] = useState(false);
 
   const activeRM = rawMaterials.filter(r => !r.deleted_at);
   const activeStock = stock.filter(s => !s.deleted_at);
-  const suggestions = activeRM.map(r => r.name);
+
+  // Combine raw materials and stock for searching
+  const allSearchableItems = [
+    ...activeRM.map(r => ({ id: r.id, name: r.name, category: r.category, quality: '', unit_cost: Number(r.unit_cost), type: 'raw' as const })),
+    ...activeStock.map(s => ({ id: s.id, name: s.name, category: s.category, quality: s.quality || '', unit_cost: Number(s.buying_price), type: 'stock' as const })),
+  ];
+
+  const filteredItems = allSearchableItems.filter(item => {
+    if (!stockSearch) return true;
+    const q = stockSearch.toLowerCase();
+    return item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q) || item.quality.toLowerCase().includes(q);
+  });
+
+  function selectSearchItem(item: typeof allSearchableItems[0]) {
+    setForm(f => ({
+      ...f,
+      name: item.name,
+      category: item.category,
+      unit_price: String(item.unit_cost || ''),
+    }));
+    setShowStockPicker(false);
+    setStockSearch('');
+  }
 
   function addItem() {
     if (!form.name.trim()) return;
@@ -54,7 +78,6 @@ export default function FactoryPurchases() {
   const grandTotal = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
 
   function handleBarcodeScan(code: string) {
-    // Try matching against stock items with barcodes
     const match = activeStock.find(s => s.barcode && s.barcode === code);
     if (match) {
       setForm(f => ({ ...f, name: match.name, category: match.category }));
@@ -118,16 +141,59 @@ export default function FactoryPurchases() {
             <div><Label>Recorded By</Label><Input value={recordedBy} onChange={e => setRecordedBy(e.target.value)} placeholder="Your name" /></div>
           </div>
 
+          {/* Smart Search Picker */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-1.5">
+              <Search className="h-3.5 w-3.5" /> Search Materials or Stock Items
+            </Label>
+            <div className="flex gap-1.5">
+              <Input
+                className="flex-1"
+                value={stockSearch}
+                onChange={e => { setStockSearch(e.target.value); setShowStockPicker(true); }}
+                onFocus={() => setShowStockPicker(true)}
+                placeholder="🔍 Search by name, category..."
+              />
+              <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
+                <ScanLine className="h-4 w-4" />
+              </Button>
+            </div>
+            {showStockPicker && (
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-card shadow-md">
+                {filteredItems.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">No matching items</p>
+                ) : (
+                  filteredItems.slice(0, 50).map((item, idx) => (
+                    <button
+                      key={`${item.type}-${item.id}-${idx}`}
+                      type="button"
+                      onClick={() => selectSearchItem(item)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 text-sm border-b border-border last:border-0"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-foreground">{item.name}</span>
+                        {item.category && <span className="text-xs ml-1.5 text-muted-foreground">· {item.category}</span>}
+                        {item.quality && <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary">{item.quality}</span>}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground ml-2">{item.type === 'raw' ? '🏭 Raw' : '📦 Stock'}</span>
+                    </button>
+                  ))
+                )}
+                <button
+                  type="button"
+                  onClick={() => { setShowStockPicker(false); setForm(f => ({ ...f, name: stockSearch })); setStockSearch(''); }}
+                  className="w-full px-3 py-2 text-left text-sm text-primary font-medium hover:bg-primary/5 border-t border-border"
+                >
+                  ➕ Add as new item: "{stockSearch || '...'}"
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[150px]">
               <Label>Material Name</Label>
-              <div className="flex gap-1.5">
-                <Input className="flex-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} list="rm-suggestions" placeholder="Type or select..." />
-                <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
-                  <ScanLine className="h-4 w-4" />
-                </Button>
-              </div>
-              <datalist id="rm-suggestions">{suggestions.map(s => <option key={s} value={s} />)}</datalist>
+              <Input className="flex-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Auto-filled from picker" />
             </div>
             <div className="w-28">
               <Label>Category</Label>

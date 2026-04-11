@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, TrendingUp, Receipt as ReceiptIcon, ScanLine, Wrench, Package } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, Receipt as ReceiptIcon, ScanLine, Search } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { toast } from 'sonner';
@@ -16,105 +16,79 @@ import type { Sale } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
 
 export default function FactorySales() {
-  const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment } = useBusiness();
+  const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment, userRole } = useBusiness();
+  const { user } = useAuth();
   const { fmt } = useCurrency();
   const { locked: submitLocked, withLock } = useSubmitLock();
+
+  const userFullName = user?.user_metadata?.full_name || '';
+  const roleLabel = userRole === 'owner' ? '(Owner)' : userRole === 'admin' ? '(Admin)' : '(Worker)';
 
   const activeProducts = stock.filter(s => !s.deleted_at);
 
   const [items, setItems] = useState<{
     stock_item_id: string; item_name: string; category: string; quality: string;
     quantity: number; price_type: string; unit_price: number; subtotal: number;
-    serial_numbers?: string;
+    serial_numbers?: string; custom_price?: number;
   }[]>([]);
   const [serialInput, setSerialInput] = useState('');
-  const [serviceItems, setServiceItems] = useState<{
-    service_name: string; description: string; cost: number;
-  }[]>([]);
-  const [serviceParts, setServiceParts] = useState<{
-    stock_item_id: string; item_name: string; category: string; quality: string;
-    quantity: number; unit_price: number; subtotal: number;
-  }[]>([]);
 
   const [customerName, setCustomerName] = useState('');
-  const [sellerName, setSellerName] = useState('');
+  const [sellerName, setSellerName] = useState(userFullName);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [qty, setQty] = useState('1');
-  const [priceType, setPriceType] = useState('retail');
+  const [priceType, setPriceType] = useState<'wholesale' | 'retail'>('retail');
+  const [customPrice, setCustomPrice] = useState('');
   const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
-  const [partScannerOpen, setPartScannerOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');
   const [amountPaid, setAmountPaid] = useState('');
   const [editPaymentSale, setEditPaymentSale] = useState<Sale | null>(null);
   const [editAmountPaid, setEditAmountPaid] = useState('');
+  const [stockSearch, setStockSearch] = useState('');
 
-  const [svcForm, setSvcForm] = useState({ service_name: '', description: '', cost: '' });
-  const [selectedPartStock, setSelectedPartStock] = useState('');
-  const [partQty, setPartQty] = useState('1');
+  // Bulk selling
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkQty, setBulkQty] = useState('1');
 
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const todaySales = sales.filter(s => new Date(s.created_at).toDateString() === new Date().toDateString());
   const prevSales = sales.filter(s => new Date(s.created_at).toDateString() !== new Date().toDateString());
 
-  const availablePartsStock = activeProducts.filter(s => s.quantity > 0);
+  // Filter stock items by search text
+  const filteredStock = activeProducts.filter(s => {
+    if (s.quantity <= 0) return false;
+    if (!stockSearch) return true;
+    const q = stockSearch.toLowerCase();
+    return s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || (s.quality || '').toLowerCase().includes(q);
+  });
 
   function addItem() {
     const product = activeProducts.find(p => p.id === selectedProduct);
     if (!product) return;
     const q = parseFloat(qty) || 1;
-    const price = priceType === 'wholesale' ? Number(product.wholesale_price) : Number(product.retail_price);
+    const finalQty = bulkMode ? q * (parseFloat(bulkQty) || 1) : q;
+    const basePrice = priceType === 'wholesale' ? Number(product.wholesale_price) : Number(product.retail_price);
+    const unitPrice = customPrice.trim() ? (parseFloat(customPrice) || basePrice) : basePrice;
     setItems(prev => [...prev, {
       stock_item_id: product.id, item_name: product.name, category: product.category,
-      quality: product.quality, quantity: q, price_type: priceType,
-      unit_price: price, subtotal: q * price,
+      quality: product.quality, quantity: finalQty,
+      price_type: customPrice.trim() ? 'custom' : priceType,
+      unit_price: unitPrice, subtotal: finalQty * unitPrice,
       serial_numbers: serialInput.trim() || undefined,
+      custom_price: customPrice.trim() ? unitPrice : undefined,
     }]);
-    setSelectedProduct(''); setQty('1'); setSerialInput('');
-  }
-
-  function addServiceItem() {
-    if (!svcForm.service_name.trim()) return;
-    setServiceItems(prev => [...prev, {
-      service_name: toSentenceCase(svcForm.service_name.trim()),
-      description: svcForm.description.trim(),
-      cost: parseFloat(svcForm.cost) || 0,
-    }]);
-    setSvcForm({ service_name: '', description: '', cost: '' });
-  }
-
-  function addServicePart() {
-    const stockItem = activeProducts.find(s => s.id === selectedPartStock);
-    if (!stockItem) return;
-    const q = parseInt(partQty) || 1;
-    const maxQty = stockItem.quantity - serviceParts.filter(p => p.stock_item_id === stockItem.id).reduce((s, p) => s + p.quantity, 0);
-    if (q > maxQty) return;
-    setServiceParts(prev => [...prev, {
-      stock_item_id: stockItem.id,
-      item_name: stockItem.name,
-      category: stockItem.category,
-      quality: stockItem.quality,
-      quantity: q,
-      unit_price: Number(stockItem.retail_price),
-      subtotal: q * Number(stockItem.retail_price),
-    }]);
-    setSelectedPartStock('');
-    setPartQty('1');
+    setSelectedProduct(''); setQty('1'); setSerialInput(''); setCustomPrice(''); setStockSearch(''); setBulkQty('1');
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
-  function removeServiceItem(idx: number) { setServiceItems(prev => prev.filter((_, i) => i !== idx)); }
-  function removeServicePart(idx: number) { setServiceParts(prev => prev.filter((_, i) => i !== idx)); }
 
-  const itemsTotal = items.reduce((sum, i) => sum + i.subtotal, 0);
-  const servicesTotal = serviceItems.reduce((sum, svc) => sum + svc.cost, 0);
-  const partsTotal = serviceParts.reduce((sum, p) => sum + p.subtotal, 0);
-  const grandTotal = itemsTotal + servicesTotal + partsTotal;
-
-  const canSave = (items.length > 0 || serviceItems.length > 0 || serviceParts.length > 0) && customerName.trim() && sellerName.trim();
+  const grandTotal = items.reduce((sum, i) => sum + i.subtotal, 0);
+  const canSave = items.length > 0 && customerName.trim() && sellerName.trim();
 
   function handleBarcodeScan(code: string) {
     const match = activeProducts.find(s => s.barcode && s.barcode === code && s.quantity > 0);
@@ -122,45 +96,16 @@ export default function FactorySales() {
     else { toast.error(`No product found for barcode: ${code}`); }
   }
 
-  function handlePartBarcodeScan(code: string) {
-    const match = availablePartsStock.find(s => s.barcode && s.barcode === code);
-    if (match) { setSelectedPartStock(match.id); toast.success(`Found: ${match.name}`); }
-    else { toast.error(`No stock item found for barcode: ${code}`); }
-  }
-
   async function handleSave() {
     if (!canSave) return;
 
-    const allItems = [
-      ...items,
-      ...serviceItems.map(svc => ({
-        stock_item_id: undefined as any,
-        item_name: `[Service] ${svc.service_name}`,
-        category: 'Service',
-        quality: svc.description || '-',
-        quantity: 1,
-        price_type: 'service',
-        unit_price: svc.cost,
-        subtotal: svc.cost,
-        serial_numbers: '' as string | undefined,
-      })),
-      ...serviceParts.map(part => ({
-        stock_item_id: part.stock_item_id,
-        item_name: `[Part] ${part.item_name}`,
-        category: part.category,
-        quality: part.quality,
-        quantity: part.quantity,
-        price_type: 'part',
-        unit_price: part.unit_price,
-        subtotal: part.subtotal,
-        serial_numbers: '' as string | undefined,
-      })),
-    ];
-
     const paidAmt = paymentStatus === 'paid' ? grandTotal : (parseFloat(amountPaid) || 0);
-    const sale = await addSale(allItems, grandTotal, toTitleCase(sellerName.trim()), toTitleCase(customerName.trim()), undefined, undefined, paymentStatus, paidAmt);
+    const sale = await addSale(
+      items.map(i => ({ ...i, serial_numbers: i.serial_numbers || '' })),
+      grandTotal, toTitleCase(sellerName.trim()), toTitleCase(customerName.trim()), undefined, undefined, paymentStatus, paidAmt
+    );
     if (sale && currentBusiness) {
-      const receiptItems = allItems.map(i => ({
+      const receiptItems = items.map(i => ({
         itemName: i.item_name, category: i.category, quality: i.quality,
         quantity: i.quantity, priceType: i.price_type, unitPrice: i.unit_price, subtotal: i.subtotal,
         serialNumbers: i.serial_numbers || undefined,
@@ -174,44 +119,55 @@ export default function FactorySales() {
       });
       setReceiptSale(sale);
     }
-    setItems([]); setServiceItems([]); setServiceParts([]); setCustomerName(''); setSellerName(''); setPaymentStatus('paid'); setAmountPaid('');
+    setItems([]); setCustomerName(''); setSellerName(userFullName); setPaymentStatus('paid'); setAmountPaid('');
   }
 
   return (
     <div className="space-y-6">
       <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
-      <BarcodeScanner open={partScannerOpen} onOpenChange={setPartScannerOpen} onScan={handlePartBarcodeScan} />
       <h1 className="text-2xl font-bold flex items-center gap-2"><TrendingUp className="h-6 w-6" /> Sales</h1>
 
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-4">
           <h2 className="text-base font-semibold">Sell Finished Products</h2>
-          <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
             <div>
               <Label className="text-xs font-semibold text-destructive">Customer (Buyer) *</Label>
               <Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toTitleCase(customerName))} placeholder="Customer name" required />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-destructive">Seller *</Label>
-              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toTitleCase(sellerName))} placeholder="Your name" required />
+              <Label className="text-xs font-semibold text-destructive">Seller * {roleLabel}</Label>
+              <Input value={sellerName} onChange={e => setSellerName(e.target.value)} onBlur={() => setSellerName(toTitleCase(sellerName))} placeholder="Your name (auto-filled)" required />
+              {currentBusiness && <p className="text-[10px] text-muted-foreground mt-0.5">📍 {currentBusiness.name}</p>}
             </div>
           </div>
 
-          {/* Stock Items */}
+          {/* Stock Items with Search */}
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">📦 Products</p>
-            <div className="flex flex-wrap gap-3 items-end">
-              <div className="flex-1 min-w-[180px]">
-                <Label>Product</Label>
+            <div className="space-y-3">
+              <div className="w-full">
+                <Label className="flex items-center gap-1.5"><Search className="h-3.5 w-3.5" /> Search & Select Item</Label>
+                <Input
+                  placeholder="Type to search items by name, category, quality..."
+                  value={stockSearch}
+                  onChange={e => setStockSearch(e.target.value)}
+                  className="mb-1.5"
+                />
                 <div className="flex gap-1.5">
-                  <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                    <SelectTrigger className="flex-1"><SelectValue placeholder="Choose product..." /></SelectTrigger>
+                  <Select value={selectedProduct} onValueChange={v => { setSelectedProduct(v); setStockSearch(''); }}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select item..." />
+                    </SelectTrigger>
                     <SelectContent>
-                      {activeProducts.filter(p => p.quantity > 0).map(p => (
+                      {filteredStock.map(p => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name}{p.category ? ` · ${p.category}` : ''}{p.quality ? ` · ${p.quality}` : ''} (qty: {p.quantity})
                         </SelectItem>
                       ))}
+                      {filteredStock.length === 0 && (
+                        <div className="px-3 py-2 text-xs text-muted-foreground">No items found</div>
+                      )}
                     </SelectContent>
                   </Select>
                   <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
@@ -219,18 +175,55 @@ export default function FactorySales() {
                   </Button>
                 </div>
               </div>
-              <div className="w-20"><Label>Qty</Label><Input type="number" min="1" value={qty} onChange={e => setQty(e.target.value)} /></div>
-              <div className="w-28">
-                <Label>Price Type</Label>
-                <Select value={priceType} onValueChange={setPriceType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="retail">Retail</SelectItem>
-                    <SelectItem value="wholesale">Wholesale</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label>Qty</Label><Input type="number" min="0.01" step="0.01" value={qty} onChange={e => setQty(e.target.value)} /></div>
+                <div>
+                  <Label>Price Type</Label>
+                  <Select value={priceType} onValueChange={v => setPriceType(v as 'wholesale' | 'retail')}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="retail">Retail</SelectItem>
+                      <SelectItem value="wholesale">Wholesale</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Alt. Price <span className="text-[10px] text-muted-foreground">(bargain)</span></Label>
+                  <Input type="number" min="0" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder="Custom..." />
+                </div>
               </div>
-              <Button onClick={addItem} disabled={!selectedProduct}><Plus className="h-4 w-4 mr-1" />Add</Button>
+
+              {/* Bulk selling toggle */}
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="checkbox" checked={bulkMode} onChange={e => { setBulkMode(e.target.checked); setBulkQty('1'); }} className="rounded" />
+                  📦 Bulk Selling
+                </label>
+                {bulkMode && (
+                  <div className="flex items-center gap-1.5">
+                    <Label className="text-xs whitespace-nowrap">× Packs:</Label>
+                    <Input type="number" min="1" value={bulkQty} onChange={e => setBulkQty(e.target.value)} className="w-20 h-8 text-sm" />
+                    <span className="text-xs text-muted-foreground">Total: {(parseFloat(qty) || 1) * (parseFloat(bulkQty) || 1)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Preview */}
+              {selectedProduct && (() => {
+                const si = activeProducts.find(s => s.id === selectedProduct);
+                if (!si) return null;
+                const basePrice = priceType === 'wholesale' ? Number(si.wholesale_price) : Number(si.retail_price);
+                const effectivePrice = customPrice.trim() ? (parseFloat(customPrice) || basePrice) : basePrice;
+                const totalQty = bulkMode ? (parseFloat(qty) || 1) * (parseFloat(bulkQty) || 1) : (parseFloat(qty) || 0);
+                return (
+                  <div className="text-xs text-muted-foreground bg-muted/40 rounded p-2">
+                    {customPrice.trim() && <span className="text-warning font-medium mr-2">⚡ Custom price: {fmt(effectivePrice)}</span>}
+                    Subtotal: <span className="font-bold text-foreground">{fmt(totalQty * effectivePrice)}</span>
+                    {bulkMode && <span className="ml-2 text-primary">({parseFloat(bulkQty) || 1} packs × {parseFloat(qty) || 1} = {totalQty})</span>}
+                  </div>
+                );
+              })()}
+              <Button onClick={addItem} disabled={!selectedProduct} className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
             </div>
             {selectedProduct && (
               <div className="mt-2">
@@ -240,24 +233,25 @@ export default function FactorySales() {
             )}
           </div>
 
-          {/* Service section removed for factory */}
-
           {/* Summary Table */}
-          {(items.length > 0 || serviceItems.length > 0 || serviceParts.length > 0) && (
+          {items.length > 0 && (
             <>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-64 overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Item</TableHead><TableHead>Type</TableHead>
-                      <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Price</TableHead>
-                      <TableHead className="text-right">Subtotal</TableHead><TableHead></TableHead>
+                      <TableHead>Item</TableHead><TableHead>Category</TableHead><TableHead>Quality</TableHead>
+                      <TableHead>Type</TableHead><TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Price</TableHead><TableHead className="text-right">Subtotal</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {items.map((item, i) => (
                       <TableRow key={`item-${i}`}>
                         <TableCell className="font-medium">{item.item_name}</TableCell>
+                        <TableCell>{item.category}</TableCell>
+                        <TableCell>{item.quality}</TableCell>
                         <TableCell className="capitalize text-xs">{item.price_type}</TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
                         <TableCell className="text-right tabular-nums">{fmt(item.unit_price)}</TableCell>
@@ -265,9 +259,8 @@ export default function FactorySales() {
                         <TableCell><Button variant="ghost" size="icon" onClick={() => removeItem(i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
                       </TableRow>
                     ))}
-                    {/* Service rows removed */}
                     <TableRow>
-                      <TableCell colSpan={4} className="text-right font-bold">Grand Total</TableCell>
+                      <TableCell colSpan={6} className="text-right font-bold">Grand Total</TableCell>
                       <TableCell className="text-right font-bold text-lg text-success tabular-nums">{fmt(grandTotal)}</TableCell>
                       <TableCell></TableCell>
                     </TableRow>
@@ -346,7 +339,6 @@ export default function FactorySales() {
                         <span>
                           {item.item_name} × {item.quantity}
                           {item.price_type && item.price_type !== 'service' && item.price_type !== 'part' && <span className="ml-1">({item.price_type})</span>}
-                          {item.price_type === 'part' && <span className="text-xs ml-1 text-accent">(part used)</span>}
                         </span>
                         <span className="tabular-nums">{fmt(Number(item.subtotal))}</span>
                       </div>

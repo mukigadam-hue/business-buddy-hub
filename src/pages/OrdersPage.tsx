@@ -316,6 +316,15 @@ export default function OrdersPage() {
       if (data && data.length > 0) {
         setRecipientLookup({ id: data[0].id, name: data[0].name });
         toast.success(`Found: ${data[0].name}`);
+        // Load supplier products for easy selection
+        const { data: products } = await supabase.rpc('get_business_public_products', { _business_id: data[0].id });
+        if (products && products.length > 0) {
+          setSupplierProducts(products as any[]);
+          setPrefilledSupplierName(data[0].name);
+        } else {
+          setSupplierProducts([]);
+          setPrefilledSupplierName('');
+        }
       } else {
         setRecipientLookup(null);
         toast.error('No business found with that code');
@@ -1383,6 +1392,16 @@ export default function OrdersPage() {
                                           onClick={() => {
                                             setSelectedContactBusinessId(c.contact_business_id);
                                             setContactPickerOpen(false);
+                                            // Load supplier products for easy selection
+                                            supabase.rpc('get_business_public_products', { _business_id: c.contact_business_id }).then(({ data }) => {
+                                              if (data && data.length > 0) {
+                                                setSupplierProducts(data as any[]);
+                                                setPrefilledSupplierName(c.nickname || c.business_name || 'Supplier');
+                                              } else {
+                                                setSupplierProducts([]);
+                                                setPrefilledSupplierName('');
+                                              }
+                                            });
                                           }}
                                         >
                                           <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm">🏪</div>
@@ -1466,6 +1485,26 @@ export default function OrdersPage() {
               <div>
                 <Label className="flex items-center gap-1"><MessageSquare className="h-3.5 w-3.5" /> Comment (optional)</Label>
                 <Textarea value={requestComment} onChange={e => setRequestComment(e.target.value)} placeholder="Add any notes or special requests..." className="min-h-[60px]" />
+              </div>
+            )}
+
+            {/* Show supplier products for both walk-in and request modes */}
+            {orderMode === 'my_order' && supplierProducts.length > 0 && (
+              <div className="bg-muted/30 border rounded-md p-3">
+                <p className="text-sm font-bold text-foreground mb-2">📦 Available items from {prefilledSupplierName || 'supplier'} ({supplierProducts.length}):</p>
+                <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto">
+                  {supplierProducts.map((p, i) => (
+                    <button key={i} className="text-base px-4 py-3.5 rounded-lg border-2 bg-background hover:bg-accent hover:border-primary/40 transition-colors text-left flex flex-col gap-1 min-h-[56px]"
+                      onClick={() => setForm(f => ({ ...f, name: p.name, category: p.category || '', quality: p.quality || '' }))}>
+                      <span className="font-bold text-foreground text-base">{p.name}</span>
+                      {(p.category || p.quality) && (
+                        <span className="text-muted-foreground text-sm">
+                          {p.category ? `${p.category}` : ''}{p.quality ? ` · ${p.quality}` : ''}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 

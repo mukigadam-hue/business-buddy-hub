@@ -15,6 +15,7 @@ import AdSpace from '@/components/AdSpace';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
+import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
 
 export default function FactoryPurchases() {
@@ -30,7 +31,7 @@ export default function FactoryPurchases() {
   }[]>([]);
   const [supplier, setSupplier] = useState('');
   const [recordedBy, setRecordedBy] = useState('');
-  const [form, setForm] = useState({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '', serial_numbers: '' });
+  const [form, setForm] = useState({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '', serial_numbers: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
   const [scannerOpen, setScannerOpen] = useState(false);
   const [stockSearch, setStockSearch] = useState('');
   const [showStockPicker, setShowStockPicker] = useState(false);
@@ -71,7 +72,7 @@ export default function FactoryPurchases() {
       unit_price: parseFloat(form.unit_price) || 0,
       serial_numbers: form.serial_numbers.trim() || undefined,
     }]);
-    setForm({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '', serial_numbers: '' });
+    setForm({ name: '', category: '', unit_type: 'Pieces', quantity: '1', unit_price: '', serial_numbers: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
@@ -214,6 +215,14 @@ export default function FactoryPurchases() {
             <Label className="text-xs text-muted-foreground">Serial Number (optional)</Label>
             <Input value={form.serial_numbers} onChange={e => setForm(f => ({ ...f, serial_numbers: e.target.value }))} placeholder="e.g. IMEI, S/N..." className="max-w-xs" />
           </div>
+          <BulkPackagingFields
+            piecesPerCarton={form.pieces_per_carton}
+            cartonsPerBox={form.cartons_per_box}
+            boxesPerContainer={form.boxes_per_container}
+            onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+            onQuantityCalculated={(total) => setForm(f => ({ ...f, quantity: String(total) }))}
+            currentQuantity={form.quantity}
+          />
 
           {items.length > 0 && (
             <>

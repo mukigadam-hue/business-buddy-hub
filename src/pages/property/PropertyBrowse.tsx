@@ -301,14 +301,36 @@ export default function PropertyBrowse() {
   async function loadPropertyAssets() {
     if (!prefilledPropertyId) return;
     setLoadingPropertyAssets(true);
-    const { data } = await supabase
-      .from('property_assets')
-      .select('*')
-      .eq('business_id', prefilledPropertyId)
-      .is('deleted_at', null)
-      .order('is_available', { ascending: false })
-      .order('created_at', { ascending: false });
-    setPropertyAssets(data || []);
+    const [assetsRes, bookingsRes] = await Promise.all([
+      supabase
+        .from('property_assets')
+        .select('*')
+        .eq('business_id', prefilledPropertyId)
+        .is('deleted_at', null)
+        .order('is_available', { ascending: false })
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('property_bookings')
+        .select('asset_id')
+        .eq('business_id', prefilledPropertyId)
+        .in('status', ['confirmed', 'active']),
+    ]);
+    const assets = assetsRes.data || [];
+    const bookings = bookingsRes.data || [];
+    // Count active bookings per asset
+    const bookingCounts: Record<string, number> = {};
+    for (const b of bookings) {
+      bookingCounts[b.asset_id] = (bookingCounts[b.asset_id] || 0) + 1;
+    }
+    // Enrich assets with available_units
+    const enriched = assets.map((a: any) => {
+      const booked = bookingCounts[a.id] || 0;
+      const available = a.total_rooms > 0
+        ? Math.max(0, a.total_rooms - booked)
+        : (a.is_available ? 1 : 0);
+      return { ...a, booked_units: booked, available_units: available };
+    });
+    setPropertyAssets(enriched);
     setLoadingPropertyAssets(false);
   }
 

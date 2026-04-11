@@ -501,10 +501,12 @@ export default function PropertyBrowse() {
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-sm">{asset.name}</h3>
-                  {(asset as any).is_available !== false ? (
-                    <Badge variant="default" className="text-[9px] bg-green-500/10 text-green-600 border-green-500/20 shrink-0">🟢 Available</Badge>
+                  {((asset as any).available_units ?? ((asset as any).is_available !== false ? 1 : 0)) > 0 ? (
+                    <Badge variant="default" className="text-[9px] bg-green-500/10 text-green-600 border-green-500/20 shrink-0">
+                      🟢 {(asset as any).total_rooms > 0 ? `${(asset as any).available_units}/${(asset as any).total_rooms} Available` : 'Available'}
+                    </Badge>
                   ) : (
-                    <Badge variant="default" className="text-[9px] bg-red-500/10 text-red-600 border-red-500/20 shrink-0">🔴 Occupied</Badge>
+                    <Badge variant="default" className="text-[9px] bg-red-500/10 text-red-600 border-red-500/20 shrink-0">🔴 Fully Occupied</Badge>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{asset.location}</p>

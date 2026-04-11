@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Share2, Download, Image, FileText, Printer, Loader2, MessageCircle, Mail, Send } from 'lucide-react';
+import { Share2, Download, Image, FileText, Printer, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -21,24 +21,28 @@ interface ReceiptActionsProps {
 
 export default function ReceiptActions({ receiptRef, fileName = 'receipt', canShare = true, canDownload = true, canPrint = true }: ReceiptActionsProps) {
   const [busy, setBusy] = useState(false);
-  // Pre-generate canvas on mount for instant sharing
+  const cachedBlobRef = useRef<Blob | null>(null);
   const cachedCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Pre-render on mount so sharing is instant
   useEffect(() => {
-    // Pre-render canvas after a short delay to ensure receipt is painted
+    let cancelled = false;
     const timer = setTimeout(async () => {
-      if (receiptRef.current) {
-        try {
-          cachedCanvasRef.current = await html2canvas(receiptRef.current, {
-            scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
-          });
-        } catch { /* silent */ }
-      }
-    }, 500);
-    return () => clearTimeout(timer);
+      if (!receiptRef.current || cancelled) return;
+      try {
+        const canvas = await html2canvas(receiptRef.current, {
+          scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
+        });
+        if (cancelled) return;
+        cachedCanvasRef.current = canvas;
+        const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/png'));
+        if (!cancelled && blob) cachedBlobRef.current = blob;
+      } catch { /* silent pre-render failure */ }
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [receiptRef]);
 
-  async function getCanvas() {
+  const getCanvas = useCallback(async () => {
     if (cachedCanvasRef.current) return cachedCanvasRef.current;
     if (!receiptRef.current) return null;
     const canvas = await html2canvas(receiptRef.current, {
@@ -46,15 +50,18 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     });
     cachedCanvasRef.current = canvas;
     return canvas;
-  }
+  }, [receiptRef]);
 
-  async function generateImageBlob(): Promise<Blob | null> {
+  const getImageBlob = useCallback(async (): Promise<Blob | null> => {
+    if (cachedBlobRef.current) return cachedBlobRef.current;
     const canvas = await getCanvas();
     if (!canvas) return null;
-    return new Promise<Blob | null>(res => canvas.toBlob(res, 'image/png'));
-  }
+    const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/png'));
+    if (blob) cachedBlobRef.current = blob;
+    return blob;
+  }, [getCanvas]);
 
-  async function generatePDFBlob(): Promise<Blob | null> {
+  const getPDFBlob = useCallback(async (): Promise<Blob | null> => {
     const canvas = await getCanvas();
     if (!canvas) return null;
     const imgData = canvas.toDataURL('image/png');
@@ -63,7 +70,7 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfW, pdfH + 10] });
     pdf.addImage(imgData, 'PNG', 0, 5, pdfW, pdfH);
     return pdf.output('blob');
-  }
+  }, [getCanvas]);
 
   function downloadBlob(blob: Blob, name: string) {
     const url = URL.createObjectURL(blob);
@@ -73,146 +80,139 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  /** Share a file using native share API — sends the actual file, not a URL */
+  async function nativeFileShare(blob: Blob, name: string, mime: string): Promise<boolean> {
+    try {
+      const file = new File([blob], name, { type: mime });
+      // IMPORTANT: only pass `files` — no title/text/url so platforms show the image/pdf directly
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return true;
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return true; // user cancelled, not an error
+    }
+    return false;
   }
 
   async function handleShareAsImage() {
     setBusy(true);
     try {
-      const blob = await generateImageBlob();
+      const blob = await getImageBlob();
       if (!blob) { toast.error('Failed to generate image'); return; }
-      const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
-      
-      // Always try native file share first — sends actual image file, not a link
-      if (navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: 'Receipt' });
-          toast.success('Shared successfully!');
-          return;
-        } catch (err: any) {
-          if (err.name === 'AbortError') return;
-        }
+      const shared = await nativeFileShare(blob, `${fileName}.png`, 'image/png');
+      if (!shared) {
+        downloadBlob(blob, `${fileName}.png`);
+        toast.success('Image downloaded — share it from your gallery!');
       }
-      
-      // Fallback: download the file directly
-      downloadBlob(blob, `${fileName}.png`);
-      toast.success('Receipt image downloaded — share it from your gallery!');
-    } catch {
-      toast.error('Share failed');
-    } finally {
-      setBusy(false);
-    }
+    } catch { toast.error('Share failed'); }
+    finally { setBusy(false); }
   }
 
   async function handleShareAsPDF() {
     setBusy(true);
     try {
-      const blob = await generatePDFBlob();
+      const blob = await getPDFBlob();
       if (!blob) { toast.error('Failed to generate PDF'); return; }
-      const file = new File([blob], `${fileName}.pdf`, { type: 'application/pdf' });
-      
-      if (navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: 'Receipt' });
-          toast.success('Shared successfully!');
-          return;
-        } catch (err: any) {
-          if (err.name === 'AbortError') return;
-        }
+      const shared = await nativeFileShare(blob, `${fileName}.pdf`, 'application/pdf');
+      if (!shared) {
+        downloadBlob(blob, `${fileName}.pdf`);
+        toast.success('PDF downloaded — share it from your files!');
       }
-      
-      downloadBlob(blob, `${fileName}.pdf`);
-      toast.success('Receipt PDF downloaded — share it from your files!');
-    } catch {
-      toast.error('Share failed');
-    } finally {
-      setBusy(false);
-    }
+    } catch { toast.error('Share failed'); }
+    finally { setBusy(false); }
   }
 
   async function handleSaveImage() {
     setBusy(true);
     try {
-      const blob = await generateImageBlob();
-      if (!blob) { toast.error('Failed to generate image'); return; }
+      const blob = await getImageBlob();
+      if (!blob) { toast.error('Failed'); return; }
       downloadBlob(blob, `${fileName}.png`);
       toast.success('Image saved!');
-    } catch {
-      toast.error('Save failed');
-    } finally {
-      setBusy(false);
-    }
+    } catch { toast.error('Save failed'); }
+    finally { setBusy(false); }
   }
 
   async function handleSavePDF() {
     setBusy(true);
     try {
-      const canvas = await getCanvas();
-      if (!canvas) return;
-      const imgData = canvas.toDataURL('image/png');
-      const pdfW = 80;
-      const pdfH = (canvas.height * pdfW) / canvas.width;
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfW, pdfH + 10] });
-      pdf.addImage(imgData, 'PNG', 0, 5, pdfW, pdfH);
-      pdf.save(`${fileName}.pdf`);
+      const blob = await getPDFBlob();
+      if (!blob) { toast.error('Failed'); return; }
+      downloadBlob(blob, `${fileName}.pdf`);
       toast.success('PDF saved!');
-    } catch {
-      toast.error('PDF save failed');
-    } finally {
-      setBusy(false);
-    }
+    } catch { toast.error('Save failed'); }
+    finally { setBusy(false); }
   }
 
   async function handlePrint() {
-    if (!receiptRef.current) return;
     setBusy(true);
     try {
+      // Strategy 1: native share to printer apps (mobile)
+      const blob = await getImageBlob();
+      if (blob) {
+        const shared = await nativeFileShare(blob, `${fileName}.png`, 'image/png');
+        if (shared) { setBusy(false); return; }
+      }
+
+      // Strategy 2: hidden iframe print (works on desktop + many mobile browsers)
       const canvas = await getCanvas();
-      if (!canvas) { toast.error('Failed to generate receipt for printing'); return; }
+      if (!canvas) { toast.error('Failed to generate receipt'); setBusy(false); return; }
       const imgData = canvas.toDataURL('image/png');
 
-      // Try native share first — this allows sharing to printer apps on mobile
-      const blob = await generateImageBlob();
-      if (blob) {
-        const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
-        if (navigator.canShare?.({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: 'Print Receipt' });
-            toast.success('Receipt sent to printer app!');
-            return;
-          } catch (err: any) {
-            if (err.name === 'AbortError') return;
-            // Fall through to window.print approach
-          }
-        }
-      }
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
+      document.body.appendChild(iframe);
 
-      // Fallback: open in new window and trigger print
-      const printWindow = window.open('', '_blank', 'width=400,height=600');
-      if (printWindow) {
-        printWindow.document.write(`<!DOCTYPE html><html><head><title>Receipt</title>
-          <style>*{margin:0;padding:0}body{display:flex;justify-content:center;background:#fff}img{max-width:100%;height:auto}@media print{body{margin:0}img{width:80mm}}</style>
-          </head><body><img src="${imgData}" onload="setTimeout(function(){window.print();window.close()},200)" /></body></html>`);
-        printWindow.document.close();
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write(`<!DOCTYPE html><html><head><title>Receipt</title>
+          <style>*{margin:0;padding:0}body{background:#fff;display:flex;justify-content:center}
+          img{max-width:100%;height:auto}@media print{@page{size:80mm auto;margin:0}body{margin:0}img{width:80mm}}</style>
+          </head><body><img src="${imgData}" /></body></html>`);
+        iframeDoc.close();
+
+        // Wait for image to load inside iframe then print
+        const img = iframeDoc.querySelector('img');
+        const doPrint = () => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch {
+            // If iframe print fails, try window.print as last resort
+            window.print();
+          }
+          setTimeout(() => document.body.removeChild(iframe), 2000);
+        };
+
+        if (img?.complete) {
+          doPrint();
+        } else if (img) {
+          img.onload = doPrint;
+          img.onerror = () => {
+            toast.error('Print failed — try Save then print from your files.');
+            document.body.removeChild(iframe);
+          };
+        }
       } else {
-        // Pop-up blocked: download instead
+        // Strategy 3: download as fallback
         if (blob) {
           downloadBlob(blob, `${fileName}.png`);
-          toast.info('Pop-up blocked. Receipt downloaded — open it and print from your gallery.');
+          toast.info('Receipt downloaded — open and print from your gallery.');
         }
       }
-    } catch {
-      toast.error('Print failed');
-    } finally {
-      setBusy(false);
-    }
+    } catch { toast.error('Print failed'); }
+    finally { setBusy(false); }
   }
 
   const premiumToast = () => toast.info('Premium feature — upgrade for $52/year to unlock.');
 
   return (
     <div className="flex gap-2 justify-center pt-3 flex-wrap">
-      {/* Share dropdown */}
       {canShare ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -235,7 +235,6 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
         </Button>
       )}
 
-      {/* Save dropdown */}
       {canDownload ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -258,7 +257,6 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
         </Button>
       )}
 
-      {/* Print */}
       {canPrint ? (
         <Button size="sm" variant="outline" onClick={handlePrint} className="gap-1.5" disabled={busy}>
           <Printer className="h-3.5 w-3.5" /> Print

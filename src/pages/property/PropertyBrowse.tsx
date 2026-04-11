@@ -47,6 +47,7 @@ interface SearchAsset {
   features: string;
   business_name: string;
   business_contact: string;
+  is_available?: boolean;
 }
 
 function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; onClose: () => void; asset: any; propertyName?: string }) {
@@ -300,8 +301,8 @@ export default function PropertyBrowse() {
       .from('property_assets')
       .select('*')
       .eq('business_id', prefilledPropertyId)
-      .eq('is_available', true)
       .is('deleted_at', null)
+      .order('is_available', { ascending: false })
       .order('created_at', { ascending: false });
     setPropertyAssets(data || []);
     setLoadingPropertyAssets(false);
@@ -391,18 +392,32 @@ export default function PropertyBrowse() {
                   </button>
                 )}
                 <CardContent className="p-3 space-y-2">
-                  <h3 className="font-semibold text-sm">{asset.name}</h3>
+                  <div className="flex items-start justify-between">
+                    <h3 className="font-semibold text-sm">{asset.name}</h3>
+                    {asset.is_available ? (
+                      <Badge variant="default" className="text-[9px] bg-green-500/10 text-green-600 border-green-500/20 shrink-0">🟢 Available</Badge>
+                    ) : (
+                      <Badge variant="default" className="text-[9px] bg-red-500/10 text-red-600 border-red-500/20 shrink-0">🔴 Occupied</Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{asset.location}</p>
                   <p className="text-xs">{asset.category === 'house' ? '🏠' : asset.category === 'land' ? '🏞️' : asset.category === 'vehicle' ? '🚗' : '🚢'} {asset.sub_category || asset.category}</p>
                   {asset.description && <p className="text-xs text-muted-foreground line-clamp-2">{asset.description}</p>}
+                  {asset.total_rooms > 0 && <p className="text-[10px] text-muted-foreground">🚪 {asset.total_rooms} rooms {asset.room_size ? `· ${asset.room_size}` : ''}</p>}
                   <div className="flex gap-2 text-xs font-medium">
                     {asset.hourly_price > 0 && <Badge variant="outline">{fmt(asset.hourly_price)}/hr</Badge>}
                     {asset.daily_price > 0 && <Badge variant="outline">{fmt(asset.daily_price)}/day</Badge>}
                     {asset.monthly_price > 0 && <Badge variant="outline">{fmt(asset.monthly_price)}/mo</Badge>}
                   </div>
-                  <Button size="sm" className="w-full h-8 text-xs gap-1" onClick={() => handleBookAsset(asset, prefilledPropertyName)}>
-                    <CalendarCheck className="h-3 w-3" /> Book Now
-                  </Button>
+                  {asset.is_available ? (
+                    <Button size="sm" className="w-full h-8 text-xs gap-1" onClick={() => handleBookAsset(asset, prefilledPropertyName)}>
+                      <CalendarCheck className="h-3 w-3" /> Book Now
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="secondary" className="w-full h-8 text-xs" disabled>
+                      Currently Occupied
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -458,7 +473,11 @@ export default function PropertyBrowse() {
               <CardContent className="p-3 space-y-2">
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-sm">{asset.name}</h3>
-                  <Badge variant="default" className="text-[9px] bg-success/10 text-success border-success/20 shrink-0">✅ Available</Badge>
+                  {(asset as any).is_available !== false ? (
+                    <Badge variant="default" className="text-[9px] bg-green-500/10 text-green-600 border-green-500/20 shrink-0">🟢 Available</Badge>
+                  ) : (
+                    <Badge variant="default" className="text-[9px] bg-red-500/10 text-red-600 border-red-500/20 shrink-0">🔴 Occupied</Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{asset.location}</p>
                 <p className="text-xs">{asset.category === 'house' ? '🏠' : asset.category === 'land' ? '🏞️' : asset.category === 'vehicle' ? '🚗' : '🚢'} {asset.sub_category || asset.category}</p>
@@ -479,9 +498,15 @@ export default function PropertyBrowse() {
                 )}
                 <p className="text-xs text-muted-foreground">By: {asset.business_name}</p>
                 <div className="flex gap-1 pt-1">
-                  <Button size="sm" className="flex-1 h-7 text-xs gap-1" onClick={() => handleBookAsset(asset, asset.business_name)}>
-                    <CalendarCheck className="h-3 w-3" /> Book Now
-                  </Button>
+                  {(asset as any).is_available !== false ? (
+                    <Button size="sm" className="flex-1 h-7 text-xs gap-1" onClick={() => handleBookAsset(asset, asset.business_name)}>
+                      <CalendarCheck className="h-3 w-3" /> Book Now
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="secondary" className="flex-1 h-7 text-xs" disabled>
+                      Occupied
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => copyAssetCode(asset.id)}>
                     <Copy className="h-3 w-3" />
                   </Button>

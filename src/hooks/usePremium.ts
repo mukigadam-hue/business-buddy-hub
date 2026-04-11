@@ -68,5 +68,6 @@ const PREMIUM_LIMITS: PremiumLimits = {
  */
 export function usePremium(): PremiumLimits {
   // TESTING MODE: All features are free until premium is activated
-  return PREMIUM_LIMITS;
+  // But always show ads — they are our revenue source
+  return { ...PREMIUM_LIMITS, showAds: true };
 }

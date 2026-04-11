@@ -250,6 +250,25 @@ export default function OrdersPage() {
     ? [...new Set([...supplierProducts.map(p => p.quality).filter(Boolean), ...activeStock.map(s => s.quality).filter(Boolean)])]
     : [...new Set(activeStock.map(s => s.quality).filter(Boolean))];
 
+  // Filtered stock for search picker in orders
+  const orderFilteredStock = activeStock.filter(s => {
+    if (!orderStockSearch) return true;
+    const q = orderStockSearch.toLowerCase();
+    return s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || (s.quality || '').toLowerCase().includes(q);
+  });
+
+  function selectOrderStockItem(s: typeof activeStock[0]) {
+    setForm(f => ({
+      ...f,
+      name: s.name,
+      category: s.category,
+      quality: s.quality || '',
+      unitPrice: orderMode === 'request' ? '' : String(f.priceType === 'wholesale' ? s.wholesale_price : s.retail_price),
+    }));
+    setShowOrderStockPicker(false);
+    setOrderStockSearch('');
+  }
+
   const [scannerOpen, setScannerOpen] = useState(false);
 
   const [contactSearch, setContactSearch] = useState('');

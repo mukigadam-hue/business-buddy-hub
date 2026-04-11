@@ -324,7 +324,7 @@ export default function OrdersPage() {
       p.name.toLowerCase() === form.name.trim().toLowerCase()
     );
 
-    const unitPrice = isRequest ? 0 : (
+    const basePrice = isRequest ? 0 : (
       form.unitPrice ? parseFloat(form.unitPrice) : (
         supplierItem
           ? Number(supplierItem.retail_price)
@@ -334,19 +334,22 @@ export default function OrdersPage() {
       )
     );
 
-    // Auto-detect bulk packaging from supplier's stock info
-    const bulkSource = stockItem || supplierItem;
+    // Use custom/alternative price if provided (bargaining)
+    const unitPrice = !isRequest && form.customPrice.trim() ? (parseFloat(form.customPrice) || basePrice) : basePrice;
 
     setItems(prev => [...prev, {
       item_name: toSentenceCase(form.name.trim()),
       category: toSentenceCase(form.category) || supplierItem?.category || stockItem?.category || '',
       quality: toSentenceCase(form.quality) || supplierItem?.quality || stockItem?.quality || '',
       quantity: parseInt(form.quantity) || 1,
-      price_type: form.priceType,
+      price_type: form.customPrice.trim() ? 'custom' : form.priceType,
       unit_price: unitPrice,
       serial_numbers: form.serial_numbers.trim() || undefined,
+      custom_price: form.customPrice.trim() ? unitPrice : undefined,
     }]);
-    setForm(f => ({ name: '', category: '', quality: '', quantity: '1', priceType: f.priceType, unitPrice: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0', serial_numbers: '' }));
+    setForm(f => ({ name: '', category: '', quality: '', quantity: '1', priceType: f.priceType, unitPrice: '', customPrice: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0', serial_numbers: '' }));
+    setOrderStockSearch('');
+    setShowOrderStockPicker(false);
   }
 
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }

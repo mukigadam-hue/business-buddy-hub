@@ -431,7 +431,7 @@ export default function SettingsPage() {
 
   async function handleSavePassword() {
     if (!currentBusiness?.id) return;
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('business_secrets')
       .upsert({ business_id: currentBusiness.id, settings_password: settingsPassword }, { onConflict: 'business_id' });
     if (error) {

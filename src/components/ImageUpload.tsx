@@ -44,7 +44,12 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
     setUploading(true);
     try {
       const compressed = await compressImage(file);
-      const fileName = `${path}/${Date.now()}.jpg`;
+      // For payment-proofs bucket, prefix with user ID to satisfy RLS
+      const { data: { user } } = await supabase.auth.getUser();
+      const uid = user?.id || 'anon';
+      const fileName = bucket === 'payment-proofs'
+        ? `${uid}/${path}/${Date.now()}.jpg`
+        : `${path}/${Date.now()}.jpg`;
 
       const { error } = await supabase.storage.from(bucket).upload(fileName, compressed, { upsert: true });
       if (error) throw error;

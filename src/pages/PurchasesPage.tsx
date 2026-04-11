@@ -256,43 +256,53 @@ export default function PurchasesPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="flex-1 min-w-[150px]">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
               <Label>Item Name</Label>
-              <Input className="flex-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => applyCase('name')} placeholder="Item name (auto-filled from picker)" />
+              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onBlur={() => applyCase('name')} placeholder="Item name (auto-filled from picker)" />
             </div>
-            <div className="w-28">
+            <div>
               <Label>Category</Label>
               <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} onBlur={() => applyCase('category')} placeholder="Category..." list="purchase-cat-suggestions" />
               <datalist id="purchase-cat-suggestions">{existingCategories.map(c => <option key={c} value={c} />)}</datalist>
             </div>
-            <div className="w-28">
+            <div>
               <Label>Quality</Label>
               <Input value={form.quality} onChange={e => setForm(f => ({ ...f, quality: e.target.value }))} onBlur={() => applyCase('quality')} placeholder="e.g. Grade A..." />
             </div>
-            <div className="w-28">
+            <div>
               <Label>Unit Type</Label>
               <Select value={form.unit_type} onValueChange={v => setForm(f => ({ ...f, unit_type: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{UNIT_TYPES.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="w-16"><Label>Qty</Label><Input type="number" min="0.01" step="0.01" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} /></div>
-            <div className="w-24"><Label>Cost/Unit</Label><Input type="number" min="0" step="0.01" value={form.unit_price} onChange={e => setForm(f => ({ ...f, unit_price: e.target.value }))} placeholder="0.00" /></div>
-            <div className="w-24"><Label>Wholesale</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} placeholder="Auto" /></div>
-            <div className="w-24"><Label>Retail</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} placeholder="Auto" /></div>
-            <Button onClick={addItem} disabled={!form.name.trim()}><Plus className="h-4 w-4 mr-1" />Add</Button>
-          </div>
-          <div className="mt-2">
-            <Label className="text-xs text-muted-foreground">Serial Number (optional)</Label>
-            <Input value={form.serial_numbers} onChange={e => setForm(f => ({ ...f, serial_numbers: e.target.value }))} placeholder="e.g. IMEI, S/N..." className="max-w-xs" />
+            <div><Label>Cost/Unit</Label><Input type="number" min="0" step="0.01" value={form.unit_price} onChange={e => setForm(f => ({ ...f, unit_price: e.target.value }))} placeholder="0.00" /></div>
+            <div><Label>Wholesale</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} placeholder="Auto" /></div>
+            <div><Label>Retail</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} placeholder="Auto" /></div>
+            <div className="col-span-2">
+              <Label className="text-xs text-muted-foreground">Serial Number (optional)</Label>
+              <Input value={form.serial_numbers} onChange={e => setForm(f => ({ ...f, serial_numbers: e.target.value }))} placeholder="e.g. IMEI, S/N..." />
+            </div>
           </div>
           <BulkPackagingFields
             piecesPerCarton={form.pieces_per_carton}
             cartonsPerBox={form.cartons_per_box}
             boxesPerContainer={form.boxes_per_container}
             onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+            onQuantityCalculated={(total) => setForm(f => ({ ...f, quantity: String(total) }))}
+            currentQuantity={form.quantity}
           />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Quantity</Label>
+              <Input type="number" min="0.01" step="0.01" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
+                readOnly={parseInt(form.pieces_per_carton) > 0}
+                className={parseInt(form.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''} />
+              {parseInt(form.pieces_per_carton) > 0 && <p className="text-[10px] text-muted-foreground mt-0.5">Auto-calculated from bulk</p>}
+            </div>
+          </div>
+          <Button onClick={addItem} disabled={!form.name.trim()} className="w-full"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
 
           {items.length > 0 && (
             <>

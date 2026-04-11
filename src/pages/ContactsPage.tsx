@@ -330,10 +330,10 @@ export default function ContactsPage() {
               <div>
                 <Label>Business Code</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input value={searchCode} onChange={e => setSearchCode(e.target.value.toUpperCase())} placeholder="e.g. AB3XK9MN" className="font-mono tracking-widest text-center" maxLength={8} onKeyDown={e => e.key === 'Enter' && handleSearch()} />
+                  <Input value={searchCode} onChange={e => setSearchCode(e.target.value.toUpperCase())} placeholder="e.g. UG-VXRT4KP2" className="font-mono tracking-widest text-center" maxLength={15} onKeyDown={e => e.key === 'Enter' && handleSearch()} />
                   <Button onClick={handleSearch} disabled={searching} size="sm"><Search className="h-4 w-4" /></Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Enter the 8-character code from another business's settings</p>
+                <p className="text-xs text-muted-foreground mt-1">Enter the business code (e.g. UG-VXRT4KP2) from another business's settings</p>
               </div>
 
               {foundBusiness && (

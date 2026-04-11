@@ -512,7 +512,7 @@ export default function PropertyBrowse() {
                 <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />{asset.location}</p>
                 <p className="text-xs">{asset.category === 'house' ? '🏠' : asset.category === 'land' ? '🏞️' : asset.category === 'vehicle' ? '🚗' : '🚢'} {asset.sub_category || asset.category}</p>
                 {asset.area_size > 0 && <p className="text-[10px] text-muted-foreground">📐 {asset.area_size} {asset.area_unit}</p>}
-                {(asset as any).total_rooms > 0 && <p className="text-[10px] text-muted-foreground">🚪 {(asset as any).total_rooms} rooms {(asset as any).room_size ? `· ${(asset as any).room_size}` : ''}</p>}
+                {(asset as any).total_rooms > 0 && <p className="text-[10px] text-muted-foreground">🚪 {(asset as any).total_rooms} rooms {(asset as any).room_size ? `· ${(asset as any).room_size}` : ''} · {(asset as any).booked_units || 0} booked</p>}
                 {asset.description && <p className="text-xs text-muted-foreground line-clamp-2">{asset.description}</p>}
                 <div className="flex gap-2 text-xs font-medium">
                   {asset.hourly_price > 0 && <Badge variant="outline">{fmt(asset.hourly_price)}/hr</Badge>}

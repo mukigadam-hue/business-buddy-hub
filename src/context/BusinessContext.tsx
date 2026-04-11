@@ -600,6 +600,55 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       await supabase.from('notifications').insert(notifications);
     }
 
+    // Delete child items that reference sales/purchases/orders/services first
+    const [salesIds, purchaseIds, orderIds, serviceIds] = await Promise.all([
+      supabase.from('sales').select('id').eq('business_id', businessId).then(r => (r.data || []).map(s => s.id)),
+      supabase.from('purchases').select('id').eq('business_id', businessId).then(r => (r.data || []).map(p => p.id)),
+      supabase.from('orders').select('id').eq('business_id', businessId).then(r => (r.data || []).map(o => o.id)),
+      supabase.from('services').select('id').eq('business_id', businessId).then(r => (r.data || []).map(s => s.id)),
+    ]);
+    await Promise.all([
+      salesIds.length > 0 ? supabase.from('sale_items').delete().in('sale_id', salesIds) : Promise.resolve(),
+      purchaseIds.length > 0 ? supabase.from('purchase_items').delete().in('purchase_id', purchaseIds) : Promise.resolve(),
+      orderIds.length > 0 ? supabase.from('order_items').delete().in('order_id', orderIds) : Promise.resolve(),
+      serviceIds.length > 0 ? supabase.from('service_items').delete().in('service_id', serviceIds) : Promise.resolve(),
+    ]);
+    // Delete all business-scoped tables in parallel
+    await Promise.all([
+      supabase.from('sales').delete().eq('business_id', businessId),
+      supabase.from('purchases').delete().eq('business_id', businessId),
+      supabase.from('orders').delete().eq('business_id', businessId),
+      supabase.from('services').delete().eq('business_id', businessId),
+      supabase.from('stock_items').delete().eq('business_id', businessId),
+      supabase.from('business_expenses').delete().eq('business_id', businessId),
+      supabase.from('factory_expenses').delete().eq('business_id', businessId),
+      supabase.from('factory_raw_materials').delete().eq('business_id', businessId),
+      supabase.from('factory_production').delete().eq('business_id', businessId),
+      supabase.from('factory_team_members').delete().eq('business_id', businessId),
+      supabase.from('factory_worker_payments').delete().eq('business_id', businessId),
+      supabase.from('factory_worker_advances').delete().eq('business_id', businessId),
+      supabase.from('business_team_members').delete().eq('business_id', businessId),
+      supabase.from('business_worker_payments').delete().eq('business_id', businessId),
+      supabase.from('business_worker_advances').delete().eq('business_id', businessId),
+      supabase.from('business_contacts').delete().eq('business_id', businessId),
+      supabase.from('business_blocks').delete().eq('business_id', businessId),
+      supabase.from('business_payment_methods').delete().eq('business_id', businessId),
+      supabase.from('receipts').delete().eq('business_id', businessId),
+      supabase.from('notifications').delete().eq('business_id', businessId),
+      supabase.from('subscriptions').delete().eq('business_id', businessId),
+      supabase.from('invite_codes').delete().eq('business_id', businessId),
+      supabase.from('shared_orders').delete().eq('from_business_id', businessId),
+      supabase.from('property_check_ins').delete().eq('business_id', businessId),
+      supabase.from('property_complaints').delete().eq('business_id', businessId),
+      supabase.from('property_bookings').delete().eq('business_id', businessId),
+      supabase.from('property_assets').delete().eq('business_id', businessId),
+      supabase.from('property_conversations').delete().eq('business_id', businessId),
+      supabase.from('order_disputes').delete().eq('business_id', businessId),
+      supabase.from('business_customers').delete().eq('business_id', businessId),
+      supabase.from('business_reviews').delete().eq('business_id', businessId),
+    ]);
+    await supabase.from('business_memberships').delete().eq('business_id', businessId);
+
     const { error } = await supabase.from('businesses').delete().eq('id', businessId);
     if (error) { toast.error(error.message); return false; }
     toast.success('Business deleted permanently');

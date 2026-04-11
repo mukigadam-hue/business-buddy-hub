@@ -192,9 +192,12 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
       toast.success('Raw material saved offline — will sync when online');
       return;
     }
-    const { error } = await supabase.from('factory_raw_materials').insert({ ...item, business_id: businessId } as any);
-    if (error) { toast.error(error.message); return; }
+    const tempId = crypto.randomUUID();
+    const optimistic = { ...item, id: tempId, business_id: businessId, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deleted_at: null } as RawMaterial;
+    setRawMaterials(prev => [...prev, optimistic].sort((a, b) => a.name.localeCompare(b.name)));
     toast.success('Raw material added!');
+    const { error } = await supabase.from('factory_raw_materials').insert({ ...item, business_id: businessId } as any);
+    if (error) { toast.error('Save failed: ' + error.message); setRawMaterials(prev => prev.filter(r => r.id !== tempId)); }
   }, [businessId]);
 
   const updateRawMaterial = useCallback(async (id: string, updates: Partial<RawMaterial>) => {

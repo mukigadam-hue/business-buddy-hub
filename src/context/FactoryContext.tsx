@@ -201,10 +201,10 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
   }, [businessId]);
 
   const updateRawMaterial = useCallback(async (id: string, updates: Partial<RawMaterial>) => {
-    const { error } = await supabase.from('factory_raw_materials').update(updates as any).eq('id', id);
-    if (error) { toast.error(error.message); return; }
     setRawMaterials(prev => prev.map(r => r.id === id ? { ...r, ...updates } as RawMaterial : r));
     toast.success('Updated!');
+    const { error } = await supabase.from('factory_raw_materials').update(updates as any).eq('id', id);
+    if (error) { toast.error('Save failed: ' + error.message); }
   }, []);
 
   const deleteRawMaterial = useCallback(async (id: string) => {

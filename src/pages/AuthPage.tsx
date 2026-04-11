@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { lovable } from '@/integrations/lovable/index';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { LogIn, UserPlus, Eye, EyeOff, HelpCircle } from 'lucide-react';
+import { LogIn, UserPlus, Eye, EyeOff, HelpCircle, KeyRound, ArrowLeft } from 'lucide-react';
 import LegalHelpModal from '@/components/LegalHelpModal';
 
 export default function AuthPage() {

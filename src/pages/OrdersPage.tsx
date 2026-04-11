@@ -1488,6 +1488,26 @@ export default function OrdersPage() {
               </div>
             )}
 
+            {/* Show supplier products for both walk-in and request modes */}
+            {orderMode === 'my_order' && supplierProducts.length > 0 && (
+              <div className="bg-muted/30 border rounded-md p-3">
+                <p className="text-sm font-bold text-foreground mb-2">📦 Available items from {prefilledSupplierName || 'supplier'} ({supplierProducts.length}):</p>
+                <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto">
+                  {supplierProducts.map((p, i) => (
+                    <button key={i} className="text-base px-4 py-3.5 rounded-lg border-2 bg-background hover:bg-accent hover:border-primary/40 transition-colors text-left flex flex-col gap-1 min-h-[56px]"
+                      onClick={() => setForm(f => ({ ...f, name: p.name, category: p.category || '', quality: p.quality || '' }))}>
+                      <span className="font-bold text-foreground text-base">{p.name}</span>
+                      {(p.category || p.quality) && (
+                        <span className="text-muted-foreground text-sm">
+                          {p.category ? `${p.category}` : ''}{p.quality ? ` · ${p.quality}` : ''}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Smart Search Picker for Orders */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold flex items-center gap-1.5">

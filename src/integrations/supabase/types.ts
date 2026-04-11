@@ -2377,6 +2377,7 @@ export type Database = {
           hourly_price: number
           id: string
           image_url_1: string
+          is_available: boolean
           location: string
           monthly_price: number
           name: string

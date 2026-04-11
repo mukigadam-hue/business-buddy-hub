@@ -1188,6 +1188,7 @@ export type Database = {
           full_name: string
           id: string
           is_premium: boolean
+          phone: string
         }
         Insert: {
           created_at?: string
@@ -1195,6 +1196,7 @@ export type Database = {
           full_name?: string
           id: string
           is_premium?: boolean
+          phone?: string
         }
         Update: {
           created_at?: string
@@ -1202,6 +1204,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_premium?: boolean
+          phone?: string
         }
         Relationships: []
       }
@@ -2319,6 +2322,12 @@ export type Database = {
           id: string
           logo_url: string
           name: string
+        }[]
+      }
+      lookup_email_by_phone: {
+        Args: { _phone: string }
+        Returns: {
+          masked_email: string
         }[]
       }
       search_businesses: {

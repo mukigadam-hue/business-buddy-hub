@@ -913,12 +913,9 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       quality: item.quality, quantity: item.quantity, unit_price: item.unit_price, subtotal: item.subtotal,
       serial_numbers: item.serial_numbers || '',
     }));
-    await supabase.from('purchase_items').insert(purchaseItems);
-
-    await addNotification('new_purchase', '🛒 New Purchase Recorded', `${items.length} item(s) from ${supplier} — Total: recorded by ${recordedBy}`);
-
+    // Fire all DB writes in parallel for speed
     const currentStock = stock;
-    for (const item of items) {
+    const stockOps = items.map(item => {
       const existingStock = currentStock.find(s =>
         s.name.toLowerCase() === item.item_name.toLowerCase() &&
         s.category.toLowerCase() === item.category.toLowerCase() &&
@@ -934,20 +931,26 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       if (item.boxes_per_container && item.boxes_per_container > 0) packagingUpdate.boxes_per_container = item.boxes_per_container;
 
       if (existingStock) {
-        await supabase.from('stock_items').update({
+        return supabase.from('stock_items').update({
           quantity: existingStock.quantity + item.quantity,
           buying_price: buyPrice, wholesale_price: ws, retail_price: ret,
           ...packagingUpdate,
         }).eq('id', existingStock.id);
       } else {
-        await supabase.from('stock_items').insert({
+        return supabase.from('stock_items').insert({
           business_id: currentBusinessId, name: item.item_name, category: item.category,
           quality: item.quality, buying_price: buyPrice, wholesale_price: ws, retail_price: ret,
           quantity: item.quantity, min_stock_level: 5,
           ...packagingUpdate,
         });
       }
-    }
+    });
+
+    await Promise.all([
+      supabase.from('purchase_items').insert(purchaseItems),
+      addNotification('new_purchase', '🛒 New Purchase Recorded', `${items.length} item(s) from ${supplier} — Total: recorded by ${recordedBy}`),
+      ...stockOps,
+    ]);
     toast.success('Purchase recorded!');
   }, [currentBusinessId, stock]);
 

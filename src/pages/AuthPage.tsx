@@ -14,6 +14,7 @@ import LegalHelpModal from '@/components/LegalHelpModal';
 export default function AuthPage() {
   const { signUp, signIn } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');

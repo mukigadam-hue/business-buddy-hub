@@ -60,7 +60,9 @@ export default function OrderDisputeDialog({
         for (const photo of photos) {
           try {
             const ext = photo.name.split('.').pop();
-            const fileName = `disputes/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            const uid = currentUser?.id || 'anon';
+            const fileName = `${uid}/disputes/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
             const { error: upErr } = await supabase.storage.from('payment-proofs').upload(fileName, photo);
             if (upErr) throw upErr;
             const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);

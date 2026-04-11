@@ -86,7 +86,9 @@ export default function CheckoutPage() {
       // Upload proof if mobile money
       if (paymentMethod === 'mobile_money' && proofFile) {
         const ext = proofFile.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const uid = currentUser?.id || 'anon';
+        const fileName = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
           .upload(fileName, proofFile);

@@ -153,7 +153,7 @@ export interface Business {
   owner_id: string;
   business_type: string;
   business_code: string;
-  settings_password: string;
+  settings_password?: string; // No longer fetched from DB for security
   country_code: string;
   district: string;
   currency_symbol: string;
@@ -376,7 +376,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         const businessIds = membershipData.map(m => m.business_id);
         const { data: businessData, error: bizError } = await supabase
           .from('businesses')
-          .select('*')
+          .select('id,name,address,contact,email,total_capital,logo_url,owner_id,business_type,business_code,country_code,district,currency_symbol,products_description,is_discoverable,created_at')
           .in('id', businessIds);
         
         if (bizError) {

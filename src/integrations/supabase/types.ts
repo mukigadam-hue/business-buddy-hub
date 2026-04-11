@@ -2296,6 +2296,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_settings_password: {
+        Args: { _business_id: string }
+        Returns: boolean
+      }
       is_business_member: {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean
@@ -2373,6 +2377,10 @@ export type Database = {
           sub_category: string
           total_rooms: number
         }[]
+      }
+      verify_settings_password: {
+        Args: { _business_id: string; _password: string }
+        Returns: boolean
       }
     }
     Enums: {

@@ -296,15 +296,24 @@ export default function PropertySettings() {
   // Password gate
   const [unlocked, setUnlocked] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
-  const hasPassword = currentBusiness?.settings_password && currentBusiness.settings_password.length > 0;
+  const [hasPassword, setHasPassword] = useState(false);
+
+  useEffect(() => {
+    if (currentBusiness?.id) {
+      supabase.rpc('has_settings_password', { _business_id: currentBusiness.id }).then(({ data }) => {
+        setHasPassword(!!data);
+      });
+    }
+  }, [currentBusiness?.id]);
 
   useEffect(() => {
     if (isOwnerOrAdmin && !hasPassword) setUnlocked(true);
     else if (!isOwnerOrAdmin) setUnlocked(false);
   }, [isOwnerOrAdmin, hasPassword, currentBusiness?.id]);
 
-  function handleUnlock() {
-    if (passwordInput === currentBusiness?.settings_password) {
+  async function handleUnlock() {
+    const { data } = await supabase.rpc('verify_settings_password', { _business_id: currentBusiness?.id, _password: passwordInput });
+    if (data) {
       setUnlocked(true);
       setPasswordInput('');
     } else {
@@ -318,7 +327,7 @@ export default function PropertySettings() {
     contact: currentBusiness?.contact || '',
     email: currentBusiness?.email || '',
   });
-  const [settingsPassword, setSettingsPassword] = useState(currentBusiness?.settings_password || '');
+  const [settingsPassword, setSettingsPassword] = useState('');
   const [currencyInput, setCurrencyInput] = useState(currency);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
@@ -332,7 +341,7 @@ export default function PropertySettings() {
       contact: currentBusiness?.contact || '',
       email: currentBusiness?.email || '',
     });
-    setSettingsPassword(currentBusiness?.settings_password || '');
+    setSettingsPassword('');
   }, [currentBusiness?.id]);
 
   // ===== PROPERTY FINANCIAL SUMMARY =====

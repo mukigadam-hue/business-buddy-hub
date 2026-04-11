@@ -169,6 +169,7 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
   const [newRating, setNewRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [logoLightboxOpen, setLogoLightboxOpen] = useState(false);
   const isProperty = business?.business_type === 'property';
   const isFactory = business?.business_type === 'factory';
 
@@ -276,12 +277,18 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="p-4 pb-2">
           <div className="flex items-start gap-3">
             {business.logo_url ? (
-              <img src={business.logo_url} alt={business.name} className="h-12 w-12 rounded-lg object-cover border" />
+              <img
+                src={business.logo_url}
+                alt={business.name}
+                className="h-12 w-12 rounded-lg object-cover border cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setLogoLightboxOpen(true)}
+              />
             ) : (
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-xl">{typeIcon}</div>
             )}
@@ -396,5 +403,14 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
         </Tabs>
       </DialogContent>
     </Dialog>
+    {business.logo_url && (
+      <ImageLightbox
+        images={[business.logo_url]}
+        open={logoLightboxOpen}
+        onOpenChange={setLogoLightboxOpen}
+        title={business.name}
+      />
+    )}
+    </>
   );
 }

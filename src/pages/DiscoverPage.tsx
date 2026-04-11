@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import BusinessDetailDialog from '@/components/BusinessDetailDialog';
+import ImageLightbox from '@/components/ImageLightbox';
 import AdSpace from '@/components/AdSpace';
 import { useBusiness } from '@/context/BusinessContext';
 import { getCountryFlag, getCountryByCode } from '@/lib/countries';
@@ -40,6 +41,7 @@ export default function DiscoverPage() {
   const [filterCountry, setFilterCountry] = useState(true);
   const [filterType, setFilterType] = useState<'all' | 'business' | 'factory' | 'property'>('all');
   const [districtFilter, setDistrictFilter] = useState('');
+  const [logoLightbox, setLogoLightbox] = useState<string | null>(null);
 
   const myCountry = (currentBusiness as any)?.country_code || '';
 
@@ -198,7 +200,12 @@ export default function DiscoverPage() {
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-start gap-3">
                   {biz.logo_url ? (
-                    <img src={biz.logo_url} alt={biz.name} className="h-10 w-10 rounded-lg object-cover border" />
+                    <img
+                      src={biz.logo_url}
+                      alt={biz.name}
+                      className="h-10 w-10 rounded-lg object-cover border cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={(e) => { e.stopPropagation(); setLogoLightbox(biz.logo_url!); }}
+                    />
                   ) : (
                     <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-lg">
                       {biz.business_type === 'factory' ? '🏭' : biz.business_type === 'property' ? '🏠' : '🏪'}
@@ -291,6 +298,13 @@ export default function DiscoverPage() {
         open={!!selectedBiz}
         onOpenChange={(open) => { if (!open) setSelectedBiz(null); }}
         onOrderOrBook={handleOrderOrBook}
+      />
+
+      <ImageLightbox
+        images={logoLightbox ? [logoLightbox] : []}
+        open={!!logoLightbox}
+        onOpenChange={(o) => { if (!o) setLogoLightbox(null); }}
+        title="Business Logo"
       />
     </div>
   );

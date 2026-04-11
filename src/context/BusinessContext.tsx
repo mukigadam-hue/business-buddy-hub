@@ -289,10 +289,16 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     setCurrentBusinessIdState(nextId);
     if (nextId) {
       cachePersist(CACHE_KEYS.currentBusiness, nextId);
+      // Sync currency from the selected business
+      const biz = businesses.find(b => b.id === nextId);
+      if (biz?.currency_symbol) {
+        localStorage.setItem('biztrack_currency_symbol', biz.currency_symbol);
+        window.dispatchEvent(new CustomEvent('biztrack_currency_changed', { detail: biz.currency_symbol }));
+      }
     } else {
       removeJsonSync(CACHE_KEYS.currentBusiness);
     }
-  }, []);
+  }, [businesses]);
 
   const currentBusiness = businesses.find(b => b.id === currentBusinessId) || null;
   const userRole = memberships.find(m => m.business_id === currentBusinessId)?.role || null;
@@ -387,8 +393,15 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
         if (businessData) {
           setBusinesses(businessData as Business[]);
-          if (!currentBusinessId || !businessIds.includes(currentBusinessId)) {
-            setCurrentBusinessId(businessData[0].id);
+          const activeId = currentBusinessId && businessIds.includes(currentBusinessId) ? currentBusinessId : businessData[0].id;
+          if (activeId !== currentBusinessId) {
+            setCurrentBusinessId(activeId);
+          }
+          // Always sync currency on load
+          const activeBiz = businessData.find(b => b.id === activeId);
+          if (activeBiz?.currency_symbol) {
+            localStorage.setItem('biztrack_currency_symbol', activeBiz.currency_symbol);
+            window.dispatchEvent(new CustomEvent('biztrack_currency_changed', { detail: activeBiz.currency_symbol }));
           }
         }
       } else {

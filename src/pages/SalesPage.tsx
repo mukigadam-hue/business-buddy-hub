@@ -60,7 +60,8 @@ export default function SalesPage() {
   const [selectedPartStock, setSelectedPartStock] = useState('');
   const [partQty, setPartQty] = useState('1');
   const [stockSearch, setStockSearch] = useState('');
-
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkQty, setBulkQty] = useState('1');
   const { locked: submitLocked, withLock } = useSubmitLock();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [partScannerOpen, setPartScannerOpen] = useState(false);
@@ -80,6 +81,7 @@ export default function SalesPage() {
     const stockItem = activeStock.find(s => s.id === selectedStock);
     if (!stockItem) return;
     const qty = parseFloat(quantity) || 1;
+    const finalQty = bulkMode ? qty * (parseFloat(bulkQty) || 1) : qty;
     const basePrice = priceType === 'wholesale' ? Number(stockItem.wholesale_price) : Number(stockItem.retail_price);
     const unitPrice = customPrice.trim() ? (parseFloat(customPrice) || basePrice) : basePrice;
     setItems(prev => [...prev, {
@@ -87,7 +89,7 @@ export default function SalesPage() {
       item_name: stockItem.name,
       category: stockItem.category,
       quality: stockItem.quality,
-      quantity: qty,
+      quantity: finalQty,
       price_type: customPrice.trim() ? 'custom' : priceType,
       unit_price: unitPrice,
       serial_numbers: serialInput.trim() || undefined,
@@ -98,6 +100,7 @@ export default function SalesPage() {
     setSerialInput('');
     setCustomPrice('');
     setStockSearch('');
+    setBulkQty('1');
     // Keep priceType sticky — don't reset it
   }
 

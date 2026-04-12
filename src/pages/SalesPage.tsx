@@ -272,7 +272,7 @@ export default function SalesPage() {
             <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
           </Button>
           {!isPaid && (
-            <Button size="sm" variant="outline" onClick={() => { setEditPaymentSale(sale); setEditAmountPaid(String(sale.amount_paid || 0)); }}>
+            <Button size="sm" variant="outline" onClick={() => { setEditPaymentSale(sale); setEditAmountPaid(''); }}>
               💰 Update Payment
             </Button>
           )}

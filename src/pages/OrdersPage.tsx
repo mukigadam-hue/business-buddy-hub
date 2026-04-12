@@ -1133,7 +1133,7 @@ export default function OrdersPage() {
 
           {/* Update Payment for orders with outstanding balance */}
           {order.payment_status !== 'paid' && Number(order.balance) > 0 && order.grand_total > 0 && (
-            <Button size="sm" variant="outline" onClick={() => { setUpdatePaymentOrder(order); setUpdatePaymentAmount(String(order.amount_paid || 0)); }}>
+            <Button size="sm" variant="outline" onClick={() => { setUpdatePaymentOrder(order); setUpdatePaymentAmount(''); }}>
               💰 Update Payment
             </Button>
           )}

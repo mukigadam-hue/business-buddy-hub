@@ -358,7 +358,7 @@ export default function FactorySales() {
                     ))}
                   </div>
                   {s.payment_status !== 'paid' && (
-                    <Button size="sm" variant="outline" className="mt-2" onClick={() => { setEditPaymentSale(s); setEditAmountPaid(String(s.amount_paid || 0)); }}>
+                    <Button size="sm" variant="outline" className="mt-2" onClick={() => { setEditPaymentSale(s); setEditAmountPaid(''); }}>
                       💰 Update Payment
                     </Button>
                   )}

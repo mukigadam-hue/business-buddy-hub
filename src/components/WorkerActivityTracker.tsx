@@ -61,18 +61,7 @@ export default function WorkerActivityTracker() {
     });
   });
 
-  // Orders
-  orders.forEach(o => {
-    if (!o.customer_name) return;
-    activities.push({
-      type: 'order',
-      worker: o.customer_name,
-      description: `${o.type === 'my_order' ? 'Created order' : o.type === 'request' ? 'Sent order to supplier' : 'Received order'} (${o.items.length} items)`,
-      amount: Number(o.grand_total),
-      date: new Date(o.created_at).toLocaleDateString(),
-      time: new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    });
-  });
+  // Orders are excluded from worker activity — they represent customers, not workers
 
   // Sort by date descending
   activities.sort((a, b) => {

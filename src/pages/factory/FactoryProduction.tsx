@@ -175,12 +175,13 @@ export default function FactoryProduction() {
                   }
                 }}>
                   <SelectTrigger><SelectValue placeholder="Optional..." /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="max-h-48 overflow-y-auto">
                     <SelectItem value="__new__">New Product</SelectItem>
                     {activeProducts.map(p => <SelectItem key={p.id} value={p.id}>{p.name} (W:{fmt(Number(p.wholesale_price))} R:{fmt(Number(p.retail_price))})</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+            </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -195,7 +196,7 @@ export default function FactoryProduction() {
                 <Label>Waste Unit</Label>
                 <Select value={form.waste_unit} onValueChange={v => setForm(f => ({ ...f, waste_unit: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{WASTE_UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                  <SelectContent position="popper" className="max-h-48 overflow-y-auto">{WASTE_UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div><Label>Recorded By</Label><Input value={form.recorded_by} onChange={e => setForm(f => ({ ...f, recorded_by: e.target.value }))} placeholder="Name" /></div>
@@ -215,7 +216,7 @@ export default function FactoryProduction() {
                   <Label className="text-xs">Material</Label>
                   <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
                     <SelectTrigger><SelectValue placeholder="Choose material..." /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="max-h-48 overflow-y-auto">
                       {activeRM.filter(r => Number(r.quantity) > 0).map(r => (
                         <SelectItem key={r.id} value={r.id}>{r.name} ({r.quantity} {r.unit_type})</SelectItem>
                       ))}

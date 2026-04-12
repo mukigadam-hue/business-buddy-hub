@@ -342,7 +342,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="shadow-card">
           <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-primary" />{t('dashboard.recentSales')}</CardTitle></CardHeader>
           <CardContent>
@@ -351,7 +351,7 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {visibleSales.map(sale => (
-                  <div key={sale.id} className="flex items-start justify-between p-2 rounded-lg bg-muted/50">
+                  <div key={sale.id} className="flex items-start justify-between gap-2 p-2 rounded-lg bg-muted/50 overflow-hidden">
                     <div className="flex-1 min-w-0">
                       {sale.customer_name && <p className="text-xs font-medium text-foreground">👤 {sale.customer_name}</p>}
                       {sale.items.slice(0, 2).map((item, i) => (
@@ -363,7 +363,7 @@ export default function Dashboard() {
                       {sale.items.length > 2 && <p className="text-xs text-muted-foreground">+{sale.items.length - 2} more</p>}
                       <p className="text-xs text-muted-foreground">{new Date(sale.created_at).toLocaleString()}</p>
                     </div>
-                    <MoneyBadge value={Number(sale.grand_total)} />
+                    <span className="shrink-0"><MoneyBadge value={Number(sale.grand_total)} /></span>
                   </div>
                 ))}
               </div>
@@ -384,7 +384,7 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {visibleServices.map(s => (
-                  <div key={s.id} className="flex items-start justify-between p-2 rounded-lg bg-muted/50">
+                  <div key={s.id} className="flex items-start justify-between gap-2 p-2 rounded-lg bg-muted/50 overflow-hidden">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{s.service_name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -393,7 +393,7 @@ export default function Dashboard() {
                       </p>
                       <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString()}</p>
                     </div>
-                    <span className="font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(s.cost))}</span>
+                    <span className="font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-md text-sm tabular-nums shrink-0">{fmt(Number(s.cost))}</span>
                   </div>
                 ))}
               </div>

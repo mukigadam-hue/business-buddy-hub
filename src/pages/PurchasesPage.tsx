@@ -413,24 +413,37 @@ export default function PurchasesPage() {
       <Dialog open={!!editPaymentPurchase} onOpenChange={o => { if (!o) setEditPaymentPurchase(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Update Payment — {editPaymentPurchase?.supplier}</DialogTitle></DialogHeader>
-          {editPaymentPurchase && (
+          {editPaymentPurchase && (() => {
+            const totalOwed = Number(editPaymentPurchase.grand_total);
+            const previouslyPaid = Number(editPaymentPurchase.amount_paid);
+            const remaining = totalOwed - previouslyPaid;
+            const payingNow = parseFloat(editAmountPaid) || 0;
+            const newTotal = previouslyPaid + payingNow;
+            const newBalance = totalOwed - newTotal;
+            return (
             <div className="space-y-3">
-              <p className="text-sm">Total: <span className="font-bold">{fmt(Number(editPaymentPurchase.grand_total))}</span></p>
-              <p className="text-sm">Previously Paid: <span className="font-bold">{fmt(Number(editPaymentPurchase.amount_paid))}</span></p>
+              <p className="text-sm">Total Cost: <span className="font-bold">{fmt(totalOwed)}</span></p>
+              <p className="text-sm">Previously Paid: <span className="font-bold">{fmt(previouslyPaid)}</span></p>
+              <p className="text-sm">Remaining Balance: <span className="font-bold text-destructive">{fmt(remaining)}</span></p>
               <div>
-                <Label>New Total Amount Paid</Label>
-                <Input type="number" min="0" step="0.01" value={editAmountPaid} onChange={e => setEditAmountPaid(e.target.value)} />
+                <Label>Amount Paying Now</Label>
+                <Input type="number" min="0" max={remaining} step="0.01" value={editAmountPaid} onChange={e => setEditAmountPaid(e.target.value)} placeholder={`Up to ${fmt(remaining)}`} />
               </div>
-              <p className="text-sm">New Balance: <span className="font-bold text-destructive">{fmt(Number(editPaymentPurchase.grand_total) - (parseFloat(editAmountPaid) || 0))}</span></p>
-              <Button className="w-full" onClick={async () => {
-                const amt = parseFloat(editAmountPaid) || 0;
-                await updatePurchasePayment(editPaymentPurchase.id, amt, amt >= Number(editPaymentPurchase.grand_total) ? 'paid' : amt > 0 ? 'partial' : 'unpaid');
+              {payingNow > 0 && (
+                <p className="text-sm">After this payment: <span className={`font-bold ${newBalance <= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {newBalance <= 0 ? '✅ Fully Paid' : `Balance: ${fmt(newBalance)}`}
+                </span></p>
+              )}
+              <Button className="w-full" disabled={payingNow <= 0} onClick={async () => {
+                await updatePurchasePayment(editPaymentPurchase.id, newTotal, newTotal >= totalOwed ? 'paid' : newTotal > 0 ? 'partial' : 'unpaid');
                 setEditPaymentPurchase(null);
+                setEditAmountPaid('');
               }}>
-                💰 Save Payment
+                💰 {newBalance <= 0 ? 'Clear Debt' : `Pay ${fmt(payingNow)}`}
               </Button>
             </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

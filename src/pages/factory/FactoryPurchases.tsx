@@ -128,6 +128,13 @@ export default function FactoryPurchases() {
   const todayPurchases = purchases.filter(p => new Date(p.created_at).toDateString() === new Date().toDateString());
   const previousPurchases = purchases.filter(p => new Date(p.created_at).toDateString() !== new Date().toDateString());
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'debt'>('all');
+  const currentList = activeTab === 'today' ? todayPurchases : previousPurchases;
+  const filteredPurchases = currentList.filter(p => {
+    if (paymentFilter === 'all') return true;
+    if (paymentFilter === 'paid') return p.payment_status === 'paid';
+    return p.payment_status === 'partial' || p.payment_status === 'unpaid';
+  });
 
   return (
     <div className="space-y-6">
@@ -234,34 +241,27 @@ export default function FactoryPurchases() {
 
           {items.length > 0 && (
             <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Material</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead>
-                      <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Cost/Unit</TableHead>
-                      <TableHead className="text-right">Subtotal</TableHead><TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">{item.item_name}</TableCell>
-                        <TableCell>{item.category}</TableCell>
-                        <TableCell className="capitalize">{item.unit_type}</TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(item.unit_price)}</TableCell>
-                        <TableCell className="text-right font-semibold tabular-nums">{fmt(item.quantity * item.unit_price)}</TableCell>
-                        <TableCell><Button variant="ghost" size="icon" onClick={() => removeItem(i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-right font-bold">Grand Total</TableCell>
-                      <TableCell className="text-right font-bold text-lg text-success tabular-nums">{fmt(grandTotal)}</TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {items.map((item, i) => (
+                  <div key={i} className="flex items-start justify-between gap-2 p-2 rounded-lg border bg-muted/30">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{item.item_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.category} · {item.unit_type}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.quantity} × {fmt(item.unit_price)} = <span className="font-semibold text-foreground">{fmt(item.quantity * item.unit_price)}</span>
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => removeItem(i)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="font-bold text-sm">Grand Total</span>
+                  <span className="font-bold text-lg text-success tabular-nums">{fmt(grandTotal)}</span>
+                </div>
               </div>
               <Button onClick={() => withLock(handleSave)} className="w-full" disabled={submitLocked}>
                 <ShoppingCart className="h-4 w-4 mr-2" />{submitLocked ? 'Saving...' : `Record Purchase — ${fmt(grandTotal)}`}
@@ -283,24 +283,39 @@ export default function FactoryPurchases() {
         </button>
       </div>
 
+      {/* Payment filter */}
+      <div className="flex gap-1.5 flex-wrap">
+        {(['all', 'paid', 'debt'] as const).map(f => (
+          <button key={f} onClick={() => setPaymentFilter(f)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${paymentFilter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            {f === 'all' ? '📋 All' : f === 'paid' ? '✅ Paid' : '❌ Debts'}
+          </button>
+        ))}
+      </div>
+
       <Card className="shadow-card">
         <CardContent className="p-4">
-          {(activeTab === 'today' ? todayPurchases : previousPurchases).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No purchases {activeTab === 'today' ? 'today' : 'from previous days'} yet.</p>
+          {filteredPurchases.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No purchases matching filter.</p>
           ) : (
             <div className="space-y-3 max-h-[500px] overflow-y-auto">
-              {(activeTab === 'today' ? todayPurchases : previousPurchases).map(p => (
+              {filteredPurchases.map(p => (
                 <div key={p.id} className="border rounded-lg p-3">
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-medium text-sm">{p.supplier}</span>
                     <span className="font-bold text-success bg-success/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(p.grand_total))}</span>
                   </div>
+                  {p.payment_status && p.payment_status !== 'paid' && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold bg-destructive/10 text-destructive">
+                      {p.payment_status === 'partial' ? `⚠️ Partial — Balance: ${fmt(Number(p.balance))}` : '❌ Unpaid'}
+                    </span>
+                  )}
                   <p className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleString()}</p>
                   <div className="text-sm text-muted-foreground space-y-1 mt-1 max-h-40 overflow-y-auto">
                     {p.items.map((item, i) => (
                       <div key={i} className="flex justify-between">
                         <span>{item.item_name} × {item.quantity}</span>
-                        <span className="tabular-nums">{fmt(Number(item.subtotal))}</span>
+                        <span className="tabular-nums shrink-0">{fmt(Number(item.subtotal))}</span>
                       </div>
                     ))}
                   </div>

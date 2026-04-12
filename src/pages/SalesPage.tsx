@@ -272,7 +272,7 @@ export default function SalesPage() {
             <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
           </Button>
           {!isPaid && (
-            <Button size="sm" variant="outline" onClick={() => { setEditPaymentSale(sale); setEditAmountPaid(String(sale.amount_paid || 0)); }}>
+            <Button size="sm" variant="outline" onClick={() => { setEditPaymentSale(sale); setEditAmountPaid(''); }}>
               💰 Update Payment
             </Button>
           )}
@@ -673,24 +673,36 @@ export default function SalesPage() {
       <Dialog open={!!editPaymentSale} onOpenChange={o => { if (!o) setEditPaymentSale(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Update Payment — {editPaymentSale?.customer_name}</DialogTitle></DialogHeader>
-          {editPaymentSale && (
-            <div className="space-y-3">
-              <p className="text-sm">Total: <span className="font-bold">{fmt(Number(editPaymentSale.grand_total))}</span></p>
-              <p className="text-sm">Previously Paid: <span className="font-bold">{fmt(Number(editPaymentSale.amount_paid))}</span></p>
-              <div>
-                <Label>New Total Amount Paid</Label>
-                <Input type="number" min="0" step="0.01" value={editAmountPaid} onChange={e => setEditAmountPaid(e.target.value)} />
+          {editPaymentSale && (() => {
+            const total = Number(editPaymentSale.grand_total);
+            const previouslyPaid = Number(editPaymentSale.amount_paid);
+            const remaining = total - previouslyPaid;
+            const payingNow = parseFloat(editAmountPaid) || 0;
+            const newTotal = previouslyPaid + payingNow;
+            const newBalance = Math.max(0, total - newTotal);
+            const fullyPaid = newTotal >= total;
+            return (
+              <div className="space-y-3">
+                <div className="p-3 bg-muted/40 rounded-lg border space-y-1">
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Charged</span><span className="font-bold">{fmt(total)}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Previously Paid</span><span className="font-bold">{fmt(previouslyPaid)}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Remaining Balance</span><span className="font-bold text-destructive">{fmt(remaining)}</span></div>
+                </div>
+                <div>
+                  <Label>💰 Amount Paying Now</Label>
+                  <Input type="number" min="0" max={remaining} step="0.01" value={editAmountPaid} onChange={e => setEditAmountPaid(e.target.value)} placeholder={String(remaining)} />
+                </div>
+                {fullyPaid && <p className="text-sm font-semibold text-success text-center">✅ Fully Paid — debt cleared!</p>}
+                {!fullyPaid && payingNow > 0 && <p className="text-sm text-center">New balance: <span className="font-bold text-destructive">{fmt(newBalance)}</span></p>}
+                <Button className="w-full" onClick={async () => {
+                  await updateSalePayment(editPaymentSale.id, newTotal, fullyPaid ? 'paid' : newTotal > 0 ? 'partial' : 'unpaid');
+                  setEditPaymentSale(null);
+                }}>
+                  💰 {fullyPaid ? 'Clear Debt' : 'Save Payment'}
+                </Button>
               </div>
-              <p className="text-sm">New Balance: <span className="font-bold text-destructive">{fmt(Number(editPaymentSale.grand_total) - (parseFloat(editAmountPaid) || 0))}</span></p>
-              <Button className="w-full" onClick={async () => {
-                const amt = parseFloat(editAmountPaid) || 0;
-                await updateSalePayment(editPaymentSale.id, amt, amt >= Number(editPaymentSale.grand_total) ? 'paid' : amt > 0 ? 'partial' : 'unpaid');
-                setEditPaymentSale(null);
-              }}>
-                💰 Save Payment
-              </Button>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

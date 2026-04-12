@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Trash2, Package, ScanLine, Search } from 'lucide-react';
 import BarcodeScanHandler from '@/components/BarcodeScanHandler';
@@ -40,6 +40,7 @@ export default function PurchasesPage() {
     serial_numbers: '',
   });
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'debt'>('all');
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>('paid');
   const [amountPaid, setAmountPaid] = useState('');
   const [editPaymentPurchase, setEditPaymentPurchase] = useState<typeof purchases[0] | null>(null);
@@ -61,6 +62,12 @@ export default function PurchasesPage() {
 
   const todayPurchases = purchases.filter(p => new Date(p.created_at).toDateString() === new Date().toDateString());
   const previousPurchases = purchases.filter(p => new Date(p.created_at).toDateString() !== new Date().toDateString());
+  const currentList = activeTab === 'today' ? todayPurchases : previousPurchases;
+  const filteredPurchases = currentList.filter(p => {
+    if (paymentFilter === 'all') return true;
+    if (paymentFilter === 'paid') return p.payment_status === 'paid';
+    return p.payment_status === 'partial' || p.payment_status === 'unpaid';
+  });
 
   function applyCase(field: 'name' | 'category' | 'quality') {
     setForm(f => ({ ...f, [field]: toSentenceCase(f[field]) }));
@@ -304,40 +311,29 @@ export default function PurchasesPage() {
           </div>
           <Button onClick={addItem} disabled={!form.name.trim()} className="w-full"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
 
-          {items.length > 0 && (
+           {items.length > 0 && (
             <>
-              <div className="overflow-x-auto max-h-60 overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                       <TableHead>Item</TableHead><TableHead>Category</TableHead><TableHead>Quality</TableHead><TableHead>Unit</TableHead>
-                       <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Cost/Unit</TableHead>
-                       <TableHead className="text-right">Wholesale</TableHead><TableHead className="text-right">Retail</TableHead>
-                       <TableHead className="text-right">Subtotal</TableHead><TableHead></TableHead>
-                     </TableRow>
-                   </TableHeader>
-                   <TableBody>
-                     {items.map((item, i) => (
-                       <TableRow key={i}>
-                         <TableCell className="font-medium">{item.item_name}</TableCell>
-                         <TableCell>{item.category}</TableCell>
-                         <TableCell>{item.quality}</TableCell>
-                         <TableCell className="capitalize">{item.unit_type}</TableCell>
-                         <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(item.unit_price)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(item.wholesale_price)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(item.retail_price)}</TableCell>
-                        <TableCell className="text-right font-semibold tabular-nums">{fmt(item.quantity * item.unit_price)}</TableCell>
-                        <TableCell><Button variant="ghost" size="icon" onClick={() => removeItem(i)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-right font-bold">Grand Total</TableCell>
-                      <TableCell className="text-right font-bold text-lg text-success tabular-nums">{fmt(grandTotal)}</TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {items.map((item, i) => (
+                  <div key={i} className="flex items-start justify-between gap-2 p-2 rounded-lg border bg-muted/30">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{item.item_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.category}{item.quality ? ` · ${item.quality}` : ''} · {item.unit_type}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.quantity} × {fmt(item.unit_price)} = <span className="font-semibold text-foreground">{fmt(item.quantity * item.unit_price)}</span>
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => removeItem(i)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="font-bold text-sm">Grand Total</span>
+                  <span className="font-bold text-lg text-success tabular-nums">{fmt(grandTotal)}</span>
+                </div>
               </div>
               {/* Payment Status */}
               <div className="p-3 bg-muted/40 rounded-lg border space-y-2">
@@ -374,31 +370,38 @@ export default function PurchasesPage() {
       <AdSpace variant="banner" />
 
       {/* Purchase History Tabs */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setActiveTab('today')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'today' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
         >
-          Today's Purchases ({todayPurchases.length})
+          Today ({todayPurchases.length})
         </button>
         <button
           onClick={() => setActiveTab('previous')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'previous' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
         >
-          Previous Purchases ({previousPurchases.length})
+          Previous ({previousPurchases.length})
         </button>
+      </div>
+
+      {/* Payment filter */}
+      <div className="flex gap-1.5 flex-wrap">
+        {(['all', 'paid', 'debt'] as const).map(f => (
+          <button key={f} onClick={() => setPaymentFilter(f)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${paymentFilter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            {f === 'all' ? '📋 All' : f === 'paid' ? '✅ Paid' : '❌ Debts'}
+          </button>
+        ))}
       </div>
 
       <Card className="shadow-card">
         <CardContent className="p-4">
-          <h2 className="text-base font-semibold mb-3">
-            {activeTab === 'today' ? "Today's Purchases" : "Previous Purchases"}
-          </h2>
-          {(activeTab === 'today' ? todayPurchases : previousPurchases).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No purchases {activeTab === 'today' ? 'today' : 'from previous days'} yet.</p>
+          {filteredPurchases.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No purchases {activeTab === 'today' ? 'today' : 'from previous days'} matching filter.</p>
           ) : (
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-              {(activeTab === 'today' ? todayPurchases : previousPurchases).map(p => (
+              {filteredPurchases.map(p => (
                 <PurchaseCard key={p.id} p={p} />
               ))}
             </div>
@@ -410,24 +413,37 @@ export default function PurchasesPage() {
       <Dialog open={!!editPaymentPurchase} onOpenChange={o => { if (!o) setEditPaymentPurchase(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Update Payment — {editPaymentPurchase?.supplier}</DialogTitle></DialogHeader>
-          {editPaymentPurchase && (
+          {editPaymentPurchase && (() => {
+            const totalOwed = Number(editPaymentPurchase.grand_total);
+            const previouslyPaid = Number(editPaymentPurchase.amount_paid);
+            const remaining = totalOwed - previouslyPaid;
+            const payingNow = parseFloat(editAmountPaid) || 0;
+            const newTotal = previouslyPaid + payingNow;
+            const newBalance = totalOwed - newTotal;
+            return (
             <div className="space-y-3">
-              <p className="text-sm">Total: <span className="font-bold">{fmt(Number(editPaymentPurchase.grand_total))}</span></p>
-              <p className="text-sm">Previously Paid: <span className="font-bold">{fmt(Number(editPaymentPurchase.amount_paid))}</span></p>
+              <p className="text-sm">Total Cost: <span className="font-bold">{fmt(totalOwed)}</span></p>
+              <p className="text-sm">Previously Paid: <span className="font-bold">{fmt(previouslyPaid)}</span></p>
+              <p className="text-sm">Remaining Balance: <span className="font-bold text-destructive">{fmt(remaining)}</span></p>
               <div>
-                <Label>New Total Amount Paid</Label>
-                <Input type="number" min="0" step="0.01" value={editAmountPaid} onChange={e => setEditAmountPaid(e.target.value)} />
+                <Label>Amount Paying Now</Label>
+                <Input type="number" min="0" max={remaining} step="0.01" value={editAmountPaid} onChange={e => setEditAmountPaid(e.target.value)} placeholder={`Up to ${fmt(remaining)}`} />
               </div>
-              <p className="text-sm">New Balance: <span className="font-bold text-destructive">{fmt(Number(editPaymentPurchase.grand_total) - (parseFloat(editAmountPaid) || 0))}</span></p>
-              <Button className="w-full" onClick={async () => {
-                const amt = parseFloat(editAmountPaid) || 0;
-                await updatePurchasePayment(editPaymentPurchase.id, amt, amt >= Number(editPaymentPurchase.grand_total) ? 'paid' : amt > 0 ? 'partial' : 'unpaid');
+              {payingNow > 0 && (
+                <p className="text-sm">After this payment: <span className={`font-bold ${newBalance <= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {newBalance <= 0 ? '✅ Fully Paid' : `Balance: ${fmt(newBalance)}`}
+                </span></p>
+              )}
+              <Button className="w-full" disabled={payingNow <= 0} onClick={async () => {
+                await updatePurchasePayment(editPaymentPurchase.id, newTotal, newTotal >= totalOwed ? 'paid' : newTotal > 0 ? 'partial' : 'unpaid');
                 setEditPaymentPurchase(null);
+                setEditAmountPaid('');
               }}>
-                💰 Save Payment
+                💰 {newBalance <= 0 ? 'Clear Debt' : `Pay ${fmt(payingNow)}`}
               </Button>
             </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

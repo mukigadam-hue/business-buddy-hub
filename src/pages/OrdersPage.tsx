@@ -2417,23 +2417,35 @@ export default function OrdersPage() {
       <Dialog open={!!updatePaymentOrder} onOpenChange={o => { if (!o) setUpdatePaymentOrder(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Update Payment — {updatePaymentOrder?.code}</DialogTitle></DialogHeader>
-          {updatePaymentOrder && (
-            <div className="space-y-3">
-              <p className="text-sm">Total: <span className="font-bold">{fmt(Number(updatePaymentOrder.grand_total))}</span></p>
-              <p className="text-sm">Previously Paid: <span className="font-bold">{fmt(Number(updatePaymentOrder.amount_paid))}</span></p>
-              <div>
-                <Label>New Total Amount Paid</Label>
-                <Input type="number" min="0" step="0.01" value={updatePaymentAmount} onChange={e => setUpdatePaymentAmount(e.target.value)} />
+          {updatePaymentOrder && (() => {
+            const total = Number(updatePaymentOrder.grand_total);
+            const previouslyPaid = Number(updatePaymentOrder.amount_paid);
+            const remaining = total - previouslyPaid;
+            const payingNow = parseFloat(updatePaymentAmount) || 0;
+            const newTotal = previouslyPaid + payingNow;
+            const newBalance = Math.max(0, total - newTotal);
+            const fullyPaid = newTotal >= total;
+            return (
+              <div className="space-y-3">
+                <div className="p-3 bg-muted/40 rounded-lg border space-y-1">
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Charged</span><span className="font-bold">{fmt(total)}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Previously Paid</span><span className="font-bold">{fmt(previouslyPaid)}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Remaining Balance</span><span className="font-bold text-destructive">{fmt(remaining)}</span></div>
+                </div>
+                <div>
+                  <Label>💰 Amount Paying Now</Label>
+                  <Input type="number" min="0" max={remaining} step="0.01" value={updatePaymentAmount} onChange={e => setUpdatePaymentAmount(e.target.value)} placeholder={String(remaining)} />
+                </div>
+                {fullyPaid && <p className="text-sm font-semibold text-success text-center">✅ Fully Paid — debt cleared!</p>}
+                {!fullyPaid && payingNow > 0 && <p className="text-sm text-center">New balance: <span className="font-bold text-destructive">{fmt(newBalance)}</span></p>}
+                <Button className="w-full" onClick={() => {
+                  updateOrderPayment(updatePaymentOrder.id, newTotal, total);
+                }}>
+                  💰 {fullyPaid ? 'Clear Debt' : 'Save Payment'}
+                </Button>
               </div>
-              <p className="text-sm">New Balance: <span className="font-bold text-destructive">{fmt(Number(updatePaymentOrder.grand_total) - (parseFloat(updatePaymentAmount) || 0))}</span></p>
-              <Button className="w-full" onClick={() => {
-                const amt = parseFloat(updatePaymentAmount) || 0;
-                updateOrderPayment(updatePaymentOrder.id, amt, Number(updatePaymentOrder.grand_total));
-              }}>
-                💰 Save Payment
-              </Button>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

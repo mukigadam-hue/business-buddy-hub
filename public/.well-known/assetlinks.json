@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.despia.biztrack",
+      "sha256_cert_fingerprints": [
+        "24:B7:99:54:8F:97:92:BC:2A:57:10:FB:D9:57:FF:B9:99:86:DF:17:93:3C:84:D7:BB:7D:17:06:DA:86:26:8D"
+      ]
+    }
+  }
+]

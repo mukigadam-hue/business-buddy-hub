@@ -158,51 +158,33 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
         if (shared) { setBusy(false); return; }
       }
 
-      // Strategy 2: hidden iframe print (works on desktop + many mobile browsers)
+      // Strategy 2: Download as image + prompt user to print from gallery (best mobile compatibility)
       const canvas = await getCanvas();
       if (!canvas) { toast.error('Failed to generate receipt'); setBusy(false); return; }
       const imgData = canvas.toDataURL('image/png');
 
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
-      document.body.appendChild(iframe);
-
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (iframeDoc) {
-        iframeDoc.open();
-        iframeDoc.write(`<!DOCTYPE html><html><head><title>Receipt</title>
-          <style>*{margin:0;padding:0}body{background:#fff;display:flex;justify-content:center}
+      // Try opening a new window with the image for printing
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`<!DOCTYPE html><html><head><title>Receipt</title>
+          <style>*{margin:0;padding:0}body{background:#fff;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}
           img{max-width:100%;height:auto}@media print{@page{size:80mm auto;margin:0}body{margin:0}img{width:80mm}}</style>
-          </head><body><img src="${imgData}" /></body></html>`);
-        iframeDoc.close();
-
-        // Wait for image to load inside iframe then print
-        const img = iframeDoc.querySelector('img');
-        const doPrint = () => {
-          try {
-            iframe.contentWindow?.focus();
-            iframe.contentWindow?.print();
-          } catch {
-            // If iframe print fails, try window.print as last resort
-            window.print();
-          }
-          setTimeout(() => document.body.removeChild(iframe), 2000);
-        };
-
-        if (img?.complete) {
-          doPrint();
-        } else if (img) {
-          img.onload = doPrint;
-          img.onerror = () => {
-            toast.error('Print failed — try Save then print from your files.');
-            document.body.removeChild(iframe);
-          };
-        }
+          </head><body><img src="${imgData}" onload="setTimeout(function(){window.print()},400)" /></body></html>`);
+        printWindow.document.close();
       } else {
-        // Strategy 3: download as fallback
+        // Fallback: download the image so user can print from gallery
         if (blob) {
           downloadBlob(blob, `${fileName}.png`);
-          toast.info('Receipt downloaded — open and print from your gallery.');
+          toast.info('Receipt saved — open and print from your gallery/files app.');
+        } else {
+          // Generate blob from canvas as last resort
+          const fallbackBlob = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/png'));
+          if (fallbackBlob) {
+            downloadBlob(fallbackBlob, `${fileName}.png`);
+            toast.info('Receipt saved — open and print from your gallery/files app.');
+          } else {
+            toast.error('Could not generate receipt for printing.');
+          }
         }
       }
     } catch { toast.error('Print failed'); }

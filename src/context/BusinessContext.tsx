@@ -1217,13 +1217,13 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, [currentBusinessId]);
 
   const markNotificationRead = useCallback(async (id: string) => {
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() } as any).eq('id', id);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
   }, []);
 
   const markAllNotificationsRead = useCallback(async () => {
     if (!currentBusinessId) return;
-    await supabase.from('notifications').update({ is_read: true }).eq('business_id', currentBusinessId).eq('is_read', false);
+    await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() } as any).eq('business_id', currentBusinessId).eq('is_read', false);
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   }, [currentBusinessId]);
 

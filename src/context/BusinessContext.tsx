@@ -553,11 +553,11 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('orders', reloadOrders, 100))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => debounce('order_items', reloadOrders, 150))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'services', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('services', async () => {
-        const { data } = await supabase.from('services').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false });
+        const { data } = await supabase.from('services').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false });
         setServices((data || []) as ServiceRecord[]);
       }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'business_expenses', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('expenses', async () => {
-        const { data } = await supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false });
+        const { data } = await supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false });
         setExpenses((data || []) as any[]);
       }))
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `business_id=eq.${currentBusinessId}` }, (payload) => {

@@ -20,6 +20,7 @@ import LanguageSelector from '@/components/LanguageSelector';
 
 import { toSentenceCase } from '@/lib/utils';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';
+import RecycleBinPanel from '@/components/RecycleBinPanel';
 
 function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' | 'property' }) {
   const { createBusiness, currentBusiness } = useBusiness();
@@ -1188,6 +1189,9 @@ export default function SettingsPage() {
           </Card>
         );
       })()}
+
+      {/* Unified Recycle Bin — team can delete, owner/admin can permanently remove */}
+      {!isPersonal && <RecycleBinPanel />}
 
       {/* My Businesses Section */}
       <Card className="shadow-card">

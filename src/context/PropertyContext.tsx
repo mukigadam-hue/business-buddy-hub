@@ -125,7 +125,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     try {
       const [assetsRes, bookingsRes, convsRes] = await Promise.all([
         supabase.from('property_assets').select('*').eq('business_id', businessId).is('deleted_at', null).order('created_at', { ascending: false }),
-        supabase.from('property_bookings').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
+        supabase.from('property_bookings').select('*').eq('business_id', businessId).is('deleted_at', null).order('created_at', { ascending: false }),
         supabase.from('property_conversations').select('*').eq('business_id', businessId).order('last_message_at', { ascending: false }),
       ]);
       setAssets((assetsRes.data || []) as PropertyAsset[]);

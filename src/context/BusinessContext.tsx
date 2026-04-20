@@ -420,11 +420,11 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     try {
       const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes, expensesRes, notifRes] = await Promise.all([
         supabase.from('stock_items').select('*').eq('business_id', currentBusinessId).order('name').limit(2000),
-        supabase.from('sales').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
-        supabase.from('purchases').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
-        supabase.from('orders').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
-        supabase.from('services').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
-        supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(2000),
+        supabase.from('sales').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
+        supabase.from('purchases').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
+        supabase.from('orders').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
+        supabase.from('services').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
+        supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
         supabase.from('notifications').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(50),
       ]);
 
@@ -484,7 +484,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   async function reloadSales() {
     if (!currentBusinessId) return;
-    const { data: salesData } = await supabase.from('sales').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false });
+    const { data: salesData } = await supabase.from('sales').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false });
     const sd = (salesData || []) as any[];
     if (sd.length > 0) {
       const { data: items } = await supabase.from('sale_items').select('*').in('sale_id', sd.map(s => s.id));
@@ -496,7 +496,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   async function reloadPurchases() {
     if (!currentBusinessId) return;
-    const { data: pd } = await supabase.from('purchases').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false });
+    const { data: pd } = await supabase.from('purchases').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false });
     const pdata = (pd || []) as any[];
     if (pdata.length > 0) {
       const { data: items } = await supabase.from('purchase_items').select('*').in('purchase_id', pdata.map(p => p.id));
@@ -508,7 +508,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   async function reloadOrders() {
     if (!currentBusinessId) return;
-    const { data: od } = await supabase.from('orders').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false });
+    const { data: od } = await supabase.from('orders').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false });
     const odata = (od || []) as any[];
     if (odata.length > 0) {
       const { data: items } = await supabase.from('order_items').select('*').in('order_id', odata.map(o => o.id));
@@ -553,11 +553,11 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('orders', reloadOrders, 100))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => debounce('order_items', reloadOrders, 150))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'services', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('services', async () => {
-        const { data } = await supabase.from('services').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false });
+        const { data } = await supabase.from('services').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false });
         setServices((data || []) as ServiceRecord[]);
       }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'business_expenses', filter: `business_id=eq.${currentBusinessId}` }, () => debounce('expenses', async () => {
-        const { data } = await supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false });
+        const { data } = await supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false });
         setExpenses((data || []) as any[]);
       }))
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `business_id=eq.${currentBusinessId}` }, (payload) => {

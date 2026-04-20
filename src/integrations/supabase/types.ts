@@ -163,6 +163,10 @@ export type Database = {
           business_id: string
           category: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
           description: string
           expense_date: string
           from_order_id: string | null
@@ -174,6 +178,10 @@ export type Database = {
           business_id: string
           category?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           description?: string
           expense_date?: string
           from_order_id?: string | null
@@ -185,6 +193,10 @@ export type Database = {
           business_id?: string
           category?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           description?: string
           expense_date?: string
           from_order_id?: string | null
@@ -591,6 +603,10 @@ export type Database = {
           business_id: string
           category: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
           description: string
           expense_date: string
           from_order_id: string | null
@@ -602,6 +618,10 @@ export type Database = {
           business_id: string
           category?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           description?: string
           expense_date?: string
           from_order_id?: string | null
@@ -613,6 +633,10 @@ export type Database = {
           business_id?: string
           category?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           description?: string
           expense_date?: string
           from_order_id?: string | null
@@ -641,6 +665,10 @@ export type Database = {
           batch_number: string
           business_id: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
           expiry_date: string | null
           id: string
           materials_used: Json
@@ -657,6 +685,10 @@ export type Database = {
           batch_number?: string
           business_id: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           expiry_date?: string | null
           id?: string
           materials_used?: Json
@@ -673,6 +705,10 @@ export type Database = {
           batch_number?: string
           business_id?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           expiry_date?: string | null
           id?: string
           materials_used?: Json
@@ -710,6 +746,9 @@ export type Database = {
           category: string
           created_at: string
           deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
           id: string
           min_stock_level: number
           name: string
@@ -727,6 +766,9 @@ export type Database = {
           category?: string
           created_at?: string
           deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           id?: string
           min_stock_level?: number
           name: string
@@ -744,6 +786,9 @@ export type Database = {
           category?: string
           created_at?: string
           deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           id?: string
           min_stock_level?: number
           name?: string
@@ -1126,6 +1171,9 @@ export type Database = {
           created_at: string
           customer_name: string
           deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
           grand_total: number
           id: string
           payment_method: string
@@ -1145,6 +1193,9 @@ export type Database = {
           created_at?: string
           customer_name?: string
           deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           grand_total?: number
           id?: string
           payment_method?: string
@@ -1164,6 +1215,9 @@ export type Database = {
           created_at?: string
           customer_name?: string
           deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           grand_total?: number
           id?: string
           payment_method?: string
@@ -1221,6 +1275,9 @@ export type Database = {
           created_at: string
           daily_price: number
           deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
           description: string
           features: string
           hourly_price: number
@@ -1249,6 +1306,9 @@ export type Database = {
           created_at?: string
           daily_price?: number
           deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           description?: string
           features?: string
           hourly_price?: number
@@ -1277,6 +1337,9 @@ export type Database = {
           created_at?: string
           daily_price?: number
           deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           description?: string
           features?: string
           hourly_price?: number
@@ -1315,6 +1378,10 @@ export type Database = {
           booking_type: string
           business_id: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
           duration_type: string
           end_date: string
           expected_payment_date: string | null
@@ -1344,6 +1411,10 @@ export type Database = {
           booking_type?: string
           business_id: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           duration_type?: string
           end_date: string
           expected_payment_date?: string | null
@@ -1373,6 +1444,10 @@ export type Database = {
           booking_type?: string
           business_id?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           duration_type?: string
           end_date?: string
           expected_payment_date?: string | null
@@ -1656,6 +1731,10 @@ export type Database = {
           balance: number
           business_id: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
           grand_total: number
           id: string
           payment_status: string
@@ -1667,6 +1746,10 @@ export type Database = {
           balance?: number
           business_id: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           grand_total?: number
           id?: string
           payment_status?: string
@@ -1678,6 +1761,10 @@ export type Database = {
           balance?: number
           business_id?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           grand_total?: number
           id?: string
           payment_status?: string
@@ -1832,6 +1919,10 @@ export type Database = {
           business_id: string
           created_at: string
           customer_name: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
           from_order_code: string | null
           from_order_id: string | null
           grand_total: number
@@ -1845,6 +1936,10 @@ export type Database = {
           business_id: string
           created_at?: string
           customer_name?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           from_order_code?: string | null
           from_order_id?: string | null
           grand_total?: number
@@ -1858,6 +1953,10 @@ export type Database = {
           business_id?: string
           created_at?: string
           customer_name?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           from_order_code?: string | null
           from_order_id?: string | null
           grand_total?: number
@@ -1937,6 +2036,10 @@ export type Database = {
           cost: number
           created_at: string
           customer_name: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
           description: string
           id: string
           payment_status: string
@@ -1950,6 +2053,10 @@ export type Database = {
           cost?: number
           created_at?: string
           customer_name?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           description?: string
           id?: string
           payment_status?: string
@@ -1963,6 +2070,10 @@ export type Database = {
           cost?: number
           created_at?: string
           customer_name?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
           description?: string
           id?: string
           payment_status?: string

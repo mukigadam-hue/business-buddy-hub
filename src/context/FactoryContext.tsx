@@ -144,10 +144,10 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
     if (rawMaterials.length === 0) setLoading(true);
     try {
       const [rmRes, expRes, teamRes, prodRes, payRes, advRes] = await Promise.all([
-        supabase.from('factory_raw_materials').select('*').eq('business_id', businessId).order('name'),
-        supabase.from('factory_expenses').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
+        supabase.from('factory_raw_materials').select('*').eq('business_id', businessId).is('deleted_at', null).order('name'),
+        supabase.from('factory_expenses').select('*').eq('business_id', businessId).is('deleted_at', null).order('created_at', { ascending: false }),
         supabase.from('factory_team_members').select('*').eq('business_id', businessId).order('full_name'),
-        supabase.from('factory_production').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
+        supabase.from('factory_production').select('*').eq('business_id', businessId).is('deleted_at', null).order('created_at', { ascending: false }),
         supabase.from('factory_worker_payments').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
         supabase.from('factory_worker_advances').select('*').eq('business_id', businessId).order('created_at', { ascending: false }),
       ]);

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -14,6 +15,7 @@ import {
 } from '@/lib/recycleBin';
 
 export default function RecycleBinPanel() {
+  const { t } = useTranslation();
   const { currentBusiness, userRole, refreshData } = useBusiness();
   const { fmt } = useCurrency();
   const [records, setRecords] = useState<RecycledRecord[]>([]);
@@ -37,11 +39,10 @@ export default function RecycleBinPanel() {
   async function onRestore(r: RecycledRecord) {
     setBusyId(r.id);
     try {
-      // Undo any stock side-effects applied on soft-delete
       await undoStockReversal(r.table, r.id);
       const ok = await restoreRecord(r.table, r.id);
       if (ok) {
-        toast.success('Restored from Recycle Bin');
+        toast.success(t('recycleBin.restored'));
         setRecords(prev => prev.filter(x => x.id !== r.id));
         await refreshData();
       }
@@ -52,15 +53,15 @@ export default function RecycleBinPanel() {
 
   async function onPermanentDelete(r: RecycledRecord) {
     if (!canPermanentDelete) {
-      toast.error('Only the owner or admin can permanently delete records');
+      toast.error(t('recycleBin.ownerOnly'));
       return;
     }
-    if (!window.confirm(`Permanently delete this record? This cannot be undone.\n\n${r.title}`)) return;
+    if (!window.confirm(`${t('recycleBin.confirmPermanent')}\n\n${r.title}`)) return;
     setBusyId(r.id);
     try {
       const ok = await permanentDeleteRecord(r.table, r.id);
       if (ok) {
-        toast.success('Permanently deleted');
+        toast.success(t('recycleBin.permanentlyDeleted'));
         setRecords(prev => prev.filter(x => x.id !== r.id));
       }
     } finally {
@@ -75,22 +76,22 @@ export default function RecycleBinPanel() {
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold flex items-center gap-2 text-destructive">
-            🗑️ Recycle Bin {records.length > 0 && `(${records.length})`}
+            🗑️ {t('recycleBin.title')} {records.length > 0 && `(${records.length})`}
           </h2>
           <Button size="sm" variant="ghost" onClick={load} disabled={loading}>
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Any team member can delete records (they land here). Only the owner/admin can permanently remove them. Use this to monitor who deleted what.
+          {t('recycleBin.description')}
         </p>
 
         {loading && records.length === 0 && (
-          <p className="text-xs text-muted-foreground italic">Loading…</p>
+          <p className="text-xs text-muted-foreground italic">{t('recycleBin.loading')}</p>
         )}
 
         {!loading && records.length === 0 && (
-          <p className="text-xs text-muted-foreground italic">No deleted records. Everything is clean ✨</p>
+          <p className="text-xs text-muted-foreground italic">{t('recycleBin.empty')}</p>
         )}
 
         <div className="space-y-2 max-h-[480px] overflow-y-auto">
@@ -106,8 +107,8 @@ export default function RecycleBinPanel() {
                   <p className="text-xs text-muted-foreground">{r.subtitle}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
                     {r.amount !== undefined && <span className="font-semibold">{fmt(r.amount)} · </span>}
-                    deleted {deletedAt.toLocaleDateString()} {deletedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    {r.deleted_by_name && ` by ${r.deleted_by_name}`}
+                    {t('recycleBin.deletedBy')} {deletedAt.toLocaleDateString()} {deletedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {r.deleted_by_name && ` ${t('recycleBin.by')} ${r.deleted_by_name}`}
                   </p>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{r.table.replace(/_/g, ' ')}</p>
                 </div>
@@ -118,7 +119,7 @@ export default function RecycleBinPanel() {
                     disabled={busyId === r.id}
                     onClick={() => onRestore(r)}
                   >
-                    <RotateCcw className="h-3 w-3 mr-1" />Restore
+                    <RotateCcw className="h-3 w-3 mr-1" />{t('recycleBin.restore')}
                   </Button>
                   {canPermanentDelete && (
                     <Button
@@ -127,7 +128,7 @@ export default function RecycleBinPanel() {
                       disabled={busyId === r.id}
                       onClick={() => onPermanentDelete(r)}
                     >
-                      <Trash2 className="h-3 w-3 mr-1" />Delete
+                      <Trash2 className="h-3 w-3 mr-1" />{t('recycleBin.delete')}
                     </Button>
                   )}
                 </div>

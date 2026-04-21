@@ -76,22 +76,22 @@ export default function RecycleBinPanel() {
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold flex items-center gap-2 text-destructive">
-            🗑️ Recycle Bin {records.length > 0 && `(${records.length})`}
+            🗑️ {t('recycleBin.title')} {records.length > 0 && `(${records.length})`}
           </h2>
           <Button size="sm" variant="ghost" onClick={load} disabled={loading}>
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Any team member can delete records (they land here). Only the owner/admin can permanently remove them. Use this to monitor who deleted what.
+          {t('recycleBin.description')}
         </p>
 
         {loading && records.length === 0 && (
-          <p className="text-xs text-muted-foreground italic">Loading…</p>
+          <p className="text-xs text-muted-foreground italic">{t('recycleBin.loading')}</p>
         )}
 
         {!loading && records.length === 0 && (
-          <p className="text-xs text-muted-foreground italic">No deleted records. Everything is clean ✨</p>
+          <p className="text-xs text-muted-foreground italic">{t('recycleBin.empty')}</p>
         )}
 
         <div className="space-y-2 max-h-[480px] overflow-y-auto">

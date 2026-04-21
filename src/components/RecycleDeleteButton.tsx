@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -24,23 +25,23 @@ interface Props {
 export default function RecycleDeleteButton({
   table, recordId, label, onDeleted, size = 'sm', variant = 'ghost', confirmText,
 }: Props) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { refreshData } = useBusiness();
   const [busy, setBusy] = useState(false);
 
   async function onClick() {
-    const msg = confirmText ?? 'Move this record to the Recycle Bin? Stock will be restored. The owner/admin can permanently delete it later from Settings.';
+    const msg = confirmText ?? t('recycleBin.moveConfirm');
     if (!window.confirm(msg)) return;
     setBusy(true);
     try {
-      // Reverse stock first, then mark deleted
       await applyStockReversal(table, recordId);
       const ok = await softDeleteRecord(table, recordId, {
         userId: user?.id,
         userName: user?.user_metadata?.full_name || user?.email || 'Member',
       });
       if (ok) {
-        toast.success('Moved to Recycle Bin');
+        toast.success(t('recycleBin.moved'));
         await refreshData();
         onDeleted?.();
       }

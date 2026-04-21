@@ -30,6 +30,7 @@ interface WasteRecord {
 }
 
 export default function WastePage() {
+  const { t } = useTranslation();
   const { stock, currentBusiness, expenses, addExpense } = useBusiness();
   const { fmt } = useCurrency();
 

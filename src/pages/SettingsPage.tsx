@@ -904,34 +904,34 @@ export default function SettingsPage() {
           <Card className={`shadow-card border-2 ${hasCritical ? 'border-destructive bg-destructive/5 animate-pulse' : hasOverdue ? 'border-warning bg-warning/5' : 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20'}`}>
             <CardContent className="p-4 space-y-4">
               <h2 className={`text-lg font-bold flex items-center gap-2 ${hasCritical ? 'text-destructive' : hasOverdue ? 'text-warning' : 'text-orange-600 dark:text-orange-400'}`}>
-                {hasCritical ? '🚨' : hasOverdue ? '⚠️' : '💳'} Outstanding Debts
-                {hasCritical && <span className="text-xs font-normal bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full ml-2">CRITICAL</span>}
+                {hasCritical ? '🚨' : hasOverdue ? '⚠️' : '💳'} {t('settings.financial.outstandingDebts')}
+                {hasCritical && <span className="text-xs font-normal bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full ml-2">{t('settings.financial.critical')}</span>}
               </h2>
 
               {/* Summary Cards */}
               <div className="grid grid-cols-2 gap-3">
                 <div className={`p-3 rounded-lg border-2 ${totalOwedToYou > 0 ? 'bg-success/10 border-success/30' : 'bg-muted/30 border-border'}`}>
-                  <p className="text-xs text-muted-foreground font-semibold uppercase">Owed TO You</p>
+                  <p className="text-xs text-muted-foreground font-semibold uppercase">{t('settings.financial.owedToYou')}</p>
                   <p className={`text-xl font-bold tabular-nums ${totalOwedToYou > 0 ? 'text-success' : ''}`}>{fmt(totalOwedToYou)}</p>
-                  <p className="text-[10px] text-muted-foreground">{salesDebts.length} sale(s), {serviceDebts.length} service(s)</p>
+                  <p className="text-[10px] text-muted-foreground">{salesDebts.length} {t('settings.financial.saleCount')}, {serviceDebts.length} {t('settings.financial.serviceCount')}</p>
                 </div>
                 <div className={`p-3 rounded-lg border-2 ${totalYouOwe > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-muted/30 border-border'}`}>
-                  <p className="text-xs text-muted-foreground font-semibold uppercase">You OWE Others</p>
+                  <p className="text-xs text-muted-foreground font-semibold uppercase">{t('settings.financial.youOweOthers')}</p>
                   <p className={`text-xl font-bold tabular-nums ${totalYouOwe > 0 ? 'text-destructive' : ''}`}>{fmt(totalYouOwe)}</p>
-                  <p className="text-[10px] text-muted-foreground">{purchaseDebts.length} purchase(s)</p>
+                  <p className="text-[10px] text-muted-foreground">{purchaseDebts.length} {t('settings.financial.purchaseCount')}</p>
                 </div>
               </div>
 
               {/* Critical Debts (7+ days) */}
               {hasCritical && (
                 <div className="p-3 rounded-lg bg-destructive/10 border-2 border-destructive/40 space-y-2">
-                  <p className="text-sm font-bold text-destructive flex items-center gap-1.5">🚨 CRITICAL — Over 7 Days Unpaid</p>
-                  <p className="text-xs text-destructive/80">These debts are severely overdue. Immediate action required!</p>
+                  <p className="text-sm font-bold text-destructive flex items-center gap-1.5">🚨 {t('settings.financial.criticalUnpaid')}</p>
+                  <p className="text-xs text-destructive/80">{t('settings.financial.criticalDesc')}</p>
                   {criticalSales.map(s => (
                     <div key={s.id} className="flex justify-between items-center text-sm p-2 rounded bg-destructive/5">
                       <div>
-                        <span className="font-medium">👤 {s.customer_name || 'Unknown'}</span>
-                        <span className="text-xs text-muted-foreground ml-2">(Sale · {new Date(s.created_at).toLocaleDateString()})</span>
+                        <span className="font-medium">👤 {s.customer_name || t('settings.financial.unknown')}</span>
+                        <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.sale')} · {new Date(s.created_at).toLocaleDateString()})</span>
                       </div>
                       <span className="font-bold text-destructive tabular-nums">{fmt(Number(s.balance))}</span>
                     </div>
@@ -939,8 +939,8 @@ export default function SettingsPage() {
                   {criticalServices.map(s => (
                     <div key={s.id} className="flex justify-between items-center text-sm p-2 rounded bg-destructive/5">
                       <div>
-                        <span className="font-medium">👤 {s.customer_name || 'Unknown'}</span>
-                        <span className="text-xs text-muted-foreground ml-2">(Service: {s.service_name} · {new Date(s.created_at).toLocaleDateString()})</span>
+                        <span className="font-medium">👤 {s.customer_name || t('settings.financial.unknown')}</span>
+                        <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.service')}: {s.service_name} · {new Date(s.created_at).toLocaleDateString()})</span>
                       </div>
                       <span className="font-bold text-destructive tabular-nums">{fmt(Number(s.balance))}</span>
                     </div>
@@ -948,8 +948,8 @@ export default function SettingsPage() {
                   {criticalPurchases.map(p => (
                     <div key={p.id} className="flex justify-between items-center text-sm p-2 rounded bg-destructive/5">
                       <div>
-                        <span className="font-medium">🏪 {p.supplier || 'Unknown'}</span>
-                        <span className="text-xs text-muted-foreground ml-2">(Purchase · {new Date(p.created_at).toLocaleDateString()})</span>
+                        <span className="font-medium">🏪 {p.supplier || t('settings.financial.unknown')}</span>
+                        <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.purchase')} · {new Date(p.created_at).toLocaleDateString()})</span>
                       </div>
                       <span className="font-bold text-destructive tabular-nums">{fmt(Number(p.balance))}</span>
                     </div>
@@ -965,12 +965,12 @@ export default function SettingsPage() {
                 if (warnSales.length === 0 && warnServices.length === 0 && warnPurchases.length === 0) return null;
                 return (
                   <div className="p-3 rounded-lg bg-warning/10 border-2 border-warning/30 space-y-2">
-                    <p className="text-sm font-bold text-warning flex items-center gap-1.5">⚠️ OVERDUE — 3-7 Days Unpaid</p>
+                    <p className="text-sm font-bold text-warning flex items-center gap-1.5">⚠️ {t('settings.financial.overdueUnpaid')}</p>
                     {warnSales.map(s => (
                       <div key={s.id} className="flex justify-between items-center text-sm p-2 rounded bg-warning/5">
                         <div>
-                          <span className="font-medium">👤 {s.customer_name || 'Unknown'}</span>
-                          <span className="text-xs text-muted-foreground ml-2">(Sale · {new Date(s.created_at).toLocaleDateString()})</span>
+                          <span className="font-medium">👤 {s.customer_name || t('settings.financial.unknown')}</span>
+                          <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.sale')} · {new Date(s.created_at).toLocaleDateString()})</span>
                         </div>
                         <span className="font-bold text-warning tabular-nums">{fmt(Number(s.balance))}</span>
                       </div>
@@ -978,8 +978,8 @@ export default function SettingsPage() {
                     {warnServices.map(s => (
                       <div key={s.id} className="flex justify-between items-center text-sm p-2 rounded bg-warning/5">
                         <div>
-                          <span className="font-medium">👤 {s.customer_name || 'Unknown'}</span>
-                          <span className="text-xs text-muted-foreground ml-2">(Service: {s.service_name} · {new Date(s.created_at).toLocaleDateString()})</span>
+                          <span className="font-medium">👤 {s.customer_name || t('settings.financial.unknown')}</span>
+                          <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.service')}: {s.service_name} · {new Date(s.created_at).toLocaleDateString()})</span>
                         </div>
                         <span className="font-bold text-warning tabular-nums">{fmt(Number(s.balance))}</span>
                       </div>
@@ -987,8 +987,8 @@ export default function SettingsPage() {
                     {warnPurchases.map(p => (
                       <div key={p.id} className="flex justify-between items-center text-sm p-2 rounded bg-warning/5">
                         <div>
-                          <span className="font-medium">🏪 {p.supplier || 'Unknown'}</span>
-                          <span className="text-xs text-muted-foreground ml-2">(Purchase · {new Date(p.created_at).toLocaleDateString()})</span>
+                          <span className="font-medium">🏪 {p.supplier || t('settings.financial.unknown')}</span>
+                          <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.purchase')} · {new Date(p.created_at).toLocaleDateString()})</span>
                         </div>
                         <span className="font-bold text-warning tabular-nums">{fmt(Number(p.balance))}</span>
                       </div>
@@ -1048,14 +1048,14 @@ export default function SettingsPage() {
       {/* Settings Password */}
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-3">
-          <h2 className="text-base font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> Settings Password</h2>
-          <p className="text-xs text-muted-foreground">Set a password to protect settings from unauthorized access. Only you (the boss) will be able to open this page.</p>
+          <h2 className="text-base font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> {t('settings.settingsPassword')}</h2>
+          <p className="text-xs text-muted-foreground">{t('settings.settingsPasswordDesc')}</p>
           <div className="flex gap-3 items-end">
             <div className="flex-1">
-              <Label>Password</Label>
-              <Input type="password" value={settingsPassword} onChange={e => setSettingsPassword(e.target.value)} placeholder="Leave empty to disable" />
+              <Label>{t('settings.password')}</Label>
+              <Input type="password" value={settingsPassword} onChange={e => setSettingsPassword(e.target.value)} placeholder={t('settings.leaveEmptyToDisable')} />
             </div>
-            <Button onClick={handleSavePassword}><Save className="h-4 w-4 mr-2" />Save</Button>
+            <Button onClick={handleSavePassword}><Save className="h-4 w-4 mr-2" />{t('common.save')}</Button>
           </div>
         </CardContent>
       </Card>

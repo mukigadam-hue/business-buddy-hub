@@ -1005,7 +1005,7 @@ export default function SettingsPage() {
                 if (recentSales.length === 0 && recentServices.length === 0 && recentPurchases.length === 0) return null;
                 return (
                   <div className="p-3 rounded-lg bg-muted/30 border space-y-2">
-                    <p className="text-sm font-bold flex items-center gap-1.5">💳 Recent (Under 3 Days)</p>
+                    <p className="text-sm font-bold flex items-center gap-1.5">💳 {t('settings.financial.recentDebts')}</p>
                     {recentSales.map(s => (
                       <div key={s.id} className="flex justify-between items-center text-sm p-2 rounded bg-background/80">
                         <div>
@@ -1038,7 +1038,7 @@ export default function SettingsPage() {
               })()}
 
               <p className="text-[10px] text-muted-foreground text-center italic">
-                💡 Figures update automatically when payments are recorded in Sales, Services, or Purchases pages.
+                💡 {t('settings.financial.debtsAutoUpdate')}
               </p>
             </CardContent>
           </Card>

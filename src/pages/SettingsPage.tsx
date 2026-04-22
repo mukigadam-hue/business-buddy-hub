@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { countries, getCountryByCode } from '@/lib/countries';
@@ -257,6 +258,7 @@ function DiscoverVisibilityCard({ businessId }: { businessId: string }) {
 }
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { currentBusiness, updateBusiness, stock, sales, purchases, services, expenses, orders, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, restoreStockItem, permanentDeleteStockItem, deleteBusiness, refreshData } = useBusiness();
@@ -712,45 +714,45 @@ export default function SettingsPage() {
       {/* ===== COMPREHENSIVE FINANCIAL SUMMARY ===== */}
       <Card className="shadow-card border-primary/20">
         <CardContent className="p-4 space-y-4">
-          <h2 className="text-lg font-bold flex items-center gap-2">📊 Financial Summary</h2>
+          <h2 className="text-lg font-bold flex items-center gap-2">📊 {t('settings.financial.title')}</h2>
 
           {/* 1. Total Capital */}
           <div className="p-3 rounded-lg bg-info/5 border border-info/20">
-            <div className="flex items-center gap-2 mb-1"><Wallet className="h-4 w-4 text-info" /><p className="text-sm font-semibold">1. Total Capital (Shopping Price)</p></div>
-            <p className="text-xs text-muted-foreground mb-1">Sum of (Buying Price × Quantity) for all active stock items</p>
+            <div className="flex items-center gap-2 mb-1"><Wallet className="h-4 w-4 text-info" /><p className="text-sm font-semibold">1. {t('settings.financial.totalCapital')}</p></div>
+            <p className="text-xs text-muted-foreground mb-1">{t('settings.financial.totalCapitalDesc')}</p>
             <p className="text-2xl font-bold text-info tabular-nums">{fmt(buyingCapital)}</p>
-            <p className="text-xs text-muted-foreground">{activeStock.length} items in stock</p>
+            <p className="text-xs text-muted-foreground">{activeStock.length} {t('settings.financial.itemsInStock')}</p>
           </div>
 
           {/* 2. Purchases */}
           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-            <div className="flex items-center gap-2 mb-1"><ShoppingCart className="h-4 w-4 text-primary" /><p className="text-sm font-semibold">2. Purchases</p></div>
+            <div className="flex items-center gap-2 mb-1"><ShoppingCart className="h-4 w-4 text-primary" /><p className="text-sm font-semibold">2. {t('settings.financial.purchases')}</p></div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-xs text-muted-foreground">Today's Purchases</p>
+                <p className="text-xs text-muted-foreground">{t('settings.financial.todaysPurchases')}</p>
                 <p className="text-lg font-bold tabular-nums">{fmt(todayPurchaseTotal)}</p>
-                <p className="text-[10px] text-muted-foreground">{todayPurchases.length} purchase(s)</p>
+                <p className="text-[10px] text-muted-foreground">{todayPurchases.length} {t('settings.financial.purchaseCount')}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">All-Time Purchases</p>
+                <p className="text-xs text-muted-foreground">{t('settings.financial.allTimePurchases')}</p>
                 <p className="text-lg font-bold tabular-nums">{fmt(totalPurchases)}</p>
-                <p className="text-[10px] text-muted-foreground">{purchases.length} total</p>
+                <p className="text-[10px] text-muted-foreground">{purchases.length} {t('settings.financial.totalCount')}</p>
               </div>
             </div>
           </div>
 
           {/* 3. Stock Value (Wholesale) */}
           <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
-            <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-accent" /><p className="text-sm font-semibold">3. Expected Stock Value (Wholesale)</p></div>
-            <p className="text-xs text-muted-foreground mb-1">Sum of (Wholesale Price × Quantity) for all active stock</p>
+            <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-accent" /><p className="text-sm font-semibold">3. {t('settings.financial.expectedStockWholesale')}</p></div>
+            <p className="text-xs text-muted-foreground mb-1">{t('settings.financial.wholesaleDesc')}</p>
             <p className="text-2xl font-bold tabular-nums">{fmt(wholesaleCapital)}</p>
             {wholesaleCapital > retailCapital && (
               <div className="mt-1.5 p-2 rounded bg-destructive/10 border border-destructive/20">
-                <p className="text-xs text-destructive font-medium">⚠️ Wholesale value is higher than Retail — some items may have incorrect prices.</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Check your stock items and ensure Retail Price ≥ Wholesale Price for each item.</p>
+                <p className="text-xs text-destructive font-medium">⚠️ {t('settings.financial.wholesaleWarning')}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{t('settings.financial.wholesaleWarningHint')}</p>
                 <div className="mt-1 space-y-0.5">
                   {activeStock.filter(s => Number(s.wholesale_price) > Number(s.retail_price) && s.quantity > 0).slice(0, 5).map(s => (
-                    <p key={s.id} className="text-[10px] text-destructive">• {s.name}: Wholesale {fmt(Number(s.wholesale_price))} &gt; Retail {fmt(Number(s.retail_price))}</p>
+                    <p key={s.id} className="text-[10px] text-destructive">• {s.name}: {fmt(Number(s.wholesale_price))} &gt; {fmt(Number(s.retail_price))}</p>
                   ))}
                 </div>
               </div>
@@ -759,44 +761,44 @@ export default function SettingsPage() {
 
           {/* 4. Stock Value (Retail) */}
           <div className="p-3 rounded-lg bg-success/5 border border-success/20">
-            <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-success" /><p className="text-sm font-semibold">4. Expected Stock Value (Retail)</p></div>
-            <p className="text-xs text-muted-foreground mb-1">Sum of (Retail Price × Quantity) for all active stock</p>
+            <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-success" /><p className="text-sm font-semibold">4. {t('settings.financial.expectedStockRetail')}</p></div>
+            <p className="text-xs text-muted-foreground mb-1">{t('settings.financial.retailDesc')}</p>
             <p className="text-2xl font-bold text-success tabular-nums">{fmt(retailCapital)}</p>
-            <p className="text-xs text-muted-foreground">Expected Profit (Retail − Buying): <span className="font-bold text-success">{fmt(retailCapital - buyingCapital)}</span></p>
+            <p className="text-xs text-muted-foreground">{t('settings.financial.expectedProfit')}: <span className="font-bold text-success">{fmt(retailCapital - buyingCapital)}</span></p>
           </div>
 
           {/* 5. Today's Revenue */}
           <div className="p-3 rounded-lg bg-success/5 border border-success/20">
-            <div className="flex items-center gap-2 mb-1"><DollarSign className="h-4 w-4 text-success" /><p className="text-sm font-semibold">5. Today's Revenue</p></div>
+            <div className="flex items-center gap-2 mb-1"><DollarSign className="h-4 w-4 text-success" /><p className="text-sm font-semibold">5. {t('settings.financial.todaysRevenue')}</p></div>
             <p className="text-2xl font-bold text-success tabular-nums">{fmt(todayTotalRevenue)}</p>
-            <p className="text-xs text-muted-foreground mb-2">Cash collected today: <span className="font-bold text-success">{fmt(todayTotalCashCollected)}</span></p>
+            <p className="text-xs text-muted-foreground mb-2">{t('settings.financial.cashCollectedToday')}: <span className="font-bold text-success">{fmt(todayTotalCashCollected)}</span></p>
 
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between items-center p-2 rounded bg-background/80">
-                <span className="text-xs">📦 Stock Sales ({todaySales.length})</span>
+                <span className="text-xs">📦 {t('settings.financial.stockSales')} ({todaySales.length})</span>
                 <span className="font-bold tabular-nums">{fmt(todayStockSalesRevenue)}</span>
               </div>
               {todaySalesFull.length > 0 && (
                 <div className="flex justify-between items-center p-1.5 rounded bg-success/5 ml-4">
-                  <span className="text-xs text-success">✅ Paid Full ({todaySalesFull.length})</span>
+                  <span className="text-xs text-success">✅ {t('settings.financial.paidFull')} ({todaySalesFull.length})</span>
                   <span className="font-semibold tabular-nums text-success">{fmt(todaySalesFullTotal)}</span>
                 </div>
               )}
               {todaySalesPartial.length > 0 && (
                 <div className="flex justify-between items-center p-1.5 rounded bg-warning/5 ml-4">
-                  <span className="text-xs text-warning">⚠️ Partial ({todaySalesPartial.length}) — Paid: {fmt(todaySalesPartialPaid)}</span>
+                  <span className="text-xs text-warning">⚠️ {t('settings.financial.partial')} ({todaySalesPartial.length}) — {t('settings.financial.paid')}: {fmt(todaySalesPartialPaid)}</span>
                   <span className="font-semibold tabular-nums">{fmt(todaySalesPartialTotal)}</span>
                 </div>
               )}
               {todaySalesCredit.length > 0 && (
                 <div className="flex justify-between items-center p-1.5 rounded bg-destructive/5 ml-4">
-                  <span className="text-xs text-destructive">🔴 Credit ({todaySalesCredit.length})</span>
+                  <span className="text-xs text-destructive">🔴 {t('settings.financial.credit')} ({todaySalesCredit.length})</span>
                   <span className="font-semibold tabular-nums text-destructive">{fmt(todaySalesCreditTotal)}</span>
                 </div>
               )}
               {todayOrders.length > 0 && (
                 <div className="flex justify-between items-center p-2 rounded bg-background/80">
-                  <span className="text-xs">📋 Orders ({todayOrders.length})</span>
+                  <span className="text-xs">📋 {t('settings.financial.orders')} ({todayOrders.length})</span>
                   <span className="font-bold tabular-nums">{fmt(todayOrdersTotal)}</span>
                 </div>
               )}
@@ -805,69 +807,69 @@ export default function SettingsPage() {
 
           {/* 6. Service Fee Revenue */}
           <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
-            <div className="flex items-center gap-2 mb-1"><Wrench className="h-4 w-4 text-accent" /><p className="text-sm font-semibold">6. Service Fee Revenue</p></div>
-            <p className="text-xs text-muted-foreground mb-1">Service labor fees only (parts used from stock are NOT included here)</p>
+            <div className="flex items-center gap-2 mb-1"><Wrench className="h-4 w-4 text-accent" /><p className="text-sm font-semibold">6. {t('settings.financial.serviceFeeRevenue')}</p></div>
+            <p className="text-xs text-muted-foreground mb-1">{t('settings.financial.serviceFeeDesc')}</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-xs text-muted-foreground">Today's Service Fees</p>
+                <p className="text-xs text-muted-foreground">{t('settings.financial.todaysServiceFees')}</p>
                 <p className="text-lg font-bold tabular-nums">{fmt(todayTotalServiceFees)}</p>
-                <p className="text-[10px] text-muted-foreground">{todayServices.length} service(s) · Cash: {fmt(todayServiceCashCollected)}</p>
+                <p className="text-[10px] text-muted-foreground">{todayServices.length} {t('settings.financial.serviceCount')} · {t('settings.financial.cash')}: {fmt(todayServiceCashCollected)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">All-Time Service Fees</p>
+                <p className="text-xs text-muted-foreground">{t('settings.financial.allTimeServiceFees')}</p>
                 <p className="text-lg font-bold tabular-nums">{fmt(totalServiceRevenue)}</p>
-                <p className="text-[10px] text-muted-foreground">{services.length} total services</p>
+                <p className="text-[10px] text-muted-foreground">{services.length} {t('settings.financial.totalServices')}</p>
               </div>
             </div>
           </div>
 
           {/* 7. Expenses */}
           <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-            <div className="flex items-center gap-2 mb-1"><Flame className="h-4 w-4 text-destructive" /><p className="text-sm font-semibold">7. Non-Production Expenses</p></div>
+            <div className="flex items-center gap-2 mb-1"><Flame className="h-4 w-4 text-destructive" /><p className="text-sm font-semibold">7. {t('settings.financial.nonProductionExpenses')}</p></div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-xs text-muted-foreground">Today's Expenses</p>
+                <p className="text-xs text-muted-foreground">{t('settings.financial.todaysExpenses')}</p>
                 <p className="text-lg font-bold text-destructive tabular-nums">{fmt(todayExpenseTotal)}</p>
-                <p className="text-[10px] text-muted-foreground">{todayExpenses.length} expense(s)</p>
+                <p className="text-[10px] text-muted-foreground">{todayExpenses.length} {t('settings.financial.expenseCount')}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">All-Time Expenses</p>
+                <p className="text-xs text-muted-foreground">{t('settings.financial.allTimeExpenses')}</p>
                 <p className="text-lg font-bold text-destructive tabular-nums">{fmt(totalExpenses)}</p>
-                <p className="text-[10px] text-muted-foreground">{expenses.length} total</p>
+                <p className="text-[10px] text-muted-foreground">{expenses.length} {t('settings.financial.totalCount')}</p>
               </div>
             </div>
           </div>
 
           {/* Net Position Today */}
           <div className={`p-3 rounded-lg border ${todayNetPosition >= 0 ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20'}`}>
-            <p className="text-sm font-semibold mb-1">📈 Today's Net Position</p>
-            <p className="text-xs text-muted-foreground">Cash Collected − Expenses − Purchases</p>
+            <p className="text-sm font-semibold mb-1">📈 {t('settings.financial.todaysNetPosition')}</p>
+            <p className="text-xs text-muted-foreground">{t('settings.financial.netPositionDesc')}</p>
             <p className={`text-2xl font-bold tabular-nums ${todayNetPosition >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(todayNetPosition)}</p>
             <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
-              <p>+ Cash Collected: {fmt(todayTotalCashCollected)}</p>
-              <p>− Expenses: {fmt(todayExpenseTotal)}</p>
-              <p>− Purchases: {fmt(todayPurchaseTotal)}</p>
+              <p>+ {t('settings.financial.cashCollected')}: {fmt(todayTotalCashCollected)}</p>
+              <p>− {t('settings.financial.expenses')}: {fmt(todayExpenseTotal)}</p>
+              <p>− {t('settings.financial.purchases')}: {fmt(todayPurchaseTotal)}</p>
             </div>
           </div>
 
           {/* All-time Revenue Overview */}
           <div className="p-3 rounded-lg bg-muted/30 border">
-            <p className="text-sm font-semibold mb-2">📊 All-Time Revenue Overview</p>
+            <p className="text-sm font-semibold mb-2">📊 {t('settings.financial.allTimeRevenueOverview')}</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-xs text-muted-foreground">Total Revenue</p>
+                <p className="text-xs text-muted-foreground">{t('settings.financial.totalRevenue')}</p>
                 <p className="text-lg font-bold text-success tabular-nums">{fmt(totalRevenue)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Stock Sales</p>
+                <p className="text-xs text-muted-foreground">{t('settings.financial.stockSales')}</p>
                 <p className="text-lg font-bold tabular-nums">{fmt(totalStockSalesRevenue)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Service Fees</p>
+                <p className="text-xs text-muted-foreground">{t('settings.financial.serviceFees')}</p>
                 <p className="text-lg font-bold tabular-nums">{fmt(totalServiceRevenue)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Total Expenses</p>
+                <p className="text-xs text-muted-foreground">{t('settings.financial.totalExpenses')}</p>
                 <p className="text-lg font-bold text-destructive tabular-nums">{fmt(totalExpenses)}</p>
               </div>
             </div>
@@ -902,34 +904,34 @@ export default function SettingsPage() {
           <Card className={`shadow-card border-2 ${hasCritical ? 'border-destructive bg-destructive/5 animate-pulse' : hasOverdue ? 'border-warning bg-warning/5' : 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20'}`}>
             <CardContent className="p-4 space-y-4">
               <h2 className={`text-lg font-bold flex items-center gap-2 ${hasCritical ? 'text-destructive' : hasOverdue ? 'text-warning' : 'text-orange-600 dark:text-orange-400'}`}>
-                {hasCritical ? '🚨' : hasOverdue ? '⚠️' : '💳'} Outstanding Debts
-                {hasCritical && <span className="text-xs font-normal bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full ml-2">CRITICAL</span>}
+                {hasCritical ? '🚨' : hasOverdue ? '⚠️' : '💳'} {t('settings.financial.outstandingDebts')}
+                {hasCritical && <span className="text-xs font-normal bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full ml-2">{t('settings.financial.critical')}</span>}
               </h2>
 
               {/* Summary Cards */}
               <div className="grid grid-cols-2 gap-3">
                 <div className={`p-3 rounded-lg border-2 ${totalOwedToYou > 0 ? 'bg-success/10 border-success/30' : 'bg-muted/30 border-border'}`}>
-                  <p className="text-xs text-muted-foreground font-semibold uppercase">Owed TO You</p>
+                  <p className="text-xs text-muted-foreground font-semibold uppercase">{t('settings.financial.owedToYou')}</p>
                   <p className={`text-xl font-bold tabular-nums ${totalOwedToYou > 0 ? 'text-success' : ''}`}>{fmt(totalOwedToYou)}</p>
-                  <p className="text-[10px] text-muted-foreground">{salesDebts.length} sale(s), {serviceDebts.length} service(s)</p>
+                  <p className="text-[10px] text-muted-foreground">{salesDebts.length} {t('settings.financial.saleCount')}, {serviceDebts.length} {t('settings.financial.serviceCount')}</p>
                 </div>
                 <div className={`p-3 rounded-lg border-2 ${totalYouOwe > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-muted/30 border-border'}`}>
-                  <p className="text-xs text-muted-foreground font-semibold uppercase">You OWE Others</p>
+                  <p className="text-xs text-muted-foreground font-semibold uppercase">{t('settings.financial.youOweOthers')}</p>
                   <p className={`text-xl font-bold tabular-nums ${totalYouOwe > 0 ? 'text-destructive' : ''}`}>{fmt(totalYouOwe)}</p>
-                  <p className="text-[10px] text-muted-foreground">{purchaseDebts.length} purchase(s)</p>
+                  <p className="text-[10px] text-muted-foreground">{purchaseDebts.length} {t('settings.financial.purchaseCount')}</p>
                 </div>
               </div>
 
               {/* Critical Debts (7+ days) */}
               {hasCritical && (
                 <div className="p-3 rounded-lg bg-destructive/10 border-2 border-destructive/40 space-y-2">
-                  <p className="text-sm font-bold text-destructive flex items-center gap-1.5">🚨 CRITICAL — Over 7 Days Unpaid</p>
-                  <p className="text-xs text-destructive/80">These debts are severely overdue. Immediate action required!</p>
+                  <p className="text-sm font-bold text-destructive flex items-center gap-1.5">🚨 {t('settings.financial.criticalUnpaid')}</p>
+                  <p className="text-xs text-destructive/80">{t('settings.financial.criticalDesc')}</p>
                   {criticalSales.map(s => (
                     <div key={s.id} className="flex justify-between items-center text-sm p-2 rounded bg-destructive/5">
                       <div>
-                        <span className="font-medium">👤 {s.customer_name || 'Unknown'}</span>
-                        <span className="text-xs text-muted-foreground ml-2">(Sale · {new Date(s.created_at).toLocaleDateString()})</span>
+                        <span className="font-medium">👤 {s.customer_name || t('settings.financial.unknown')}</span>
+                        <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.sale')} · {new Date(s.created_at).toLocaleDateString()})</span>
                       </div>
                       <span className="font-bold text-destructive tabular-nums">{fmt(Number(s.balance))}</span>
                     </div>
@@ -937,8 +939,8 @@ export default function SettingsPage() {
                   {criticalServices.map(s => (
                     <div key={s.id} className="flex justify-between items-center text-sm p-2 rounded bg-destructive/5">
                       <div>
-                        <span className="font-medium">👤 {s.customer_name || 'Unknown'}</span>
-                        <span className="text-xs text-muted-foreground ml-2">(Service: {s.service_name} · {new Date(s.created_at).toLocaleDateString()})</span>
+                        <span className="font-medium">👤 {s.customer_name || t('settings.financial.unknown')}</span>
+                        <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.service')}: {s.service_name} · {new Date(s.created_at).toLocaleDateString()})</span>
                       </div>
                       <span className="font-bold text-destructive tabular-nums">{fmt(Number(s.balance))}</span>
                     </div>
@@ -946,8 +948,8 @@ export default function SettingsPage() {
                   {criticalPurchases.map(p => (
                     <div key={p.id} className="flex justify-between items-center text-sm p-2 rounded bg-destructive/5">
                       <div>
-                        <span className="font-medium">🏪 {p.supplier || 'Unknown'}</span>
-                        <span className="text-xs text-muted-foreground ml-2">(Purchase · {new Date(p.created_at).toLocaleDateString()})</span>
+                        <span className="font-medium">🏪 {p.supplier || t('settings.financial.unknown')}</span>
+                        <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.purchase')} · {new Date(p.created_at).toLocaleDateString()})</span>
                       </div>
                       <span className="font-bold text-destructive tabular-nums">{fmt(Number(p.balance))}</span>
                     </div>
@@ -963,12 +965,12 @@ export default function SettingsPage() {
                 if (warnSales.length === 0 && warnServices.length === 0 && warnPurchases.length === 0) return null;
                 return (
                   <div className="p-3 rounded-lg bg-warning/10 border-2 border-warning/30 space-y-2">
-                    <p className="text-sm font-bold text-warning flex items-center gap-1.5">⚠️ OVERDUE — 3-7 Days Unpaid</p>
+                    <p className="text-sm font-bold text-warning flex items-center gap-1.5">⚠️ {t('settings.financial.overdueUnpaid')}</p>
                     {warnSales.map(s => (
                       <div key={s.id} className="flex justify-between items-center text-sm p-2 rounded bg-warning/5">
                         <div>
-                          <span className="font-medium">👤 {s.customer_name || 'Unknown'}</span>
-                          <span className="text-xs text-muted-foreground ml-2">(Sale · {new Date(s.created_at).toLocaleDateString()})</span>
+                          <span className="font-medium">👤 {s.customer_name || t('settings.financial.unknown')}</span>
+                          <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.sale')} · {new Date(s.created_at).toLocaleDateString()})</span>
                         </div>
                         <span className="font-bold text-warning tabular-nums">{fmt(Number(s.balance))}</span>
                       </div>
@@ -976,8 +978,8 @@ export default function SettingsPage() {
                     {warnServices.map(s => (
                       <div key={s.id} className="flex justify-between items-center text-sm p-2 rounded bg-warning/5">
                         <div>
-                          <span className="font-medium">👤 {s.customer_name || 'Unknown'}</span>
-                          <span className="text-xs text-muted-foreground ml-2">(Service: {s.service_name} · {new Date(s.created_at).toLocaleDateString()})</span>
+                          <span className="font-medium">👤 {s.customer_name || t('settings.financial.unknown')}</span>
+                          <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.service')}: {s.service_name} · {new Date(s.created_at).toLocaleDateString()})</span>
                         </div>
                         <span className="font-bold text-warning tabular-nums">{fmt(Number(s.balance))}</span>
                       </div>
@@ -985,8 +987,8 @@ export default function SettingsPage() {
                     {warnPurchases.map(p => (
                       <div key={p.id} className="flex justify-between items-center text-sm p-2 rounded bg-warning/5">
                         <div>
-                          <span className="font-medium">🏪 {p.supplier || 'Unknown'}</span>
-                          <span className="text-xs text-muted-foreground ml-2">(Purchase · {new Date(p.created_at).toLocaleDateString()})</span>
+                          <span className="font-medium">🏪 {p.supplier || t('settings.financial.unknown')}</span>
+                          <span className="text-xs text-muted-foreground ml-2">({t('settings.financial.purchase')} · {new Date(p.created_at).toLocaleDateString()})</span>
                         </div>
                         <span className="font-bold text-warning tabular-nums">{fmt(Number(p.balance))}</span>
                       </div>
@@ -1003,7 +1005,7 @@ export default function SettingsPage() {
                 if (recentSales.length === 0 && recentServices.length === 0 && recentPurchases.length === 0) return null;
                 return (
                   <div className="p-3 rounded-lg bg-muted/30 border space-y-2">
-                    <p className="text-sm font-bold flex items-center gap-1.5">💳 Recent (Under 3 Days)</p>
+                    <p className="text-sm font-bold flex items-center gap-1.5">💳 {t('settings.financial.recentDebts')}</p>
                     {recentSales.map(s => (
                       <div key={s.id} className="flex justify-between items-center text-sm p-2 rounded bg-background/80">
                         <div>
@@ -1036,7 +1038,7 @@ export default function SettingsPage() {
               })()}
 
               <p className="text-[10px] text-muted-foreground text-center italic">
-                💡 Figures update automatically when payments are recorded in Sales, Services, or Purchases pages.
+                💡 {t('settings.financial.debtsAutoUpdate')}
               </p>
             </CardContent>
           </Card>
@@ -1046,14 +1048,14 @@ export default function SettingsPage() {
       {/* Settings Password */}
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-3">
-          <h2 className="text-base font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> Settings Password</h2>
-          <p className="text-xs text-muted-foreground">Set a password to protect settings from unauthorized access. Only you (the boss) will be able to open this page.</p>
+          <h2 className="text-base font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> {t('settings.settingsPassword')}</h2>
+          <p className="text-xs text-muted-foreground">{t('settings.settingsPasswordDesc')}</p>
           <div className="flex gap-3 items-end">
             <div className="flex-1">
-              <Label>Password</Label>
-              <Input type="password" value={settingsPassword} onChange={e => setSettingsPassword(e.target.value)} placeholder="Leave empty to disable" />
+              <Label>{t('settings.password')}</Label>
+              <Input type="password" value={settingsPassword} onChange={e => setSettingsPassword(e.target.value)} placeholder={t('settings.leaveEmptyToDisable')} />
             </div>
-            <Button onClick={handleSavePassword}><Save className="h-4 w-4 mr-2" />Save</Button>
+            <Button onClick={handleSavePassword}><Save className="h-4 w-4 mr-2" />{t('common.save')}</Button>
           </div>
         </CardContent>
       </Card>
@@ -1068,16 +1070,16 @@ export default function SettingsPage() {
       {/* Currency Setting */}
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-3">
-          <h2 className="text-base font-semibold">Currency Symbol</h2>
-          <p className="text-xs text-muted-foreground">Set the currency symbol used throughout the app (e.g. KSh, $, £, €, UGX)</p>
+          <h2 className="text-base font-semibold">{t('settings.currencySymbol')}</h2>
+          <p className="text-xs text-muted-foreground">{t('settings.currencySymbolDesc')}</p>
           <div className="flex gap-3 items-end">
             <div className="flex-1">
-              <Label>Currency Symbol</Label>
+              <Label>{t('settings.currencySymbol')}</Label>
               <Input value={currencyInput} onChange={e => setCurrencyInput(e.target.value)} placeholder="KSh" maxLength={6} />
             </div>
-            <Button onClick={handleSaveCurrency}><Save className="h-4 w-4 mr-2" />Save</Button>
+            <Button onClick={handleSaveCurrency}><Save className="h-4 w-4 mr-2" />{t('common.save')}</Button>
           </div>
-          <p className="text-xs text-muted-foreground">Preview: <span className="font-semibold text-success">{currencyInput || 'KSh'} 1,000.00</span></p>
+          <p className="text-xs text-muted-foreground">{t('settings.preview')}: <span className="font-semibold text-success">{currencyInput || 'KSh'} 1,000.00</span></p>
         </CardContent>
       </Card>
 

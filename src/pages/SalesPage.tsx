@@ -64,6 +64,9 @@ export default function SalesPage() {
   const [selectedPartStock, setSelectedPartStock] = useState('');
   const [partQty, setPartQty] = useState('1');
   const [stockSearch, setStockSearch] = useState('');
+  const [showStockPicker, setShowStockPicker] = useState(false);
+  const [partStockSearch, setPartStockSearch] = useState('');
+  const [showPartStockPicker, setShowPartStockPicker] = useState(false);
   const [bulkPkg, setBulkPkg] = useState({ pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
   const [bulkQuantity, setBulkQuantity] = useState('');
   const { locked: submitLocked, withLock } = useSubmitLock();

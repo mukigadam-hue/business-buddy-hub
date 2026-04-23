@@ -79,8 +79,8 @@ export default function PropertyMessages() {
         <div className="flex items-center gap-2 pb-3 border-b">
           <Button variant="ghost" size="sm" onClick={() => setActiveConv(null)}><ArrowLeft className="h-4 w-4" /></Button>
           <div>
-            <p className="font-semibold text-sm">{detail?.renter_name || 'Renter'}</p>
-            <p className="text-xs text-muted-foreground">{detail?.asset_name || 'General'}</p>
+            <p className="font-semibold text-sm">{detail?.renter_name || t('property.renter', 'Renter')}</p>
+            <p className="text-xs text-muted-foreground">{detail?.asset_name || t('property.general', 'General')}</p>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto py-3 space-y-2">
@@ -116,8 +116,8 @@ export default function PropertyMessages() {
               <button key={c.id} onClick={() => setActiveConv(c.id)} className="w-full text-left p-3 rounded-lg border hover:border-primary/50 hover:bg-primary/5 transition-colors">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="font-medium text-sm">{detail?.renter_name || 'Renter'}</p>
-                    <p className="text-xs text-muted-foreground">{detail?.asset_name || 'General'}</p>
+                    <p className="font-medium text-sm">{detail?.renter_name || t('property.renter', 'Renter')}</p>
+                    <p className="text-xs text-muted-foreground">{detail?.asset_name || t('property.general', 'General')}</p>
                   </div>
                   <span className="text-xs text-muted-foreground">{new Date(c.last_message_at).toLocaleDateString()}</span>
                 </div>

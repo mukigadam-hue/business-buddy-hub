@@ -764,19 +764,25 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">{activeStock.length} {t('settings.financial.itemsInStock')}</p>
           </div>
 
-          {/* 2. Purchases */}
+          {/* 2. Purchases (incl. orders sent to suppliers) */}
           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
             <div className="flex items-center gap-2 mb-1"><ShoppingCart className="h-4 w-4 text-primary" /><p className="text-sm font-semibold">2. {t('settings.financial.purchases')}</p></div>
-            <div className="grid grid-cols-2 gap-3">
+            <p className="text-[10px] text-muted-foreground mb-2">{t('settings.financial.purchasesIncludesOrders')}</p>
+            <div className="grid grid-cols-3 gap-2">
               <div>
-                <p className="text-xs text-muted-foreground">{t('settings.financial.todaysPurchases')}</p>
-                <p className="text-lg font-bold tabular-nums">{fmt(todayPurchaseTotal)}</p>
-                <p className="text-[10px] text-muted-foreground">{todayPurchases.length} {t('settings.financial.purchaseCount')}</p>
+                <p className="text-[11px] text-muted-foreground">{t('settings.financial.todaysPurchases')}</p>
+                <p className="text-base font-bold tabular-nums">{fmt(todayPurchaseTotal)}</p>
+                <p className="text-[10px] text-muted-foreground">{todayPurchaseCount} {t('settings.financial.purchaseCount')}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">{t('settings.financial.allTimePurchases')}</p>
-                <p className="text-lg font-bold tabular-nums">{fmt(totalPurchases)}</p>
-                <p className="text-[10px] text-muted-foreground">{purchases.length} {t('settings.financial.totalCount')}</p>
+                <p className="text-[11px] text-muted-foreground">{t('settings.financial.thisMonthPurchases')}</p>
+                <p className="text-base font-bold tabular-nums text-primary">{fmt(monthPurchaseTotal)}</p>
+                <p className="text-[10px] text-muted-foreground">{monthPurchaseCount} {t('settings.financial.purchaseCount')}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-muted-foreground">{t('settings.financial.allTimePurchases')}</p>
+                <p className="text-base font-bold tabular-nums">{fmt(totalPurchases)}</p>
+                <p className="text-[10px] text-muted-foreground">{totalPurchaseCount} {t('settings.financial.totalCount')}</p>
               </div>
             </div>
           </div>

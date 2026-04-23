@@ -66,25 +66,59 @@ export async function restoreRecord(table: RecyclableTable, id: string): Promise
 }
 
 export async function permanentDeleteRecord(table: RecyclableTable, id: string): Promise<boolean> {
-  // For tables with child items, delete children first to avoid FK issues.
-  if (table === 'sales') {
-    await supabase.from('sale_items').delete().eq('sale_id', id);
-  } else if (table === 'purchases') {
-    await supabase.from('purchase_items').delete().eq('purchase_id', id);
-  } else if (table === 'orders') {
-    await supabase.from('order_items').delete().eq('order_id', id);
-  } else if (table === 'services') {
-    await supabase.from('service_items').delete().eq('service_id', id);
-  } else if (table === 'stock_items') {
-    await Promise.all([
-      supabase.from('sale_items').update({ stock_item_id: null } as any).eq('stock_item_id', id),
-      supabase.from('service_items').update({ stock_item_id: null } as any).eq('stock_item_id', id),
-      supabase.from('factory_production').update({ product_stock_id: null } as any).eq('product_stock_id', id),
-    ]);
+  // Clear all child / dependent rows first to avoid FK constraint errors.
+  try {
+    if (table === 'sales') {
+      await supabase.from('sale_items').delete().eq('sale_id', id);
+    } else if (table === 'purchases') {
+      await supabase.from('purchase_items').delete().eq('purchase_id', id);
+    } else if (table === 'orders') {
+      // orders has many FK references — wipe / null them all.
+      await Promise.all([
+        supabase.from('order_items').delete().eq('order_id', id),
+        supabase.from('order_disputes').delete().eq('order_id', id),
+        supabase.from('shared_orders' as any).delete().eq('order_id', id),
+        supabase.from('business_expenses').update({ from_order_id: null } as any).eq('from_order_id', id),
+        supabase.from('factory_expenses').update({ from_order_id: null } as any).eq('from_order_id', id),
+      ]);
+    } else if (table === 'services') {
+      await supabase.from('service_items').delete().eq('service_id', id);
+    } else if (table === 'stock_items') {
+      await Promise.all([
+        supabase.from('sale_items').update({ stock_item_id: null } as any).eq('stock_item_id', id),
+        supabase.from('service_items').update({ stock_item_id: null } as any).eq('stock_item_id', id),
+        supabase.from('factory_production').update({ product_stock_id: null } as any).eq('product_stock_id', id),
+      ]);
+    } else if (table === 'property_assets') {
+      // Cascade through bookings (which themselves have child rows)
+      const { data: bookings } = await supabase
+        .from('property_bookings').select('id').eq('asset_id', id);
+      const bookingIds = (bookings || []).map((b: any) => b.id);
+      if (bookingIds.length) {
+        await Promise.all([
+          supabase.from('property_check_ins').delete().in('booking_id', bookingIds),
+          supabase.from('property_complaints').delete().in('booking_id', bookingIds),
+        ]);
+        await supabase.from('property_bookings').delete().in('id', bookingIds);
+      }
+      await Promise.all([
+        supabase.from('property_conversations').delete().eq('asset_id', id),
+        supabase.from('property_complaints').delete().eq('asset_id', id),
+      ]);
+    } else if (table === 'property_bookings') {
+      await Promise.all([
+        supabase.from('property_check_ins').delete().eq('booking_id', id),
+        supabase.from('property_complaints').delete().eq('booking_id', id),
+      ]);
+    }
+  } catch (e: any) {
+    // Continue to attempt the main delete — if it fails we'll surface the FK error.
+    console.warn('[recycleBin] dependent cleanup warning:', e?.message || e);
   }
+
   const { error } = await supabase.from(table as any).delete().eq('id', id);
   if (error) {
-    toast.error(error.message);
+    toast.error(`${error.message} — please try again or contact support.`);
     return false;
   }
   return true;

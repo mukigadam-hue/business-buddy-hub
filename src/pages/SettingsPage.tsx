@@ -353,10 +353,26 @@ export default function SettingsPage() {
     retailCapital += item.quantity * Number(item.retail_price);
   });
 
-  // ====== 2. PURCHASES ======
+  // ====== 2. PURCHASES (incl. orders sent to suppliers — type 'request') ======
+  const supplierOrders = orders.filter(o => o.type === 'request');
   const todayPurchases = purchases.filter(p => new Date(p.created_at).toDateString() === today);
-  const todayPurchaseTotal = todayPurchases.reduce((sum, p) => sum + Number(p.grand_total), 0);
-  const totalPurchases = purchases.reduce((sum, p) => sum + Number(p.grand_total), 0);
+  const todaySupplierOrders = supplierOrders.filter(o => new Date(o.created_at).toDateString() === today);
+  const todayPurchaseTotal =
+    todayPurchases.reduce((sum, p) => sum + Number(p.grand_total), 0) +
+    todaySupplierOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
+  const todayPurchaseCount = todayPurchases.length + todaySupplierOrders.length;
+
+  const monthPurchasesList = purchases.filter(p => isThisMonth(p.created_at));
+  const monthSupplierOrders = supplierOrders.filter(o => isThisMonth(o.created_at));
+  const monthPurchaseTotal =
+    monthPurchasesList.reduce((sum, p) => sum + Number(p.grand_total), 0) +
+    monthSupplierOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
+  const monthPurchaseCount = monthPurchasesList.length + monthSupplierOrders.length;
+
+  const totalPurchases =
+    purchases.reduce((sum, p) => sum + Number(p.grand_total), 0) +
+    supplierOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
+  const totalPurchaseCount = purchases.length + supplierOrders.length;
 
   // ====== 3 & 4. STOCK VALUE (Wholesale & Retail) - calculated above ======
 

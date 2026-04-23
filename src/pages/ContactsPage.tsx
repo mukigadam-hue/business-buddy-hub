@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/context/BusinessContext';
 import { usePremium } from '@/hooks/usePremium';
@@ -40,6 +41,7 @@ interface EnrichedContact extends BusinessContact {
 }
 
 export default function ContactsPage() {
+  const { t } = useTranslation();
   const { currentBusiness, userRole } = useBusiness();
   const { maxContacts } = usePremium();
   const [contacts, setContacts] = useState<EnrichedContact[]>([]);
@@ -305,7 +307,7 @@ export default function ContactsPage() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Building2 className="h-6 w-6" /> {contactLabel}
+            <Building2 className="h-6 w-6" /> {t('contacts.title')}
           </h1>
           <p className="text-sm text-muted-foreground">
             {contactDesc}

@@ -16,7 +16,6 @@ import { toast } from 'sonner';
 import type { Sale } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
-import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -289,7 +288,6 @@ export default function SalesPage() {
               💰 Update Payment
             </Button>
           )}
-          <RecycleDeleteButton table="sales" recordId={sale.id} label="Cancel" />
         </div>
       </div>
     );

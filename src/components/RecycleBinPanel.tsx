@@ -82,9 +82,11 @@ export default function RecycleBinPanel() {
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {t('recycleBin.description')}
-        </p>
+        <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+          <p className="text-xs text-muted-foreground">
+            {t('recycleBin.description')}
+          </p>
+        </div>
 
         {loading && records.length === 0 && (
           <p className="text-xs text-muted-foreground italic">{t('recycleBin.loading')}</p>

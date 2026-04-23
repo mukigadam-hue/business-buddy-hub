@@ -75,6 +75,12 @@ export async function permanentDeleteRecord(table: RecyclableTable, id: string):
     await supabase.from('order_items').delete().eq('order_id', id);
   } else if (table === 'services') {
     await supabase.from('service_items').delete().eq('service_id', id);
+  } else if (table === 'stock_items') {
+    await Promise.all([
+      supabase.from('sale_items').update({ stock_item_id: null } as any).eq('stock_item_id', id),
+      supabase.from('service_items').update({ stock_item_id: null } as any).eq('stock_item_id', id),
+      supabase.from('factory_production').update({ product_stock_id: null } as any).eq('product_stock_id', id),
+    ]);
   }
   const { error } = await supabase.from(table as any).delete().eq('id', id);
   if (error) {

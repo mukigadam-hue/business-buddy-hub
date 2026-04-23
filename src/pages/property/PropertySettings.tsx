@@ -687,14 +687,14 @@ export default function PropertySettings() {
                 const icon = bType === 'factory' ? '🏭' : bType === 'property' ? '🏠' : '🏪';
                 return (
                   <button key={b.id} onClick={() => { navigate('/'); setCurrentBusinessId(b.id); }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isActive ? 'bg-orange-500/10 border-2 border-orange-500' : 'bg-muted/30 border-2 border-transparent hover:border-orange-500/20'}`}>
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isActive ? 'bg-accent/40 border-2 border-primary' : 'bg-muted/30 border-2 border-transparent hover:border-primary/20'}`}>
                     <span className="text-xl">{icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{b.name}</p>
                       <p className="text-xs text-muted-foreground capitalize">{role}</p>
                     </div>
                     {isActive ? (
-                      <span className="text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded-full shrink-0">Active</span>
+                      <span className="text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full shrink-0">Active</span>
                     ) : (
                       <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                     )}

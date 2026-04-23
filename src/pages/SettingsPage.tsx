@@ -262,7 +262,7 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { currentBusiness, updateBusiness, stock, sales, purchases, services, expenses, orders, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, restoreStockItem, permanentDeleteStockItem, deleteBusiness, refreshData } = useBusiness();
+  const { currentBusiness, updateBusiness, stock, sales, purchases, services, expenses, orders, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, deleteBusiness, refreshData } = useBusiness();
   const { currency, setCurrency, fmt } = useCurrency();
   const isPersonal = (currentBusiness as any)?.business_type === 'personal';
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
@@ -335,7 +335,6 @@ export default function SettingsPage() {
   }, [currentBusiness?.id]);
 
   const activeStock = stock.filter(s => !s.deleted_at);
-  const deletedStock = stock.filter(s => s.deleted_at);
   const now = new Date();
   const today = now.toDateString();
   const currentMonth = now.getMonth();
@@ -528,7 +527,7 @@ export default function SettingsPage() {
                   const isFact = (b as any).business_type === 'factory';
                   const isProp = (b as any).business_type === 'property';
                   return (
-                    <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${isActive ? 'bg-orange-500/10 border-2 border-orange-500' : 'bg-muted/30 border-2 border-transparent hover:border-orange-500/20'}`}>
+                    <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${isActive ? 'bg-accent/40 border-2 border-primary' : 'bg-muted/30 border-2 border-transparent hover:border-primary/20'}`}>
                       <button onClick={() => { navigate('/'); setCurrentBusinessId(b.id); }} className="flex items-center gap-3 flex-1 min-w-0 text-left">
                         <span className="text-xl">{isProp ? '🏠' : isFact ? '🏭' : '🏪'}</span>
                         <div className="flex-1 min-w-0">
@@ -537,7 +536,7 @@ export default function SettingsPage() {
                         </div>
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {isActive && <span className="text-[10px] bg-orange-500 text-primary-foreground px-2 py-0.5 rounded-full">Active</span>}
+                        {isActive && <span className="text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full">Active</span>}
                         <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setShowLeaveDialog(b.id); }}>
                           <LogOut className="h-3 w-3 mr-1" /> Leave
                         </Button>
@@ -1218,7 +1217,7 @@ export default function SettingsPage() {
                 const isFact = (b as any).business_type === 'factory';
                 const isProp = (b as any).business_type === 'property';
                 return (
-                  <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${isActive ? 'bg-orange-500/10 border-2 border-orange-500' : 'bg-muted/30 border-2 border-transparent hover:border-orange-500/20'}`}>
+                    <div key={b.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${isActive ? 'bg-accent/40 border-2 border-primary' : 'bg-muted/30 border-2 border-transparent hover:border-primary/20'}`}>
                     <button onClick={() => { navigate('/'); setCurrentBusinessId(b.id); }} className="flex items-center gap-3 flex-1 min-w-0 text-left">
                       <span className="text-xl">{isProp ? '🏠' : isFact ? '🏭' : '🏪'}</span>
                       <div className="flex-1 min-w-0">
@@ -1227,7 +1226,7 @@ export default function SettingsPage() {
                       </div>
                     </button>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {isActive && <span className="text-[10px] bg-orange-500 text-primary-foreground px-2 py-0.5 rounded-full">Active</span>}
+                      {isActive && <span className="text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full">Active</span>}
                       <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setShowLeaveDialog(b.id); }}>
                         <LogOut className="h-3 w-3 mr-1" /> Leave
                       </Button>

@@ -31,6 +31,8 @@ export default function ServicesPage() {
   const [itemsUsed, setItemsUsed] = useState<{ stock_item_id: string; item_name: string; category: string; quality: string; quantity: number; unit_price: number; subtotal: number }[]>([]);
   const [selectedStock, setSelectedStock] = useState('');
   const [itemQty, setItemQty] = useState('1');
+  const [stockSearch, setStockSearch] = useState('');
+  const [showStockPicker, setShowStockPicker] = useState(false);
 
   const activeStock = stock.filter(s => !s.deleted_at && s.quantity > 0);
 
@@ -177,22 +179,57 @@ export default function ServicesPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                 <Package className="h-3.5 w-3.5" /> Items/Parts Used (from Stock)
               </p>
-              <div className="flex flex-wrap gap-2 items-end">
-                <div className="flex-1 min-w-[180px]">
-                  <Label className="text-xs">Select Part</Label>
-                  <Select value={selectedStock} onValueChange={setSelectedStock}>
-                    <SelectTrigger><SelectValue placeholder="Choose from stock..." /></SelectTrigger>
-                    <SelectContent>
-                      {activeStock.map(s => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
-                        </SelectItem>
+              <div className="space-y-2">
+                <Label className="text-xs">Select from Stock or Search</Label>
+                <Input
+                  value={stockSearch}
+                  onChange={e => { setStockSearch(e.target.value); setShowStockPicker(true); setSelectedStock(''); }}
+                  onFocus={() => setShowStockPicker(true)}
+                  placeholder="🔍 Search parts by name, category, quality..."
+                />
+                {showStockPicker && !selectedStock && (() => {
+                  const q = stockSearch.toLowerCase();
+                  const filtered = activeStock.filter(s => !q || s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || (s.quality || '').toLowerCase().includes(q));
+                  return (
+                    <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-card shadow-md">
+                      {filtered.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-3">No matching parts in stock</p>
+                      ) : filtered.map(s => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => { setSelectedStock(s.id); setShowStockPicker(false); }}
+                          className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 text-sm border-b border-border last:border-0"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium text-foreground">{s.name}</span>
+                            {s.category && <span className="text-xs ml-1.5 text-muted-foreground">· {s.category}</span>}
+                            {s.quality && <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary">{s.quality}</span>}
+                          </div>
+                          <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">Qty: {s.quantity}</span>
+                        </button>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  );
+                })()}
+                {selectedStock && (() => {
+                  const si = activeStock.find(s => s.id === selectedStock);
+                  if (!si) return null;
+                  return (
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-primary/40 bg-primary/5 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-foreground">{si.name}</span>
+                        {si.category && <span className="text-xs ml-1.5 text-muted-foreground">· {si.category}</span>}
+                        <span className="text-xs ml-1.5 text-muted-foreground">Qty: {si.quantity}</span>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" className="h-7" onClick={() => { setSelectedStock(''); setStockSearch(''); }}>✕</Button>
+                    </div>
+                  );
+                })()}
+                <div className="flex gap-2 items-end">
+                  <div className="w-20"><Label className="text-xs">Qty</Label><Input type="number" min="1" value={itemQty} onChange={e => setItemQty(e.target.value)} /></div>
+                  <Button type="button" size="sm" variant="outline" onClick={() => { addUsedItem(); setStockSearch(''); }} disabled={!selectedStock}><Plus className="h-3.5 w-3.5 mr-1" />Add</Button>
                 </div>
-                <div className="w-16"><Label className="text-xs">Qty</Label><Input type="number" min="1" value={itemQty} onChange={e => setItemQty(e.target.value)} /></div>
-                <Button type="button" size="sm" variant="outline" onClick={addUsedItem} disabled={!selectedStock}><Plus className="h-3.5 w-3.5 mr-1" />Add</Button>
               </div>
               {itemsUsed.length > 0 && (
                 <div className="space-y-1 mt-2">

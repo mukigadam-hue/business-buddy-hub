@@ -64,6 +64,9 @@ export default function SalesPage() {
   const [selectedPartStock, setSelectedPartStock] = useState('');
   const [partQty, setPartQty] = useState('1');
   const [stockSearch, setStockSearch] = useState('');
+  const [showStockPicker, setShowStockPicker] = useState(false);
+  const [partStockSearch, setPartStockSearch] = useState('');
+  const [showPartStockPicker, setShowPartStockPicker] = useState(false);
   const [bulkPkg, setBulkPkg] = useState({ pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
   const [bulkQuantity, setBulkQuantity] = useState('');
   const { locked: submitLocked, withLock } = useSubmitLock();
@@ -362,34 +365,60 @@ export default function SalesPage() {
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">📦 {t('sales.stockItemsHeader')}</p>
             <div className="space-y-3">
-              <div className="w-full">
+              <div className="w-full space-y-2">
                 <Label>{t('sales.searchSelectItem')}</Label>
-                <Input
-                  placeholder={t('sales.searchPh')}
-                  value={stockSearch}
-                  onChange={e => setStockSearch(e.target.value)}
-                  className="mb-1.5"
-                />
                 <div className="flex gap-1.5">
-                  <Select value={selectedStock} onValueChange={handleSelectStock}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={t('sales.selectItemPh')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredStock.map(s => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
-                        </SelectItem>
-                      ))}
-                      {filteredStock.length === 0 && (
-                        <div className="px-3 py-2 text-xs text-muted-foreground">{t('sales.noItemsFound')}</div>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    className="flex-1"
+                    value={stockSearch}
+                    onChange={e => { setStockSearch(e.target.value); setShowStockPicker(true); setSelectedStock(''); }}
+                    onFocus={() => setShowStockPicker(true)}
+                    placeholder={t('sales.searchPh')}
+                  />
                   <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
                     <ScanLine className="h-4 w-4" />
                   </Button>
                 </div>
+                {showStockPicker && !selectedStock && (
+                  <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-card shadow-md">
+                    {filteredStock.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-3">{t('sales.noItemsFound')}</p>
+                    ) : (
+                      filteredStock.map(s => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => { handleSelectStock(s.id); setShowStockPicker(false); }}
+                          className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 text-sm border-b border-border last:border-0"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium text-foreground">{s.name}</span>
+                            {s.category && <span className="text-xs ml-1.5 text-muted-foreground">· {s.category}</span>}
+                            {s.quality && <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary">{s.quality}</span>}
+                          </div>
+                          <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">Qty: {s.quantity}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+                {selectedStock && (() => {
+                  const si = activeStock.find(s => s.id === selectedStock);
+                  if (!si) return null;
+                  return (
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-primary/40 bg-primary/5 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-foreground">{si.name}</span>
+                        {si.category && <span className="text-xs ml-1.5 text-muted-foreground">· {si.category}</span>}
+                        {si.quality && <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary">{si.quality}</span>}
+                        <span className="text-xs ml-1.5 text-muted-foreground">Qty: {si.quantity}</span>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" className="h-7" onClick={() => { setSelectedStock(''); setStockSearch(''); }}>
+                        ✕
+                      </Button>
+                    </div>
+                  );
+                })()}
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div><Label>{t('sales.qty')}</Label><Input type="number" min="0.01" step="0.01" value={quantity} onChange={e => setQuantity(e.target.value)}
@@ -470,34 +499,68 @@ export default function SalesPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                 <Package className="h-3.5 w-3.5" /> Items/Parts Used from Stock
               </p>
-              <div className="flex flex-wrap gap-2 items-end">
-                <div className="flex-1 min-w-[180px]">
-                  <Label className="text-xs">Select Part</Label>
-                  <div className="flex gap-1.5">
-                    <Select value={selectedPartStock} onValueChange={setSelectedPartStock}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Choose from stock..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availablePartsStock.map(s => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button type="button" variant="outline" size="icon" className="shrink-0 h-9 w-9" onClick={() => setPartScannerOpen(true)} title="Scan barcode">
-                      <ScanLine className="h-3.5 w-3.5" />
-                    </Button>
+              <div className="space-y-2">
+                <Label className="text-xs">Select from Stock or Search</Label>
+                <div className="flex gap-1.5">
+                  <Input
+                    className="flex-1"
+                    value={partStockSearch}
+                    onChange={e => { setPartStockSearch(e.target.value); setShowPartStockPicker(true); setSelectedPartStock(''); }}
+                    onFocus={() => setShowPartStockPicker(true)}
+                    placeholder="🔍 Search parts..."
+                  />
+                  <Button type="button" variant="outline" size="icon" className="shrink-0 h-9 w-9" onClick={() => setPartScannerOpen(true)} title="Scan barcode">
+                    <ScanLine className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                {showPartStockPicker && !selectedPartStock && (() => {
+                  const q = partStockSearch.toLowerCase();
+                  const filtered = availablePartsStock.filter(s => !q || s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || (s.quality || '').toLowerCase().includes(q));
+                  return (
+                    <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-card shadow-md">
+                      {filtered.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-3">No matching parts in stock</p>
+                      ) : filtered.map(s => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => { setSelectedPartStock(s.id); setShowPartStockPicker(false); }}
+                          className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 text-sm border-b border-border last:border-0"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium text-foreground">{s.name}</span>
+                            {s.category && <span className="text-xs ml-1.5 text-muted-foreground">· {s.category}</span>}
+                            {s.quality && <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary">{s.quality}</span>}
+                          </div>
+                          <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">Qty: {s.quantity}</span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+                {selectedPartStock && (() => {
+                  const si = availablePartsStock.find(s => s.id === selectedPartStock);
+                  if (!si) return null;
+                  return (
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-primary/40 bg-primary/5 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-foreground">{si.name}</span>
+                        {si.category && <span className="text-xs ml-1.5 text-muted-foreground">· {si.category}</span>}
+                        <span className="text-xs ml-1.5 text-muted-foreground">Qty: {si.quantity}</span>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" className="h-7" onClick={() => { setSelectedPartStock(''); setPartStockSearch(''); }}>✕</Button>
+                    </div>
+                  );
+                })()}
+                <div className="flex gap-2 items-end">
+                  <div className="w-20">
+                    <Label className="text-xs">Qty</Label>
+                    <Input type="number" min="0.01" step="0.01" value={partQty} onChange={e => setPartQty(e.target.value)} />
                   </div>
+                  <Button type="button" size="sm" variant="outline" onClick={() => { addServicePart(); setPartStockSearch(''); }} disabled={!selectedPartStock}>
+                    <Plus className="h-3.5 w-3.5 mr-1" />Add Part
+                  </Button>
                 </div>
-                <div className="w-16">
-                  <Label className="text-xs">Qty</Label>
-                  <Input type="number" min="0.01" step="0.01" value={partQty} onChange={e => setPartQty(e.target.value)} />
-                </div>
-                <Button size="sm" variant="outline" onClick={addServicePart} disabled={!selectedPartStock}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />Add Part
-                </Button>
               </div>
               {serviceParts.length > 0 && (
                 <div className="space-y-1 mt-2">

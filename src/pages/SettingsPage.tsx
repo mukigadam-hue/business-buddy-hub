@@ -336,7 +336,14 @@ export default function SettingsPage() {
 
   const activeStock = stock.filter(s => !s.deleted_at);
   const deletedStock = stock.filter(s => s.deleted_at);
-  const today = new Date().toDateString();
+  const now = new Date();
+  const today = now.toDateString();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const isThisMonth = (d: string | Date) => {
+    const dt = new Date(d);
+    return dt.getMonth() === currentMonth && dt.getFullYear() === currentYear;
+  };
 
   // ====== 1. TOTAL CAPITAL (Shopping/Buying Price of all stock) ======
   let buyingCapital = 0, wholesaleCapital = 0, retailCapital = 0;

@@ -139,6 +139,7 @@ function CheckInDialog({ bookingId, businessId, onClose }: { bookingId: string; 
 
 // ========== DIRECT BOOKING DIALOG (Walk-in) ==========
 function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose: () => void; assets: any[] }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { currentBusiness } = useBusiness();
   const { fmt } = useCurrency();

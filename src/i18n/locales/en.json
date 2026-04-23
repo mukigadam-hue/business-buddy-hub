@@ -373,6 +373,7 @@
       "itemsInStock": "items in stock",
       "purchases": "Purchases",
       "todaysPurchases": "Today's Purchases",
+      "thisMonthPurchases": "This Month's Purchases",
       "allTimePurchases": "All-Time Purchases",
       "purchaseCount": "purchase(s)",
       "totalCount": "total",
@@ -423,7 +424,11 @@
       "purchase": "Purchase",
       "unknown": "Unknown",
       "saleCount": "sale(s)",
-      "debtsAutoUpdate": "Figures update automatically when payments are recorded in Sales, Services, or Purchases pages."
+      "debtsAutoUpdate": "Figures update automatically when payments are recorded in Sales, Services, or Purchases pages.",
+      "thisMonthRevenue": "This Month's Revenue",
+      "cashCollectedThisMonth": "Cash collected this month",
+      "purchasesIncludesOrders": "Includes purchases + orders sent to suppliers",
+      "revenueIncludesOrders": "Includes sales, services + customer orders received"
     }
   },
   "common": {

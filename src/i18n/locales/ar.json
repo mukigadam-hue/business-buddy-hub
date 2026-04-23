@@ -372,6 +372,7 @@
       "itemsInStock": "عناصر في المخزون",
       "purchases": "المشتريات",
       "todaysPurchases": "مشتريات اليوم",
+      "thisMonthPurchases": "مشتريات هذا الشهر",
       "allTimePurchases": "المشتريات الإجمالية",
       "purchaseCount": "مشتريات",
       "totalCount": "الإجمالي",
@@ -422,7 +423,11 @@
       "purchase": "شراء",
       "unknown": "غير معروف",
       "saleCount": "مبيعات",
-      "debtsAutoUpdate": "تتحدث الأرقام تلقائيًا عند تسجيل المدفوعات."
+      "debtsAutoUpdate": "تتحدث الأرقام تلقائيًا عند تسجيل المدفوعات.",
+      "thisMonthRevenue": "إيرادات هذا الشهر",
+      "cashCollectedThisMonth": "النقدية المحصلة هذا الشهر",
+      "purchasesIncludesOrders": "يشمل المشتريات + الطلبات المرسلة إلى الموردين",
+      "revenueIncludesOrders": "يشمل المبيعات والخدمات + طلبات العملاء المستلمة"
     }
   },
   "common": {

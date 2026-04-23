@@ -372,6 +372,7 @@
       "itemsInStock": "bidhaa stoo",
       "purchases": "Manunuzi",
       "todaysPurchases": "Manunuzi ya leo",
+      "thisMonthPurchases": "Manunuzi ya mwezi huu",
       "allTimePurchases": "Manunuzi yote",
       "purchaseCount": "manunuzi",
       "totalCount": "jumla",
@@ -422,7 +423,11 @@
       "purchase": "Ununuzi",
       "unknown": "Haijulikani",
       "saleCount": "mauzo",
-      "debtsAutoUpdate": "Takwimu hujisasisha kiotomatiki malipo yanapoorodheshwa."
+      "debtsAutoUpdate": "Takwimu hujisasisha kiotomatiki malipo yanapoorodheshwa.",
+      "thisMonthRevenue": "Mapato ya mwezi huu",
+      "cashCollectedThisMonth": "Pesa iliyokusanywa mwezi huu",
+      "purchasesIncludesOrders": "Inajumuisha manunuzi + maagizo yaliyotumwa kwa wasambazaji",
+      "revenueIncludesOrders": "Inajumuisha mauzo, huduma + maagizo ya wateja yaliyopokelewa"
     }
   },
   "common": {

@@ -372,6 +372,7 @@
       "itemsInStock": "在庫アイテム",
       "purchases": "仕入",
       "todaysPurchases": "本日の仕入",
+      "thisMonthPurchases": "今月の仕入",
       "allTimePurchases": "総仕入",
       "purchaseCount": "件の仕入",
       "totalCount": "合計",
@@ -422,7 +423,11 @@
       "purchase": "仕入",
       "unknown": "不明",
       "saleCount": "件の販売",
-      "debtsAutoUpdate": "支払いが記録されると数値は自動的に更新されます。"
+      "debtsAutoUpdate": "支払いが記録されると数値は自動的に更新されます。",
+      "thisMonthRevenue": "今月の収益",
+      "cashCollectedThisMonth": "今月の集金額",
+      "purchasesIncludesOrders": "仕入 + サプライヤーへの注文を含む",
+      "revenueIncludesOrders": "売上、サービス + 受注した顧客注文を含む"
     }
   },
   "common": {

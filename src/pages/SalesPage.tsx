@@ -365,34 +365,60 @@ export default function SalesPage() {
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">📦 {t('sales.stockItemsHeader')}</p>
             <div className="space-y-3">
-              <div className="w-full">
+              <div className="w-full space-y-2">
                 <Label>{t('sales.searchSelectItem')}</Label>
-                <Input
-                  placeholder={t('sales.searchPh')}
-                  value={stockSearch}
-                  onChange={e => setStockSearch(e.target.value)}
-                  className="mb-1.5"
-                />
                 <div className="flex gap-1.5">
-                  <Select value={selectedStock} onValueChange={handleSelectStock}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={t('sales.selectItemPh')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredStock.map(s => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}{s.category ? ` · ${s.category}` : ''}{s.quality ? ` · ${s.quality}` : ''} (qty: {s.quantity})
-                        </SelectItem>
-                      ))}
-                      {filteredStock.length === 0 && (
-                        <div className="px-3 py-2 text-xs text-muted-foreground">{t('sales.noItemsFound')}</div>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    className="flex-1"
+                    value={stockSearch}
+                    onChange={e => { setStockSearch(e.target.value); setShowStockPicker(true); setSelectedStock(''); }}
+                    onFocus={() => setShowStockPicker(true)}
+                    placeholder={t('sales.searchPh')}
+                  />
                   <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScannerOpen(true)} title="Scan barcode">
                     <ScanLine className="h-4 w-4" />
                   </Button>
                 </div>
+                {showStockPicker && !selectedStock && (
+                  <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-card shadow-md">
+                    {filteredStock.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-3">{t('sales.noItemsFound')}</p>
+                    ) : (
+                      filteredStock.map(s => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => { handleSelectStock(s.id); setShowStockPicker(false); }}
+                          className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 text-sm border-b border-border last:border-0"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium text-foreground">{s.name}</span>
+                            {s.category && <span className="text-xs ml-1.5 text-muted-foreground">· {s.category}</span>}
+                            {s.quality && <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary">{s.quality}</span>}
+                          </div>
+                          <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">Qty: {s.quantity}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+                {selectedStock && (() => {
+                  const si = activeStock.find(s => s.id === selectedStock);
+                  if (!si) return null;
+                  return (
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-primary/40 bg-primary/5 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-foreground">{si.name}</span>
+                        {si.category && <span className="text-xs ml-1.5 text-muted-foreground">· {si.category}</span>}
+                        {si.quality && <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary">{si.quality}</span>}
+                        <span className="text-xs ml-1.5 text-muted-foreground">Qty: {si.quantity}</span>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" className="h-7" onClick={() => { setSelectedStock(''); setStockSearch(''); }}>
+                        ✕
+                      </Button>
+                    </div>
+                  );
+                })()}
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div><Label>{t('sales.qty')}</Label><Input type="number" min="0.01" step="0.01" value={quantity} onChange={e => setQuantity(e.target.value)}

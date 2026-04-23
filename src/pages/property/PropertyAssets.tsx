@@ -60,8 +60,8 @@ function AssetForm({ asset, onSave, onClose }: { asset?: PropertyAsset; onSave: 
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) { toast.error('Name is required'); return; }
-    if (!form.location.trim()) { toast.error('Location is required'); return; }
+    if (!form.name.trim()) { toast.error(t('propertyUI.nameRequired')); return; }
+    if (!form.location.trim()) { toast.error(t('propertyUI.locationRequired')); return; }
     onSave({
       ...form,
       name: toSentenceCase(form.name.trim()),
@@ -78,12 +78,12 @@ function AssetForm({ asset, onSave, onClose }: { asset?: PropertyAsset; onSave: 
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
-          <Label>Asset Name *</Label>
-          <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Room 1 - front, Room 2 - back, Toyota Hiace" required />
-          <p className="text-[10px] text-muted-foreground mt-0.5">💡 For different prices, add each room/unit as a separate asset (e.g. "Room 1 - Front", "Room 2 - Back")</p>
+          <Label>{t('propertyUI.assetName')} *</Label>
+          <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder={t('propertyUI.assetNamePh')} required />
+          <p className="text-[10px] text-muted-foreground mt-0.5">💡 {t('propertyUI.assetNameTip')}</p>
         </div>
         <div>
-          <Label>Category</Label>
+          <Label>{t('propertyUI.category')}</Label>
           <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v, sub_category: '' }))}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -92,9 +92,9 @@ function AssetForm({ asset, onSave, onClose }: { asset?: PropertyAsset; onSave: 
           </Select>
         </div>
         <div>
-          <Label>Sub-Category</Label>
+          <Label>{t('propertyUI.subCategory')}</Label>
           <Select value={form.sub_category} onValueChange={v => setForm(p => ({ ...p, sub_category: v }))}>
-            <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t('propertyUI.selectPh')} /></SelectTrigger>
             <SelectContent>
               {catInfo?.subs.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>

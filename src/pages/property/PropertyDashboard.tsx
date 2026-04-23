@@ -64,16 +64,16 @@ export default function PropertyDashboard() {
             {currentBusiness?.business_code && (
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-xs sm:text-sm font-mono bg-primary-foreground/20 px-2 py-0.5 rounded">
-                  {(currentBusiness as any)?.country_code ? getCountryFlag((currentBusiness as any).country_code) : '🔗'} Code: {currentBusiness.business_code}
+                  {(currentBusiness as any)?.country_code ? getCountryFlag((currentBusiness as any).country_code) : '🔗'} {t('factoryUI.code')}: {currentBusiness.business_code}
                 </span>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(currentBusiness.business_code || '');
-                    import('sonner').then(m => m.toast.success('Code copied!'));
+                    import('sonner').then(m => m.toast.success(t('factoryUI.codeCopied')));
                   }}
                   className="text-xs bg-primary-foreground/20 hover:bg-primary-foreground/30 px-2 py-0.5 rounded transition-colors"
                 >
-                  📋 Copy
+                  📋 {t('factoryUI.copy')}
                 </button>
               </div>
             )}
@@ -93,7 +93,7 @@ export default function PropertyDashboard() {
               onUploaded={(url) => { updateBusiness({ logo_url: url } as any); setShowLogoUpload(false); }}
               onRemoved={() => updateBusiness({ logo_url: '' } as any)}
               size="md"
-              label="Property Logo"
+              label={t('propertyUI.propertyLogo')}
             />
           </div>
         )}
@@ -200,7 +200,7 @@ export default function PropertyDashboard() {
                 return (
                   <div key={b.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                     <div>
-                      <p className="text-sm font-medium">{asset?.name || 'Unknown'}</p>
+                      <p className="text-sm font-medium">{asset?.name || t('propertyUI.unknown')}</p>
                       <p className="text-xs text-muted-foreground">{b.renter_name} · {new Date(b.start_date).toLocaleDateString()}</p>
                     </div>
                     <span className="text-xs font-medium text-amber-600">{fmt(Number(b.total_price))}</span>

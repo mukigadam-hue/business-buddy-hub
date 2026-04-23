@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,6 +23,7 @@ import { useSubmitLock } from '@/hooks/useSubmitLock';
 const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
 
 export default function PurchasesPage() {
+  const { t } = useTranslation();
   const { stock, purchases, addPurchase, updatePurchasePayment, userRole, currentBusiness } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
@@ -201,7 +203,7 @@ export default function PurchasesPage() {
         onExistingItemFound={handleScanExistingItem}
         onNewItemCreated={handleScanNewItem}
       />
-      <h1 className="text-2xl font-bold">Purchases</h1>
+      <h1 className="text-2xl font-bold">{t('purchases.title')}</h1>
 
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-4">

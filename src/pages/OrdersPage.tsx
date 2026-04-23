@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -28,6 +29,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
 
 export default function OrdersPage() {
+  const { t } = useTranslation();
   const { stock, orders, addOrder, updateOrder, completeOrderToSale, saveReceipt, currentBusiness, addStockItem, addExpense, refreshData, notifications, userRole } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
@@ -1289,7 +1291,7 @@ export default function OrdersPage() {
     <div className="space-y-6">
       <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Orders</h1>
+        <h1 className="text-2xl font-bold">{t('orders.title')}</h1>
       </div>
 
       {/* Create new order */}

@@ -55,6 +55,7 @@ interface SearchAsset {
 }
 
 function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; onClose: () => void; asset: any; propertyName?: string }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { fmt } = useCurrency();
   const [renterName, setRenterName] = useState('');
@@ -169,7 +170,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><CalendarCheck className="h-5 w-5" /> Book Now</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><CalendarCheck className="h-5 w-5" /> {t('propertyUI.bookNow')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           {/* Asset Preview */}
@@ -191,8 +192,8 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
 
           {/* Renter Info */}
           <div className="grid grid-cols-2 gap-2">
-            <div><Label>Your Name *</Label><Input value={renterName} onChange={e => setRenterName(e.target.value)} /></div>
-            <div><Label>Your Phone</Label><Input value={renterContact} onChange={e => setRenterContact(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.fullName')} *</Label><Input value={renterName} onChange={e => setRenterName(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.phone')}</Label><Input value={renterContact} onChange={e => setRenterContact(e.target.value)} /></div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -229,7 +230,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
               </Select>
             </div>
             <div>
-              <Label>Payment Frequency</Label>
+              <Label>{t('propertyUI.paymentFrequency')}</Label>
               <Select value={paymentFrequency} onValueChange={setPaymentFrequency}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -240,13 +241,13 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <div><Label>Start *</Label><Input type="datetime-local" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-            <div><Label>End *</Label><Input type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.startDate')} *</Label><Input type="datetime-local" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.endDate')} *</Label><Input type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
           </div>
 
           <div>
-            <Label>Message to Owner</Label>
-            <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any special requests or comments..." rows={2} />
+            <Label>{t('propertyUI.message')}</Label>
+            <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="..." rows={2} />
           </div>
 
           {/* Show landlord's registered payment methods */}
@@ -258,7 +259,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
           )}
 
           <Button onClick={handleBook} disabled={submitting} className="w-full">
-            <Send className="h-4 w-4 mr-2" />{submitting ? 'Sending...' : 'Send Booking Request'}
+            <Send className="h-4 w-4 mr-2" />{submitting ? t('propertyUI.loading') : t('propertyUI.requestBooking')}
           </Button>
         </div>
       </DialogContent>
@@ -439,11 +440,11 @@ export default function PropertyBrowse() {
                   </div>
                   {asset.available_units > 0 ? (
                     <Button size="sm" className="w-full h-8 text-xs gap-1" onClick={() => handleBookAsset(asset, prefilledPropertyName)}>
-                      <CalendarCheck className="h-3 w-3" /> Book Now
+                      <CalendarCheck className="h-3 w-3" /> {t('propertyUI.bookNow')}
                     </Button>
                   ) : (
                     <Button size="sm" variant="secondary" className="w-full h-8 text-xs" disabled>
-                      Fully Occupied
+                      {t('propertyUI.rented')}
                     </Button>
                   )}
                 </CardContent>
@@ -530,11 +531,11 @@ export default function PropertyBrowse() {
                 <div className="flex gap-1 pt-1">
                   {((asset as any).available_units ?? ((asset as any).is_available !== false ? 1 : 0)) > 0 ? (
                     <Button size="sm" className="flex-1 h-7 text-xs gap-1" onClick={() => handleBookAsset(asset, asset.business_name)}>
-                      <CalendarCheck className="h-3 w-3" /> Book Now
+                      <CalendarCheck className="h-3 w-3" /> {t('propertyUI.bookNow')}
                     </Button>
                   ) : (
                     <Button size="sm" variant="secondary" className="flex-1 h-7 text-xs" disabled>
-                      Fully Occupied
+                      {t('propertyUI.rented')}
                     </Button>
                   )}
                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => copyAssetCode(asset.id)}>
@@ -554,7 +555,7 @@ export default function PropertyBrowse() {
       <Dialog open={!!contactAsset} onOpenChange={() => setContactAsset(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Contact Owner</DialogTitle>
+            <DialogTitle>{t('propertyUI.contactOwner')}</DialogTitle>
           </DialogHeader>
           {contactAsset && (
             <div className="space-y-3">

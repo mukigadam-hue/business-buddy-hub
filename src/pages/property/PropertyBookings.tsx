@@ -139,6 +139,7 @@ function CheckInDialog({ bookingId, businessId, onClose }: { bookingId: string; 
 
 // ========== DIRECT BOOKING DIALOG (Walk-in) ==========
 function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose: () => void; assets: any[] }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { currentBusiness } = useBusiness();
   const { fmt } = useCurrency();
@@ -254,8 +255,8 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
           )}
 
           <div className="grid grid-cols-2 gap-2">
-            <div><Label>Renter Name *</Label><Input value={renterName} onChange={e => setRenterName(e.target.value)} /></div>
-            <div><Label>Phone</Label><Input value={renterContact} onChange={e => setRenterContact(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.renterName')} *</Label><Input value={renterName} onChange={e => setRenterName(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.phone')}</Label><Input value={renterContact} onChange={e => setRenterContact(e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div><Label>Occupation</Label><Input value={renterOccupation} onChange={e => setRenterOccupation(e.target.value)} /></div>
@@ -289,7 +290,7 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
               </Select>
             </div>
             <div>
-              <Label>Payment Frequency</Label>
+              <Label>{t('propertyUI.paymentFrequency')}</Label>
               <Select value={paymentFrequency} onValueChange={setPaymentFrequency}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -299,18 +300,18 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div><Label>Start *</Label><Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-            <div><Label>End *</Label><Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.startDate')} *</Label><Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.endDate')} *</Label><Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
           </div>
 
           <div className="border-t pt-3 space-y-2">
-            <p className="text-xs font-semibold">💰 Payment</p>
+            <p className="text-xs font-semibold">💰 {t('propertyUI.paymentAmount')}</p>
             <div className="grid grid-cols-2 gap-2">
-              <div><Label>Agreed Amount</Label><Input type="number" value={agreedAmount} onChange={e => setAgreedAmount(e.target.value)} /></div>
-              <div><Label>Amount Paid Now</Label><Input type="number" value={amountPaid} onChange={e => setAmountPaid(e.target.value)} placeholder="0 if credit" /></div>
+              <div><Label>{t('propertyUI.amount')}</Label><Input type="number" value={agreedAmount} onChange={e => setAgreedAmount(e.target.value)} /></div>
+              <div><Label>{t('propertyUI.amountPaidNow')}</Label><Input type="number" value={amountPaid} onChange={e => setAmountPaid(e.target.value)} placeholder={t('propertyUI.ifCredit')} /></div>
             </div>
             <div>
-              <Label>Payment Method</Label>
+              <Label>{t('propertyUI.paymentMethod')}</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -323,16 +324,16 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
             </div>
             {(paymentMethod === 'mobile_money' || paymentMethod === 'card' || paymentMethod === 'bank') && (
               <div>
-                <Label>Payment Proof</Label>
+                <Label>{t('propertyUI.paymentProof')}</Label>
                 <ImageUpload bucket="payment-proofs" path="bookings" currentUrl={proofUrl}
-                  onUploaded={url => setProofUrl(url)} onRemoved={() => setProofUrl('')} size="sm" label="Upload proof" />
+                  onUploaded={url => setProofUrl(url)} onRemoved={() => setProofUrl('')} size="sm" label={t('propertyUI.paymentProof')} />
               </div>
             )}
           </div>
 
-          <div><Label>Notes</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
+          <div><Label>{t('propertyUI.notes')}</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} /></div>
           <Button onClick={handleSubmit} disabled={submitting} className="w-full">
-            <CheckCircle className="h-4 w-4 mr-2" />{submitting ? 'Creating...' : 'Create Direct Booking'}
+            <CheckCircle className="h-4 w-4 mr-2" />{submitting ? t('propertyUI.loading') : t('propertyUI.newBooking')}
           </Button>
         </div>
       </DialogContent>
@@ -973,30 +974,30 @@ export default function PropertyBookings() {
                 {booking.status === 'pending' && (
                   <>
                     <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleStatusChange(booking.id, 'confirmed')}>
-                      <CheckCircle className="h-3 w-3 mr-1" />Confirm
+                      <CheckCircle className="h-3 w-3 mr-1" />{t('propertyUI.confirm')}
                     </Button>
                     <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleStatusChange(booking.id, 'cancelled')}>
-                      <XCircle className="h-3 w-3 mr-1" />Reject
+                      <XCircle className="h-3 w-3 mr-1" />{t('propertyUI.reject')}
                     </Button>
                   </>
                 )}
                 {booking.status === 'confirmed' && (
                   <Button size="sm" className="h-7 text-xs" onClick={() => handleStatusChange(booking.id, 'active')}>
-                    <Clock className="h-3 w-3 mr-1" />Start Rental
+                    <Clock className="h-3 w-3 mr-1" />{t('propertyUI.active')}
                   </Button>
                 )}
                 {booking.status === 'active' && (
                   <Button size="sm" className="h-7 text-xs" onClick={() => handleStatusChange(booking.id, 'completed')}>
-                    <CheckCircle className="h-3 w-3 mr-1" />Complete
+                    <CheckCircle className="h-3 w-3 mr-1" />{t('propertyUI.markCompleted')}
                   </Button>
                 )}
                 {outstanding > 0 && (booking.status === 'active' || booking.status === 'confirmed') && (
                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setPaymentDialog(booking); setPaymentAmount(String(outstanding)); setPaymentMethod((booking as any).payment_method || 'cash'); }}>
-                    <Wallet className="h-3 w-3 mr-1" />Record Payment
+                    <Wallet className="h-3 w-3 mr-1" />{t('propertyUI.payNow')}
                   </Button>
                 )}
                 <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setCheckInBooking(booking.id)}>
-                  <Camera className="h-3 w-3 mr-1" />Check-In/Out
+                  <Camera className="h-3 w-3 mr-1" />{t('propertyUI.checkInOut')}
                 </Button>
               </>
             )}
@@ -1017,15 +1018,15 @@ export default function PropertyBookings() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">📅 Bookings</h1>
+        <h1 className="text-xl font-bold">📅 {t('propertyUI.bookingsTitle')}</h1>
         <div className="flex gap-1">
           {isOwnerOrAdmin && (
             <Button size="sm" variant="outline" onClick={() => setDirectBookOpen(true)}>
-              <Banknote className="h-4 w-4 mr-1" /> Direct
+              <Banknote className="h-4 w-4 mr-1" /> {t('propertyUI.newBooking')}
             </Button>
           )}
           <Button size="sm" onClick={() => setBookNowOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Online
+            <Plus className="h-4 w-4 mr-1" /> {t('propertyUI.requestBooking')}
           </Button>
         </div>
       </div>
@@ -1034,21 +1035,21 @@ export default function PropertyBookings() {
 
       <Tabs defaultValue="pending">
         <TabsList className="grid grid-cols-4">
-          <TabsTrigger value="pending" className="text-xs">Pending ({pending.length})</TabsTrigger>
-          <TabsTrigger value="active" className="text-xs">Active ({active.length})</TabsTrigger>
-          <TabsTrigger value="history" className="text-xs">History ({completed.length})</TabsTrigger>
-          <TabsTrigger value="complaints" className="text-xs">⚠️ Complaints</TabsTrigger>
+          <TabsTrigger value="pending" className="text-xs">{t('propertyUI.pending')} ({pending.length})</TabsTrigger>
+          <TabsTrigger value="active" className="text-xs">{t('propertyUI.active')} ({active.length})</TabsTrigger>
+          <TabsTrigger value="history" className="text-xs">{t('propertyUI.completed')} ({completed.length})</TabsTrigger>
+          <TabsTrigger value="complaints" className="text-xs">⚠️</TabsTrigger>
         </TabsList>
         <TabsContent value="pending" className="space-y-2 mt-3">
-          {pending.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No pending bookings</p>
+          {pending.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">{t('propertyUI.noBookingsYet')}</p>
             : pending.map(b => <BookingCard key={b.id} booking={b} />)}
         </TabsContent>
         <TabsContent value="active" className="space-y-2 mt-3">
-          {active.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No active bookings</p>
+          {active.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">{t('propertyUI.noBookingsYet')}</p>
             : active.map(b => <BookingCard key={b.id} booking={b} />)}
         </TabsContent>
         <TabsContent value="history" className="space-y-2 mt-3">
-          {completed.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No booking history</p>
+          {completed.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">{t('propertyUI.noBookingsYet')}</p>
             : completed.map(b => <BookingCard key={b.id} booking={b} />)}
         </TabsContent>
         <TabsContent value="complaints" className="space-y-2 mt-3">
@@ -1070,17 +1071,17 @@ export default function PropertyBookings() {
 
       <Dialog open={!!paymentDialog} onOpenChange={o => { if (!o) { setPaymentDialog(null); setProofUrl(''); } }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Record Payment — {paymentDialog?.renter_name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t('propertyUI.payNow')} — {paymentDialog?.renter_name}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="p-3 bg-muted/30 rounded-lg text-sm">
-              <p>Total: <strong>{fmt(Number(paymentDialog?.total_price || 0))}</strong></p>
-              <p>Paid: <strong className="text-success">{fmt(Number(paymentDialog?.amount_paid || 0))}</strong></p>
-              <p>Outstanding: <strong className="text-warning">{fmt(Number(paymentDialog?.total_price || 0) - Number(paymentDialog?.amount_paid || 0))}</strong></p>
+              <p>{t('propertyUI.total')}: <strong>{fmt(Number(paymentDialog?.total_price || 0))}</strong></p>
+              <p>{t('propertyUI.paid')}: <strong className="text-success">{fmt(Number(paymentDialog?.amount_paid || 0))}</strong></p>
+              <p>{t('propertyUI.balance')}: <strong className="text-warning">{fmt(Number(paymentDialog?.total_price || 0) - Number(paymentDialog?.amount_paid || 0))}</strong></p>
             </div>
-            <div><Label>Payment Amount</Label>
+            <div><Label>{t('propertyUI.paymentAmount')}</Label>
               <Input type="number" min="0" step="0.01" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} />
             </div>
-            <div><Label>Payment Method</Label>
+            <div><Label>{t('propertyUI.paymentMethod')}</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -1093,13 +1094,13 @@ export default function PropertyBookings() {
             </div>
             {(paymentMethod === 'mobile_money' || paymentMethod === 'card' || paymentMethod === 'bank') && (
               <div>
-                <Label>Payment Proof</Label>
+                <Label>{t('propertyUI.paymentProof')}</Label>
                 <ImageUpload bucket="payment-proofs" path="bookings" currentUrl={proofUrl}
-                  onUploaded={url => setProofUrl(url)} onRemoved={() => setProofUrl('')} size="sm" label="Upload proof" />
+                  onUploaded={url => setProofUrl(url)} onRemoved={() => setProofUrl('')} size="sm" label={t('propertyUI.paymentProof')} />
               </div>
             )}
             <Button onClick={handleRecordPayment} className="w-full">
-              <Wallet className="h-4 w-4 mr-2" /> Confirm Payment
+              <Wallet className="h-4 w-4 mr-2" /> {t('propertyUI.confirm')}
             </Button>
           </div>
         </DialogContent>

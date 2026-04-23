@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useBusiness } from '@/context/BusinessContext';
 import { useProperty } from '@/context/PropertyContext';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -20,6 +21,7 @@ import Receipt from '@/components/Receipt';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';
 
 function ReceiptArchive({ businessId }: { businessId: string }) {
+  const { t } = useTranslation();
   const [receipts, setReceipts] = useState<any[]>([]);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const { fmt } = useCurrency();
@@ -36,7 +38,7 @@ function ReceiptArchive({ businessId }: { businessId: string }) {
     <>
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-3">
-          <h2 className="text-base font-semibold flex items-center gap-2"><FileText className="h-4 w-4" /> Receipt Archive</h2>
+          <h2 className="text-base font-semibold flex items-center gap-2"><FileText className="h-4 w-4" /> {t('propertyUI.receiptArchive')}</h2>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {receipts.map(r => (
               <button key={r.id} onClick={() => setSelectedReceipt(r)}
@@ -287,6 +289,7 @@ function AddBusinessDialog({ onCreated }: { onCreated: () => void }) {
 }
 
 export default function PropertySettings() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentBusiness, updateBusiness, businesses, memberships, setCurrentBusinessId, userRole, deleteBusiness } = useBusiness();
   const { assets, bookings } = useProperty();
@@ -399,12 +402,12 @@ export default function PropertySettings() {
   if (!isOwnerOrAdmin) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">🏠 Settings</h1>
+        <h1 className="text-2xl font-bold">🏠 {t('propertyUI.settingsTitle')}</h1>
         <Card className="shadow-card">
           <CardContent className="p-6 text-center space-y-4">
             <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h2 className="text-lg font-semibold">Access Restricted</h2>
-            <p className="text-sm text-muted-foreground">Settings are only accessible to the property owner or admin.</p>
+            <h2 className="text-lg font-semibold">{t('propertyUI.settingsTitle')}</h2>
+            <p className="text-sm text-muted-foreground">—</p>
           </CardContent>
         </Card>
       </div>
@@ -432,22 +435,22 @@ export default function PropertySettings() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">🏠 FlexRent Settings</h1>
+      <h1 className="text-2xl font-bold">🏠 {t('propertyUI.settingsTitle')}</h1>
 
       {/* Property Code */}
       <Card className="shadow-card border-primary/20">
         <CardContent className="p-4">
           <h2 className="text-base font-semibold flex items-center gap-2 mb-2">
-            <KeyRound className="h-4 w-4" /> Your Property Code
+            <KeyRound className="h-4 w-4" /> {t('propertyUI.businessCode')}
           </h2>
-          <p className="text-xs text-muted-foreground mb-3">Share this code so renters can find and contact you.</p>
+          <p className="text-xs text-muted-foreground mb-3">{t('propertyUI.shareInvite')}</p>
           <div className="flex items-center gap-3">
             <div className="flex-1 rounded-lg p-3 text-center bg-primary/5 border border-primary/20">
               <span className="text-2xl font-mono font-bold tracking-widest">{(currentBusiness as any)?.business_code || '...'}</span>
             </div>
             <Button variant="outline" size="icon" onClick={() => {
               navigator.clipboard.writeText((currentBusiness as any)?.business_code || '');
-              toast.success('Property code copied!');
+              toast.success(t('propertyUI.copied'));
             }}>
               <Copy className="h-4 w-4" />
             </Button>
@@ -612,14 +615,14 @@ export default function PropertySettings() {
       {/* Settings Password */}
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-3">
-          <h2 className="text-base font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> Settings Password</h2>
-          <p className="text-xs text-muted-foreground">Protect settings from unauthorized access.</p>
+          <h2 className="text-base font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> {t('propertyUI.settingsTitle')}</h2>
+          <p className="text-xs text-muted-foreground">—</p>
           <div className="flex gap-3 items-end">
             <div className="flex-1">
-              <Label>Password</Label>
-              <Input type="password" value={settingsPassword} onChange={e => setSettingsPassword(e.target.value)} placeholder="Leave empty to disable" />
+              <Label>{t('propertyUI.inviteCode')}</Label>
+              <Input type="password" value={settingsPassword} onChange={e => setSettingsPassword(e.target.value)} placeholder="—" />
             </div>
-            <Button onClick={handleSavePassword}><Save className="h-4 w-4 mr-2" />Save</Button>
+            <Button onClick={handleSavePassword}><Save className="h-4 w-4 mr-2" />{t('propertyUI.save')}</Button>
           </div>
         </CardContent>
       </Card>
@@ -711,13 +714,13 @@ export default function PropertySettings() {
       {/* Property Information */}
       <Card className="shadow-card">
         <CardContent className="p-4">
-          <h2 className="text-base font-semibold mb-3">Property Information — {currentBusiness?.name}</h2>
+          <h2 className="text-base font-semibold mb-3">{t('propertyUI.propertyDetails')} — {currentBusiness?.name}</h2>
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div><Label>Property / Agency Name</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
-            <div><Label>Address</Label><Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
-            <div><Label>Contact</Label><Input value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} /></div>
+            <div><Label>{t('propertyUI.businessName')}</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
+            <div><Label>{t('propertyUI.address')}</Label><Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
+            <div><Label>{t('propertyUI.contact')}</Label><Input value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} /></div>
             <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-            <Button type="submit" className="w-full"><Save className="h-4 w-4 mr-2" />Save Changes</Button>
+            <Button type="submit" className="w-full"><Save className="h-4 w-4 mr-2" />{t('propertyUI.saveChanges')}</Button>
           </form>
         </CardContent>
       </Card>
@@ -730,19 +733,19 @@ export default function PropertySettings() {
           <Card className="shadow-card border-destructive/30">
             <CardContent className="p-4 space-y-3">
               <h2 className="text-base font-semibold text-destructive flex items-center gap-2">
-                <Trash2 className="h-4 w-4" /> Delete Property
+                <Trash2 className="h-4 w-4" /> {t('propertyUI.deleteProperty')}
               </h2>
               {isLast ? (
                 <p className="text-xs text-muted-foreground bg-destructive/5 border border-destructive/20 rounded-lg p-3">
-                  ⚠️ This is your only entity. Create another first before deleting.
+                  ⚠️ —
                 </p>
               ) : (
                 <>
                   <p className="text-xs text-muted-foreground">
-                    Permanently delete <strong>{currentBusiness?.name}</strong> and all its data.
+                    <strong>{currentBusiness?.name}</strong>
                   </p>
                   <Button variant="destructive" className="w-full" onClick={() => setShowDeleteDialog(true)}>
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete This Property
+                    <Trash2 className="h-4 w-4 mr-2" /> {t('propertyUI.deleteProperty')}
                   </Button>
                 </>
               )}

@@ -49,7 +49,14 @@ export default function AuthPage() {
         toast.success('Welcome back!');
       }
     } catch (err: any) {
-      toast.error(err.message || 'Authentication failed');
+      const msg = (err?.message || '').toLowerCase();
+      if (msg.includes('invalid login credentials') || msg.includes('invalid_credentials')) {
+        toast.error('Email or password is incorrect. Double-check both, or use "Forgot email or password?" below to recover your account.', { duration: 7000 });
+      } else if (msg.includes('email not confirmed')) {
+        toast.error('Please confirm your email first. Check your inbox (and spam folder) for the confirmation link.', { duration: 7000 });
+      } else {
+        toast.error(err.message || 'Authentication failed');
+      }
     } finally {
       setLoading(false);
     }

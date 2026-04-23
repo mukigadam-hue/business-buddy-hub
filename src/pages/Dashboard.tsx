@@ -11,6 +11,7 @@ import ImageUpload from '@/components/ImageUpload';
 import QuickAddItem from '@/components/QuickAddItem';
 import AdSpace from '@/components/AdSpace';
 import BannerAd from '@/components/BannerAd';
+import NativeAd from '@/components/NativeAd';
 import LanguageSelector from '@/components/LanguageSelector';
 import DailyTipBanner from '@/components/DailyTipBanner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBusiness } from '@/context/BusinessContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -178,6 +179,7 @@ function ReceivedInviteCodeSection({ onJoined }: { onJoined: () => Promise<void>
 }
 
 export default function TeamPage() {
+  const { t } = useTranslation();
   const { currentBusiness, userRole, generateInviteCode, getMembers, removeMember, updateMemberRole, memberships } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
@@ -376,7 +378,7 @@ async function loadMembers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="h-6 w-6" /> Team</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="h-6 w-6" /> {t('team.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {activeWorkers.length} workers{isOwnerOrAdmin && ` · Monthly salary: ${fmt(totalSalary)}`}
           </p>

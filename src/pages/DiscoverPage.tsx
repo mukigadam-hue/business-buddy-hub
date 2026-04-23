@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Phone, Building2, Factory, Store, Copy, Check, Globe, ShoppingCart, CalendarCheck, Home } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ interface DiscoveredBusiness {
 }
 
 export default function DiscoverPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentBusiness } = useBusiness();
   const [query, setQuery] = useState('');
@@ -124,7 +126,7 @@ export default function DiscoverPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">🔍 Discover Businesses</h1>
+        <h1 className="text-2xl font-bold">🔍 {t('discover.title')}</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Find businesses selling products you need — search by name, location, or product type
         </p>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFactory } from '@/context/FactoryContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +21,7 @@ import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
 
 export default function FactoryPurchases() {
+  const { t } = useTranslation();
   const { rawMaterials, addRawMaterial, updateRawMaterial, refreshFactory } = useFactory();
   const { purchases, addPurchase, stock } = useBusiness();
   const { fmt } = useCurrency();
@@ -140,7 +142,7 @@ export default function FactoryPurchases() {
   return (
     <div className="space-y-6">
       <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
-      <h1 className="text-2xl font-bold flex items-center gap-2"><ShoppingCart className="h-6 w-6" /> Purchases</h1>
+      <h1 className="text-2xl font-bold flex items-center gap-2"><ShoppingCart className="h-6 w-6" /> {t('purchases.title')}</h1>
 
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-4">

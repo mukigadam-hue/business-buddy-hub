@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +25,7 @@ const SERVICE_TYPES = [
 ];
 
 export default function FactoryServices() {
+  const { t } = useTranslation();
   const { services, stock, addService, saveReceipt, currentBusiness } = useBusiness();
   const { fmt } = useCurrency();
   const [form, setForm] = useState({ service_name: '', description: '', cost: '', customer_name: '', seller_name: '' });
@@ -91,7 +93,7 @@ export default function FactoryServices() {
   return (
     <div className="space-y-6">
       <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onScan={handleBarcodeScan} />
-      <h1 className="text-2xl font-bold flex items-center gap-2"><Wrench className="h-6 w-6" /> Factory Services</h1>
+      <h1 className="text-2xl font-bold flex items-center gap-2"><Wrench className="h-6 w-6" /> {t('services.title')}</h1>
 
       <Card className="shadow-card">
         <CardContent className="p-4">

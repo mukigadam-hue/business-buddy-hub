@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,6 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
 
 export default function SalesPage() {
+  const { t } = useTranslation();
   const { stock, sales, addSale, saveReceipt, currentBusiness, updateSalePayment, userRole } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
@@ -337,7 +339,7 @@ export default function SalesPage() {
         onExistingItemFound={handlePartScanExisting}
         onNewItemCreated={handleScanNewItem}
       />
-      <h1 className="text-2xl font-bold">Sales</h1>
+      <h1 className="text-2xl font-bold">{t('sales.title')}</h1>
 
       <Card className="shadow-card">
         <CardContent className="p-4 space-y-4">

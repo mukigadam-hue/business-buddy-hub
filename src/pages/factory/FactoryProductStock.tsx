@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +18,7 @@ import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagi
 import { toSentenceCase } from '@/lib/utils';
 
 export default function FactoryProductStock() {
+  const { t } = useTranslation();
   const { stock, addStockItem, updateStockItem, deleteStockItem, restoreStockItem } = useBusiness();
   const { fmt } = useCurrency();
   const [showAdd, setShowAdd] = useState(false);
@@ -96,7 +98,7 @@ export default function FactoryProductStock() {
         else { toast.error(`No product found for barcode: ${code}`); }
       }} />
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Package className="h-6 w-6" /> Product Stock</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><Package className="h-6 w-6" /> {t('factory.productStock')}</h1>
         <div className="flex gap-2">
           <Button variant="outline" size="icon" onClick={() => setScannerOpen(true)} title="Scan barcode"><ScanLine className="h-4 w-4" /></Button>
           <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Product</Button>

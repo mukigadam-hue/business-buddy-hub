@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFactory } from '@/context/FactoryContext';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -17,6 +18,7 @@ import { toSentenceCase, toTitleCase } from '@/lib/utils';
 const WASTE_UNITS = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls'];
 
 export default function FactoryProduction() {
+  const { t } = useTranslation();
   const { rawMaterials, production, addProduction, updateRawMaterial, refreshFactory } = useFactory();
   const { stock, addStockItem, updateStockItem } = useBusiness();
   const { fmt } = useCurrency();
@@ -135,7 +137,7 @@ export default function FactoryProduction() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold flex items-center gap-2"><Factory className="h-6 w-6" /> Production</h1>
+      <h1 className="text-2xl font-bold flex items-center gap-2"><Factory className="h-6 w-6" /> {t('factory.production')}</h1>
 
       {expiringSoon.length > 0 && (
         <Card className="shadow-card border-warning/30">

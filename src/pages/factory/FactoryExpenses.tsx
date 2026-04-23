@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFactory } from '@/context/FactoryContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +21,7 @@ const EXPENSE_CATEGORIES = [
 ];
 
 export default function FactoryExpenses() {
+  const { t } = useTranslation();
   const { expenses, addExpense, deleteExpense } = useFactory();
   const { fmt } = useCurrency();
   const [form, setForm] = useState({ category: '', description: '', amount: '', recorded_by: '', expense_date: new Date().toISOString().slice(0, 10) });
@@ -52,7 +54,7 @@ export default function FactoryExpenses() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold flex items-center gap-2"><Flame className="h-6 w-6" /> Non-Production Expenses</h1>
+      <h1 className="text-2xl font-bold flex items-center gap-2"><Flame className="h-6 w-6" /> {t('expenses.title')}</h1>
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-4">

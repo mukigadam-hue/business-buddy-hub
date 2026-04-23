@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFactory } from '@/context/FactoryContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,6 +20,7 @@ const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls'
 const CATEGORIES = ['Chemicals', 'Fabrics', 'Metals', 'Plastics', 'Wood', 'Electronics', 'Agricultural', 'Packaging', 'Other'];
 
 export default function FactoryInputStock() {
+  const { t } = useTranslation();
   const { rawMaterials, addRawMaterial, updateRawMaterial, deleteRawMaterial } = useFactory();
   const { fmt } = useCurrency();
   const [showAdd, setShowAdd] = useState(false);
@@ -86,7 +88,7 @@ export default function FactoryInputStock() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Package className="h-6 w-6" /> Input Stock</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><Package className="h-6 w-6" /> {t('factory.inputStock')}</h1>
         <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Material</Button>
       </div>
 

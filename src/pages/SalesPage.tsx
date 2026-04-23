@@ -279,7 +279,7 @@ export default function SalesPage() {
             </div>
           ))}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           <Button size="sm" variant="ghost" onClick={() => setReceiptSale(sale)}>
             <ReceiptIcon className="h-3.5 w-3.5 mr-1" />Receipt
           </Button>
@@ -288,6 +288,7 @@ export default function SalesPage() {
               💰 Update Payment
             </Button>
           )}
+          <RecycleDeleteButton table="sales" recordId={sale.id} />
         </div>
       </div>
     );

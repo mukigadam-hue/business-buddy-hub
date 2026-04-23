@@ -60,13 +60,13 @@ export default function FactoryExpenses() {
       <div className="grid grid-cols-2 gap-4">
         <Card className="shadow-card">
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Today's Expenses</p>
+            <p className="text-xs text-muted-foreground">{t('factoryUI.todayExpenses')}</p>
             <p className="text-xl font-bold text-destructive tabular-nums">{fmt(todayTotal)}</p>
           </CardContent>
         </Card>
         <Card className="shadow-card">
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total Expenses (All Time)</p>
+            <p className="text-xs text-muted-foreground">{t('expenses.totalAllTime', 'Total Expenses (All Time)')}</p>
             <p className="text-xl font-bold tabular-nums">{fmt(totalAll)}</p>
           </CardContent>
         </Card>
@@ -76,7 +76,7 @@ export default function FactoryExpenses() {
       {Object.keys(categoryTotals).length > 0 && (
         <Card className="shadow-card">
           <CardContent className="p-4">
-            <h2 className="text-sm font-semibold mb-2">Expense Breakdown by Category</h2>
+            <h2 className="text-sm font-semibold mb-2">{t('expenses.breakdownByCategory', 'Expense Breakdown by Category')}</h2>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
               {Object.entries(categoryTotals).sort(([, a], [, b]) => b - a).map(([cat, total]) => (
                 <div key={cat} className="p-2 rounded-lg bg-muted/50 border">
@@ -92,25 +92,25 @@ export default function FactoryExpenses() {
       {/* Add Expense */}
       <Card className="shadow-card">
         <CardContent className="p-4">
-          <h2 className="text-base font-semibold mb-3">Record Expense</h2>
+          <h2 className="text-base font-semibold mb-3">{t('expenses.recordExpense', 'Record Expense')}</h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Category *</Label>
+                <Label>{t('factoryUI.category')} *</Label>
                 <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select category..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('expenses.selectCategory', 'Select category...')} /></SelectTrigger>
                   <SelectContent position="popper" className="max-h-48 overflow-y-auto">{EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Amount *</Label><Input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required /></div>
+              <div><Label>{t('expenses.amount', 'Amount')} *</Label><Input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required /></div>
             </div>
-            <div><Label>Description</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Details..." /></div>
+            <div><Label>{t('factoryUI.description')}</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t('expenses.detailsPh', 'Details...')} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Recorded By</Label><Input value={form.recorded_by} onChange={e => setForm(f => ({ ...f, recorded_by: e.target.value }))} placeholder="Your name" /></div>
-              <div><Label>Date</Label><Input type="date" value={form.expense_date} onChange={e => setForm(f => ({ ...f, expense_date: e.target.value }))} /></div>
+              <div><Label>{t('factoryUI.recordedBy')}</Label><Input value={form.recorded_by} onChange={e => setForm(f => ({ ...f, recorded_by: e.target.value }))} placeholder={t('expenses.yourNamePh', 'Your name')} /></div>
+              <div><Label>{t('expenses.date', 'Date')}</Label><Input type="date" value={form.expense_date} onChange={e => setForm(f => ({ ...f, expense_date: e.target.value }))} /></div>
             </div>
             <Button type="submit" className="w-full" disabled={!form.category || !form.amount}>
-              <Plus className="h-4 w-4 mr-2" />Record Expense
+              <Plus className="h-4 w-4 mr-2" />{t('expenses.recordExpense', 'Record Expense')}
             </Button>
           </form>
         </CardContent>
@@ -121,17 +121,17 @@ export default function FactoryExpenses() {
       {/* History */}
       <div className="flex gap-2">
         <button onClick={() => setActiveTab('today')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'today' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-          Today ({todayExpenses.length})
+          {t('factoryUI.today')} ({todayExpenses.length})
         </button>
         <button onClick={() => setActiveTab('previous')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'previous' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-          Previous ({prevExpenses.length})
+          {t('factoryUI.previous')} ({prevExpenses.length})
         </button>
       </div>
 
       <Card className="shadow-card">
         <CardContent className="p-4">
           {(activeTab === 'today' ? todayExpenses : prevExpenses).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No expenses {activeTab === 'today' ? 'today' : 'from previous days'} yet.</p>
+            <p className="text-sm text-muted-foreground">{t('expenses.noneYet', { defaultValue: 'No expenses {{when}} yet.', when: activeTab === 'today' ? t('factoryUI.today').toLowerCase() : t('expenses.fromPrevious', 'from previous days') })}</p>
           ) : (
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {(activeTab === 'today' ? todayExpenses : prevExpenses).map(e => (
@@ -140,8 +140,8 @@ export default function FactoryExpenses() {
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold bg-muted px-2 py-0.5 rounded-full">{e.category}</span>
                     </div>
-                    <p className="text-sm mt-0.5">{e.description || 'No description'}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(e.expense_date).toLocaleDateString()} · By: {e.recorded_by}</p>
+                    <p className="text-sm mt-0.5">{e.description || t('expenses.noDescription', 'No description')}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(e.expense_date).toLocaleDateString()} · {t('expenses.by', 'By')}: {e.recorded_by}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-destructive tabular-nums">{fmt(Number(e.amount))}</span>

@@ -106,7 +106,7 @@ export default function PropertyDashboard() {
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-primary/10"><Home className="h-4 w-4 text-primary" /></div>
               <div>
-                <p className="text-[10px] text-muted-foreground">Total Assets</p>
+                <p className="text-[10px] text-muted-foreground">{t('property.totalAssets')}</p>
                 <p className="text-lg font-bold">{activeAssets.length}</p>
               </div>
             </div>
@@ -117,7 +117,7 @@ export default function PropertyDashboard() {
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-green-500/10"><CalendarCheck className="h-4 w-4 text-green-600" /></div>
               <div>
-                <p className="text-[10px] text-muted-foreground">Active Bookings</p>
+                <p className="text-[10px] text-muted-foreground">{t('property.activeBookings')}</p>
                 <p className="text-lg font-bold">{activeBookings.length}</p>
               </div>
             </div>
@@ -128,7 +128,7 @@ export default function PropertyDashboard() {
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-amber-500/10"><AlertTriangle className="h-4 w-4 text-amber-600" /></div>
               <div>
-                <p className="text-[10px] text-muted-foreground">Pending</p>
+                <p className="text-[10px] text-muted-foreground">{t('property.pendingLabel')}</p>
                 <p className="text-lg font-bold">{pendingBookings.length}</p>
               </div>
             </div>
@@ -139,7 +139,7 @@ export default function PropertyDashboard() {
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-blue-500/10"><TrendingUp className="h-4 w-4 text-blue-600" /></div>
               <div>
-                <p className="text-[10px] text-muted-foreground">Available</p>
+                <p className="text-[10px] text-muted-foreground">{t('property.availableLabel')}</p>
                 <p className="text-lg font-bold">{availableAssets.length}</p>
               </div>
             </div>
@@ -153,15 +153,15 @@ export default function PropertyDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <Button variant="outline" className="h-auto py-3 flex flex-col gap-1" onClick={() => navigate('/assets')}>
           <Plus className="h-5 w-5" />
-          <span className="text-xs">List New Asset</span>
+          <span className="text-xs">{t('property.listNewAsset')}</span>
         </Button>
         <Button variant="outline" className="h-auto py-3 flex flex-col gap-1" onClick={() => navigate('/bookings')}>
           <CalendarCheck className="h-5 w-5" />
-          <span className="text-xs">View Bookings</span>
+          <span className="text-xs">{t('property.viewBookings')}</span>
         </Button>
         <Button variant="outline" className="h-auto py-3 flex flex-col gap-1" onClick={() => navigate('/browse')}>
           <Search className="h-5 w-5" />
-          <span className="text-xs">Browse Rentals</span>
+          <span className="text-xs">{t('property.browseRentals')}</span>
         </Button>
       </div>
 
@@ -169,7 +169,7 @@ export default function PropertyDashboard() {
       {Object.keys(categoryBreakdown).length > 0 && (
         <Card>
           <CardContent className="p-4">
-            <h3 className="text-sm font-semibold mb-3">Asset Categories</h3>
+            <h3 className="text-sm font-semibold mb-3">{t('property.assetCategories')}</h3>
             <div className="space-y-2">
               {Object.entries(categoryBreakdown).map(([cat, count]) => (
                 <div key={cat} className="flex items-center justify-between">
@@ -192,7 +192,7 @@ export default function PropertyDashboard() {
           <CardContent className="p-4">
             <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Pending Booking Requests
+              {t('property.pendingBookingRequests')}
             </h3>
             <div className="space-y-2">
               {pendingBookings.slice(0, 5).map(b => {
@@ -209,7 +209,7 @@ export default function PropertyDashboard() {
               })}
             </div>
             <Button variant="link" size="sm" className="mt-2 p-0" onClick={() => navigate('/bookings')}>
-              View All →
+              {t('property.viewAll')}
             </Button>
           </CardContent>
         </Card>

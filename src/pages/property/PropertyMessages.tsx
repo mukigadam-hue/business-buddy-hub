@@ -79,62 +79,49 @@ export default function PropertyMessages() {
         <div className="flex items-center gap-2 pb-3 border-b">
           <Button variant="ghost" size="sm" onClick={() => setActiveConv(null)}><ArrowLeft className="h-4 w-4" /></Button>
           <div>
-            <p className="font-semibold text-sm">{detail?.renter_name || 'Chat'}</p>
-            <p className="text-xs text-muted-foreground">{detail?.asset_name}</p>
+            <p className="font-semibold text-sm">{detail?.renter_name || 'Renter'}</p>
+            <p className="text-xs text-muted-foreground">{detail?.asset_name || 'General'}</p>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto py-3 space-y-2">
-          {messages.map(msg => {
-            const isMe = msg.sender_id === user?.id;
-            return (
-              <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
-                  isMe ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md'
-                }`}>
-                  <p>{msg.message}</p>
-                  <p className={`text-[10px] mt-0.5 ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
+          {messages.map(msg => (
+            <div key={msg.id} className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[75%] rounded-2xl px-3 py-2 ${msg.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                <p className="text-sm">{msg.message}</p>
+                <p className="text-[10px] opacity-70 mt-0.5">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
-            );
-          })}
+            </div>
+          ))}
           <div ref={messagesEndRef} />
         </div>
-        <div className="flex gap-2 pt-3 border-t">
-          <Input value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder={t('property.typeMessage', 'Type a message...')}
-            onKeyDown={e => { if (e.key === 'Enter') handleSend(); }} className="flex-1" />
-          <Button onClick={handleSend} disabled={!newMsg.trim()}><Send className="h-4 w-4" /></Button>
+        <div className="flex gap-2 pt-2 border-t">
+          <Input value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder={t('property.typeMessagePh')}
+            onKeyDown={e => { if (e.key === 'Enter') handleSend(); }} />
+          <Button onClick={handleSend} size="icon"><Send className="h-4 w-4" /></Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">💬 {t('property.messages', 'Messages')}</h1>
+    <div className="space-y-3">
+      <h1 className="text-xl font-bold flex items-center gap-2"><MessageSquare className="h-5 w-5" /> {t('property.messages', 'Messages')}</h1>
       {conversations.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">{t('property.noMessages', 'No conversations yet')}</p>
-        </div>
+        <Card><CardContent className="p-8 text-center text-muted-foreground">{t('property.noConversationsYet')}</CardContent></Card>
       ) : (
         <div className="space-y-2">
-          {conversations.map(conv => {
-            const detail = convDetails[conv.id];
+          {conversations.map(c => {
+            const detail = convDetails[c.id];
             return (
-              <Card key={conv.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setActiveConv(conv.id)}>
-                <CardContent className="p-3 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <MessageSquare className="h-5 w-5 text-primary" />
+              <button key={c.id} onClick={() => setActiveConv(c.id)} className="w-full text-left p-3 rounded-lg border hover:border-primary/50 hover:bg-primary/5 transition-colors">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-sm">{detail?.renter_name || 'Renter'}</p>
+                    <p className="text-xs text-muted-foreground">{detail?.asset_name || 'General'}</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{detail?.renter_name || 'Loading...'}</p>
-                    <p className="text-xs text-muted-foreground truncate">{detail?.asset_name || 'General'}</p>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">{new Date(conv.last_message_at).toLocaleDateString()}</p>
-                </CardContent>
-              </Card>
+                  <span className="text-xs text-muted-foreground">{new Date(c.last_message_at).toLocaleDateString()}</span>
+                </div>
+              </button>
             );
           })}
         </div>

@@ -338,9 +338,7 @@ export default function PropertyAssets() {
                         </Button>
                       )}
                       {(userRole === 'owner' || userRole === 'admin') && (
-                        <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive" onClick={() => { if (confirm('Delete this asset?')) deleteAsset(asset.id); }}>
-                          <Trash2 className="h-3 w-3 mr-1" />Delete
-                        </Button>
+                        <RecycleDeleteButton table="property_assets" recordId={asset.id} label="Delete" />
                       )}
                     </div>
                   </CardContent>

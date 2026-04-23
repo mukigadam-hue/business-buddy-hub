@@ -1,22 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAdRefresh } from '@/hooks/useAdRefresh';
+import '@/types/despia.d.ts';
 
-declare global {
-  interface Window {
-    despia?: {
-      AdMob?: {
-        showBanner: (options: {
-          adId: string;
-          position?: 'top' | 'bottom';
-          autoShow?: boolean;
-        }) => Promise<void>;
-        hideBanner: () => Promise<void>;
-      };
-    };
-  }
-}
-
-// Production AdMob Ad Unit ID
+// Production AdMob Banner Ad Unit ID
 const ADMOB_AD_UNIT_ID = 'ca-app-pub-9605564713228252/4713172172';
 
 interface BannerAdProps {

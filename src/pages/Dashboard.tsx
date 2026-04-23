@@ -149,6 +149,8 @@ export default function Dashboard() {
       <QuickAddItem open={showQuickAdd} onOpenChange={setShowQuickAdd} />
 
       <AdSpace variant="banner" />
+      {/* Home-screen native AdMob (only renders inside Despia native shell) */}
+      <NativeAd placement="home" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card className="shadow-card">

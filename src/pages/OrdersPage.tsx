@@ -1314,7 +1314,7 @@ export default function OrdersPage() {
             variant={orderMode === 'request' ? 'default' : 'outline'}
             onClick={() => { setOrderMode('request'); setItems([]); setCustomerName(''); }}
           >
-            📨 Request from Supplier
+            📨 Order to Supplier
           </Button>
         </div>
       )}
@@ -1324,7 +1324,7 @@ export default function OrdersPage() {
         <Card className="shadow-card">
           <CardContent className="p-4 space-y-4">
             <h2 className="text-base font-semibold">
-              {orderMode === 'my_order' ? '📋 New Order — Walk-in or Inbox' : '📨 Request Items from a Supplier'}
+              {orderMode === 'my_order' ? '📋 New Order — Walk-in or Inbox' : '📨 Order Items to a Supplier'}
             </h2>
             {orderMode === 'my_order' && (
               <p className="text-xs text-muted-foreground">For customers who come to your shop directly, call you, or send their order via WhatsApp/SMS. Add their items one by one, then choose how they pay.</p>
@@ -1736,7 +1736,7 @@ export default function OrdersPage() {
         <TabsContent value="my_requests" className="space-y-3 mt-4">
           <p className="text-xs text-muted-foreground mb-2">📨 Orders you sent to your suppliers. They set prices → you review & approve → you pay → they confirm → you get a receipt.</p>
           <div className="max-h-[500px] overflow-y-auto pr-1 space-y-3">
-            {myRequests.length === 0 ? <p className="text-sm text-muted-foreground">No requests sent yet. Use "Order from Supplier" above to order items.</p> : myRequests.map(o => <OrderCard key={o.id} order={o} />)}
+            {myRequests.length === 0 ? <p className="text-sm text-muted-foreground">No orders sent yet. Use "Order to Supplier" above to order items.</p> : myRequests.map(o => <OrderCard key={o.id} order={o} />)}
           </div>
         </TabsContent>
         <TabsContent value="verify_payments" className="space-y-3 mt-4">

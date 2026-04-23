@@ -90,28 +90,28 @@ export default function FactoryInputStock() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2"><Package className="h-6 w-6" /> {t('factory.inputStock')}</h1>
-        <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />Add Material</Button>
+        <Button onClick={() => { resetForm(); setShowAdd(true); }}><Plus className="h-4 w-4 mr-1" />{t('factoryUI.addMaterial')}</Button>
       </div>
 
       <AdSpace variant="banner" />
 
       <Card className="shadow-card">
         <CardContent className="p-4">
-          <p className="text-sm text-muted-foreground mb-3">Raw materials and inputs — {active.length} items</p>
+          <p className="text-sm text-muted-foreground mb-3">{t('factoryUI.rawMaterialsInputs')} — {active.length} {t('factoryUI.items')}</p>
           {active.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No raw materials yet. Add your first material above.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t('factoryUI.noRawMaterials')}</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Material</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Unit Type</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead className="text-right">Unit Cost</TableHead>
-                    <TableHead className="text-right">Total Value</TableHead>
-                    <TableHead>Supplier</TableHead>
+                    <TableHead>{t('factoryUI.material')}</TableHead>
+                    <TableHead>{t('factoryUI.category')}</TableHead>
+                    <TableHead>{t('factoryUI.unitType')}</TableHead>
+                    <TableHead className="text-right">{t('factoryUI.quantity')}</TableHead>
+                    <TableHead className="text-right">{t('factoryUI.unitCost')}</TableHead>
+                    <TableHead className="text-right">{t('factoryUI.totalValue')}</TableHead>
+                    <TableHead>{t('factoryUI.supplier')}</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -126,8 +126,8 @@ export default function FactoryInputStock() {
                         <TableCell className="capitalize">{r.unit_type}</TableCell>
                         <TableCell className="text-right tabular-nums">
                           <div>{r.quantity}</div>
-                          {isOut && <span className="text-xs text-destructive font-semibold">OUT</span>}
-                          {isLow && <span className="text-xs text-warning font-semibold">LOW</span>}
+                          {isOut && <span className="text-xs text-destructive font-semibold">{t('factoryUI.out')}</span>}
+                          {isLow && <span className="text-xs text-warning font-semibold">{t('factoryUI.low')}</span>}
                           <BulkPackagingInfo
                             quantity={Number(r.quantity)}
                             piecesPerCarton={(r as any).pieces_per_carton || 0}
@@ -158,21 +158,21 @@ export default function FactoryInputStock() {
       {/* Add/Edit Dialog */}
       <Dialog open={showAdd || !!editItem} onOpenChange={o => { if (!o) { setShowAdd(false); setEditItem(null); resetForm(); } }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{editItem ? 'Edit Material' : 'Add Raw Material'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editItem ? t('factoryUI.editMaterial') : t('factoryUI.addRawMaterial')}</DialogTitle></DialogHeader>
           <form onSubmit={editItem ? handleEdit : handleAdd} className="space-y-3">
-            <div><Label>Material Name *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
+            <div><Label>{t('factoryUI.materialName')} *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required /></div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Category</Label>
+                <Label>{t('factoryUI.category')}</Label>
                 <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('factoryUI.selectPh')} /></SelectTrigger>
                   <SelectContent>
                     {allCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Unit Type</Label>
+                <Label>{t('factoryUI.unitType')}</Label>
                 <Select value={form.unit_type} onValueChange={v => setForm(f => ({ ...f, unit_type: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -191,17 +191,17 @@ export default function FactoryInputStock() {
             />
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label>Quantity</Label>
+                <Label>{t('factoryUI.quantity')}</Label>
                 <Input type="number" min="0" step="0.01" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
                   readOnly={parseInt(form.pieces_per_carton) > 0}
                   className={parseInt(form.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''} />
-                {parseInt(form.pieces_per_carton) > 0 && <p className="text-[10px] text-muted-foreground mt-0.5">Auto-calculated from bulk</p>}
+                {parseInt(form.pieces_per_carton) > 0 && <p className="text-[10px] text-muted-foreground mt-0.5">{t('factoryUI.autoCalcFromBulk')}</p>}
               </div>
-              <div><Label>Unit Cost</Label><Input type="number" min="0" step="0.01" value={form.unit_cost} onChange={e => setForm(f => ({ ...f, unit_cost: e.target.value }))} /></div>
-              <div><Label>Min Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
+              <div><Label>{t('factoryUI.unitCost')}</Label><Input type="number" min="0" step="0.01" value={form.unit_cost} onChange={e => setForm(f => ({ ...f, unit_cost: e.target.value }))} /></div>
+              <div><Label>{t('factoryUI.minLevel')}</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
             </div>
-            <div><Label>Supplier</Label><Input value={form.supplier} onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))} placeholder="Supplier name" /></div>
-            <Button type="submit" className="w-full">{editItem ? 'Save Changes' : 'Add Material'}</Button>
+            <div><Label>{t('factoryUI.supplier')}</Label><Input value={form.supplier} onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))} placeholder={t('factoryUI.supplierPh')} /></div>
+            <Button type="submit" className="w-full">{editItem ? t('factoryUI.saveChanges') : t('factoryUI.addMaterial')}</Button>
           </form>
         </DialogContent>
       </Dialog>

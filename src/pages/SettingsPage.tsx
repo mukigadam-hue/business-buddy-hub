@@ -18,6 +18,7 @@ import type { ReceiptRecord } from '@/context/BusinessContext';
 import { supabase } from '@/integrations/supabase/client';
 import AdSpace from '@/components/AdSpace';
 import LanguageSelector from '@/components/LanguageSelector';
+import PersonalPreferencesSettings from '@/components/PersonalPreferencesSettings';
 
 import { toSentenceCase } from '@/lib/utils';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';
@@ -309,7 +310,6 @@ export default function SettingsPage() {
   const [receiptSearch, setReceiptSearch] = useState('');
   const [viewingReceipt, setViewingReceipt] = useState<ReceiptRecord | null>(null);
   const [receiptsLoaded, setReceiptsLoaded] = useState(false);
-  const [showRecycleBin, setShowRecycleBin] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
@@ -513,6 +513,8 @@ export default function SettingsPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Settings</h1>
 
+        <PersonalPreferencesSettings />
+
         {/* My Businesses Section - accessible to all */}
         <Card className="shadow-card">
           <CardContent className="p-4 space-y-4">
@@ -546,13 +548,6 @@ export default function SettingsPage() {
               </div>
             )}
             <AddBusinessDialog onCreated={() => {}} />
-          </CardContent>
-        </Card>
-
-        {/* Language */}
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <LanguageSelector variant="full" />
           </CardContent>
         </Card>
 
@@ -1182,73 +1177,6 @@ export default function SettingsPage() {
       </Card>
 
       <AdSpace variant="banner" />
-
-      {/* Recycle Bin - Stock - hidden for personal */}
-      {!isPersonal && deletedStock.length > 0 && (
-        <Card className="shadow-card border-destructive/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold flex items-center gap-2 text-destructive">🗑️ Stock Recycle Bin ({deletedStock.length})</h2>
-              <Button size="sm" variant="ghost" onClick={() => setShowRecycleBin(v => !v)}>{showRecycleBin ? 'Hide' : 'Show'}</Button>
-            </div>
-            {showRecycleBin && (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {deletedStock.map(item => (
-                  <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 border border-destructive/10">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium line-through text-muted-foreground">{item.name}</p>
-                      {(item.category || item.quality) && <p className="text-xs text-muted-foreground">{[item.category, item.quality].filter(Boolean).join(' · ')}</p>}
-                      <p className="text-xs text-muted-foreground">Deleted: {new Date(item.deleted_at!).toLocaleString()}</p>
-                      {(item as any).deleted_by && (
-                        <p className="text-xs text-warning font-medium">👤 Deleted by: {(item as any).deleted_by}</p>
-                      )}
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      <Button size="sm" variant="outline" onClick={() => restoreStockItem(item.id)}><RotateCcw className="h-3 w-3 mr-1" />Restore</Button>
-                      <Button size="sm" variant="destructive" onClick={() => permanentDeleteStockItem(item.id)}><Trash2 className="h-3 w-3 mr-1" />Delete Forever</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recycle Bin - Orders */}
-      {!isPersonal && (() => {
-        const deletedOrders = orders.filter(o => (o as any).deleted_at);
-        if (deletedOrders.length === 0) return null;
-        return (
-          <Card className="shadow-card border-destructive/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-semibold flex items-center gap-2 text-destructive">🗑️ Orders Recycle Bin ({deletedOrders.length})</h2>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">Orders are auto-deleted 10 days after being moved here.</p>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {deletedOrders.map(order => {
-                  const deletedAt = new Date((order as any).deleted_at);
-                  const daysLeft = Math.max(0, 10 - Math.floor((Date.now() - deletedAt.getTime()) / (1000 * 60 * 60 * 24)));
-                  return (
-                    <div key={order.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 border border-destructive/10">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium line-through text-muted-foreground">{order.code} — {order.customer_name}</p>
-                        <p className="text-xs text-muted-foreground">{fmt(Number(order.grand_total))} · {daysLeft} days until auto-delete</p>
-                      </div>
-                      <Button size="sm" variant="outline" onClick={async () => {
-                        await supabase.from('orders').update({ deleted_at: null } as any).eq('id', order.id);
-                        toast.success('Order restored');
-                        await refreshData();
-                      }}><RotateCcw className="h-3 w-3 mr-1" />Restore</Button>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
 
       {/* Unified Recycle Bin — team can delete, owner/admin can permanently remove */}
       {!isPersonal && <RecycleBinPanel />}

@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { CACHE_KEYS, cachePersist, readJsonSync, writeJsonSync, removeJsonSync, addToOfflineQueue } from '@/lib/offlineStore';
+import { broadcastCurrency, resolveCurrencySymbol } from '@/hooks/useCurrency';
 
 export interface StockItem {
   id: string;
@@ -289,11 +290,12 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     setCurrentBusinessIdState(nextId);
     if (nextId) {
       cachePersist(CACHE_KEYS.currentBusiness, nextId);
-      // Sync currency from the selected business
+      // Sync currency from the selected business unless user has a personal override for it
       const biz = businesses.find(b => b.id === nextId);
-      if (biz?.currency_symbol) {
-        localStorage.setItem('biztrack_currency_symbol', biz.currency_symbol);
-        window.dispatchEvent(new CustomEvent('biztrack_currency_changed', { detail: biz.currency_symbol }));
+      const resolvedCurrency = resolveCurrencySymbol(nextId, biz?.currency_symbol);
+      if (resolvedCurrency) {
+        localStorage.setItem('biztrack_currency_symbol', resolvedCurrency);
+        broadcastCurrency(resolvedCurrency);
       }
     } else {
       removeJsonSync(CACHE_KEYS.currentBusiness);
@@ -397,11 +399,12 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
           if (activeId !== currentBusinessId) {
             setCurrentBusinessId(activeId);
           }
-          // Always sync currency on load
+          // Always sync currency on load, respecting any personal override for the active business
           const activeBiz = businessData.find(b => b.id === activeId);
-          if (activeBiz?.currency_symbol) {
-            localStorage.setItem('biztrack_currency_symbol', activeBiz.currency_symbol);
-            window.dispatchEvent(new CustomEvent('biztrack_currency_changed', { detail: activeBiz.currency_symbol }));
+          const resolvedCurrency = resolveCurrencySymbol(activeId, activeBiz?.currency_symbol);
+          if (resolvedCurrency) {
+            localStorage.setItem('biztrack_currency_symbol', resolvedCurrency);
+            broadcastCurrency(resolvedCurrency);
           }
         }
       } else {
@@ -541,10 +544,10 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'businesses', filter: `id=eq.${currentBusinessId}` }, (payload) => {
         if (payload.new) {
           setBusinesses(prev => prev.map(b => b.id === currentBusinessId ? { ...b, ...payload.new } as Business : b));
-          const newCurrency = (payload.new as any).currency_symbol;
+          const newCurrency = resolveCurrencySymbol(currentBusinessId, (payload.new as any).currency_symbol);
           if (newCurrency) {
             localStorage.setItem('biztrack_currency_symbol', newCurrency);
-            window.dispatchEvent(new CustomEvent('biztrack_currency_changed', { detail: newCurrency }));
+            broadcastCurrency(newCurrency);
           }
         }
       })

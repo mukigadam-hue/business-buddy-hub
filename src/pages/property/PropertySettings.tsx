@@ -19,6 +19,7 @@ import AdSpace from '@/components/AdSpace';
 import LanguageSelector from '@/components/LanguageSelector';
 import Receipt from '@/components/Receipt';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';
+import PersonalPreferencesSettings from '@/components/PersonalPreferencesSettings';
 
 function ReceiptArchive({ businessId }: { businessId: string }) {
   const { t } = useTranslation();
@@ -403,13 +404,8 @@ export default function PropertySettings() {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">🏠 {t('propertyUI.settingsTitle')}</h1>
-        <Card className="shadow-card">
-          <CardContent className="p-6 text-center space-y-4">
-            <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h2 className="text-lg font-semibold">{t('propertyUI.settingsTitle')}</h2>
-            <p className="text-sm text-muted-foreground">—</p>
-          </CardContent>
-        </Card>
+
+        <PersonalPreferencesSettings />
       </div>
     );
   }

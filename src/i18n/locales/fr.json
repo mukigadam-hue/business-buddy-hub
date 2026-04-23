@@ -372,6 +372,7 @@
       "itemsInStock": "articles en stock",
       "purchases": "Achats",
       "todaysPurchases": "Achats du jour",
+      "thisMonthPurchases": "Achats du mois",
       "allTimePurchases": "Achats totaux",
       "purchaseCount": "achat(s)",
       "totalCount": "total",
@@ -422,7 +423,11 @@
       "purchase": "Achat",
       "unknown": "Inconnu",
       "saleCount": "vente(s)",
-      "debtsAutoUpdate": "Les chiffres se mettent à jour automatiquement lors de l'enregistrement des paiements."
+      "debtsAutoUpdate": "Les chiffres se mettent à jour automatiquement lors de l'enregistrement des paiements.",
+      "thisMonthRevenue": "Revenu du mois",
+      "cashCollectedThisMonth": "Espèces collectées ce mois",
+      "purchasesIncludesOrders": "Inclut les achats + commandes envoyées aux fournisseurs",
+      "revenueIncludesOrders": "Inclut les ventes, services + commandes clients reçues"
     }
   },
   "common": {

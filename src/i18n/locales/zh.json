@@ -372,6 +372,7 @@
       "itemsInStock": "库存商品",
       "purchases": "采购",
       "todaysPurchases": "今日采购",
+      "thisMonthPurchases": "本月采购",
       "allTimePurchases": "总采购",
       "purchaseCount": "笔采购",
       "totalCount": "总计",
@@ -422,7 +423,11 @@
       "purchase": "采购",
       "unknown": "未知",
       "saleCount": "笔销售",
-      "debtsAutoUpdate": "记录付款时数字会自动更新。"
+      "debtsAutoUpdate": "记录付款时数字会自动更新。",
+      "thisMonthRevenue": "本月收入",
+      "cashCollectedThisMonth": "本月已收现金",
+      "purchasesIncludesOrders": "包括采购 + 发送给供应商的订单",
+      "revenueIncludesOrders": "包括销售、服务 + 收到的客户订单"
     }
   },
   "common": {

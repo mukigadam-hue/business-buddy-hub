@@ -372,6 +372,7 @@
       "itemsInStock": "позиций на складе",
       "purchases": "Закупки",
       "todaysPurchases": "Сегодняшние закупки",
+      "thisMonthPurchases": "Закупки в этом месяце",
       "allTimePurchases": "Все закупки",
       "purchaseCount": "закупка(и)",
       "totalCount": "всего",
@@ -422,7 +423,11 @@
       "purchase": "Закупка",
       "unknown": "Неизвестный",
       "saleCount": "продаж(а)",
-      "debtsAutoUpdate": "Цифры обновляются автоматически при записи платежей."
+      "debtsAutoUpdate": "Цифры обновляются автоматически при записи платежей.",
+      "thisMonthRevenue": "Выручка в этом месяце",
+      "cashCollectedThisMonth": "Собрано наличных в этом месяце",
+      "purchasesIncludesOrders": "Включает закупки + заказы, отправленные поставщикам",
+      "revenueIncludesOrders": "Включает продажи, услуги + полученные заказы клиентов"
     }
   },
   "common": {

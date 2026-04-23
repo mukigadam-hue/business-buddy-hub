@@ -336,7 +336,14 @@ export default function SettingsPage() {
 
   const activeStock = stock.filter(s => !s.deleted_at);
   const deletedStock = stock.filter(s => s.deleted_at);
-  const today = new Date().toDateString();
+  const now = new Date();
+  const today = now.toDateString();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const isThisMonth = (d: string | Date) => {
+    const dt = new Date(d);
+    return dt.getMonth() === currentMonth && dt.getFullYear() === currentYear;
+  };
 
   // ====== 1. TOTAL CAPITAL (Shopping/Buying Price of all stock) ======
   let buyingCapital = 0, wholesaleCapital = 0, retailCapital = 0;
@@ -346,10 +353,26 @@ export default function SettingsPage() {
     retailCapital += item.quantity * Number(item.retail_price);
   });
 
-  // ====== 2. PURCHASES ======
+  // ====== 2. PURCHASES (incl. orders sent to suppliers — type 'request') ======
+  const supplierOrders = orders.filter(o => o.type === 'request');
   const todayPurchases = purchases.filter(p => new Date(p.created_at).toDateString() === today);
-  const todayPurchaseTotal = todayPurchases.reduce((sum, p) => sum + Number(p.grand_total), 0);
-  const totalPurchases = purchases.reduce((sum, p) => sum + Number(p.grand_total), 0);
+  const todaySupplierOrders = supplierOrders.filter(o => new Date(o.created_at).toDateString() === today);
+  const todayPurchaseTotal =
+    todayPurchases.reduce((sum, p) => sum + Number(p.grand_total), 0) +
+    todaySupplierOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
+  const todayPurchaseCount = todayPurchases.length + todaySupplierOrders.length;
+
+  const monthPurchasesList = purchases.filter(p => isThisMonth(p.created_at));
+  const monthSupplierOrders = supplierOrders.filter(o => isThisMonth(o.created_at));
+  const monthPurchaseTotal =
+    monthPurchasesList.reduce((sum, p) => sum + Number(p.grand_total), 0) +
+    monthSupplierOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
+  const monthPurchaseCount = monthPurchasesList.length + monthSupplierOrders.length;
+
+  const totalPurchases =
+    purchases.reduce((sum, p) => sum + Number(p.grand_total), 0) +
+    supplierOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
+  const totalPurchaseCount = purchases.length + supplierOrders.length;
 
   // ====== 3 & 4. STOCK VALUE (Wholesale & Retail) - calculated above ======
 
@@ -408,8 +431,25 @@ export default function SettingsPage() {
 
   // Today's total cash collected
   const todayTotalCashCollected = todaySalesCashCollected + todayServiceCashCollected;
-  // Today's total revenue (grand totals regardless of payment)
-  const todayTotalRevenue = todaySalesGrandTotal + todayServiceFeeTotal + todaySaleServiceFees;
+  // Today's total revenue (grand totals regardless of payment) — incl. customer orders received
+  const todayCustomerOrders = todayOrders.filter(o => o.type !== 'request');
+  const todayCustomerOrdersTotal = todayCustomerOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
+  const todayTotalRevenue = todaySalesGrandTotal + todayServiceFeeTotal + todaySaleServiceFees + todayCustomerOrdersTotal;
+
+  // ====== THIS MONTH'S REVENUE (Sales + Services + Customer Orders received) ======
+  const monthSales = sales.filter(s => isThisMonth(s.created_at));
+  const monthSalesGrandTotal = monthSales.reduce((sum, s) => sum + Number(s.grand_total), 0);
+  const monthSalesCashCollected = monthSales.reduce((sum, s) => sum + Number(s.amount_paid), 0);
+  const monthServices = services.filter(s => isThisMonth(s.created_at));
+  const monthServiceFeeTotal = monthServices.reduce((sum, s) => sum + Number(s.cost), 0);
+  const monthServiceCashCollected = monthServices.reduce((sum, s) => sum + Number(s.amount_paid), 0);
+  const monthSaleServiceFees = monthSales.reduce((sum, s) => {
+    return sum + s.items.filter(i => i.price_type === 'service').reduce((t, i) => t + Number(i.subtotal), 0);
+  }, 0);
+  const monthCustomerOrders = orders.filter(o => o.type !== 'request' && isThisMonth(o.created_at));
+  const monthCustomerOrdersTotal = monthCustomerOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
+  const monthTotalRevenue = monthSalesGrandTotal + monthServiceFeeTotal + monthSaleServiceFees + monthCustomerOrdersTotal;
+  const monthTotalCashCollected = monthSalesCashCollected + monthServiceCashCollected;
 
   // Net position today
   const todayNetPosition = todayTotalCashCollected - todayExpenseTotal - todayPurchaseTotal;
@@ -724,19 +764,25 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">{activeStock.length} {t('settings.financial.itemsInStock')}</p>
           </div>
 
-          {/* 2. Purchases */}
+          {/* 2. Purchases (incl. orders sent to suppliers) */}
           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
             <div className="flex items-center gap-2 mb-1"><ShoppingCart className="h-4 w-4 text-primary" /><p className="text-sm font-semibold">2. {t('settings.financial.purchases')}</p></div>
-            <div className="grid grid-cols-2 gap-3">
+            <p className="text-[10px] text-muted-foreground mb-2">{t('settings.financial.purchasesIncludesOrders')}</p>
+            <div className="grid grid-cols-3 gap-2">
               <div>
-                <p className="text-xs text-muted-foreground">{t('settings.financial.todaysPurchases')}</p>
-                <p className="text-lg font-bold tabular-nums">{fmt(todayPurchaseTotal)}</p>
-                <p className="text-[10px] text-muted-foreground">{todayPurchases.length} {t('settings.financial.purchaseCount')}</p>
+                <p className="text-[11px] text-muted-foreground">{t('settings.financial.todaysPurchases')}</p>
+                <p className="text-base font-bold tabular-nums">{fmt(todayPurchaseTotal)}</p>
+                <p className="text-[10px] text-muted-foreground">{todayPurchaseCount} {t('settings.financial.purchaseCount')}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">{t('settings.financial.allTimePurchases')}</p>
-                <p className="text-lg font-bold tabular-nums">{fmt(totalPurchases)}</p>
-                <p className="text-[10px] text-muted-foreground">{purchases.length} {t('settings.financial.totalCount')}</p>
+                <p className="text-[11px] text-muted-foreground">{t('settings.financial.thisMonthPurchases')}</p>
+                <p className="text-base font-bold tabular-nums text-primary">{fmt(monthPurchaseTotal)}</p>
+                <p className="text-[10px] text-muted-foreground">{monthPurchaseCount} {t('settings.financial.purchaseCount')}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-muted-foreground">{t('settings.financial.allTimePurchases')}</p>
+                <p className="text-base font-bold tabular-nums">{fmt(totalPurchases)}</p>
+                <p className="text-[10px] text-muted-foreground">{totalPurchaseCount} {t('settings.financial.totalCount')}</p>
               </div>
             </div>
           </div>
@@ -767,11 +813,23 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">{t('settings.financial.expectedProfit')}: <span className="font-bold text-success">{fmt(retailCapital - buyingCapital)}</span></p>
           </div>
 
-          {/* 5. Today's Revenue */}
+          {/* 5. Revenue (Today + This Month) */}
           <div className="p-3 rounded-lg bg-success/5 border border-success/20">
             <div className="flex items-center gap-2 mb-1"><DollarSign className="h-4 w-4 text-success" /><p className="text-sm font-semibold">5. {t('settings.financial.todaysRevenue')}</p></div>
-            <p className="text-2xl font-bold text-success tabular-nums">{fmt(todayTotalRevenue)}</p>
-            <p className="text-xs text-muted-foreground mb-2">{t('settings.financial.cashCollectedToday')}: <span className="font-bold text-success">{fmt(todayTotalCashCollected)}</span></p>
+            <p className="text-[10px] text-muted-foreground mb-2">{t('settings.financial.revenueIncludesOrders')}</p>
+
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="p-2 rounded-lg bg-background/80 border border-success/10">
+                <p className="text-[11px] text-muted-foreground">{t('settings.financial.todaysRevenue')}</p>
+                <p className="text-xl font-bold text-success tabular-nums">{fmt(todayTotalRevenue)}</p>
+                <p className="text-[10px] text-muted-foreground">{t('settings.financial.cashCollectedToday')}: <span className="font-semibold text-success">{fmt(todayTotalCashCollected)}</span></p>
+              </div>
+              <div className="p-2 rounded-lg bg-background/80 border border-success/20">
+                <p className="text-[11px] text-muted-foreground">{t('settings.financial.thisMonthRevenue')}</p>
+                <p className="text-xl font-bold text-success tabular-nums">{fmt(monthTotalRevenue)}</p>
+                <p className="text-[10px] text-muted-foreground">{t('settings.financial.cashCollectedThisMonth')}: <span className="font-semibold text-success">{fmt(monthTotalCashCollected)}</span></p>
+              </div>
+            </div>
 
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between items-center p-2 rounded bg-background/80">
@@ -796,10 +854,10 @@ export default function SettingsPage() {
                   <span className="font-semibold tabular-nums text-destructive">{fmt(todaySalesCreditTotal)}</span>
                 </div>
               )}
-              {todayOrders.length > 0 && (
+              {todayCustomerOrders.length > 0 && (
                 <div className="flex justify-between items-center p-2 rounded bg-background/80">
-                  <span className="text-xs">📋 {t('settings.financial.orders')} ({todayOrders.length})</span>
-                  <span className="font-bold tabular-nums">{fmt(todayOrdersTotal)}</span>
+                  <span className="text-xs">📋 {t('settings.financial.orders')} ({todayCustomerOrders.length})</span>
+                  <span className="font-bold tabular-nums">{fmt(todayCustomerOrdersTotal)}</span>
                 </div>
               )}
             </div>

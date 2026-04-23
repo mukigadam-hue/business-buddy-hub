@@ -372,6 +372,7 @@
       "itemsInStock": "Artikel auf Lager",
       "purchases": "Einkäufe",
       "todaysPurchases": "Heutige Einkäufe",
+      "thisMonthPurchases": "Einkäufe diesen Monat",
       "allTimePurchases": "Gesamte Einkäufe",
       "purchaseCount": "Einkauf(e)",
       "totalCount": "gesamt",
@@ -422,7 +423,11 @@
       "purchase": "Einkauf",
       "unknown": "Unbekannt",
       "saleCount": "Verkauf/Verkäufe",
-      "debtsAutoUpdate": "Zahlen aktualisieren sich automatisch bei Zahlungserfassung."
+      "debtsAutoUpdate": "Zahlen aktualisieren sich automatisch bei Zahlungserfassung.",
+      "thisMonthRevenue": "Umsatz diesen Monat",
+      "cashCollectedThisMonth": "In diesem Monat erhaltene Zahlungen",
+      "purchasesIncludesOrders": "Einschließlich Einkäufe + an Lieferanten gesendete Bestellungen",
+      "revenueIncludesOrders": "Einschließlich Verkäufe, Dienstleistungen + erhaltene Kundenbestellungen"
     }
   },
   "common": {

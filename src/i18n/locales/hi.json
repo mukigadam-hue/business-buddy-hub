@@ -372,6 +372,7 @@
       "itemsInStock": "स्टॉक में आइटम",
       "purchases": "खरीद",
       "todaysPurchases": "आज की खरीद",
+      "thisMonthPurchases": "इस महीने की खरीद",
       "allTimePurchases": "कुल खरीद",
       "purchaseCount": "खरीद",
       "totalCount": "कुल",
@@ -422,7 +423,11 @@
       "purchase": "खरीद",
       "unknown": "अज्ञात",
       "saleCount": "बिक्री",
-      "debtsAutoUpdate": "भुगतान दर्ज करने पर आंकड़े स्वतः अपडेट होते हैं।"
+      "debtsAutoUpdate": "भुगतान दर्ज करने पर आंकड़े स्वतः अपडेट होते हैं।",
+      "thisMonthRevenue": "इस महीने का राजस्व",
+      "cashCollectedThisMonth": "इस महीने एकत्रित नकद",
+      "purchasesIncludesOrders": "खरीद + आपूर्तिकर्ताओं को भेजे गए आदेश शामिल हैं",
+      "revenueIncludesOrders": "बिक्री, सेवाएँ + प्राप्त ग्राहक आदेश शामिल हैं"
     }
   },
   "common": {

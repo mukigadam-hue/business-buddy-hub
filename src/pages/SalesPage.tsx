@@ -464,14 +464,14 @@ export default function SalesPage() {
                   </div>
                 );
               })()}
+              {selectedStock && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">{t('sales.serialNumber')}</Label>
+                  <Input value={serialInput} onChange={e => setSerialInput(e.target.value)} placeholder={t('sales.serialPh')} className="max-w-xs" />
+                </div>
+              )}
               <Button onClick={addItem} disabled={!selectedStock} className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-1" />{t('sales.addItem')}</Button>
             </div>
-            {selectedStock && (
-              <div className="mt-2">
-                <Label className="text-xs text-muted-foreground">{t('sales.serialNumber')}</Label>
-                <Input value={serialInput} onChange={e => setSerialInput(e.target.value)} placeholder={t('sales.serialPh')} className="max-w-xs" />
-              </div>
-            )}
           </div>
 
           {/* Service Items */}

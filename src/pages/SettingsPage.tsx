@@ -1521,6 +1521,7 @@ export default function SettingsPage() {
               items={(viewingReceipt.items as any[]).map(i => ({
                 itemName: i.itemName, category: i.category, quality: i.quality,
                 quantity: i.quantity, priceType: i.priceType, unitPrice: i.unitPrice, subtotal: i.subtotal,
+                serialNumbers: i.serialNumbers || undefined,
               }))}
               grandTotal={Number(viewingReceipt.grand_total)}
               buyerName={viewingReceipt.buyer_name}

@@ -160,6 +160,11 @@ export default function OrdersPage() {
   const inboxOrders = orders.filter(o => o.type === 'inbox');
   const myRequests = orders.filter(o => o.type === 'request');
   const requestsNeedingAction = myRequests.filter(o => o.status === 'priced' || o.status === 'confirmed').length;
+  // Yellow badge on "Customers" tab: only count UNREAD notifications related to incoming orders.
+  // Once the user reads/opens those notifications, the badge disappears.
+  const unreadCustomerInboxCount = notifications.filter(
+    n => !n.is_read && (n.type === 'new_order' || n.type === 'order_confirmed')
+  ).length;
 
   // Load orders for payment verification tab (all types with payment activity)
   async function loadCheckoutOrders() {

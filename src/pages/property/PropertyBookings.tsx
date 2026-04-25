@@ -410,6 +410,7 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
 
   async function handleBook() {
     if (!foundAsset || !user || !startDate || !endDate || !renterName.trim()) { toast.error('Fill all required fields'); return; }
+    if (!isValidIntlPhone(renterContact)) { toast.error('Phone must start with country code (e.g. +254712345678)'); return; }
     setSubmitting(true);
     const priceMap: Record<string, number> = { hourly: foundAsset.hourly_price, daily: foundAsset.daily_price, monthly: foundAsset.monthly_price };
     const price = priceMap[durationType] || foundAsset.daily_price;

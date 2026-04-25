@@ -239,9 +239,9 @@ export default function OrdersPage() {
           });
         }
       }
-      toast.success('Payment verified ✓ — Sale recorded & receipt saved!');
+      toast.success(t('ordersUI.paymentVerified'));
     } else {
-      toast.success('Order cancelled');
+      toast.success(t('ordersUI.orderCancelled'));
     }
   }
 

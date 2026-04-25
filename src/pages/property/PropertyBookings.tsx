@@ -23,6 +23,8 @@ import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import AdSpace from '@/components/AdSpace';
 import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import { addToOfflineQueue } from '@/lib/offlineStore';
+import { PhoneInput, isValidIntlPhone } from '@/components/PhoneInput';
+import { isAssetBookable, shouldMarkAssetOccupied } from '@/lib/propertyUnits';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },

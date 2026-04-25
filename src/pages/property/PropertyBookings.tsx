@@ -176,10 +176,21 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
     if (!user || !currentBusiness || !selectedAssetId || !renterName.trim() || !startDate || !endDate) {
       toast.error('Please fill in all required fields'); return;
     }
+    if (renterContact && !isValidIntlPhone(renterContact)) {
+      toast.error('Phone must start with country code (e.g. +254712345678)'); return;
+    }
     setSubmitting(true);
     const totalPrice = parseFloat(agreedAmount) || 0;
     const paid = parseFloat(amountPaid) || 0;
     const payStatus = paid >= totalPrice ? 'paid' : paid > 0 ? 'partial' : 'unpaid';
+
+    // Multi-unit aware conflict check
+    const { data: hasConflict } = await supabase.rpc('check_booking_conflict', {
+      _asset_id: selectedAssetId,
+      _start: new Date(startDate).toISOString(),
+      _end: new Date(endDate).toISOString(),
+    });
+    if (hasConflict) { toast.error('All units of this asset are booked for the selected dates'); setSubmitting(false); return; }
 
     const { error } = await supabase.from('property_bookings').insert({
       asset_id: selectedAssetId, business_id: currentBusiness.id, renter_id: user.id,
@@ -198,7 +209,10 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
     } as any);
 
     if (error) { toast.error(error.message); setSubmitting(false); return; }
-    await supabase.from('property_assets').update({ is_available: false } as any).eq('id', selectedAssetId);
+    // Only flip availability flag when this is a single-unit asset
+    if (shouldMarkAssetOccupied(selectedAsset as any)) {
+      await supabase.from('property_assets').update({ is_available: false } as any).eq('id', selectedAssetId);
+    }
     
     // Auto-add tenant
     const { data: existingTenant } = await supabase.from('business_team_members')

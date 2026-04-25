@@ -31,13 +31,14 @@ interface AppMember {
 const RANKS = ['Supervisor', 'Inspector', 'Maintenance', 'Security', 'Worker', 'Operator', 'Quality Control', 'Driver'];
 
 function FactoryShareButtons({ code }: { code: string }) {
+  const { t } = useTranslation();
   const message = `You've been invited to join our factory team! Use this invite code in the BizTrack app: ${code}`;
   const encoded = encodeURIComponent(message);
   async function handleNativeShare() {
     try {
-      if (navigator.share) { await navigator.share({ title: 'Factory Invite Code', text: message }); toast.success('Shared!'); }
-      else { await navigator.clipboard.writeText(message); toast.success('Message copied!'); }
-    } catch (err: any) { if (err?.name !== 'AbortError') { await navigator.clipboard.writeText(message); toast.success('Copied!'); } }
+      if (navigator.share) { await navigator.share({ title: t('factoryUI.factoryInviteCodeShort'), text: message }); toast.success(t('factoryUI.sharedToast')); }
+      else { await navigator.clipboard.writeText(message); toast.success(t('factoryUI.messageCopied')); }
+    } catch (err: any) { if (err?.name !== 'AbortError') { await navigator.clipboard.writeText(message); toast.success(t('factoryUI.copied')); } }
   }
   return (
     <div className="flex items-center gap-2 flex-wrap mt-2">

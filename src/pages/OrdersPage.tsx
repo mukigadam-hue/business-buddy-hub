@@ -323,7 +323,7 @@ export default function OrdersPage() {
       const { data } = await supabase.rpc('lookup_business_by_code', { _code: recipientCode.trim().toUpperCase() });
       if (data && data.length > 0) {
         setRecipientLookup({ id: data[0].id, name: data[0].name });
-        toast.success(`Found: ${data[0].name}`);
+        toast.success(t('ordersUI.foundColon', { name: data[0].name }));
         // Load supplier products for easy selection
         const { data: products } = await supabase.rpc('get_business_public_products', { _business_id: data[0].id });
         if (products && products.length > 0) {
@@ -335,7 +335,7 @@ export default function OrdersPage() {
         }
       } else {
         setRecipientLookup(null);
-        toast.error('No business found with that code');
+        toast.error(t('ordersUI.noBusinessCode'));
       }
     } finally {
       setLookingUp(false);
@@ -398,14 +398,14 @@ export default function OrdersPage() {
     let recipientBusinessId: string | undefined;
     if (type === 'request') {
       if (recipientMode === 'contact') {
-        if (!selectedContactBusinessId) { toast.error('Please select a recipient business'); return; }
+        if (!selectedContactBusinessId) { toast.error(t('ordersUI.selectRecipient')); return; }
         recipientBusinessId = selectedContactBusinessId;
       } else {
-        if (!recipientLookup) { toast.error('Please look up a valid business code first'); return; }
+        if (!recipientLookup) { toast.error(t('ordersUI.lookupValidCode')); return; }
         recipientBusinessId = recipientLookup.id;
       }
       // Don't send to yourself
-      if (recipientBusinessId === currentBusiness?.id) { toast.error("You can't send an order to yourself"); return; }
+      if (recipientBusinessId === currentBusiness?.id) { toast.error(t('ordersUI.cantSendToYourself')); return; }
     }
 
     const reqComment = type === 'request' && requestComment.trim() ? requestComment.trim() : undefined;
@@ -541,9 +541,9 @@ export default function OrdersPage() {
         },
       });
       if (res.error || res.data?.error) {
-        toast.error(res.data?.error || 'Failed to send bargain');
+        toast.error(res.data?.error || t('ordersUI.failedSendBargain'));
       } else {
-        toast.success('Modified order sent back to supplier for re-pricing!');
+        toast.success(t('ordersUI.modifiedOrderSent'));
         setRejectingOrder(null);
         await refreshData();
       }
@@ -557,9 +557,9 @@ export default function OrdersPage() {
         body: { inboxOrderId: order.id, action: 'cancel_order', comment: rejectComment || 'Order cancelled by buyer' },
       });
       if (res.error || res.data?.error) {
-        toast.error(res.data?.error || 'Failed to cancel');
+        toast.error(res.data?.error || t('ordersUI.failedCancel'));
       } else {
-        toast.success('Order cancelled. Both sides have been notified.');
+        toast.success(t('ordersUI.orderCancelledNotified'));
         setRejectingOrder(null);
         await refreshData();
       }
@@ -575,7 +575,7 @@ export default function OrdersPage() {
     for (const id of selectedOrderIds) {
       await supabase.from('orders').update({ deleted_at: now } as any).eq('id', id);
     }
-    toast.success(`${selectedOrderIds.size} order(s) moved to Recycle Bin`);
+    toast.success(t('ordersUI.movedToRecycleBin', { count: selectedOrderIds.size }));
     setSelectedOrderIds(new Set());
     setBulkSelectMode(false);
     await refreshData();
@@ -646,14 +646,14 @@ export default function OrdersPage() {
         // Fallback: just update locally if sync fails (e.g. not a B2B order)
         await updateOrder(pricingOrder.id, pricingItems, newTotal, 'priced');
       } else {
-        toast.success('Prices sent to buyer for confirmation!');
+        toast.success(t('ordersUI.pricesSent'));
         await refreshData();
       }
       setPricingOrder(null);
       setPricingItems([]);
       setPricingComment('');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save pricing');
+      toast.error(err.message || t('ordersUI.failedSavePricing'));
     } finally {
       setSyncing(false);
     }
@@ -666,9 +666,9 @@ export default function OrdersPage() {
         body: { inboxOrderId: order.id, action: 'confirm_prices' },
       });
       if (res.error || res.data?.error) {
-        toast.error(res.data?.error || 'Failed to confirm');
+        toast.error(res.data?.error || t('ordersUI.failedConfirm'));
       } else {
-        toast.success('Prices confirmed! Now submit your payment.');
+        toast.success(t('ordersUI.pricesConfirmedToast'));
         await refreshData();
         // Immediately open payment dialog
         setCompleteDialog({ ...order, status: 'confirmed' });
@@ -688,9 +688,9 @@ export default function OrdersPage() {
         body: { inboxOrderId: order.id, action: 'reject_prices', comment: rejectComment },
       });
       if (res.error || res.data?.error) {
-        toast.error(res.data?.error || 'Failed to reject');
+        toast.error(res.data?.error || t('ordersUI.failedReject'));
       } else {
-        toast.success('Prices rejected. Supplier will re-price.');
+        toast.success(t('ordersUI.pricesRejected'));
         setRejectingOrder(null);
         setRejectComment('');
         await refreshData();
@@ -712,7 +712,7 @@ export default function OrdersPage() {
         body: { inboxOrderId: order.id, action: 'confirm_payment' },
       });
       if (res.error || res.data?.error) {
-        toast.error(res.data?.error || 'Failed to confirm payment');
+        toast.error(res.data?.error || t('ordersUI.failedConfirmPayment'));
       } else {
         // Update payment tracking
         await supabase.from('orders').update({
@@ -720,7 +720,7 @@ export default function OrdersPage() {
           balance: 0,
           payment_status: 'paid',
         } as any).eq('id', order.id);
-        toast.success('Payment confirmed!');
+        toast.success(t('ordersUI.paymentConfirmed'));
         await refreshData();
       }
       setConfirmPaymentOrder(null);
@@ -737,7 +737,7 @@ export default function OrdersPage() {
       balance: Math.max(0, balance),
       payment_status: status,
     } as any).eq('id', orderId);
-    toast.success('Payment updated!');
+    toast.success(t('ordersUI.paymentUpdated'));
     setUpdatePaymentOrder(null);
     await refreshData();
   }
@@ -770,8 +770,8 @@ export default function OrdersPage() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error('Please upload an image file'); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error('File must be under 5MB'); return; }
+    if (!file.type.startsWith('image/')) { toast.error(t('ordersUI.uploadImage')); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(t('ordersUI.fileUnder5mb')); return; }
     setProofFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => setProofPreview(ev.target?.result as string);
@@ -786,7 +786,7 @@ export default function OrdersPage() {
     
     // For request orders (buyer), require payment proof for mobile money
     if (isB2BRequest && paymentMethod === 'mobile_money' && !proofFile) {
-      toast.error('Please upload payment proof screenshot');
+      toast.error(t('ordersUI.uploadProofScreenshot'));
       return;
     }
 
@@ -832,7 +832,7 @@ export default function OrdersPage() {
           body: { inboxOrderId: completeDialog.id, action: 'submit_payment', paymentMethod, proofUrl },
         });
 
-        toast.success('Payment submitted! Waiting for supplier to confirm.');
+        toast.success(t('ordersUI.paymentSubmitted'));
       } else if (isB2BInbox) {
         // Supplier issuing receipt after payment confirmed
         await completeOrderToSale(completeDialog.id, toTitleCase(completeBuyer.trim()), toTitleCase(completeSeller.trim()));
@@ -853,7 +853,7 @@ export default function OrdersPage() {
             code: completeDialog.code,
           });
         }
-        toast.success('Receipt issued!');
+        toast.success(t('ordersUI.receiptIssued'));
       } else {
         // Live order — with installment support
         const total = Number(completeDialog.grand_total);
@@ -890,7 +890,7 @@ export default function OrdersPage() {
             code: completeDialog.code,
           });
         }
-        toast.success(pStatus === 'paid' ? 'Order completed and paid!' : pStatus === 'partial' ? 'Partial payment recorded. Balance outstanding.' : 'Order recorded as credit/unpaid.');
+        toast.success(pStatus === 'paid' ? t('ordersUI.orderCompletedPaid') : pStatus === 'partial' ? t('ordersUI.partialPaymentRecorded') : t('ordersUI.orderCredit'));
       }
 
       setCompleteDialog(null);
@@ -902,7 +902,7 @@ export default function OrdersPage() {
       setOrderAmountPaid('');
       await refreshData();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to complete order');
+      toast.error(err.message || t('ordersUI.failedComplete'));
     } finally {
       setCompleting(false);
     }
@@ -1109,7 +1109,7 @@ export default function OrdersPage() {
            {order.type === 'inbox' && (order.status === 'paid' || order.status === 'completed' || order.transferred_to_sale) && (
              <Button size="sm" variant="outline" className="text-warning" onClick={async () => {
                const d = await loadDisputes(order.id);
-               if (d.length === 0) { toast.info('No disputes on this order'); return; }
+               if (d.length === 0) { toast.info(t('ordersUI.noDisputes')); return; }
                setDisputes(d);
                setDisputeViewOrder(order);
              }}>
@@ -1159,9 +1159,9 @@ export default function OrdersPage() {
     const match = activeStock.find(s => s.barcode && s.barcode === code);
     if (match) {
       setForm(f => ({ ...f, name: match.name, category: match.category, quality: match.quality }));
-      toast.success(`Found: ${match.name}`);
+      toast.success(t('ordersUI.foundColon', { name: match.name }));
     } else {
-      toast.error(`No stock item found for barcode: ${code}`);
+      toast.error(t('ordersUI.noStockBarcode', { code }));
     }
   }
   function openAllocateDialog(order: Order) {
@@ -1280,13 +1280,13 @@ export default function OrdersPage() {
         }
       }
       const parts = [];
-      if (mergedCount > 0) parts.push(`${mergedCount} merged with existing stock`);
-      if (newCount > 0) parts.push(`${newCount} added as new`);
-      toast.success(`Items allocated! ${parts.join(', ')}`);
+      if (mergedCount > 0) parts.push(t('ordersUI.mergedExisting', { count: mergedCount }));
+      if (newCount > 0) parts.push(t('ordersUI.addedNew', { count: newCount }));
+      toast.success(t('ordersUI.itemsAllocated', { parts: parts.join(', ') }));
       setAllocateOrder(null);
       await refreshData();
     } catch (err: any) {
-      toast.error(err.message || 'Allocation failed');
+      toast.error(err.message || t('ordersUI.allocationFailed'));
     } finally {
       setAllocating(false);
     }

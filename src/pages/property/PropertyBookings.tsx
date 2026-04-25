@@ -399,7 +399,7 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
     if (!assetCode.trim()) return;
     setSearching(true); setFoundAsset(null);
     const { data, error } = await supabase.from('property_assets')
-      .select('*, businesses!property_assets_property_assets_business_id_fkey:businesses!property_assets_business_id_fkey(name, contact)'.replace('property_assets_property_assets_business_id_fkey:', ''))
+      .select('*, businesses!property_assets_business_id_fkey(name, contact)')
       .eq('asset_code', assetCode.trim().toUpperCase()).is('deleted_at', null).limit(1);
     if (error || !data || data.length === 0) { toast.error('No asset found with that code'); setSearching(false); return; }
     if (!isAssetBookable(data[0] as any)) {

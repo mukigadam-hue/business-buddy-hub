@@ -198,7 +198,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
           {/* Renter Info */}
           <div className="grid grid-cols-2 gap-2">
             <div><Label>{t('propertyUI.fullName')} *</Label><Input value={renterName} onChange={e => setRenterName(e.target.value)} /></div>
-            <div><Label>{t('propertyUI.phone')}</Label><Input value={renterContact} onChange={e => setRenterContact(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.phone')} *</Label><PhoneInput value={renterContact} onChange={setRenterContact} /></div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">

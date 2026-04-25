@@ -924,7 +924,7 @@ export default function OrdersPage() {
             <div className="flex items-center gap-2 flex-wrap">
               {getStatusIcon(order.status)}
               <span className="font-medium text-sm">{order.customer_name}</span>
-              {order.transferred_to_sale && <span className="text-xs bg-success/10 text-success px-1.5 py-0.5 rounded-full">Sold</span>}
+              {order.transferred_to_sale && <span className="text-xs bg-success/10 text-success px-1.5 py-0.5 rounded-full">{t('ordersUI.sold')}</span>}
               <span className={`text-xs px-1.5 py-0.5 rounded-full capitalize ${
                 order.status === 'rejected' ? 'bg-destructive/10 text-destructive font-semibold' : 'bg-muted'
               }`}>{order.status === 'rejected' ? '❌ Rejected — Re-price' : order.status}</span>
@@ -980,14 +980,14 @@ export default function OrdersPage() {
         {isRequest && order.status === 'confirmed' && (
           <div className="bg-primary/10 border border-primary/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
             <CreditCard className="h-3.5 w-3.5 text-primary shrink-0" />
-            <span>✅ Prices confirmed! Click <strong>Submit Payment</strong> to complete.</span>
+            <span>{t('ordersUI.pricesConfirmed')}</span>
           </div>
         )}
 
         {/* B2B Status guidance for inbox orders (supplier side) */}
         {order.type === 'inbox' && order.status === 'pending' && (
           <div className="bg-warning/10 border border-warning/20 rounded-md px-3 py-2 text-xs flex items-center gap-2">
-            <span>📋 New order from buyer. <strong>Tag Prices</strong> on each item and send back.</span>
+            <span>{t('ordersUI.newOrderFromBuyer')}</span>
           </div>
         )}
         {order.type === 'inbox' && order.status === 'priced' && (
@@ -1004,7 +1004,7 @@ export default function OrdersPage() {
         {order.type === 'inbox' && order.status === 'payment_submitted' && (
           <div className="bg-success/10 border border-success/20 rounded-md px-3 py-2 text-xs space-y-1">
             <div className="flex items-center gap-2">
-              <span>💳 Buyer submitted payment! Review and <strong>Confirm Payment Received</strong>.</span>
+              <span>{t('ordersUI.buyerSubmittedPayment')}</span>
             </div>
             {Number(order.amount_paid) > 0 && Number(order.amount_paid) < Number(order.grand_total) && (
               <div className="flex items-center gap-3 mt-1 text-sm font-semibold">
@@ -1043,7 +1043,7 @@ export default function OrdersPage() {
             <>
               {/* Edit: only when pending */}
               {order.status === 'pending' && (
-                <Button size="sm" variant="outline" onClick={() => openEditOrder(order)}><Pencil className="h-3.5 w-3.5 mr-1" />Edit</Button>
+                <Button size="sm" variant="outline" onClick={() => openEditOrder(order)}><Pencil className="h-3.5 w-3.5 mr-1" />{t('ordersUI.edit')}</Button>
               )}
 
               {/* INBOX ORDER ACTIONS (Supplier side) */}

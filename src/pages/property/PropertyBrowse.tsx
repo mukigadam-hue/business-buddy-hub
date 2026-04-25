@@ -78,6 +78,10 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
       toast.error('Please fill in all required fields');
       return;
     }
+    if (!isValidIntlPhone(renterContact)) {
+      toast.error('Phone must start with country code (e.g. +254712345678)');
+      return;
+    }
     setSubmitting(true);
 
     const priceMap: Record<string, number> = {
@@ -137,7 +141,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
       _start: start.toISOString(),
       _end: end.toISOString(),
     });
-    if (hasConflict) { toast.error('This asset is already booked for these dates'); setSubmitting(false); return; }
+    if (hasConflict) { toast.error('All units of this asset are booked for the selected dates'); setSubmitting(false); return; }
 
     const { error } = await supabase.from('property_bookings').insert(bookingData as any);
     if (error) { toast.error(error.message); setSubmitting(false); return; }

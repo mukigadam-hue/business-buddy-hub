@@ -205,7 +205,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       _end: booking.end_date!,
     });
     if (hasConflict) {
-      toast.error('This asset is already booked for the selected dates');
+      toast.error('All units of this asset are booked for the selected dates');
       return false;
     }
     const { error } = await supabase.from('property_bookings').insert({

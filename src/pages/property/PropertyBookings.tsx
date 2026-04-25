@@ -23,6 +23,8 @@ import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import AdSpace from '@/components/AdSpace';
 import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import { addToOfflineQueue } from '@/lib/offlineStore';
+import { PhoneInput, isValidIntlPhone } from '@/components/PhoneInput';
+import { isAssetBookable, shouldMarkAssetOccupied } from '@/lib/propertyUnits';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },
@@ -174,10 +176,21 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
     if (!user || !currentBusiness || !selectedAssetId || !renterName.trim() || !startDate || !endDate) {
       toast.error('Please fill in all required fields'); return;
     }
+    if (renterContact && !isValidIntlPhone(renterContact)) {
+      toast.error('Phone must start with country code (e.g. +254712345678)'); return;
+    }
     setSubmitting(true);
     const totalPrice = parseFloat(agreedAmount) || 0;
     const paid = parseFloat(amountPaid) || 0;
     const payStatus = paid >= totalPrice ? 'paid' : paid > 0 ? 'partial' : 'unpaid';
+
+    // Multi-unit aware conflict check
+    const { data: hasConflict } = await supabase.rpc('check_booking_conflict', {
+      _asset_id: selectedAssetId,
+      _start: new Date(startDate).toISOString(),
+      _end: new Date(endDate).toISOString(),
+    });
+    if (hasConflict) { toast.error('All units of this asset are booked for the selected dates'); setSubmitting(false); return; }
 
     const { error } = await supabase.from('property_bookings').insert({
       asset_id: selectedAssetId, business_id: currentBusiness.id, renter_id: user.id,
@@ -196,7 +209,10 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
     } as any);
 
     if (error) { toast.error(error.message); setSubmitting(false); return; }
-    await supabase.from('property_assets').update({ is_available: false } as any).eq('id', selectedAssetId);
+    // Only flip availability flag when this is a single-unit asset
+    if (shouldMarkAssetOccupied(selectedAsset as any)) {
+      await supabase.from('property_assets').update({ is_available: false } as any).eq('id', selectedAssetId);
+    }
     
     // Auto-add tenant
     const { data: existingTenant } = await supabase.from('business_team_members')
@@ -230,7 +246,7 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
             <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
               <SelectTrigger><SelectValue placeholder="Choose asset or specific room/unit..." /></SelectTrigger>
               <SelectContent>
-                {assets.filter(a => a.is_available).map(a => (
+                {assets.filter(a => isAssetBookable(a as any)).map(a => (
                   <SelectItem key={a.id} value={a.id}>
                     {a.category === 'house' ? '🏠' : a.category === 'land' ? '🏞️' : a.category === 'vehicle' ? '🚗' : '🚢'} {a.name} - {a.location}
                     {(a as any).total_rooms > 0 && ` (${(a as any).total_rooms} rooms)`}
@@ -256,7 +272,7 @@ function DirectBookingDialog({ open, onClose, assets }: { open: boolean; onClose
 
           <div className="grid grid-cols-2 gap-2">
             <div><Label>{t('propertyUI.renterName')} *</Label><Input value={renterName} onChange={e => setRenterName(e.target.value)} /></div>
-            <div><Label>{t('propertyUI.phone')}</Label><Input value={renterContact} onChange={e => setRenterContact(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.phone')} *</Label><PhoneInput value={renterContact} onChange={setRenterContact} /></div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div><Label>Occupation</Label><Input value={renterOccupation} onChange={e => setRenterOccupation(e.target.value)} /></div>
@@ -366,8 +382,12 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
   useEffect(() => {
     if (open && prefilledPropertyId) {
       setLoadingAssets(true);
-      supabase.from('property_assets').select('*').eq('business_id', prefilledPropertyId).eq('is_available', true).is('deleted_at', null)
-        .then(({ data }) => { setPropertyAssets(data || []); setLoadingAssets(false); });
+      supabase.from('property_assets').select('*').eq('business_id', prefilledPropertyId).is('deleted_at', null)
+        .then(({ data }) => {
+          // Keep multi-unit assets even if flagged occupied — capacity is checked at booking time
+          const bookable = (data || []).filter(a => isAssetBookable(a as any));
+          setPropertyAssets(bookable); setLoadingAssets(false);
+        });
     }
   }, [open, prefilledPropertyId]);
 
@@ -380,13 +400,17 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
     setSearching(true); setFoundAsset(null);
     const { data, error } = await supabase.from('property_assets')
       .select('*, businesses!property_assets_business_id_fkey(name, contact)')
-      .eq('asset_code', assetCode.trim().toUpperCase()).eq('is_available', true).is('deleted_at', null).limit(1);
-    if (error || !data || data.length === 0) { toast.error('No available asset found'); setSearching(false); return; }
+      .eq('asset_code', assetCode.trim().toUpperCase()).is('deleted_at', null).limit(1);
+    if (error || !data || data.length === 0) { toast.error('No asset found with that code'); setSearching(false); return; }
+    if (!isAssetBookable(data[0] as any)) {
+      toast.error('This asset is currently fully booked'); setSearching(false); return;
+    }
     setFoundAsset(data[0]); setSearching(false);
   }
 
   async function handleBook() {
     if (!foundAsset || !user || !startDate || !endDate || !renterName.trim()) { toast.error('Fill all required fields'); return; }
+    if (!isValidIntlPhone(renterContact)) { toast.error('Phone must start with country code (e.g. +254712345678)'); return; }
     setSubmitting(true);
     const priceMap: Record<string, number> = { hourly: foundAsset.hourly_price, daily: foundAsset.daily_price, monthly: foundAsset.monthly_price };
     const price = priceMap[durationType] || foundAsset.daily_price;
@@ -513,7 +537,7 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
               </Card>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label>Your Name *</Label><Input value={renterName} onChange={e => setRenterName(e.target.value)} /></div>
-                <div><Label>Your Phone</Label><Input value={renterContact} onChange={e => setRenterContact(e.target.value)} /></div>
+                <div><Label>Your Phone *</Label><PhoneInput value={renterContact} onChange={setRenterContact} /></div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div><Label>Occupation</Label><Input value={renterOccupation} onChange={e => setRenterOccupation(e.target.value)} /></div>
@@ -900,11 +924,14 @@ export default function PropertyBookings() {
       `Booking for "${asset?.name || 'Asset'}" by ${booking.renter_name} has been ${statusLabels[newStatus] || newStatus}.`
     );
 
-    if (newStatus === 'active' || newStatus === 'confirmed') {
-      await supabase.from('property_assets').update({ is_available: false } as any).eq('id', booking.asset_id);
-    }
-    if (newStatus === 'completed' || newStatus === 'cancelled') {
-      await supabase.from('property_assets').update({ is_available: true } as any).eq('id', booking.asset_id);
+    // Only flip availability flag for single-unit assets — multi-unit assets stay listed
+    if (shouldMarkAssetOccupied(asset as any)) {
+      if (newStatus === 'active' || newStatus === 'confirmed') {
+        await supabase.from('property_assets').update({ is_available: false } as any).eq('id', booking.asset_id);
+      }
+      if (newStatus === 'completed' || newStatus === 'cancelled') {
+        await supabase.from('property_assets').update({ is_available: true } as any).eq('id', booking.asset_id);
+      }
     }
 
     // Auto-add to tenant list

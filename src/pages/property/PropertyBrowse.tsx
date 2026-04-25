@@ -19,6 +19,7 @@ import { toTitleCase, toSentenceCase } from '@/lib/utils';
 import AdSpace, { withInlineAds } from '@/components/AdSpace';
 import { PaymentMethodsViewer } from '@/components/PaymentMethodsManager';
 import ImageLightbox from '@/components/ImageLightbox';
+import { PhoneInput, isValidIntlPhone } from '@/components/PhoneInput';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },
@@ -76,6 +77,10 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
   async function handleBook() {
     if (!asset || !user || !startDate || !endDate || !renterName.trim()) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+    if (!isValidIntlPhone(renterContact)) {
+      toast.error('Phone must start with country code (e.g. +254712345678)');
       return;
     }
     setSubmitting(true);
@@ -137,7 +142,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
       _start: start.toISOString(),
       _end: end.toISOString(),
     });
-    if (hasConflict) { toast.error('This asset is already booked for these dates'); setSubmitting(false); return; }
+    if (hasConflict) { toast.error('All units of this asset are booked for the selected dates'); setSubmitting(false); return; }
 
     const { error } = await supabase.from('property_bookings').insert(bookingData as any);
     if (error) { toast.error(error.message); setSubmitting(false); return; }
@@ -193,7 +198,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
           {/* Renter Info */}
           <div className="grid grid-cols-2 gap-2">
             <div><Label>{t('propertyUI.fullName')} *</Label><Input value={renterName} onChange={e => setRenterName(e.target.value)} /></div>
-            <div><Label>{t('propertyUI.phone')}</Label><Input value={renterContact} onChange={e => setRenterContact(e.target.value)} /></div>
+            <div><Label>{t('propertyUI.phone')} *</Label><PhoneInput value={renterContact} onChange={setRenterContact} /></div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">

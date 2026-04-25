@@ -382,8 +382,12 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
   useEffect(() => {
     if (open && prefilledPropertyId) {
       setLoadingAssets(true);
-      supabase.from('property_assets').select('*').eq('business_id', prefilledPropertyId).eq('is_available', true).is('deleted_at', null)
-        .then(({ data }) => { setPropertyAssets(data || []); setLoadingAssets(false); });
+      supabase.from('property_assets').select('*').eq('business_id', prefilledPropertyId).is('deleted_at', null)
+        .then(({ data }) => {
+          // Keep multi-unit assets even if flagged occupied — capacity is checked at booking time
+          const bookable = (data || []).filter(a => isAssetBookable(a as any));
+          setPropertyAssets(bookable); setLoadingAssets(false);
+        });
     }
   }, [open, prefilledPropertyId]);
 
@@ -395,9 +399,12 @@ function BookNowDialog({ open, onClose, prefilledPropertyId, prefilledPropertyNa
     if (!assetCode.trim()) return;
     setSearching(true); setFoundAsset(null);
     const { data, error } = await supabase.from('property_assets')
-      .select('*, businesses!property_assets_business_id_fkey(name, contact)')
-      .eq('asset_code', assetCode.trim().toUpperCase()).eq('is_available', true).is('deleted_at', null).limit(1);
-    if (error || !data || data.length === 0) { toast.error('No available asset found'); setSearching(false); return; }
+      .select('*, businesses!property_assets_property_assets_business_id_fkey:businesses!property_assets_business_id_fkey(name, contact)'.replace('property_assets_property_assets_business_id_fkey:', ''))
+      .eq('asset_code', assetCode.trim().toUpperCase()).is('deleted_at', null).limit(1);
+    if (error || !data || data.length === 0) { toast.error('No asset found with that code'); setSearching(false); return; }
+    if (!isAssetBookable(data[0] as any)) {
+      toast.error('This asset is currently fully booked'); setSearching(false); return;
+    }
     setFoundAsset(data[0]); setSearching(false);
   }
 

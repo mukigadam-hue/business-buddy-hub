@@ -730,6 +730,9 @@ export default function OrdersPage() {
   }
 
   async function updateOrderPayment(orderId: string, newAmountPaid: number, total: number) {
+    const order = orders.find(o => o.id === orderId);
+    const previousPaid = Number(order?.amount_paid || 0);
+    const delta = Math.max(0, newAmountPaid - previousPaid);
     const status = newAmountPaid >= total ? 'paid' : newAmountPaid > 0 ? 'partial' : 'unpaid';
     const balance = total - newAmountPaid;
     await supabase.from('orders').update({
@@ -737,6 +740,15 @@ export default function OrdersPage() {
       balance: Math.max(0, balance),
       payment_status: status,
     } as any).eq('id', orderId);
+    if (delta > 0 && currentBusiness) {
+      await (supabase as any).from('debt_payments').insert({
+        business_id: currentBusiness.id,
+        source_type: 'order',
+        source_id: orderId,
+        amount: delta,
+        recorded_by: order?.customer_name || '',
+      });
+    }
     toast.success(t('ordersUI.paymentUpdated'));
     setUpdatePaymentOrder(null);
     await refreshData();

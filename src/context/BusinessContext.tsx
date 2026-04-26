@@ -1360,6 +1360,27 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     setExpenses(prev => prev.filter(e => e.id !== id));
   }, []);
 
+  const logDebtPayment = useCallback(async (sourceType: DebtPayment['source_type'], sourceId: string, delta: number, recordedBy: string) => {
+    if (!currentBusinessId || delta <= 0) return;
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const optimistic: DebtPayment = {
+      id: tempId, business_id: currentBusinessId, source_type: sourceType,
+      source_id: sourceId, amount: delta, recorded_by: recordedBy || '',
+      created_at: new Date().toISOString(),
+    };
+    setDebtPayments(prev => [optimistic, ...prev]);
+    const { data, error } = await (supabase as any).from('debt_payments').insert({
+      business_id: currentBusinessId, source_type: sourceType, source_id: sourceId,
+      amount: delta, recorded_by: recordedBy || '',
+    }).select().single();
+    if (error) {
+      console.warn('Failed to log debt payment:', error);
+      setDebtPayments(prev => prev.filter(d => d.id !== tempId));
+      return;
+    }
+    setDebtPayments(prev => prev.map(d => d.id === tempId ? (data as DebtPayment) : d));
+  }, [currentBusinessId]);
+
   const updateSalePayment = useCallback(async (saleId: string, amountPaid: number, paymentStatus: string) => {
     const sale = sales.find(s => s.id === saleId);
     if (!sale) return;

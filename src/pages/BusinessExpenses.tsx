@@ -37,10 +37,10 @@ export default function BusinessExpenses() {
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
 
   const todayTotal = todayExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
-  const totalAll = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const totalAll = operationalExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
 
   const categoryTotals: Record<string, number> = {};
-  expenses.forEach(e => {
+  operationalExpenses.forEach(e => {
     categoryTotals[e.category] = (categoryTotals[e.category] || 0) + Number(e.amount);
   });
 

@@ -597,6 +597,36 @@ export type Database = {
         }
         Relationships: []
       }
+      debt_payments: {
+        Row: {
+          amount: number
+          business_id: string
+          created_at: string
+          id: string
+          recorded_by: string
+          source_id: string
+          source_type: string
+        }
+        Insert: {
+          amount?: number
+          business_id: string
+          created_at?: string
+          id?: string
+          recorded_by?: string
+          source_id: string
+          source_type: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string
+          created_at?: string
+          id?: string
+          recorded_by?: string
+          source_id?: string
+          source_type?: string
+        }
+        Relationships: []
+      }
       factory_expenses: {
         Row: {
           amount: number

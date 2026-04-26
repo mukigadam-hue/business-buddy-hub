@@ -368,6 +368,12 @@
     "unlock": "Unlock",
     "financial": {
       "title": "Financial Summary",
+      "todaysRepaidDebts": "Today's Repaid Debts",
+      "todaysRepaidDebtsDesc": "Money received today on debts from previous days",
+      "totalDayCollected": "Total Day Collected (Today's Cash + Repaid Debts)",
+      "fromSales": "Sales",
+      "fromServices": "Services",
+      "fromOrders": "Orders",
       "totalCapital": "Total Capital (Shopping Price)",
       "totalCapitalDesc": "Sum of (Buying Price × Quantity) for all active stock items",
       "itemsInStock": "items in stock",

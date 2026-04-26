@@ -262,7 +262,7 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { currentBusiness, updateBusiness, stock, sales, purchases, services, expenses, orders, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, deleteBusiness, refreshData } = useBusiness();
+  const { currentBusiness, updateBusiness, stock, sales, purchases, services, expenses, orders, businesses, memberships, setCurrentBusinessId, userRole, getReceipts, deleteBusiness, refreshData, debtPayments } = useBusiness();
   const { currency, setCurrency, fmt } = useCurrency();
   const isPersonal = (currentBusiness as any)?.business_type === 'personal';
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
@@ -434,6 +434,26 @@ export default function SettingsPage() {
   const todayCustomerOrders = todayOrders.filter(o => o.type !== 'request');
   const todayCustomerOrdersTotal = todayCustomerOrders.reduce((sum, o) => sum + Number(o.grand_total), 0);
   const todayTotalRevenue = todaySalesGrandTotal + todayServiceFeeTotal + todaySaleServiceFees + todayCustomerOrdersTotal;
+
+  // ====== TODAY'S REPAID DEBTS ======
+  // Payments received today on transactions (sales/services/orders) created on a previous day.
+  // Excludes purchases (those are money paid out, not collected).
+  const todayRepaidPayments = (debtPayments || []).filter(dp => {
+    if (new Date(dp.created_at).toDateString() !== today) return false;
+    if (dp.source_type === 'purchase') return false;
+    let sourceCreatedAt: string | undefined;
+    if (dp.source_type === 'sale') sourceCreatedAt = sales.find(s => s.id === dp.source_id)?.created_at;
+    else if (dp.source_type === 'service') sourceCreatedAt = services.find(s => s.id === dp.source_id)?.created_at;
+    else if (dp.source_type === 'order') sourceCreatedAt = orders.find(o => o.id === dp.source_id)?.created_at;
+    if (!sourceCreatedAt) return true; // include if source unknown (e.g. older record)
+    return new Date(sourceCreatedAt).toDateString() !== today;
+  });
+  const todayRepaidDebtsTotal = todayRepaidPayments.reduce((sum, dp) => sum + Number(dp.amount), 0);
+  const todayRepaidByType = {
+    sale: todayRepaidPayments.filter(d => d.source_type === 'sale').reduce((s, d) => s + Number(d.amount), 0),
+    service: todayRepaidPayments.filter(d => d.source_type === 'service').reduce((s, d) => s + Number(d.amount), 0),
+    order: todayRepaidPayments.filter(d => d.source_type === 'order').reduce((s, d) => s + Number(d.amount), 0),
+  };
 
   // ====== THIS MONTH'S REVENUE (Sales + Services + Customer Orders received) ======
   const monthSales = sales.filter(s => isThisMonth(s.created_at));
@@ -822,6 +842,35 @@ export default function SettingsPage() {
                 <p className="text-[11px] text-muted-foreground">{t('settings.financial.thisMonthRevenue')}</p>
                 <p className="text-xl font-bold text-success tabular-nums">{fmt(monthTotalRevenue)}</p>
                 <p className="text-[10px] text-muted-foreground">{t('settings.financial.cashCollectedThisMonth')}: <span className="font-semibold text-success">{fmt(monthTotalCashCollected)}</span></p>
+              </div>
+            </div>
+
+            {/* Today's Repaid Debts — money received today on previous days' debts */}
+            <div className="p-2.5 rounded-lg bg-info/5 border border-info/20 mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] font-semibold text-info">💵 {t('settings.financial.todaysRepaidDebts')}</p>
+                <p className="text-base font-bold text-info tabular-nums">{fmt(todayRepaidDebtsTotal)}</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-1.5">{t('settings.financial.todaysRepaidDebtsDesc')}</p>
+              {todayRepaidPayments.length > 0 && (
+                <div className="grid grid-cols-3 gap-1 text-[10px]">
+                  <div className="p-1 rounded bg-background/60 text-center">
+                    <p className="text-muted-foreground">📦 {t('settings.financial.fromSales')}</p>
+                    <p className="font-semibold tabular-nums">{fmt(todayRepaidByType.sale)}</p>
+                  </div>
+                  <div className="p-1 rounded bg-background/60 text-center">
+                    <p className="text-muted-foreground">🛠️ {t('settings.financial.fromServices')}</p>
+                    <p className="font-semibold tabular-nums">{fmt(todayRepaidByType.service)}</p>
+                  </div>
+                  <div className="p-1 rounded bg-background/60 text-center">
+                    <p className="text-muted-foreground">📋 {t('settings.financial.fromOrders')}</p>
+                    <p className="font-semibold tabular-nums">{fmt(todayRepaidByType.order)}</p>
+                  </div>
+                </div>
+              )}
+              <div className="mt-2 pt-2 border-t border-info/20 flex items-center justify-between">
+                <span className="text-[11px] font-semibold">🏦 {t('settings.financial.totalDayCollected')}</span>
+                <span className="text-base font-bold text-success tabular-nums">{fmt(todayTotalCashCollected + todayRepaidDebtsTotal)}</span>
               </div>
             </div>
 

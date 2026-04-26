@@ -207,6 +207,16 @@ export interface Notification {
   created_at: string;
 }
 
+export interface DebtPayment {
+  id: string;
+  business_id: string;
+  source_type: 'sale' | 'service' | 'order' | 'purchase';
+  source_id: string;
+  amount: number;
+  recorded_by: string;
+  created_at: string;
+}
+
 interface BusinessContextType {
   currentBusiness: Business | null;
   businesses: Business[];
@@ -219,6 +229,7 @@ interface BusinessContextType {
   services: ServiceRecord[];
   expenses: BusinessExpense[];
   notifications: Notification[];
+  debtPayments: DebtPayment[];
   loading: boolean;
   setCurrentBusinessId: (id: string) => void;
   createBusiness: (name: string, address: string, contact: string, email: string, countryCode?: string) => Promise<void>;
@@ -283,6 +294,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const [services, setServices] = useState<ServiceRecord[]>(() => readJsonSync(CACHE_KEYS.services, []));
   const [expenses, setExpenses] = useState<BusinessExpense[]>(() => readJsonSync(CACHE_KEYS.expenses, []));
   const [notifications, setNotifications] = useState<Notification[]>(EMPTY_NOTIFICATIONS);
+  const [debtPayments, setDebtPayments] = useState<DebtPayment[]>([]);
   const [loading, setLoading] = useState(() => readJsonSync<Business[]>(CACHE_KEYS.businesses, []).length === 0 && navigator.onLine);
 
   const setCurrentBusinessId = useCallback((id: string) => {
@@ -421,7 +433,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   async function loadBusinessData() {
     if (!currentBusinessId) return;
     try {
-      const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes, expensesRes, notifRes] = await Promise.all([
+      const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes, expensesRes, notifRes, debtPayRes] = await Promise.all([
         supabase.from('stock_items').select('*').eq('business_id', currentBusinessId).order('name').limit(2000),
         supabase.from('sales').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
         supabase.from('purchases').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
@@ -429,6 +441,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         supabase.from('services').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
         supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
         supabase.from('notifications').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(50),
+        (supabase as any).from('debt_payments').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(500),
       ]);
 
       if (stockRes.error || salesRes.error || purchasesRes.error || ordersRes.error || servicesRes.error || expensesRes.error || notifRes.error) {
@@ -437,6 +450,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
       setStock((stockRes.data || []) as StockItem[]);
       setNotifications((notifRes.data || []) as Notification[]);
+      setDebtPayments(((debtPayRes as any)?.data || []) as DebtPayment[]);
       setServices((servicesRes.data || []) as ServiceRecord[]);
       setExpenses((expensesRes.data || []) as any[]);
 
@@ -1346,9 +1360,32 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     setExpenses(prev => prev.filter(e => e.id !== id));
   }, []);
 
+  const logDebtPayment = useCallback(async (sourceType: DebtPayment['source_type'], sourceId: string, delta: number, recordedBy: string) => {
+    if (!currentBusinessId || delta <= 0) return;
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const optimistic: DebtPayment = {
+      id: tempId, business_id: currentBusinessId, source_type: sourceType,
+      source_id: sourceId, amount: delta, recorded_by: recordedBy || '',
+      created_at: new Date().toISOString(),
+    };
+    setDebtPayments(prev => [optimistic, ...prev]);
+    const { data, error } = await (supabase as any).from('debt_payments').insert({
+      business_id: currentBusinessId, source_type: sourceType, source_id: sourceId,
+      amount: delta, recorded_by: recordedBy || '',
+    }).select().single();
+    if (error) {
+      console.warn('Failed to log debt payment:', error);
+      setDebtPayments(prev => prev.filter(d => d.id !== tempId));
+      return;
+    }
+    setDebtPayments(prev => prev.map(d => d.id === tempId ? (data as DebtPayment) : d));
+  }, [currentBusinessId]);
+
   const updateSalePayment = useCallback(async (saleId: string, amountPaid: number, paymentStatus: string) => {
     const sale = sales.find(s => s.id === saleId);
     if (!sale) return;
+    const previousPaid = Number(sale.amount_paid) || 0;
+    const delta = Math.max(0, amountPaid - previousPaid);
     const bal = Math.max(0, Number(sale.grand_total) - amountPaid);
     const status = bal <= 0 ? 'paid' : (amountPaid > 0 ? 'partial' : 'unpaid');
     const { error } = await supabase.from('sales').update({
@@ -1356,6 +1393,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }).eq('id', saleId);
     if (error) { toast.error(error.message); return; }
     setSales(prev => prev.map(s => s.id === saleId ? { ...s, amount_paid: amountPaid, balance: bal, payment_status: status } : s));
+    if (delta > 0) await logDebtPayment('sale', saleId, delta, sale.recorded_by);
     if (status === 'paid' && currentBusiness) {
       await saveReceipt({
         business_id: currentBusiness.id, receipt_type: 'sale', transaction_id: saleId,
@@ -1369,11 +1407,13 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     } else {
       toast.success('Payment updated!');
     }
-  }, [sales, currentBusiness]);
+  }, [sales, currentBusiness, logDebtPayment]);
 
   const updatePurchasePayment = useCallback(async (purchaseId: string, amountPaid: number, paymentStatus: string) => {
     const purchase = purchases.find(p => p.id === purchaseId);
     if (!purchase) return;
+    const previousPaid = Number(purchase.amount_paid) || 0;
+    const delta = Math.max(0, amountPaid - previousPaid);
     const bal = Math.max(0, Number(purchase.grand_total) - amountPaid);
     const status = bal <= 0 ? 'paid' : (amountPaid > 0 ? 'partial' : 'unpaid');
     const { error } = await supabase.from('purchases').update({
@@ -1381,6 +1421,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     } as any).eq('id', purchaseId);
     if (error) { toast.error(error.message); return; }
     setPurchases(prev => prev.map(p => p.id === purchaseId ? { ...p, amount_paid: amountPaid, balance: bal, payment_status: status } : p));
+    if (delta > 0) await logDebtPayment('purchase', purchaseId, delta, purchase.recorded_by);
     if (status === 'paid' && currentBusiness) {
       await saveReceipt({
         business_id: currentBusiness.id, receipt_type: 'purchase', transaction_id: purchaseId,
@@ -1394,11 +1435,13 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     } else {
       toast.success('Payment updated!');
     }
-  }, [purchases, currentBusiness]);
+  }, [purchases, currentBusiness, logDebtPayment]);
 
   const updateServicePayment = useCallback(async (serviceId: string, amountPaid: number, paymentStatus: string) => {
     const service = services.find(s => s.id === serviceId);
     if (!service) return;
+    const previousPaid = Number(service.amount_paid) || 0;
+    const delta = Math.max(0, amountPaid - previousPaid);
     const bal = Math.max(0, Number(service.cost) - amountPaid);
     const status = bal <= 0 ? 'paid' : (amountPaid > 0 ? 'partial' : 'unpaid');
     const { error } = await supabase.from('services').update({
@@ -1406,6 +1449,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }).eq('id', serviceId);
     if (error) { toast.error(error.message); return; }
     setServices(prev => prev.map(s => s.id === serviceId ? { ...s, amount_paid: amountPaid, balance: bal, payment_status: status } : s));
+    if (delta > 0) await logDebtPayment('service', serviceId, delta, service.seller_name);
     if (status === 'paid' && currentBusiness) {
       await saveReceipt({
         business_id: currentBusiness.id, receipt_type: 'service', transaction_id: serviceId,
@@ -1417,7 +1461,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       });
     }
     toast.success('Service payment updated!');
-  }, [services, currentBusiness]);
+  }, [services, currentBusiness, logDebtPayment]);
 
   const refreshData = useCallback(async () => {
     if (!navigator.onLine) return;
@@ -1427,7 +1471,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   return (
     <BusinessContext.Provider value={{
       currentBusiness, businesses, memberships, userRole,
-      stock, sales, purchases, orders, services, expenses, notifications, loading,
+      stock, sales, purchases, orders, services, expenses, notifications, debtPayments, loading,
       setCurrentBusinessId, createBusiness, deleteBusiness, updateBusiness,
       addStockItem, updateStockItem, deleteStockItem, restoreStockItem, permanentDeleteStockItem,
       addSale, addPurchase, addOrder, updateOrder, completeOrderToSale,

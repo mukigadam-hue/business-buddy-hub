@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import ScreenshotButton from '@/components/ScreenshotButton';
 import { toast } from 'sonner';
 
 function useNavItems() {
@@ -353,6 +354,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={refreshing} title="Refresh all data">
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               </Button>
+              <ScreenshotButton variant="icon" />
               <NotificationsPanel />
             </div>
           </div>
@@ -445,9 +447,12 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
           {/* Mobile refresh bar */}
           <div className="md:hidden flex items-center justify-between px-3 pt-2 pb-1">
             <span className="text-xs font-semibold text-muted-foreground truncate">{currentBusiness?.name}</span>
-            <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={handleRefresh} disabled={refreshing}>
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
-            </Button>
+            <div className="flex items-center gap-1">
+              <ScreenshotButton variant="compact" />
+              <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={handleRefresh} disabled={refreshing}>
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
+              </Button>
+            </div>
           </div>
           <div className="p-3 sm:p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">{children}</div>
           {/* Desktop prev/next page nav */}

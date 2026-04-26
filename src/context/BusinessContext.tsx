@@ -229,6 +229,7 @@ interface BusinessContextType {
   services: ServiceRecord[];
   expenses: BusinessExpense[];
   notifications: Notification[];
+  debtPayments: DebtPayment[];
   loading: boolean;
   setCurrentBusinessId: (id: string) => void;
   createBusiness: (name: string, address: string, contact: string, email: string, countryCode?: string) => Promise<void>;

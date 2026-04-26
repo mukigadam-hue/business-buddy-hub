@@ -294,6 +294,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const [services, setServices] = useState<ServiceRecord[]>(() => readJsonSync(CACHE_KEYS.services, []));
   const [expenses, setExpenses] = useState<BusinessExpense[]>(() => readJsonSync(CACHE_KEYS.expenses, []));
   const [notifications, setNotifications] = useState<Notification[]>(EMPTY_NOTIFICATIONS);
+  const [debtPayments, setDebtPayments] = useState<DebtPayment[]>([]);
   const [loading, setLoading] = useState(() => readJsonSync<Business[]>(CACHE_KEYS.businesses, []).length === 0 && navigator.onLine);
 
   const setCurrentBusinessId = useCallback((id: string) => {

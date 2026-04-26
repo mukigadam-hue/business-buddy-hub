@@ -20,14 +20,19 @@ const EXPENSE_CATEGORIES = [
   'Research & Development', 'Insurance', 'Other',
 ];
 
+// Waste categories share the expenses table but belong to the Waste module
+// — exclude them from the operational expenses view and totals.
+const WASTE_CATEGORIES = new Set(['Expired', 'Faulty', 'Returned', 'Damaged', 'Spoiled', 'Waste']);
+
 export default function FactoryExpenses() {
   const { t } = useTranslation();
   const { expenses, addExpense, deleteExpense } = useFactory();
   const { fmt } = useCurrency();
   const [form, setForm] = useState({ category: '', description: '', amount: '', recorded_by: '', expense_date: new Date().toISOString().slice(0, 10) });
 
-  const todayExpenses = expenses.filter(e => new Date(e.created_at).toDateString() === new Date().toDateString());
-  const prevExpenses = expenses.filter(e => new Date(e.created_at).toDateString() !== new Date().toDateString());
+  const operationalExpenses = expenses.filter(e => !WASTE_CATEGORIES.has(e.category));
+  const todayExpenses = operationalExpenses.filter(e => new Date(e.created_at).toDateString() === new Date().toDateString());
+  const prevExpenses = operationalExpenses.filter(e => new Date(e.created_at).toDateString() !== new Date().toDateString());
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
 
   const todayTotal = todayExpenses.reduce((sum, e) => sum + Number(e.amount), 0);

@@ -941,7 +941,7 @@ export default function SettingsPage() {
               <div>
                 <p className="text-xs text-muted-foreground">{t('settings.financial.allTimeExpenses')}</p>
                 <p className="text-lg font-bold text-destructive tabular-nums">{fmt(totalExpenses)}</p>
-                <p className="text-[10px] text-muted-foreground">{expenses.length} {t('settings.financial.totalCount')}</p>
+                <p className="text-[10px] text-muted-foreground">{operationalExpenses.length} {t('settings.financial.totalCount')}</p>
               </div>
             </div>
           </div>

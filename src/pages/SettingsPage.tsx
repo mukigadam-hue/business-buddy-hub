@@ -845,6 +845,35 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* Today's Repaid Debts — money received today on previous days' debts */}
+            <div className="p-2.5 rounded-lg bg-info/5 border border-info/20 mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] font-semibold text-info">💵 {t('settings.financial.todaysRepaidDebts')}</p>
+                <p className="text-base font-bold text-info tabular-nums">{fmt(todayRepaidDebtsTotal)}</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-1.5">{t('settings.financial.todaysRepaidDebtsDesc')}</p>
+              {todayRepaidPayments.length > 0 && (
+                <div className="grid grid-cols-3 gap-1 text-[10px]">
+                  <div className="p-1 rounded bg-background/60 text-center">
+                    <p className="text-muted-foreground">📦 {t('settings.financial.fromSales')}</p>
+                    <p className="font-semibold tabular-nums">{fmt(todayRepaidByType.sale)}</p>
+                  </div>
+                  <div className="p-1 rounded bg-background/60 text-center">
+                    <p className="text-muted-foreground">🛠️ {t('settings.financial.fromServices')}</p>
+                    <p className="font-semibold tabular-nums">{fmt(todayRepaidByType.service)}</p>
+                  </div>
+                  <div className="p-1 rounded bg-background/60 text-center">
+                    <p className="text-muted-foreground">📋 {t('settings.financial.fromOrders')}</p>
+                    <p className="font-semibold tabular-nums">{fmt(todayRepaidByType.order)}</p>
+                  </div>
+                </div>
+              )}
+              <div className="mt-2 pt-2 border-t border-info/20 flex items-center justify-between">
+                <span className="text-[11px] font-semibold">🏦 {t('settings.financial.totalDayCollected')}</span>
+                <span className="text-base font-bold text-success tabular-nums">{fmt(todayTotalCashCollected + todayRepaidDebtsTotal)}</span>
+              </div>
+            </div>
+
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between items-center p-2 rounded bg-background/80">
                 <span className="text-xs">📦 {t('settings.financial.stockSales')} ({todaySales.length})</span>

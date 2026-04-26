@@ -433,7 +433,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   async function loadBusinessData() {
     if (!currentBusinessId) return;
     try {
-      const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes, expensesRes, notifRes] = await Promise.all([
+      const [stockRes, salesRes, purchasesRes, ordersRes, servicesRes, expensesRes, notifRes, debtPayRes] = await Promise.all([
         supabase.from('stock_items').select('*').eq('business_id', currentBusinessId).order('name').limit(2000),
         supabase.from('sales').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
         supabase.from('purchases').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
@@ -441,6 +441,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         supabase.from('services').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
         supabase.from('business_expenses').select('*').eq('business_id', currentBusinessId).is('deleted_at', null).order('created_at', { ascending: false }).limit(2000),
         supabase.from('notifications').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(50),
+        (supabase as any).from('debt_payments').select('*').eq('business_id', currentBusinessId).order('created_at', { ascending: false }).limit(500),
       ]);
 
       if (stockRes.error || salesRes.error || purchasesRes.error || ordersRes.error || servicesRes.error || expensesRes.error || notifRes.error) {
@@ -449,6 +450,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
       setStock((stockRes.data || []) as StockItem[]);
       setNotifications((notifRes.data || []) as Notification[]);
+      setDebtPayments(((debtPayRes as any)?.data || []) as DebtPayment[]);
       setServices((servicesRes.data || []) as ServiceRecord[]);
       setExpenses((expensesRes.data || []) as any[]);
 

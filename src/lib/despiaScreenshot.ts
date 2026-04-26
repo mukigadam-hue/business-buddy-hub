@@ -1,13 +1,15 @@
 /**
  * Despia native shell screenshot helper.
  *
- * Despia exposes a global `despia()` function (separate from `window.despia.AdMob`)
- * that the native iOS/Android shell intercepts. Calling `despia("takescreenshot://")`
- * triggers the native screenshot capture, saving the image to the device's gallery.
+ * The Despia native wrapper exposes a global `despia()` bridge function.
+ * Calling `despia("takescreenshot://")` triggers native screenshot capture
+ * and saves the image to the device's gallery.
  *
- * On the web (outside the Despia shell) this gracefully falls back to a no-op
- * and returns `false` so callers can offer an alternative or hide the button.
+ * On the web (outside the native shell) this gracefully returns `false` so
+ * callers can fall back to a browser-based capture or hide the action.
  */
+
+import '@/types/despia.d.ts';
 
 /** True if running inside the Despia native shell (the bridge function exists). */
 export function isDespiaShell(): boolean {
@@ -23,6 +25,11 @@ export function takeNativeScreenshot(): boolean {
     const fn = (window as any).despia;
     if (typeof fn === 'function') {
       fn('takescreenshot://');
+      return true;
+    }
+    // Some Despia builds expose the bridge only as a top-level global.
+    if (typeof (globalThis as any).despia === 'function') {
+      (globalThis as any).despia('takescreenshot://');
       return true;
     }
   } catch (err) {

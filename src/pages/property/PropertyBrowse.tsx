@@ -72,6 +72,10 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
   const [paymentFrequency, setPaymentFrequency] = useState('monthly');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Price negotiation state — renter can request a lower price than what's listed
+  const [wantsNegotiate, setWantsNegotiate] = useState(false);
+  const [requestedPrice, setRequestedPrice] = useState('');
+  const [negotiationNote, setNegotiationNote] = useState('');
 
   if (!asset) return null;
 

@@ -25,6 +25,7 @@ import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import { addToOfflineQueue } from '@/lib/offlineStore';
 import { PhoneInput, isValidIntlPhone } from '@/components/PhoneInput';
 import { isAssetBookable, shouldMarkAssetOccupied } from '@/lib/propertyUnits';
+import { sendBookingNotification } from '@/lib/propertyNotifications';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },
@@ -34,38 +35,8 @@ const PAYMENT_FREQUENCIES = [
   { value: 'one-time', label: 'One-Time Payment' },
 ];
 
-// Helper to send notifications to both owner and renter businesses
-async function sendCrossBusinessNotification(booking: any, title: string, message: string) {
-  try {
-    // 1. Notify the owner's business
-    await supabase.from('notifications').insert({
-      business_id: booking.business_id,
-      title,
-      message,
-      type: 'booking',
-    } as any);
-
-    // 2. Notify the renter — find all businesses where renter_id is a member
-    if (booking.renter_id) {
-      const { data: renterMemberships } = await supabase
-        .from('business_memberships')
-        .select('business_id')
-        .eq('user_id', booking.renter_id);
-      if (renterMemberships) {
-        for (const m of renterMemberships) {
-          if (m.business_id !== booking.business_id) {
-            await supabase.from('notifications').insert({
-              business_id: m.business_id,
-              title,
-              message,
-              type: 'booking',
-            } as any);
-          }
-        }
-      }
-    }
-  } catch (e) { console.error('Notification error', e); }
-}
+// Backwards-compat alias used throughout this file
+const sendCrossBusinessNotification = sendBookingNotification;
 
 // ========== CHECK-IN DIALOG ==========
 function CheckInDialog({ bookingId, businessId, onClose }: { bookingId: string; businessId: string; onClose: () => void }) {
@@ -815,6 +786,119 @@ const FREQ_LABEL: Record<string, string> = {
   monthly: 'Monthly', quarterly: 'Every 3 months', biannual: 'Every 6 months', annual: 'Yearly', 'one-time': 'One-time',
 };
 
+// ========== PRICE NEGOTIATION PANEL ==========
+// Renders the live negotiation thread between renter and owner.
+// Owner sees Accept / Reject / Counter; renter sees Accept counter / Decline.
+// Once accepted, the booking's `final_agreed_price` is locked and the renter
+// can proceed to checkout (record payment) just like any normal Order.
+function NegotiationPanel({ booking, isOwner, fmt, assetName }: {
+  booking: any; isOwner: boolean; fmt: (n: number) => string; assetName: string;
+}) {
+  const [counter, setCounter] = useState('');
+  const [busy, setBusy] = useState(false);
+  const status = booking.negotiation_status || 'none';
+  const listed = Number(booking.total_price) || 0;
+  const requested = Number(booking.requested_price) || 0;
+  const countered = Number(booking.counter_price) || 0;
+
+  // Nothing to show if there's no negotiation in flight at all
+  if (status === 'none') return null;
+
+  async function update(payload: any, notifyTitle: string, notifyMsg: string) {
+    setBusy(true);
+    const { error } = await supabase.from('property_bookings').update(payload).eq('id', booking.id);
+    if (error) { toast.error(error.message); setBusy(false); return; }
+    await sendBookingNotification(booking, notifyTitle, notifyMsg, 'negotiation');
+    toast.success('Sent!');
+    setBusy(false);
+  }
+
+  const ownerAccept = () => update(
+    { negotiation_status: 'accepted', final_agreed_price: requested, total_price: requested, agreed_amount: requested },
+    '✅ Price Accepted',
+    `Owner accepted ${fmt(requested)} for "${assetName}". You can now pay.`
+  );
+  const ownerReject = () => update(
+    { negotiation_status: 'rejected', final_agreed_price: listed },
+    '❌ Price Request Declined',
+    `Owner kept the listed price (${fmt(listed)}) for "${assetName}". Pay the listed amount to confirm.`
+  );
+  const ownerCounter = () => {
+    const v = parseFloat(counter);
+    if (!v || v <= 0) { toast.error('Enter a counter price'); return; }
+    if (v >= listed) { toast.error('Counter must be less than listed price'); return; }
+    update(
+      { negotiation_status: 'countered', counter_price: v },
+      '💬 Owner Counter-Offered',
+      `Owner counter-offered ${fmt(v)} for "${assetName}" (you asked ${fmt(requested)}).`
+    );
+  };
+  const renterAcceptCounter = () => update(
+    { negotiation_status: 'accepted', final_agreed_price: countered, total_price: countered, agreed_amount: countered },
+    '✅ Counter Accepted',
+    `Renter accepted ${fmt(countered)} for "${assetName}". Awaiting payment.`
+  );
+  const renterDeclineCounter = () => update(
+    { negotiation_status: 'rejected', final_agreed_price: listed },
+    '❌ Counter Declined',
+    `Renter declined the counter. Will pay listed price (${fmt(listed)}) for "${assetName}".`
+  );
+
+  return (
+    <div className="rounded-lg border border-dashed bg-muted/30 p-2 space-y-2">
+      <p className="text-[10px] font-semibold text-muted-foreground">💬 Price Negotiation</p>
+      <div className="text-xs space-y-0.5">
+        <p>Listed: <span className="font-medium">{fmt(listed)}</span></p>
+        {requested > 0 && <p>Renter offered: <span className="font-medium text-warning">{fmt(requested)}</span></p>}
+        {countered > 0 && <p>Owner counter: <span className="font-medium text-primary">{fmt(countered)}</span></p>}
+        {booking.negotiation_note && (
+          <p className="text-muted-foreground italic">"{booking.negotiation_note}"</p>
+        )}
+        {status === 'accepted' && (
+          <p className="text-success font-semibold">✅ Agreed at {fmt(Number(booking.final_agreed_price) || 0)}</p>
+        )}
+        {status === 'rejected' && (
+          <p className="text-destructive font-semibold">❌ Negotiation closed — listed price applies</p>
+        )}
+      </div>
+
+      {/* Owner sees accept/reject/counter when there's a renter request */}
+      {isOwner && status === 'requested' && (
+        <div className="space-y-1">
+          <div className="flex gap-1">
+            <Button size="sm" className="h-7 text-xs flex-1" onClick={ownerAccept} disabled={busy}>
+              <CheckCircle className="h-3 w-3 mr-1" /> Accept {fmt(requested)}
+            </Button>
+            <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={ownerReject} disabled={busy}>
+              <XCircle className="h-3 w-3 mr-1" /> Refuse
+            </Button>
+          </div>
+          <div className="flex gap-1">
+            <Input type="number" min="0" step="0.01" placeholder="Counter price..." value={counter}
+              onChange={e => setCounter(e.target.value)} className="h-7 text-xs" />
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={ownerCounter} disabled={busy}>
+              <Send className="h-3 w-3 mr-1" /> Counter
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Renter sees accept/decline when owner counters */}
+      {!isOwner && status === 'countered' && (
+        <div className="flex gap-1">
+          <Button size="sm" className="h-7 text-xs flex-1" onClick={renterAcceptCounter} disabled={busy}>
+            <CheckCircle className="h-3 w-3 mr-1" /> Accept {fmt(countered)}
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={renterDeclineCounter} disabled={busy}>
+            <XCircle className="h-3 w-3 mr-1" /> Pay listed instead
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 // ========== MAIN COMPONENT ==========
 export default function PropertyBookings() {
   const { t } = useTranslation();
@@ -993,6 +1077,7 @@ export default function PropertyBookings() {
             )}
           </div>
 
+          <NegotiationPanel booking={booking} isOwner={isOwnerOrAdmin} fmt={fmt} assetName={asset?.name || 'Asset'} />
           <BookingComments booking={booking} isOwner={isOwnerOrAdmin} />
 
           <div className="flex gap-1 flex-wrap pt-1">

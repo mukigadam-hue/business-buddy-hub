@@ -1407,6 +1407,7 @@ export type Database = {
           asset_id: string
           booking_type: string
           business_id: string
+          counter_price: number
           created_at: string
           deleted_at: string | null
           deleted_by: string | null
@@ -1415,9 +1416,12 @@ export type Database = {
           duration_type: string
           end_date: string
           expected_payment_date: string | null
+          final_agreed_price: number
           gender: string
           id: string
           last_payment_date: string | null
+          negotiation_note: string
+          negotiation_status: string
           notes: string
           owner_notes: string | null
           payment_frequency: string
@@ -1429,6 +1433,7 @@ export type Database = {
           renter_id: string
           renter_name: string
           renter_occupation: string | null
+          requested_price: number
           start_date: string
           status: string
           total_price: number
@@ -1440,6 +1445,7 @@ export type Database = {
           asset_id: string
           booking_type?: string
           business_id: string
+          counter_price?: number
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
@@ -1448,9 +1454,12 @@ export type Database = {
           duration_type?: string
           end_date: string
           expected_payment_date?: string | null
+          final_agreed_price?: number
           gender?: string
           id?: string
           last_payment_date?: string | null
+          negotiation_note?: string
+          negotiation_status?: string
           notes?: string
           owner_notes?: string | null
           payment_frequency?: string
@@ -1462,6 +1471,7 @@ export type Database = {
           renter_id: string
           renter_name?: string
           renter_occupation?: string | null
+          requested_price?: number
           start_date: string
           status?: string
           total_price?: number
@@ -1473,6 +1483,7 @@ export type Database = {
           asset_id?: string
           booking_type?: string
           business_id?: string
+          counter_price?: number
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
@@ -1481,9 +1492,12 @@ export type Database = {
           duration_type?: string
           end_date?: string
           expected_payment_date?: string | null
+          final_agreed_price?: number
           gender?: string
           id?: string
           last_payment_date?: string | null
+          negotiation_note?: string
+          negotiation_status?: string
           notes?: string
           owner_notes?: string | null
           payment_frequency?: string
@@ -1495,6 +1509,7 @@ export type Database = {
           renter_id?: string
           renter_name?: string
           renter_occupation?: string | null
+          requested_price?: number
           start_date?: string
           status?: string
           total_price?: number

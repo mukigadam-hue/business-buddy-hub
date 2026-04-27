@@ -20,6 +20,7 @@ import AdSpace, { withInlineAds } from '@/components/AdSpace';
 import { PaymentMethodsViewer } from '@/components/PaymentMethodsManager';
 import ImageLightbox from '@/components/ImageLightbox';
 import { PhoneInput, isValidIntlPhone } from '@/components/PhoneInput';
+import { sendBookingNotification } from '@/lib/propertyNotifications';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },
@@ -71,6 +72,10 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
   const [paymentFrequency, setPaymentFrequency] = useState('monthly');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Price negotiation state — renter can request a lower price than what's listed
+  const [wantsNegotiate, setWantsNegotiate] = useState(false);
+  const [requestedPrice, setRequestedPrice] = useState('');
+  const [negotiationNote, setNegotiationNote] = useState('');
 
   if (!asset) return null;
 
@@ -99,7 +104,27 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
     else units = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (86400000 * 30)));
 
     const totalPrice = price * units;
-    const bookingData = {
+
+    // Validate negotiation request if used
+    let negotiationStatus: 'none' | 'requested' = 'none';
+    let reqPrice = 0;
+    if (wantsNegotiate) {
+      const r = parseFloat(requestedPrice);
+      if (!r || r <= 0) {
+        toast.error('Enter the price you would like to pay');
+        setSubmitting(false);
+        return;
+      }
+      if (r >= totalPrice) {
+        toast.error('Your offer must be lower than the listed price');
+        setSubmitting(false);
+        return;
+      }
+      negotiationStatus = 'requested';
+      reqPrice = r * units;
+    }
+
+    const bookingData: any = {
       asset_id: asset.id,
       business_id: asset.business_id,
       renter_id: user!.id,
@@ -111,6 +136,10 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
       payment_frequency: paymentFrequency,
       total_price: totalPrice,
       agreed_amount: totalPrice,
+      final_agreed_price: wantsNegotiate ? 0 : totalPrice,
+      negotiation_status: negotiationStatus,
+      requested_price: reqPrice,
+      negotiation_note: wantsNegotiate ? toSentenceCase(negotiationNote.trim()) : '',
       status: 'pending',
       notes: toSentenceCase(notes.trim()),
       renter_occupation: toSentenceCase(renterOccupation.trim()),
@@ -126,8 +155,8 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
         payload: {
           booking: bookingData,
           notify: {
-            title: '📅 New Booking Request',
-            message: `${toTitleCase(renterName.trim())} wants to rent "${asset.name}" from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}. Total: ${totalPrice}. Payment: ${paymentFrequency}.`,
+            title: wantsNegotiate ? '💬 Price Request Received' : '📅 New Booking Request',
+            message: `${toTitleCase(renterName.trim())} wants to rent "${asset.name}" from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}.`,
           },
         },
       });
@@ -144,8 +173,17 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
     });
     if (hasConflict) { toast.error('All units of this asset are booked for the selected dates'); setSubmitting(false); return; }
 
-    const { error } = await supabase.from('property_bookings').insert(bookingData as any);
+    const { error } = await supabase.from('property_bookings').insert(bookingData);
     if (error) { toast.error(error.message); setSubmitting(false); return; }
+
+    // Cross-business notification (bell + toast)
+    await sendBookingNotification(
+      { business_id: asset.business_id, renter_id: user!.id },
+      wantsNegotiate ? '💬 Price Request Received' : '📅 New Booking Request',
+      wantsNegotiate
+        ? `${toTitleCase(renterName.trim())} wants "${asset.name}" at ${reqPrice} (listed: ${totalPrice}). Reason: ${negotiationNote.trim().slice(0, 60) || '—'}`
+        : `${toTitleCase(renterName.trim())} wants to rent "${asset.name}" from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}. Total: ${totalPrice}.`
+    );
 
     // Auto-save property owner as contact
     try {
@@ -166,7 +204,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
       }
     } catch (e) { /* silent */ }
 
-    toast.success('Booking request sent!');
+    toast.success(wantsNegotiate ? 'Price request sent! Owner will respond.' : 'Booking request sent!');
     setSubmitting(false);
     onClose();
   }
@@ -255,6 +293,41 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="..." rows={2} />
           </div>
 
+          {/* Price negotiation: ask for a lower price */}
+          <div className="rounded-lg border border-dashed p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold">💬 Want a better price?</p>
+                <p className="text-[11px] text-muted-foreground">Ask the owner to lower the listed price. They can accept, refuse, or counter.</p>
+              </div>
+              <Button type="button" size="sm" variant={wantsNegotiate ? 'default' : 'outline'}
+                onClick={() => setWantsNegotiate(v => !v)}>
+                {wantsNegotiate ? 'Cancel' : 'Request lower price'}
+              </Button>
+            </div>
+            {wantsNegotiate && (
+              <div className="space-y-2 pt-1">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Your offer per {durationType === 'hourly' ? 'hour' : durationType === 'daily' ? 'day' : 'month'}</Label>
+                    <Input type="number" min="0" step="0.01" value={requestedPrice}
+                      onChange={e => setRequestedPrice(e.target.value)} placeholder="e.g. 80" />
+                  </div>
+                  <div className="text-[11px] text-muted-foreground self-end pb-2">
+                    Listed: <span className="font-semibold text-foreground">
+                      {fmt(durationType === 'hourly' ? asset.hourly_price : durationType === 'daily' ? asset.daily_price : asset.monthly_price)}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Reason / note to the owner</Label>
+                  <Textarea value={negotiationNote} onChange={e => setNegotiationNote(e.target.value)}
+                    rows={2} placeholder="e.g. Long-term stay, cash up-front..." />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Show landlord's registered payment methods */}
           {asset.business_id && (
             <div className="p-3 bg-muted/30 rounded-lg border">
@@ -264,7 +337,8 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
           )}
 
           <Button onClick={handleBook} disabled={submitting} className="w-full">
-            <Send className="h-4 w-4 mr-2" />{submitting ? t('propertyUI.loading') : t('propertyUI.requestBooking')}
+            <Send className="h-4 w-4 mr-2" />
+            {submitting ? t('propertyUI.loading') : wantsNegotiate ? 'Send Price Request' : t('propertyUI.requestBooking')}
           </Button>
         </div>
       </DialogContent>

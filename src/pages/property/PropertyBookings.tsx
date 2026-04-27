@@ -25,6 +25,7 @@ import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import { addToOfflineQueue } from '@/lib/offlineStore';
 import { PhoneInput, isValidIntlPhone } from '@/components/PhoneInput';
 import { isAssetBookable, shouldMarkAssetOccupied } from '@/lib/propertyUnits';
+import { sendBookingNotification } from '@/lib/propertyNotifications';
 
 const PAYMENT_FREQUENCIES = [
   { value: 'monthly', label: 'Every Month' },
@@ -34,38 +35,8 @@ const PAYMENT_FREQUENCIES = [
   { value: 'one-time', label: 'One-Time Payment' },
 ];
 
-// Helper to send notifications to both owner and renter businesses
-async function sendCrossBusinessNotification(booking: any, title: string, message: string) {
-  try {
-    // 1. Notify the owner's business
-    await supabase.from('notifications').insert({
-      business_id: booking.business_id,
-      title,
-      message,
-      type: 'booking',
-    } as any);
-
-    // 2. Notify the renter — find all businesses where renter_id is a member
-    if (booking.renter_id) {
-      const { data: renterMemberships } = await supabase
-        .from('business_memberships')
-        .select('business_id')
-        .eq('user_id', booking.renter_id);
-      if (renterMemberships) {
-        for (const m of renterMemberships) {
-          if (m.business_id !== booking.business_id) {
-            await supabase.from('notifications').insert({
-              business_id: m.business_id,
-              title,
-              message,
-              type: 'booking',
-            } as any);
-          }
-        }
-      }
-    }
-  } catch (e) { console.error('Notification error', e); }
-}
+// Backwards-compat alias used throughout this file
+const sendCrossBusinessNotification = sendBookingNotification;
 
 // ========== CHECK-IN DIALOG ==========
 function CheckInDialog({ bookingId, businessId, onClose }: { bookingId: string; businessId: string; onClose: () => void }) {

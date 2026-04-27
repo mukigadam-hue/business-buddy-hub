@@ -255,6 +255,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <AdMobManager />
       <AuthProvider>
         <AppContent />
       </AuthProvider>

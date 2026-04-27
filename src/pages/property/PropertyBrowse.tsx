@@ -104,7 +104,27 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
     else units = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (86400000 * 30)));
 
     const totalPrice = price * units;
-    const bookingData = {
+
+    // Validate negotiation request if used
+    let negotiationStatus: 'none' | 'requested' = 'none';
+    let reqPrice = 0;
+    if (wantsNegotiate) {
+      const r = parseFloat(requestedPrice);
+      if (!r || r <= 0) {
+        toast.error('Enter the price you would like to pay');
+        setSubmitting(false);
+        return;
+      }
+      if (r >= totalPrice) {
+        toast.error('Your offer must be lower than the listed price');
+        setSubmitting(false);
+        return;
+      }
+      negotiationStatus = 'requested';
+      reqPrice = r * units;
+    }
+
+    const bookingData: any = {
       asset_id: asset.id,
       business_id: asset.business_id,
       renter_id: user!.id,
@@ -116,6 +136,10 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
       payment_frequency: paymentFrequency,
       total_price: totalPrice,
       agreed_amount: totalPrice,
+      final_agreed_price: wantsNegotiate ? 0 : totalPrice,
+      negotiation_status: negotiationStatus,
+      requested_price: reqPrice,
+      negotiation_note: wantsNegotiate ? toSentenceCase(negotiationNote.trim()) : '',
       status: 'pending',
       notes: toSentenceCase(notes.trim()),
       renter_occupation: toSentenceCase(renterOccupation.trim()),
@@ -131,8 +155,8 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
         payload: {
           booking: bookingData,
           notify: {
-            title: '📅 New Booking Request',
-            message: `${toTitleCase(renterName.trim())} wants to rent "${asset.name}" from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}. Total: ${totalPrice}. Payment: ${paymentFrequency}.`,
+            title: wantsNegotiate ? '💬 Price Request Received' : '📅 New Booking Request',
+            message: `${toTitleCase(renterName.trim())} wants to rent "${asset.name}" from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}.`,
           },
         },
       });
@@ -149,8 +173,17 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
     });
     if (hasConflict) { toast.error('All units of this asset are booked for the selected dates'); setSubmitting(false); return; }
 
-    const { error } = await supabase.from('property_bookings').insert(bookingData as any);
+    const { error } = await supabase.from('property_bookings').insert(bookingData);
     if (error) { toast.error(error.message); setSubmitting(false); return; }
+
+    // Cross-business notification (bell + toast)
+    await sendBookingNotification(
+      { business_id: asset.business_id, renter_id: user!.id },
+      wantsNegotiate ? '💬 Price Request Received' : '📅 New Booking Request',
+      wantsNegotiate
+        ? `${toTitleCase(renterName.trim())} wants "${asset.name}" at ${reqPrice} (listed: ${totalPrice}). Reason: ${negotiationNote.trim().slice(0, 60) || '—'}`
+        : `${toTitleCase(renterName.trim())} wants to rent "${asset.name}" from ${start.toLocaleDateString()} to ${end.toLocaleDateString()}. Total: ${totalPrice}.`
+    );
 
     // Auto-save property owner as contact
     try {
@@ -171,7 +204,7 @@ function BookingDialog({ open, onClose, asset, propertyName }: { open: boolean; 
       }
     } catch (e) { /* silent */ }
 
-    toast.success('Booking request sent!');
+    toast.success(wantsNegotiate ? 'Price request sent! Owner will respond.' : 'Booking request sent!');
     setSubmitting(false);
     onClose();
   }

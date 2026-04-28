@@ -4,14 +4,12 @@ import despia from 'despia-native';
 /**
  * AdMobManager
  *
- * Initializes the native AdMob bridge once on app mount and pre-warms the
- * Google AdSense queue used by Despia's "WebView for Ads" pipeline.
+ * Initializes the Despia native bridge once on app mount and pre-warms the
+ * Google ad tag queue used by Despia's WebView API for Ads pipeline.
  *
- * - Inside the Despia native shell: calls `despia('initializeAds://')` so the
- *   native AdMob SDK is started and ready to serve <ins class="adsbygoogle">
- *   placements, banners, interstitials, and rewarded ads.
- * - On the web: just primes `window.adsbygoogle` so the first <AdSpace /> render
- *   actually triggers an ad request to Google.
+ * Despia's inline AdMob support is activated in the native wrapper after the
+ * app is rebuilt with AdMob enabled. The web layer should only initialize the
+ * bridge and render standard Google ad tags when slots become visible.
  *
  * Real AdMob IDs used by this project:
  *   App ID:               ca-app-pub-9605564713228252~8941826330
@@ -21,22 +19,15 @@ import despia from 'despia-native';
  */
 export default function AdMobManager() {
   useEffect(() => {
-    // 1. Native shell: kick the AdMob SDK to life.
+    // 1. Native shell: wake the AdMob pipeline immediately on app startup.
     try {
-      const ua = (navigator.userAgent || '').toLowerCase();
-      const isDespia = ua.includes('despia') || typeof (window as any).despia === 'function';
-      if (isDespia) {
-        // Initialize ads pipeline.
-        try { despia('initializeAds://'); } catch {}
-        // Tell the shell our App ID, in case the runtime needs it explicitly.
-        try { despia('admobappid://?id=ca-app-pub-9605564713228252~8941826330'); } catch {}
-      }
+      despia('initializeAds://');
+      despia('admobappid://?id=ca-app-pub-9605564713228252~8941826330');
     } catch {
       /* no-op: native bridge not present */
     }
 
-    // 2. Web / WebView for Ads: ensure the AdSense queue exists so individual
-    //    <AdSpace /> components can push their ad requests to Google.
+    // 2. Web / WebView for Ads: ensure the queue exists before slots mount.
     try {
       (window as any).adsbygoogle = (window as any).adsbygoogle || [];
     } catch {

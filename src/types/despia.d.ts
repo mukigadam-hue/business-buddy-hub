@@ -22,6 +22,10 @@ declare global {
     /** Same `despia()` function attached to window for safe access checks. */
     despia?: ((command: string) => void) & {
       AdMob?: {
+        initialize?: (options?: {
+          appId?: string;
+          requestTrackingAuthorization?: boolean;
+        }) => Promise<void>;
         showBanner: (options: {
           adId: string;
           position?: 'top' | 'bottom';

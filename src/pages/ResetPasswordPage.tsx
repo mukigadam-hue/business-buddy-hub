@@ -12,24 +12,65 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [exchanging, setExchanging] = useState(true);
   const [success, setSuccess] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
-    // Listen for the PASSWORD_RECOVERY event from Supabase
+    let cancelled = false;
+
+    // Listen for the PASSWORD_RECOVERY event from Supabase (legacy hash flow)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecovery(true);
+        setExchanging(false);
       }
     });
 
-    // Also check hash for type=recovery (in case event already fired)
-    const hash = window.location.hash;
-    if (hash.includes('type=recovery')) {
-      setIsRecovery(true);
-    }
+    (async () => {
+      try {
+        const url = new URL(window.location.href);
+        const hash = window.location.hash || '';
+        const search = url.search || '';
 
-    return () => subscription.unsubscribe();
+        // Modern PKCE flow: ?code=...
+        const code = url.searchParams.get('code');
+        // Legacy hash flow: #access_token=...&type=recovery
+        const hasHashRecovery = hash.includes('type=recovery') || hash.includes('access_token=');
+        // Query-string recovery hint (?type=recovery)
+        const queryType = url.searchParams.get('type');
+
+        if (code) {
+          // Exchange the recovery code for a session
+          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+          if (cancelled) return;
+          if (error) {
+            toast.error('This reset link has expired or was already used. Please request a new one.', { duration: 8000 });
+            setIsRecovery(false);
+          } else {
+            setIsRecovery(true);
+            // Clean the URL so the code can't be reused / leaked
+            window.history.replaceState({}, '', '/reset-password');
+          }
+        } else if (hasHashRecovery || queryType === 'recovery') {
+          // Hash-based session is auto-handled by supabase-js; mark as recovery
+          setIsRecovery(true);
+        } else {
+          // No code/hash — maybe the user is already in a recovery session
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) setIsRecovery(true);
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setExchanging(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -48,8 +89,11 @@ export default function ResetPasswordPage() {
       if (error) throw error;
       setSuccess(true);
       toast.success('Password updated successfully!');
-      // Redirect to home after a moment
-      setTimeout(() => { window.location.href = '/'; }, 2000);
+      // Sign out so the user signs back in fresh with the new password
+      setTimeout(async () => {
+        try { await supabase.auth.signOut(); } catch {}
+        window.location.href = '/';
+      }, 1800);
     } catch (err: any) {
       toast.error(err.message || 'Failed to update password');
     } finally {
@@ -67,19 +111,24 @@ export default function ResetPasswordPage() {
             </div>
             <h1 className="text-2xl font-bold text-foreground">Reset Password</h1>
             <p className="text-sm text-muted-foreground">
-              {success ? 'Your password has been updated!' : 'Enter your new password below'}
+              {success ? 'Your password has been updated!' : exchanging ? 'Verifying your reset link…' : isRecovery ? 'Enter your new password below' : 'Reset link not detected'}
             </p>
           </div>
 
           {success ? (
             <div className="text-center space-y-3">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-              <p className="text-sm text-muted-foreground">Redirecting you to sign in...</p>
+              <p className="text-sm text-muted-foreground">Redirecting you to sign in…</p>
+            </div>
+          ) : exchanging ? (
+            <div className="text-center space-y-3">
+              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-sm text-muted-foreground">One moment while we verify your link…</p>
             </div>
           ) : !isRecovery ? (
             <div className="text-center space-y-3">
               <p className="text-sm text-muted-foreground">
-                This page is used after clicking the password reset link in your email. If you haven't received one, go back and request a reset.
+                This page opens after you tap the password reset link in your email. If you haven't received one, go back and request a reset.
               </p>
               <Button variant="outline" onClick={() => window.location.href = '/'}>
                 Go to Sign In
@@ -116,7 +165,7 @@ export default function ResetPasswordPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Password'}
+                {loading ? 'Updating…' : 'Update Password'}
               </Button>
             </form>
           )}

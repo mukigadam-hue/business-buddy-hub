@@ -2,21 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { usePremium } from '@/hooks/usePremium';
 import { useAdRefresh } from '@/hooks/useAdRefresh';
-import despia from 'despia-native';
 
 /**
- * Real Google AdMob / AdSense ad slot.
+ * Real Google AdMob inline ad slot through Despia WebView API for Ads.
  *
- * Inside the Despia native shell these <ins class="adsbygoogle"> tags are
- * served by the native AdMob SDK ("WebView for Ads"), so each render
- * generates a real ad request that shows up in your AdMob dashboard.
- * On the web they are served by Google AdSense.
+ * The screenshot showed a DoubleClick ad URL being opened as a normal page.
+ * That happens when an ad response is navigated to instead of rendered in an
+ * inline slot. This component keeps the Google tag inside a fixed-size <ins>
+ * element and only pushes after that element is mounted and measurable.
  *
  * The component:
- *  - hides itself for premium users,
- *  - pushes a real ad request on mount and on every 60s refresh tick,
- *  - additionally fires `despia('displaynativead://?adid=...')` inside the
- *    native shell as a hint so the runtime preloads inventory.
+ *  - renders for every user during testing,
+ *  - pushes a real ad request on mount and every compliant 60s refresh tick,
+ *  - avoids unsupported native-display URL schemes for inline placements.
  */
 
 const ADSENSE_CLIENT = 'ca-pub-9605564713228252';
@@ -26,12 +24,6 @@ const SLOT_BY_VARIANT: Record<NonNullable<AdSpaceProps['variant']>, string> = {
   banner: '4713172172',
   inline: '3146574176',
   compact: '4713172172',
-};
-
-const NATIVE_AD_UNIT_BY_VARIANT: Record<NonNullable<AdSpaceProps['variant']>, string> = {
-  banner: 'ca-app-pub-9605564713228252/4713172172',
-  inline: 'ca-app-pub-9605564713228252/3146574176',
-  compact: 'ca-app-pub-9605564713228252/4713172172',
 };
 
 interface AdSpaceProps {
@@ -57,6 +49,7 @@ export default function AdSpace({ variant = 'banner', className, slotId }: AdSpa
 
     const tryPush = () => {
       if (pushedRef.current) return;
+      if (!insRef.current || insRef.current.offsetWidth <= 0) return;
       try {
         const w = window as any;
         w.adsbygoogle = w.adsbygoogle || [];
@@ -68,17 +61,8 @@ export default function AdSpace({ variant = 'banner', className, slotId }: AdSpa
       }
     };
 
-    // Hint to the native Despia shell to preload native inventory.
-    try {
-      const ua = (navigator.userAgent || '').toLowerCase();
-      if (ua.includes('despia') || typeof (window as any).despia === 'function') {
-        const adId = NATIVE_AD_UNIT_BY_VARIANT[variant];
-        try { despia(`displaynativead://?adid=${encodeURIComponent(adId)}`); } catch {}
-      }
-    } catch {}
-
-    // Defer slightly to ensure adsbygoogle.js has loaded.
-    const t = setTimeout(tryPush, 50);
+    // Defer slightly to ensure the element is laid out before requesting.
+    const t = setTimeout(tryPush, 120);
     return () => clearTimeout(t);
   }, [showAds, variant, refreshKey, onAdLoaded]);
 

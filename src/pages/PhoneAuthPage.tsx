@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Briefcase, Loader2, ShieldCheck, ArrowLeft, KeyRound, Eye, EyeOff, Mail, Phone } from "lucide-react";
+import { Briefcase, Loader2, ShieldCheck, ArrowLeft, KeyRound, Eye, EyeOff, Mail, Phone, HelpCircle, UserPlus } from "lucide-react";
 import { CountryDialPicker } from "@/components/auth/CountryDialPicker";
 import { SimulatedSmsScreen } from "@/components/auth/SimulatedSmsScreen";
 import { COUNTRIES, detectDefaultCountry, type Country } from "@/lib/countries";
 import { phoneSignIn, phoneSignUp, phoneResetPin } from "@/lib/phoneAuth";
 import { supabase } from "@/integrations/supabase/client";
+import LegalHelpModal from "@/components/LegalHelpModal";
 
 const LAST_AUTH_KEY = "bm:last-auth";
 type LastAuth =

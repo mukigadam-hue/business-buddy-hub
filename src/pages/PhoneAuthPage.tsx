@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Briefcase, Loader2, ShieldCheck, ArrowLeft, KeyRound, Eye, EyeOff, Mail, Phone } from "lucide-react";
+import { Briefcase, Loader2, ShieldCheck, ArrowLeft, KeyRound, Eye, EyeOff, Mail, Phone, HelpCircle, UserPlus } from "lucide-react";
 import { CountryDialPicker } from "@/components/auth/CountryDialPicker";
 import { SimulatedSmsScreen } from "@/components/auth/SimulatedSmsScreen";
 import { COUNTRIES, detectDefaultCountry, type Country } from "@/lib/countries";
 import { phoneSignIn, phoneSignUp, phoneResetPin } from "@/lib/phoneAuth";
 import { supabase } from "@/integrations/supabase/client";
+import LegalHelpModal from "@/components/LegalHelpModal";
 
 const LAST_AUTH_KEY = "bm:last-auth";
 type LastAuth =
@@ -272,17 +273,37 @@ export default function PhoneAuthPage() {
 
   // -------- Render --------
   return (
-    <div className="min-h-screen-safe bg-gradient-to-br from-primary/5 via-background to-amber-500/5 flex items-center justify-center p-4 overflow-y-auto">
-      <Card className="w-full max-w-md p-6 sm:p-8 shadow-xl border-2">
+    <div
+      className="min-h-screen-safe flex flex-col items-center justify-start p-4 sm:p-6 overflow-y-auto"
+      style={{ background: 'linear-gradient(145deg, hsl(217 72% 12%) 0%, hsl(217 72% 18%) 35%, hsl(210 60% 25%) 65%, hsl(42 80% 45%) 100%)' }}
+    >
+      {/* Hero Section */}
+      <div className="w-full max-w-md sm:max-w-xl text-center pt-6 sm:pt-10 pb-5 sm:pb-8 px-2">
+        <h1
+          className="text-2xl sm:text-4xl font-extrabold drop-shadow-lg leading-tight mb-2 sm:mb-4"
+          style={{ color: 'hsl(210, 40%, 98%)' }}
+        >
+          Grow Your Business with BizTrack
+        </h1>
+        <p
+          className="text-sm sm:text-base leading-relaxed max-w-md mx-auto font-medium"
+          style={{ color: 'hsla(210, 40%, 98%, 0.85)' }}
+        >
+          The all-in-one dashboard to track sales, manage expenses, and stay organized.
+        </p>
+      </div>
+
+      <Card className="w-full max-w-md p-6 sm:p-8 shadow-xl border-2 bg-card/95 backdrop-blur-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-white shadow-lg">
             <Briefcase className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="font-bold text-lg leading-tight">Business Manager</h1>
+            <h2 className="font-bold text-lg leading-tight">Business Manager</h2>
             <p className="text-xs text-muted-foreground">Phone-first &middot; no email needed</p>
           </div>
         </div>
+
 
         {/* === SIGN UP === */}
         {mode === "signup" && (
@@ -509,14 +530,26 @@ export default function PhoneAuthPage() {
               </>
             )}
 
-            <div className="text-center text-sm pt-2 border-t">
-              New here?{" "}
-              <button onClick={() => setMode("signup")} className="text-primary font-medium hover:underline">
-                Create account
-              </button>
+            {/* Prominent "Create new account" card — highlighted differently from Sign in */}
+            <div className="mt-4 rounded-xl border-2 border-dashed border-amber-500/60 bg-amber-500/10 p-4">
+              <p className="text-sm font-bold text-foreground mb-1 flex items-center gap-1.5">
+                <UserPlus className="h-4 w-4 text-amber-600" />
+                New to BizTrack?
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                You don't have an account yet — tap below to register your business in seconds.
+              </p>
+              <Button
+                onClick={() => setMode("signup")}
+                variant="outline"
+                className="w-full h-11 font-semibold border-2 border-amber-500 text-amber-700 hover:bg-amber-500 hover:text-white dark:text-amber-400"
+              >
+                Create a new account
+              </Button>
             </div>
           </div>
         )}
+
 
         {/* === RECOVERY: phone entry === */}
         {mode === "recover-phone" && (
@@ -593,7 +626,21 @@ export default function PhoneAuthPage() {
           </div>
         )}
 
-        <p className="text-[10px] text-center text-muted-foreground mt-6">
+        <div className="mt-6 rounded-lg border border-primary/20 bg-primary/5 p-3 text-center space-y-2">
+          <p className="text-xs font-medium text-foreground leading-relaxed">
+            ✨ Before you leave or continue, tap <strong>Help &amp; Legal</strong> below to discover everything this app can do for your business!
+          </p>
+          <LegalHelpModal
+            defaultTab="guide"
+            trigger={
+              <Button variant="default" size="sm" className="gap-2 text-xs animate-pulse">
+                <HelpCircle className="h-4 w-4" /> Help &amp; Legal
+              </Button>
+            }
+          />
+        </div>
+
+        <p className="text-[10px] text-center text-muted-foreground mt-4">
           By continuing you agree to our{" "}
           <a href="/privacy" className="underline">privacy policy</a>.
           {" · "}

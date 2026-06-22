@@ -276,7 +276,7 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
       if (error) throw error;
       setProducts((data as Product[]) || []);
       setPropertyAssets([]);
-    } catch { /* ignore */ } finally { setLoadingProducts(false); }
+    } catch (e) { console.error('[BusinessDetailDialog] loadProducts failed', e); } finally { setLoadingProducts(false); }
   }, [business]);
 
   const loadReviews = useCallback(async () => {

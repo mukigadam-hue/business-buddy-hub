@@ -423,10 +423,25 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
                 {isProperty ? (
                   <PropertyAssetsWithLightbox assets={propertyAssets} fmt={fmt} />
                 ) : (
-                  <ProductsWithLightbox products={products} fmt={fmt} />
+                  <ProductsWithLightbox
+                    products={products}
+                    fmt={fmt}
+                    continueLabel="Continue to Order"
+                    onContinueWithSelection={(selected) => {
+                      if (!business) return;
+                      const names = selected.map(p => p.name).filter(Boolean);
+                      const params = new URLSearchParams({
+                        supplier_id: business.id,
+                        supplier_name: business.name,
+                      });
+                      if (names.length) params.set('items', names.join('|'));
+                      onOpenChange(false);
+                      navigate(`/orders?${params.toString()}`);
+                    }}
+                  />
                 )}
                 <p className="text-[10px] text-muted-foreground text-center pt-2">
-                  💡 Use the "{actionLabel}" button above to start {isProperty ? 'a booking' : 'an order'}
+                  💡 Tick items above then tap "Continue to Order", or use "{actionLabel}" to browse the full ordering flow.
                 </p>
               </>
             )}

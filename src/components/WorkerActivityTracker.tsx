@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Users, TrendingUp, ShoppingCart, Package, ClipboardList, Wrench,
-  ChevronDown, ChevronUp, Trash2, Receipt as ReceiptIcon,
+  ChevronDown, ChevronUp, Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { softDeleteRecord, applyStockReversal, type RecyclableTable } from '@/lib/recycleBin';

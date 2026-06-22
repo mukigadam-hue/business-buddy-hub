@@ -35,6 +35,7 @@ export default function OrdersPage() {
   const { user } = useAuth();
   const { fmt } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const [tab, setTab] = useState('live_orders');
   const isAdmin = userRole === 'owner' || userRole === 'admin';
   const { locked: submitLocked, withLock } = useSubmitLock();

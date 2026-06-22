@@ -33,6 +33,7 @@ interface BusinessInfo {
   business_code: string | null;
   products_description: string;
   country_code?: string;
+  currency_symbol?: string | null;
 }
 
 interface Product {

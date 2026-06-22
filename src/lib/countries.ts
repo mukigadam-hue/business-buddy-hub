@@ -1,4 +1,5 @@
-// Country dial codes + currency, ordered with East Africa first (primary market).
+// Worldwide country dial codes + currency.
+// East Africa is listed first (primary market), the rest follow alphabetically.
 export interface Country {
   code: string;            // ISO2
   name: string;
@@ -9,33 +10,275 @@ export interface Country {
   language: string;        // primary BCP-47 language tag (e.g. "en", "sw")
 }
 
-const RAW: Array<Omit<Country, "phonePrefix">> = [
-  { code: "UG", name: "Uganda",          dial: "+256", flag: "🇺🇬", currencySymbol: "USh", language: "en" },
-  { code: "KE", name: "Kenya",           dial: "+254", flag: "🇰🇪", currencySymbol: "KSh", language: "sw" },
-  { code: "TZ", name: "Tanzania",        dial: "+255", flag: "🇹🇿", currencySymbol: "TSh", language: "sw" },
-  { code: "RW", name: "Rwanda",          dial: "+250", flag: "🇷🇼", currencySymbol: "RF",  language: "rw" },
-  { code: "BI", name: "Burundi",         dial: "+257", flag: "🇧🇮", currencySymbol: "FBu", language: "fr" },
-  { code: "SS", name: "South Sudan",     dial: "+211", flag: "🇸🇸", currencySymbol: "SSP", language: "en" },
-  { code: "ET", name: "Ethiopia",        dial: "+251", flag: "🇪🇹", currencySymbol: "Br",  language: "am" },
-  { code: "CD", name: "DR Congo",        dial: "+243", flag: "🇨🇩", currencySymbol: "FC",  language: "fr" },
-  { code: "NG", name: "Nigeria",         dial: "+234", flag: "🇳🇬", currencySymbol: "₦",   language: "en" },
-  { code: "GH", name: "Ghana",           dial: "+233", flag: "🇬🇭", currencySymbol: "₵",   language: "en" },
-  { code: "ZA", name: "South Africa",    dial: "+27",  flag: "🇿🇦", currencySymbol: "R",   language: "en" },
-  { code: "EG", name: "Egypt",           dial: "+20",  flag: "🇪🇬", currencySymbol: "E£",  language: "ar" },
-  { code: "GB", name: "United Kingdom",  dial: "+44",  flag: "🇬🇧", currencySymbol: "£",   language: "en" },
-  { code: "US", name: "United States",   dial: "+1",   flag: "🇺🇸", currencySymbol: "$",   language: "en" },
-  { code: "CA", name: "Canada",          dial: "+1",   flag: "🇨🇦", currencySymbol: "C$",  language: "en" },
-  { code: "IN", name: "India",           dial: "+91",  flag: "🇮🇳", currencySymbol: "₹",   language: "hi" },
-  { code: "PK", name: "Pakistan",        dial: "+92",  flag: "🇵🇰", currencySymbol: "₨",   language: "ur" },
-  { code: "AE", name: "UAE",             dial: "+971", flag: "🇦🇪", currencySymbol: "AED", language: "ar" },
-  { code: "SA", name: "Saudi Arabia",    dial: "+966", flag: "🇸🇦", currencySymbol: "SAR", language: "ar" },
-  { code: "DE", name: "Germany",         dial: "+49",  flag: "🇩🇪", currencySymbol: "€",   language: "de" },
-  { code: "FR", name: "France",          dial: "+33",  flag: "🇫🇷", currencySymbol: "€",   language: "fr" },
-  { code: "CN", name: "China",           dial: "+86",  flag: "🇨🇳", currencySymbol: "¥",   language: "zh" },
-  { code: "AU", name: "Australia",       dial: "+61",  flag: "🇦🇺", currencySymbol: "A$",  language: "en" },
+// Convert ISO2 to flag emoji (works for every valid ISO2 code).
+function isoToFlag(iso: string): string {
+  if (!iso || iso.length !== 2) return "🌐";
+  const A = 0x1f1e6;
+  const a = "A".charCodeAt(0);
+  const cc = iso.toUpperCase();
+  return String.fromCodePoint(A + (cc.charCodeAt(0) - a), A + (cc.charCodeAt(1) - a));
+}
+
+type Raw = [string, string, string, string, string]; // [iso, name, dial, currency, lang]
+
+// Primary market (kept at the top so the picker defaults are familiar).
+const PRIMARY: Raw[] = [
+  ["UG", "Uganda",       "+256", "USh", "en"],
+  ["KE", "Kenya",        "+254", "KSh", "sw"],
+  ["TZ", "Tanzania",     "+255", "TSh", "sw"],
+  ["RW", "Rwanda",       "+250", "RF",  "rw"],
+  ["BI", "Burundi",      "+257", "FBu", "fr"],
+  ["SS", "South Sudan",  "+211", "SSP", "en"],
+  ["ET", "Ethiopia",     "+251", "Br",  "am"],
+  ["CD", "DR Congo",     "+243", "FC",  "fr"],
 ];
 
-export const COUNTRIES: Country[] = RAW.map((c) => ({ ...c, phonePrefix: c.dial }));
+// Every other country / territory in the world, alphabetical by name.
+const REST: Raw[] = [
+  ["AF", "Afghanistan", "+93", "؋", "ps"],
+  ["AL", "Albania", "+355", "L", "sq"],
+  ["DZ", "Algeria", "+213", "DA", "ar"],
+  ["AS", "American Samoa", "+1684", "$", "en"],
+  ["AD", "Andorra", "+376", "€", "ca"],
+  ["AO", "Angola", "+244", "Kz", "pt"],
+  ["AI", "Anguilla", "+1264", "EC$", "en"],
+  ["AG", "Antigua and Barbuda", "+1268", "EC$", "en"],
+  ["AR", "Argentina", "+54", "AR$", "es"],
+  ["AM", "Armenia", "+374", "֏", "hy"],
+  ["AW", "Aruba", "+297", "ƒ", "nl"],
+  ["AU", "Australia", "+61", "A$", "en"],
+  ["AT", "Austria", "+43", "€", "de"],
+  ["AZ", "Azerbaijan", "+994", "₼", "az"],
+  ["BS", "Bahamas", "+1242", "B$", "en"],
+  ["BH", "Bahrain", "+973", "BD", "ar"],
+  ["BD", "Bangladesh", "+880", "৳", "bn"],
+  ["BB", "Barbados", "+1246", "Bds$", "en"],
+  ["BY", "Belarus", "+375", "Br", "be"],
+  ["BE", "Belgium", "+32", "€", "nl"],
+  ["BZ", "Belize", "+501", "BZ$", "en"],
+  ["BJ", "Benin", "+229", "CFA", "fr"],
+  ["BM", "Bermuda", "+1441", "BD$", "en"],
+  ["BT", "Bhutan", "+975", "Nu", "dz"],
+  ["BO", "Bolivia", "+591", "Bs", "es"],
+  ["BA", "Bosnia and Herzegovina", "+387", "KM", "bs"],
+  ["BW", "Botswana", "+267", "P", "en"],
+  ["BR", "Brazil", "+55", "R$", "pt"],
+  ["IO", "British Indian Ocean Territory", "+246", "$", "en"],
+  ["VG", "British Virgin Islands", "+1284", "$", "en"],
+  ["BN", "Brunei", "+673", "B$", "ms"],
+  ["BG", "Bulgaria", "+359", "лв", "bg"],
+  ["BF", "Burkina Faso", "+226", "CFA", "fr"],
+  ["KH", "Cambodia", "+855", "៛", "km"],
+  ["CM", "Cameroon", "+237", "FCFA", "fr"],
+  ["CA", "Canada", "+1", "C$", "en"],
+  ["CV", "Cape Verde", "+238", "Esc", "pt"],
+  ["KY", "Cayman Islands", "+1345", "CI$", "en"],
+  ["CF", "Central African Republic", "+236", "FCFA", "fr"],
+  ["TD", "Chad", "+235", "FCFA", "fr"],
+  ["CL", "Chile", "+56", "CL$", "es"],
+  ["CN", "China", "+86", "¥", "zh"],
+  ["CX", "Christmas Island", "+61", "A$", "en"],
+  ["CC", "Cocos (Keeling) Islands", "+61", "A$", "en"],
+  ["CO", "Colombia", "+57", "CO$", "es"],
+  ["KM", "Comoros", "+269", "CF", "ar"],
+  ["CK", "Cook Islands", "+682", "NZ$", "en"],
+  ["CR", "Costa Rica", "+506", "₡", "es"],
+  ["CI", "Côte d'Ivoire", "+225", "CFA", "fr"],
+  ["HR", "Croatia", "+385", "€", "hr"],
+  ["CU", "Cuba", "+53", "₱", "es"],
+  ["CW", "Curaçao", "+599", "ƒ", "nl"],
+  ["CY", "Cyprus", "+357", "€", "el"],
+  ["CZ", "Czech Republic", "+420", "Kč", "cs"],
+  ["DK", "Denmark", "+45", "kr", "da"],
+  ["DJ", "Djibouti", "+253", "Fdj", "fr"],
+  ["DM", "Dominica", "+1767", "EC$", "en"],
+  ["DO", "Dominican Republic", "+1809", "RD$", "es"],
+  ["EC", "Ecuador", "+593", "$", "es"],
+  ["EG", "Egypt", "+20", "E£", "ar"],
+  ["SV", "El Salvador", "+503", "$", "es"],
+  ["GQ", "Equatorial Guinea", "+240", "FCFA", "es"],
+  ["ER", "Eritrea", "+291", "Nfk", "ti"],
+  ["EE", "Estonia", "+372", "€", "et"],
+  ["SZ", "Eswatini", "+268", "L", "en"],
+  ["FK", "Falkland Islands", "+500", "£", "en"],
+  ["FO", "Faroe Islands", "+298", "kr", "fo"],
+  ["FJ", "Fiji", "+679", "FJ$", "en"],
+  ["FI", "Finland", "+358", "€", "fi"],
+  ["FR", "France", "+33", "€", "fr"],
+  ["GF", "French Guiana", "+594", "€", "fr"],
+  ["PF", "French Polynesia", "+689", "₣", "fr"],
+  ["GA", "Gabon", "+241", "FCFA", "fr"],
+  ["GM", "Gambia", "+220", "D", "en"],
+  ["GE", "Georgia", "+995", "₾", "ka"],
+  ["DE", "Germany", "+49", "€", "de"],
+  ["GH", "Ghana", "+233", "₵", "en"],
+  ["GI", "Gibraltar", "+350", "£", "en"],
+  ["GR", "Greece", "+30", "€", "el"],
+  ["GL", "Greenland", "+299", "kr", "kl"],
+  ["GD", "Grenada", "+1473", "EC$", "en"],
+  ["GP", "Guadeloupe", "+590", "€", "fr"],
+  ["GU", "Guam", "+1671", "$", "en"],
+  ["GT", "Guatemala", "+502", "Q", "es"],
+  ["GG", "Guernsey", "+44", "£", "en"],
+  ["GN", "Guinea", "+224", "FG", "fr"],
+  ["GW", "Guinea-Bissau", "+245", "CFA", "pt"],
+  ["GY", "Guyana", "+592", "G$", "en"],
+  ["HT", "Haiti", "+509", "G", "fr"],
+  ["HN", "Honduras", "+504", "L", "es"],
+  ["HK", "Hong Kong", "+852", "HK$", "zh"],
+  ["HU", "Hungary", "+36", "Ft", "hu"],
+  ["IS", "Iceland", "+354", "kr", "is"],
+  ["IN", "India", "+91", "₹", "hi"],
+  ["ID", "Indonesia", "+62", "Rp", "id"],
+  ["IR", "Iran", "+98", "﷼", "fa"],
+  ["IQ", "Iraq", "+964", "ع.د", "ar"],
+  ["IE", "Ireland", "+353", "€", "en"],
+  ["IM", "Isle of Man", "+44", "£", "en"],
+  ["IL", "Israel", "+972", "₪", "he"],
+  ["IT", "Italy", "+39", "€", "it"],
+  ["JM", "Jamaica", "+1876", "J$", "en"],
+  ["JP", "Japan", "+81", "¥", "ja"],
+  ["JE", "Jersey", "+44", "£", "en"],
+  ["JO", "Jordan", "+962", "JD", "ar"],
+  ["KZ", "Kazakhstan", "+7", "₸", "kk"],
+  ["KI", "Kiribati", "+686", "A$", "en"],
+  ["XK", "Kosovo", "+383", "€", "sq"],
+  ["KW", "Kuwait", "+965", "KD", "ar"],
+  ["KG", "Kyrgyzstan", "+996", "сом", "ky"],
+  ["LA", "Laos", "+856", "₭", "lo"],
+  ["LV", "Latvia", "+371", "€", "lv"],
+  ["LB", "Lebanon", "+961", "ل.ل", "ar"],
+  ["LS", "Lesotho", "+266", "L", "en"],
+  ["LR", "Liberia", "+231", "L$", "en"],
+  ["LY", "Libya", "+218", "LD", "ar"],
+  ["LI", "Liechtenstein", "+423", "CHF", "de"],
+  ["LT", "Lithuania", "+370", "€", "lt"],
+  ["LU", "Luxembourg", "+352", "€", "fr"],
+  ["MO", "Macau", "+853", "MOP", "zh"],
+  ["MG", "Madagascar", "+261", "Ar", "fr"],
+  ["MW", "Malawi", "+265", "MK", "en"],
+  ["MY", "Malaysia", "+60", "RM", "ms"],
+  ["MV", "Maldives", "+960", "Rf", "dv"],
+  ["ML", "Mali", "+223", "CFA", "fr"],
+  ["MT", "Malta", "+356", "€", "mt"],
+  ["MH", "Marshall Islands", "+692", "$", "en"],
+  ["MQ", "Martinique", "+596", "€", "fr"],
+  ["MR", "Mauritania", "+222", "UM", "ar"],
+  ["MU", "Mauritius", "+230", "₨", "en"],
+  ["YT", "Mayotte", "+262", "€", "fr"],
+  ["MX", "Mexico", "+52", "MX$", "es"],
+  ["FM", "Micronesia", "+691", "$", "en"],
+  ["MD", "Moldova", "+373", "L", "ro"],
+  ["MC", "Monaco", "+377", "€", "fr"],
+  ["MN", "Mongolia", "+976", "₮", "mn"],
+  ["ME", "Montenegro", "+382", "€", "sr"],
+  ["MS", "Montserrat", "+1664", "EC$", "en"],
+  ["MA", "Morocco", "+212", "DH", "ar"],
+  ["MZ", "Mozambique", "+258", "MT", "pt"],
+  ["MM", "Myanmar", "+95", "K", "my"],
+  ["NA", "Namibia", "+264", "N$", "en"],
+  ["NR", "Nauru", "+674", "A$", "en"],
+  ["NP", "Nepal", "+977", "₨", "ne"],
+  ["NL", "Netherlands", "+31", "€", "nl"],
+  ["NC", "New Caledonia", "+687", "₣", "fr"],
+  ["NZ", "New Zealand", "+64", "NZ$", "en"],
+  ["NI", "Nicaragua", "+505", "C$", "es"],
+  ["NE", "Niger", "+227", "CFA", "fr"],
+  ["NG", "Nigeria", "+234", "₦", "en"],
+  ["NU", "Niue", "+683", "NZ$", "en"],
+  ["NF", "Norfolk Island", "+672", "A$", "en"],
+  ["KP", "North Korea", "+850", "₩", "ko"],
+  ["MK", "North Macedonia", "+389", "ден", "mk"],
+  ["MP", "Northern Mariana Islands", "+1670", "$", "en"],
+  ["NO", "Norway", "+47", "kr", "no"],
+  ["OM", "Oman", "+968", "OMR", "ar"],
+  ["PK", "Pakistan", "+92", "₨", "ur"],
+  ["PW", "Palau", "+680", "$", "en"],
+  ["PS", "Palestine", "+970", "₪", "ar"],
+  ["PA", "Panama", "+507", "B/.", "es"],
+  ["PG", "Papua New Guinea", "+675", "K", "en"],
+  ["PY", "Paraguay", "+595", "₲", "es"],
+  ["PE", "Peru", "+51", "S/", "es"],
+  ["PH", "Philippines", "+63", "₱", "en"],
+  ["PL", "Poland", "+48", "zł", "pl"],
+  ["PT", "Portugal", "+351", "€", "pt"],
+  ["PR", "Puerto Rico", "+1787", "$", "es"],
+  ["QA", "Qatar", "+974", "QR", "ar"],
+  ["RE", "Réunion", "+262", "€", "fr"],
+  ["RO", "Romania", "+40", "lei", "ro"],
+  ["RU", "Russia", "+7", "₽", "ru"],
+  ["BL", "Saint Barthélemy", "+590", "€", "fr"],
+  ["SH", "Saint Helena", "+290", "£", "en"],
+  ["KN", "Saint Kitts and Nevis", "+1869", "EC$", "en"],
+  ["LC", "Saint Lucia", "+1758", "EC$", "en"],
+  ["MF", "Saint Martin", "+590", "€", "fr"],
+  ["PM", "Saint Pierre and Miquelon", "+508", "€", "fr"],
+  ["VC", "Saint Vincent and the Grenadines", "+1784", "EC$", "en"],
+  ["WS", "Samoa", "+685", "WS$", "en"],
+  ["SM", "San Marino", "+378", "€", "it"],
+  ["ST", "São Tomé and Príncipe", "+239", "Db", "pt"],
+  ["SA", "Saudi Arabia", "+966", "SAR", "ar"],
+  ["SN", "Senegal", "+221", "CFA", "fr"],
+  ["RS", "Serbia", "+381", "дин", "sr"],
+  ["SC", "Seychelles", "+248", "₨", "fr"],
+  ["SL", "Sierra Leone", "+232", "Le", "en"],
+  ["SG", "Singapore", "+65", "S$", "en"],
+  ["SX", "Sint Maarten", "+1721", "ƒ", "nl"],
+  ["SK", "Slovakia", "+421", "€", "sk"],
+  ["SI", "Slovenia", "+386", "€", "sl"],
+  ["SB", "Solomon Islands", "+677", "SI$", "en"],
+  ["SO", "Somalia", "+252", "Sh", "so"],
+  ["ZA", "South Africa", "+27", "R", "en"],
+  ["KR", "South Korea", "+82", "₩", "ko"],
+  ["ES", "Spain", "+34", "€", "es"],
+  ["LK", "Sri Lanka", "+94", "₨", "si"],
+  ["SD", "Sudan", "+249", "SDG", "ar"],
+  ["SR", "Suriname", "+597", "$", "nl"],
+  ["SE", "Sweden", "+46", "kr", "sv"],
+  ["CH", "Switzerland", "+41", "CHF", "de"],
+  ["SY", "Syria", "+963", "£", "ar"],
+  ["TW", "Taiwan", "+886", "NT$", "zh"],
+  ["TJ", "Tajikistan", "+992", "SM", "tg"],
+  ["TH", "Thailand", "+66", "฿", "th"],
+  ["TL", "Timor-Leste", "+670", "$", "pt"],
+  ["TG", "Togo", "+228", "CFA", "fr"],
+  ["TK", "Tokelau", "+690", "NZ$", "en"],
+  ["TO", "Tonga", "+676", "T$", "en"],
+  ["TT", "Trinidad and Tobago", "+1868", "TT$", "en"],
+  ["TN", "Tunisia", "+216", "DT", "ar"],
+  ["TR", "Turkey", "+90", "₺", "tr"],
+  ["TM", "Turkmenistan", "+993", "T", "tk"],
+  ["TC", "Turks and Caicos Islands", "+1649", "$", "en"],
+  ["TV", "Tuvalu", "+688", "A$", "en"],
+  ["UA", "Ukraine", "+380", "₴", "uk"],
+  ["AE", "United Arab Emirates", "+971", "AED", "ar"],
+  ["GB", "United Kingdom", "+44", "£", "en"],
+  ["US", "United States", "+1", "$", "en"],
+  ["UY", "Uruguay", "+598", "$U", "es"],
+  ["UZ", "Uzbekistan", "+998", "сўм", "uz"],
+  ["VU", "Vanuatu", "+678", "VT", "en"],
+  ["VA", "Vatican City", "+39", "€", "it"],
+  ["VE", "Venezuela", "+58", "Bs", "es"],
+  ["VN", "Vietnam", "+84", "₫", "vi"],
+  ["VI", "U.S. Virgin Islands", "+1340", "$", "en"],
+  ["WF", "Wallis and Futuna", "+681", "₣", "fr"],
+  ["EH", "Western Sahara", "+212", "DH", "ar"],
+  ["YE", "Yemen", "+967", "﷼", "ar"],
+  ["ZM", "Zambia", "+260", "ZK", "en"],
+  ["ZW", "Zimbabwe", "+263", "Z$", "en"],
+];
+
+const ALL: Raw[] = [...PRIMARY, ...REST];
+
+export const COUNTRIES: Country[] = ALL.map(([code, name, dial, currencySymbol, language]) => ({
+  code,
+  name,
+  dial,
+  phonePrefix: dial,
+  flag: isoToFlag(code),
+  currencySymbol,
+  language,
+}));
 
 // Back-compat alias used elsewhere in the app.
 export const countries = COUNTRIES;
@@ -50,28 +293,112 @@ export function getCountryFlag(code: string | null | undefined): string {
   return getCountryByCode(code)?.flag ?? "🌐";
 }
 
+// Map IANA timezone prefixes/cities -> ISO2 country codes. Covers every
+// country present in COUNTRIES so detection works worldwide.
+const TZ_TO_ISO: Record<string, string> = {
+  // Africa
+  "Africa/Kampala": "UG", "Africa/Nairobi": "KE", "Africa/Dar_es_Salaam": "TZ",
+  "Africa/Kigali": "RW", "Africa/Bujumbura": "BI", "Africa/Juba": "SS",
+  "Africa/Addis_Ababa": "ET", "Africa/Asmara": "ER", "Africa/Mogadishu": "SO",
+  "Africa/Djibouti": "DJ", "Africa/Khartoum": "SD", "Africa/Cairo": "EG",
+  "Africa/Tripoli": "LY", "Africa/Tunis": "TN", "Africa/Algiers": "DZ",
+  "Africa/Casablanca": "MA", "Africa/El_Aaiun": "EH", "Africa/Nouakchott": "MR",
+  "Africa/Dakar": "SN", "Africa/Banjul": "GM", "Africa/Bissau": "GW",
+  "Africa/Conakry": "GN", "Africa/Freetown": "SL", "Africa/Monrovia": "LR",
+  "Africa/Abidjan": "CI", "Africa/Accra": "GH", "Africa/Lome": "TG",
+  "Africa/Porto-Novo": "BJ", "Africa/Lagos": "NG", "Africa/Ouagadougou": "BF",
+  "Africa/Bamako": "ML", "Africa/Niamey": "NE", "Africa/Ndjamena": "TD",
+  "Africa/Bangui": "CF", "Africa/Douala": "CM", "Africa/Malabo": "GQ",
+  "Africa/Libreville": "GA", "Africa/Brazzaville": "CG", "Africa/Kinshasa": "CD",
+  "Africa/Lubumbashi": "CD", "Africa/Luanda": "AO", "Africa/Windhoek": "NA",
+  "Africa/Gaborone": "BW", "Africa/Harare": "ZW", "Africa/Lusaka": "ZM",
+  "Africa/Blantyre": "MW", "Africa/Maputo": "MZ", "Africa/Johannesburg": "ZA",
+  "Africa/Maseru": "LS", "Africa/Mbabane": "SZ", "Indian/Antananarivo": "MG",
+  "Indian/Mauritius": "MU", "Indian/Mahe": "SC", "Indian/Comoro": "KM",
+  "Atlantic/Cape_Verde": "CV", "Africa/Sao_Tome": "ST",
+  // Europe
+  "Europe/London": "GB", "Europe/Dublin": "IE", "Europe/Lisbon": "PT",
+  "Europe/Madrid": "ES", "Europe/Andorra": "AD", "Europe/Gibraltar": "GI",
+  "Europe/Paris": "FR", "Europe/Monaco": "MC", "Europe/Brussels": "BE",
+  "Europe/Amsterdam": "NL", "Europe/Luxembourg": "LU", "Europe/Berlin": "DE",
+  "Europe/Vienna": "AT", "Europe/Zurich": "CH", "Europe/Vaduz": "LI",
+  "Europe/Rome": "IT", "Europe/Vatican": "VA", "Europe/San_Marino": "SM",
+  "Europe/Malta": "MT", "Europe/Athens": "GR", "Europe/Nicosia": "CY",
+  "Asia/Nicosia": "CY", "Europe/Istanbul": "TR", "Europe/Helsinki": "FI",
+  "Europe/Stockholm": "SE", "Europe/Oslo": "NO", "Europe/Copenhagen": "DK",
+  "Atlantic/Faroe": "FO", "Atlantic/Reykjavik": "IS", "Europe/Tallinn": "EE",
+  "Europe/Riga": "LV", "Europe/Vilnius": "LT", "Europe/Warsaw": "PL",
+  "Europe/Prague": "CZ", "Europe/Bratislava": "SK", "Europe/Budapest": "HU",
+  "Europe/Ljubljana": "SI", "Europe/Zagreb": "HR", "Europe/Sarajevo": "BA",
+  "Europe/Belgrade": "RS", "Europe/Podgorica": "ME", "Europe/Skopje": "MK",
+  "Europe/Tirane": "AL", "Europe/Sofia": "BG", "Europe/Bucharest": "RO",
+  "Europe/Chisinau": "MD", "Europe/Kiev": "UA", "Europe/Kyiv": "UA",
+  "Europe/Minsk": "BY", "Europe/Moscow": "RU", "Europe/Kaliningrad": "RU",
+  // Americas
+  "America/New_York": "US", "America/Chicago": "US", "America/Denver": "US",
+  "America/Los_Angeles": "US", "America/Phoenix": "US", "America/Anchorage": "US",
+  "Pacific/Honolulu": "US", "America/Toronto": "CA", "America/Vancouver": "CA",
+  "America/Edmonton": "CA", "America/Halifax": "CA", "America/St_Johns": "CA",
+  "America/Mexico_City": "MX", "America/Tijuana": "MX", "America/Guatemala": "GT",
+  "America/Belize": "BZ", "America/El_Salvador": "SV", "America/Tegucigalpa": "HN",
+  "America/Managua": "NI", "America/Costa_Rica": "CR", "America/Panama": "PA",
+  "America/Havana": "CU", "America/Jamaica": "JM", "America/Port-au-Prince": "HT",
+  "America/Santo_Domingo": "DO", "America/Puerto_Rico": "PR", "America/Nassau": "BS",
+  "America/Cayman": "KY", "America/Bermuda": "BM", "America/Caracas": "VE",
+  "America/Bogota": "CO", "America/Lima": "PE", "America/La_Paz": "BO",
+  "America/Santiago": "CL", "America/Argentina/Buenos_Aires": "AR",
+  "America/Montevideo": "UY", "America/Asuncion": "PY", "America/Sao_Paulo": "BR",
+  "America/Manaus": "BR", "America/Cayenne": "GF", "America/Paramaribo": "SR",
+  "America/Guyana": "GY", "Atlantic/Stanley": "FK",
+  // Asia
+  "Asia/Jerusalem": "IL", "Asia/Gaza": "PS", "Asia/Hebron": "PS",
+  "Asia/Amman": "JO", "Asia/Beirut": "LB", "Asia/Damascus": "SY",
+  "Asia/Baghdad": "IQ", "Asia/Kuwait": "KW", "Asia/Riyadh": "SA",
+  "Asia/Aden": "YE", "Asia/Qatar": "QA", "Asia/Bahrain": "BH",
+  "Asia/Dubai": "AE", "Asia/Muscat": "OM", "Asia/Tehran": "IR",
+  "Asia/Kabul": "AF", "Asia/Karachi": "PK", "Asia/Tashkent": "UZ",
+  "Asia/Ashgabat": "TM", "Asia/Dushanbe": "TJ", "Asia/Bishkek": "KG",
+  "Asia/Almaty": "KZ", "Asia/Yerevan": "AM", "Asia/Baku": "AZ",
+  "Asia/Tbilisi": "GE", "Asia/Kolkata": "IN", "Asia/Calcutta": "IN",
+  "Asia/Colombo": "LK", "Asia/Kathmandu": "NP", "Asia/Thimphu": "BT",
+  "Asia/Dhaka": "BD", "Asia/Yangon": "MM", "Asia/Bangkok": "TH",
+  "Asia/Vientiane": "LA", "Asia/Phnom_Penh": "KH", "Asia/Ho_Chi_Minh": "VN",
+  "Asia/Kuala_Lumpur": "MY", "Asia/Singapore": "SG", "Asia/Brunei": "BN",
+  "Asia/Jakarta": "ID", "Asia/Makassar": "ID", "Asia/Jayapura": "ID",
+  "Asia/Dili": "TL", "Asia/Manila": "PH", "Asia/Hong_Kong": "HK",
+  "Asia/Macau": "MO", "Asia/Taipei": "TW", "Asia/Shanghai": "CN",
+  "Asia/Urumqi": "CN", "Asia/Ulaanbaatar": "MN", "Asia/Pyongyang": "KP",
+  "Asia/Seoul": "KR", "Asia/Tokyo": "JP", "Indian/Maldives": "MV",
+  // Oceania
+  "Australia/Sydney": "AU", "Australia/Melbourne": "AU", "Australia/Brisbane": "AU",
+  "Australia/Perth": "AU", "Australia/Adelaide": "AU", "Australia/Darwin": "AU",
+  "Australia/Hobart": "AU", "Pacific/Auckland": "NZ", "Pacific/Chatham": "NZ",
+  "Pacific/Fiji": "FJ", "Pacific/Port_Moresby": "PG", "Pacific/Guadalcanal": "SB",
+  "Pacific/Noumea": "NC", "Pacific/Efate": "VU", "Pacific/Tongatapu": "TO",
+  "Pacific/Apia": "WS", "Pacific/Pago_Pago": "AS", "Pacific/Guam": "GU",
+  "Pacific/Saipan": "MP", "Pacific/Palau": "PW", "Pacific/Tarawa": "KI",
+  "Pacific/Majuro": "MH", "Pacific/Pohnpei": "FM", "Pacific/Nauru": "NR",
+  "Pacific/Niue": "NU", "Pacific/Rarotonga": "CK", "Pacific/Funafuti": "TV",
+};
+
 export function detectDefaultCountry(): Country {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-    if (tz.startsWith("Africa/Kampala")) return COUNTRIES[0];
-    if (tz.startsWith("Africa/Nairobi")) return COUNTRIES[1];
-    if (tz.startsWith("Africa/Dar")) return COUNTRIES[2];
-    if (tz.startsWith("Africa/Kigali")) return COUNTRIES[3];
-    if (tz.startsWith("Africa/Bujumbura")) return COUNTRIES[4];
-    if (tz.startsWith("Africa/Juba")) return COUNTRIES[5];
-    if (tz.startsWith("Africa/Addis")) return COUNTRIES[6];
-    if (tz.startsWith("Africa/Lagos")) return COUNTRIES[8];
-    if (tz.startsWith("Africa/Accra")) return COUNTRIES[9];
-    if (tz.startsWith("Africa/Johannesburg")) return COUNTRIES[10];
-    if (tz.startsWith("Africa/Cairo")) return COUNTRIES[11];
-    if (tz.startsWith("Europe/London")) return COUNTRIES[12];
-    if (tz.startsWith("America/")) return COUNTRIES[13];
-    if (tz.startsWith("Asia/Kolkata") || tz.startsWith("Asia/Calcutta")) return COUNTRIES[15];
-    if (tz.startsWith("Asia/Dubai")) return COUNTRIES[17];
-    if (tz.startsWith("Europe/Berlin")) return COUNTRIES[19];
-    if (tz.startsWith("Europe/Paris")) return COUNTRIES[20];
-    if (tz.startsWith("Asia/Shanghai")) return COUNTRIES[21];
-    if (tz.startsWith("Australia/")) return COUNTRIES[22];
+    if (tz && TZ_TO_ISO[tz]) {
+      const c = getCountryByCode(TZ_TO_ISO[tz]);
+      if (c) return c;
+    }
+    // Fallback: best-effort match by region prefix (e.g. "Africa/").
+    const region = tz.split("/")[0];
+    const regionFallback: Record<string, string> = {
+      Africa: "UG", Europe: "GB", Asia: "IN", America: "US",
+      Australia: "AU", Pacific: "AU", Atlantic: "GB", Indian: "MU",
+    };
+    const iso = regionFallback[region];
+    if (iso) {
+      const c = getCountryByCode(iso);
+      if (c) return c;
+    }
   } catch {}
   return COUNTRIES[0];
 }

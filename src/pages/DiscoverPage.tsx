@@ -29,6 +29,7 @@ interface DiscoveredBusiness {
   products_description: string;
   country_code: string;
   district: string;
+  currency_symbol?: string | null;
   last_active_at?: string | null;
 }
 

@@ -501,7 +501,17 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
             ) : (
               <>
                 {isProperty ? (
-                  <PropertyAssetsWithLightbox assets={propertyAssets} fmt={fmt} />
+                  <PropertyAssetsWithLightbox
+                    assets={propertyAssets}
+                    fmt={fmt}
+                    onContinueWithSelection={(assetIds) => {
+                      if (!business) return;
+                      onOpenChange(false);
+                      navigate(`/browse?property_id=${business.id}&property_name=${encodeURIComponent(business.name)}`, {
+                        state: { selectedAssetIds: assetIds },
+                      });
+                    }}
+                  />
                 ) : (
                   <ProductsWithLightbox
                     products={products}
@@ -509,19 +519,16 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
                     continueLabel="Continue to Order"
                     onContinueWithSelection={(selected) => {
                       if (!business) return;
-                      const names = selected.map(p => p.name).filter(Boolean);
-                      const params = new URLSearchParams({
-                        supplier_id: business.id,
-                        supplier_name: business.name,
-                      });
-                      if (names.length) params.set('items', names.join('|'));
                       onOpenChange(false);
-                      navigate(`/orders?${params.toString()}`);
+                      navigate(
+                        `/orders?supplier_id=${business.id}&supplier_name=${encodeURIComponent(business.name)}&from_discover=1`,
+                        { state: { cart: selected, supplier: { id: business.id, name: business.name } } }
+                      );
                     }}
                   />
                 )}
                 <p className="text-[10px] text-muted-foreground text-center pt-2">
-                  💡 Tick items above then tap "Continue to Order", or use "{actionLabel}" to browse the full ordering flow.
+                  💡 Tick {isProperty ? 'assets' : 'items'} above, set quantity, then tap "Continue to {isProperty ? 'Book' : 'Order'}".
                 </p>
               </>
             )}

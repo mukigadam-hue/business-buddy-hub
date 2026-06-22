@@ -236,7 +236,10 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
   const navigate = useNavigate();
   const { user } = useAuth();
   const { currentBusiness } = useBusiness();
-  const { fmt } = useCurrency();
+  const currencySymbol = (business?.currency_symbol && business.currency_symbol.trim()) || 'KSh';
+  const fmt = useCallback((n: number) => {
+    return `${currencySymbol} ${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }, [currencySymbol]);
   const [products, setProducts] = useState<Product[]>([]);
   const [propertyAssets, setPropertyAssets] = useState<PropertyAssetPreview[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);

@@ -389,14 +389,9 @@ export default function PhoneAuthPage() {
               <p>You'll get straight into the app. We'll offer to back up your data later, only when you're ready.</p>
             </div>
 
-            <div className="text-center text-sm pt-2 border-t">
-              Already have an account?{" "}
-              <button onClick={() => setMode("signin")} className="text-primary font-medium hover:underline">
-                Sign in
-              </button>
-            </div>
           </div>
         )}
+
 
         {/* === SIGN IN === */}
         {mode === "signin" && (

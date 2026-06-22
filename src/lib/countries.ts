@@ -1,36 +1,50 @@
-// Minimal country dial code list, ordered with East Africa first (app's primary market).
+// Country dial codes + currency, ordered with East Africa first (primary market).
 export interface Country {
   code: string;        // ISO2
   name: string;
   dial: string;        // e.g. "+256"
   flag: string;
+  currencySymbol: string;
 }
 
 export const COUNTRIES: Country[] = [
-  { code: "UG", name: "Uganda",          dial: "+256", flag: "🇺🇬" },
-  { code: "KE", name: "Kenya",           dial: "+254", flag: "🇰🇪" },
-  { code: "TZ", name: "Tanzania",        dial: "+255", flag: "🇹🇿" },
-  { code: "RW", name: "Rwanda",          dial: "+250", flag: "🇷🇼" },
-  { code: "BI", name: "Burundi",         dial: "+257", flag: "🇧🇮" },
-  { code: "SS", name: "South Sudan",     dial: "+211", flag: "🇸🇸" },
-  { code: "ET", name: "Ethiopia",        dial: "+251", flag: "🇪🇹" },
-  { code: "CD", name: "DR Congo",        dial: "+243", flag: "🇨🇩" },
-  { code: "NG", name: "Nigeria",         dial: "+234", flag: "🇳🇬" },
-  { code: "GH", name: "Ghana",           dial: "+233", flag: "🇬🇭" },
-  { code: "ZA", name: "South Africa",    dial: "+27",  flag: "🇿🇦" },
-  { code: "EG", name: "Egypt",           dial: "+20",  flag: "🇪🇬" },
-  { code: "GB", name: "United Kingdom",  dial: "+44",  flag: "🇬🇧" },
-  { code: "US", name: "United States",   dial: "+1",   flag: "🇺🇸" },
-  { code: "CA", name: "Canada",          dial: "+1",   flag: "🇨🇦" },
-  { code: "IN", name: "India",           dial: "+91",  flag: "🇮🇳" },
-  { code: "PK", name: "Pakistan",        dial: "+92",  flag: "🇵🇰" },
-  { code: "AE", name: "UAE",             dial: "+971", flag: "🇦🇪" },
-  { code: "SA", name: "Saudi Arabia",    dial: "+966", flag: "🇸🇦" },
-  { code: "DE", name: "Germany",         dial: "+49",  flag: "🇩🇪" },
-  { code: "FR", name: "France",          dial: "+33",  flag: "🇫🇷" },
-  { code: "CN", name: "China",           dial: "+86",  flag: "🇨🇳" },
-  { code: "AU", name: "Australia",       dial: "+61",  flag: "🇦🇺" },
+  { code: "UG", name: "Uganda",          dial: "+256", flag: "🇺🇬", currencySymbol: "USh" },
+  { code: "KE", name: "Kenya",           dial: "+254", flag: "🇰🇪", currencySymbol: "KSh" },
+  { code: "TZ", name: "Tanzania",        dial: "+255", flag: "🇹🇿", currencySymbol: "TSh" },
+  { code: "RW", name: "Rwanda",          dial: "+250", flag: "🇷🇼", currencySymbol: "RF" },
+  { code: "BI", name: "Burundi",         dial: "+257", flag: "🇧🇮", currencySymbol: "FBu" },
+  { code: "SS", name: "South Sudan",     dial: "+211", flag: "🇸🇸", currencySymbol: "SSP" },
+  { code: "ET", name: "Ethiopia",        dial: "+251", flag: "🇪🇹", currencySymbol: "Br" },
+  { code: "CD", name: "DR Congo",        dial: "+243", flag: "🇨🇩", currencySymbol: "FC" },
+  { code: "NG", name: "Nigeria",         dial: "+234", flag: "🇳🇬", currencySymbol: "₦" },
+  { code: "GH", name: "Ghana",           dial: "+233", flag: "🇬🇭", currencySymbol: "₵" },
+  { code: "ZA", name: "South Africa",    dial: "+27",  flag: "🇿🇦", currencySymbol: "R" },
+  { code: "EG", name: "Egypt",           dial: "+20",  flag: "🇪🇬", currencySymbol: "E£" },
+  { code: "GB", name: "United Kingdom",  dial: "+44",  flag: "🇬🇧", currencySymbol: "£" },
+  { code: "US", name: "United States",   dial: "+1",   flag: "🇺🇸", currencySymbol: "$" },
+  { code: "CA", name: "Canada",          dial: "+1",   flag: "🇨🇦", currencySymbol: "C$" },
+  { code: "IN", name: "India",           dial: "+91",  flag: "🇮🇳", currencySymbol: "₹" },
+  { code: "PK", name: "Pakistan",        dial: "+92",  flag: "🇵🇰", currencySymbol: "₨" },
+  { code: "AE", name: "UAE",             dial: "+971", flag: "🇦🇪", currencySymbol: "AED" },
+  { code: "SA", name: "Saudi Arabia",    dial: "+966", flag: "🇸🇦", currencySymbol: "SAR" },
+  { code: "DE", name: "Germany",         dial: "+49",  flag: "🇩🇪", currencySymbol: "€" },
+  { code: "FR", name: "France",          dial: "+33",  flag: "🇫🇷", currencySymbol: "€" },
+  { code: "CN", name: "China",           dial: "+86",  flag: "🇨🇳", currencySymbol: "¥" },
+  { code: "AU", name: "Australia",       dial: "+61",  flag: "🇦🇺", currencySymbol: "A$" },
 ];
+
+// Back-compat alias used elsewhere in the app.
+export const countries = COUNTRIES;
+
+export function getCountryByCode(code: string | null | undefined): Country | undefined {
+  if (!code) return undefined;
+  const upper = code.toUpperCase();
+  return COUNTRIES.find((c) => c.code === upper);
+}
+
+export function getCountryFlag(code: string | null | undefined): string {
+  return getCountryByCode(code)?.flag ?? "🌐";
+}
 
 export function detectDefaultCountry(): Country {
   try {

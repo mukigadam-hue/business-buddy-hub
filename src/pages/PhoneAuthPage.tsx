@@ -626,7 +626,21 @@ export default function PhoneAuthPage() {
           </div>
         )}
 
-        <p className="text-[10px] text-center text-muted-foreground mt-6">
+        <div className="mt-6 rounded-lg border border-primary/20 bg-primary/5 p-3 text-center space-y-2">
+          <p className="text-xs font-medium text-foreground leading-relaxed">
+            ✨ Before you leave or continue, tap <strong>Help &amp; Legal</strong> below to discover everything this app can do for your business!
+          </p>
+          <LegalHelpModal
+            defaultTab="guide"
+            trigger={
+              <Button variant="default" size="sm" className="gap-2 text-xs animate-pulse">
+                <HelpCircle className="h-4 w-4" /> Help &amp; Legal
+              </Button>
+            }
+          />
+        </div>
+
+        <p className="text-[10px] text-center text-muted-foreground mt-4">
           By continuing you agree to our{" "}
           <a href="/privacy" className="underline">privacy policy</a>.
           {" · "}

@@ -61,10 +61,10 @@ export default function DiscoverPage() {
   const [countryCountsLoading, setCountryCountsLoading] = useState(false);
   const [countryQuery, setCountryQuery] = useState('');
 
-  // Tick every 30s so "Active X ago" labels refresh without a page reload.
+  // Tick every 15s so activity labels stay close to real time.
   const [, setNowTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setNowTick(t => t + 1), 30_000);
+    const id = setInterval(() => setNowTick(t => t + 1), 15_000);
     return () => clearInterval(id);
   }, []);
 

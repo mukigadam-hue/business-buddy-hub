@@ -1,0 +1,6 @@
+[
+  {
+    "name": "phone-auth",
+    "verify_jwt": false
+  }
+]

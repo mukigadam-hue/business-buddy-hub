@@ -13,7 +13,7 @@ import ImageLightbox from '@/components/ImageLightbox';
 import AdSpace from '@/components/AdSpace';
 import { useBusiness } from '@/context/BusinessContext';
 import { getCountryFlag, getCountryByCode, COUNTRIES } from '@/lib/countries';
-import { timeAgo, activityDotClass } from '@/lib/relativeTime';
+import { activityStatus } from '@/lib/relativeTime';
 
 interface DiscoveredBusiness {
   id: string;
@@ -61,10 +61,10 @@ export default function DiscoverPage() {
   const [countryCountsLoading, setCountryCountsLoading] = useState(false);
   const [countryQuery, setCountryQuery] = useState('');
 
-  // Tick every 30s so "Active X ago" labels refresh without a page reload.
+  // Tick every 15s so activity labels stay close to real time.
   const [, setNowTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setNowTick(t => t + 1), 30_000);
+    const id = setInterval(() => setNowTick(t => t + 1), 15_000);
     return () => clearInterval(id);
   }, []);
 
@@ -385,13 +385,23 @@ export default function DiscoverPage() {
                             </span>
                           )}
                         </div>
-                        {/* Real-time activity indicator */}
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className={`h-2 w-2 rounded-full ${activityDotClass(biz.last_active_at)}`} />
-                          <span className="text-[11px] text-muted-foreground">
-                            Active {timeAgo(biz.last_active_at)}
-                          </span>
-                        </div>
+                        {/* Real-time activity indicator — helps buyers avoid dormant businesses */}
+                        {(() => {
+                          const s = activityStatus(biz.last_active_at);
+                          const toneText =
+                            s.tone === 'live' || s.tone === 'online' ? 'text-green-600 dark:text-green-400 font-semibold' :
+                            s.tone === 'recent' ? 'text-green-700 dark:text-green-400' :
+                            s.tone === 'today' ? 'text-amber-700 dark:text-amber-400' :
+                            s.tone === 'idle' ? 'text-orange-700 dark:text-orange-400' :
+                            s.tone === 'stale' || s.tone === 'dead' ? 'text-red-600 dark:text-red-400' :
+                            'text-muted-foreground';
+                          return (
+                            <div className="flex items-center gap-1.5 mt-1" title={s.label}>
+                              <span className={`h-2 w-2 rounded-full ${s.dotClass}`} />
+                              <span className={`text-[11px] ${toneText}`}>{s.label}</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 

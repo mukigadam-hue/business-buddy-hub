@@ -82,7 +82,7 @@ export default function PhoneAuthPage() {
   const [confirmPin, setConfirmPin] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [mode, setMode] = useState<Mode>("signup");
+  const [mode, setMode] = useState<Mode>("signin");
   const [loading, setLoading] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
 

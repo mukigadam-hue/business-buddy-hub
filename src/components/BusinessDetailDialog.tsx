@@ -15,6 +15,10 @@ import {
   MapPin, Phone, Mail, Factory, Store, Star, ThumbsUp, Copy, Check,
   Package, MessageSquare, Send, Loader2, ShoppingCart, CalendarCheck, Home,
 } from 'lucide-react';
+import { Search as SearchIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { formatPhoneForDisplay } from '@/lib/phoneDisplay';
 import { formatDistanceToNow } from 'date-fns';
 import ImageLightbox from './ImageLightbox';
 
@@ -72,10 +76,22 @@ interface Props {
   onOrderOrBook?: (biz: BusinessInfo) => void;
 }
 
-function ProductsWithLightbox({ products, fmt }: { products: Product[]; fmt: (n: number) => string }) {
+function ProductsWithLightbox({
+  products,
+  fmt,
+  onContinueWithSelection,
+  continueLabel,
+}: {
+  products: Product[];
+  fmt: (n: number) => string;
+  onContinueWithSelection?: (selected: Product[]) => void;
+  continueLabel?: string;
+}) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIdx, setLightboxIdx] = useState(0);
+  const [query, setQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   function openImage(url: string) {
     setLightboxImages([url]);
@@ -83,28 +99,88 @@ function ProductsWithLightbox({ products, fmt }: { products: Product[]; fmt: (n:
     setLightboxOpen(true);
   }
 
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        (p.category || '').toLowerCase().includes(q) ||
+        (p.quality || '').toLowerCase().includes(q)
+      )
+    : products;
+
+  const selectedProducts = products.filter(p => selectedIds.has(p.id));
+
+  function toggle(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
   return (
     <div className="space-y-2 mt-2">
-      {products.map(p => (
-        <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-          {p.image_url_1 ? (
-            <img src={p.image_url_1} alt={p.name} className="h-12 w-12 rounded object-cover border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => openImage(p.image_url_1!)} />
-          ) : (
-            <div className="h-12 w-12 rounded bg-muted flex items-center justify-center text-base">📦</div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">{p.name}</p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {p.category && <span>{p.category}</span>}
-              {p.quality && <span>• {p.quality}</span>}
+      {/* Search bar — find any item in this business's stock */}
+      <div className="relative">
+        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search items by name, category, quality..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          className="pl-10 h-10"
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-center text-xs text-muted-foreground py-6">No items match "{query}"</p>
+      ) : filtered.map(p => {
+        const checked = selectedIds.has(p.id);
+        return (
+          <label
+            key={p.id}
+            className={`flex items-center gap-3 p-3 rounded-lg border bg-card cursor-pointer transition-colors ${checked ? 'border-primary ring-1 ring-primary/30 bg-primary/5' : 'hover:bg-accent/40'}`}
+          >
+            <Checkbox checked={checked} onCheckedChange={() => toggle(p.id)} />
+            {p.image_url_1 ? (
+              <img
+                src={p.image_url_1}
+                alt={p.name}
+                className="h-12 w-12 rounded object-cover border cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); openImage(p.image_url_1!); }}
+              />
+            ) : (
+              <div className="h-12 w-12 rounded bg-muted flex items-center justify-center text-base">📦</div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate">{p.name}</p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {p.category && <span>{p.category}</span>}
+                {p.quality && <span>• {p.quality}</span>}
+              </div>
             </div>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-sm font-semibold text-primary">{fmt(p.retail_price)}</p>
-            <p className="text-[10px] text-muted-foreground">{p.quantity > 0 ? `${p.quantity} in stock` : 'Out of stock'}</p>
-          </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-semibold text-primary">{fmt(p.retail_price)}</p>
+              <p className="text-[10px] text-muted-foreground">{p.quantity > 0 ? `${p.quantity} in stock` : 'Out of stock'}</p>
+            </div>
+          </label>
+        );
+      })}
+
+      {onContinueWithSelection && (
+        <div className="sticky bottom-0 -mx-1 pt-2 pb-1 bg-gradient-to-t from-background via-background to-transparent">
+          <Button
+            className="w-full gap-2"
+            disabled={selectedProducts.length === 0}
+            onClick={() => onContinueWithSelection(selectedProducts)}
+          >
+            <ShoppingCart className="h-4 w-4" />
+            {selectedProducts.length === 0
+              ? 'Select items to continue ordering'
+              : `${continueLabel || 'Continue to Order'} (${selectedProducts.length} selected)`}
+          </Button>
         </div>
-      ))}
+      )}
+
       <ImageLightbox images={lightboxImages} initialIndex={lightboxIdx} open={lightboxOpen} onOpenChange={setLightboxOpen} title="Product photo" />
     </div>
   );
@@ -156,6 +232,7 @@ function PropertyAssetsWithLightbox({ assets, fmt }: { assets: PropertyAssetPrev
 }
 
 export default function BusinessDetailDialog({ business, open, onOpenChange, onOrderOrBook }: Props) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { currentBusiness } = useBusiness();
   const { fmt } = useCurrency();
@@ -311,7 +388,7 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
           <div className="space-y-1 mt-3 text-xs text-muted-foreground">
             {business.products_description && <p className="text-foreground text-sm">{business.products_description}</p>}
             {business.address && <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3 shrink-0" /><span>{business.address}</span></div>}
-            {business.contact && <div className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" /><span>{business.contact}</span></div>}
+            {business.contact && <div className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" /><span dir="ltr">{formatPhoneForDisplay(business.contact, business.country_code)}</span></div>}
             {business.email && <div className="flex items-center gap-1.5"><Mail className="h-3 w-3 shrink-0" /><span>{business.email}</span></div>}
           </div>
 
@@ -346,10 +423,25 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
                 {isProperty ? (
                   <PropertyAssetsWithLightbox assets={propertyAssets} fmt={fmt} />
                 ) : (
-                  <ProductsWithLightbox products={products} fmt={fmt} />
+                  <ProductsWithLightbox
+                    products={products}
+                    fmt={fmt}
+                    continueLabel="Continue to Order"
+                    onContinueWithSelection={(selected) => {
+                      if (!business) return;
+                      const names = selected.map(p => p.name).filter(Boolean);
+                      const params = new URLSearchParams({
+                        supplier_id: business.id,
+                        supplier_name: business.name,
+                      });
+                      if (names.length) params.set('items', names.join('|'));
+                      onOpenChange(false);
+                      navigate(`/orders?${params.toString()}`);
+                    }}
+                  />
                 )}
                 <p className="text-[10px] text-muted-foreground text-center pt-2">
-                  💡 Use the "{actionLabel}" button above to start {isProperty ? 'a booking' : 'an order'}
+                  💡 Tick items above then tap "Continue to Order", or use "{actionLabel}" to browse the full ordering flow.
                 </p>
               </>
             )}

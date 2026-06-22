@@ -14,6 +14,8 @@ import AdSpace from '@/components/AdSpace';
 import { useBusiness } from '@/context/BusinessContext';
 import { getCountryFlag, getCountryByCode, COUNTRIES } from '@/lib/countries';
 import { activityStatus } from '@/lib/relativeTime';
+import { formatPhoneForDisplay } from '@/lib/phoneDisplay';
+import { Package as PackageIcon } from 'lucide-react';
 
 interface DiscoveredBusiness {
   id: string;
@@ -425,10 +427,21 @@ export default function DiscoverPage() {
                       {biz.contact && (
                         <div className="flex items-center gap-1.5">
                           <Phone className="h-3 w-3 shrink-0" />
-                          <span>{biz.contact}</span>
+                          <span dir="ltr">{formatPhoneForDisplay(biz.contact, biz.country_code)}</span>
                         </div>
                       )}
                     </div>
+
+                    {/* Primary CTA — opens dialog showing the business's stock items */}
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full text-xs gap-1.5"
+                      onClick={(e) => { e.stopPropagation(); setSelectedBiz(biz); }}
+                    >
+                      <PackageIcon className="h-3.5 w-3.5" />
+                      {biz.business_type === 'property' ? 'Open to view assets' : 'Open to view items'}
+                    </Button>
 
                     {biz.business_code && (
                       <div className="flex gap-2">

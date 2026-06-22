@@ -623,6 +623,7 @@ export default function SettingsPage() {
             </h2>
             <p className="text-xs text-muted-foreground">Signed in as <strong>{user?.email}</strong></p>
             <div className="grid grid-cols-1 gap-2">
+              <ChangePhoneCard />
               <Button variant="outline" className="w-full justify-start" onClick={() => setShowChangeEmail(true)}>
                 <Mail className="h-4 w-4 mr-2" /> Change Email
               </Button>

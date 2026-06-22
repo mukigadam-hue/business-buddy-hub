@@ -100,26 +100,14 @@ export default function DiscoverPage() {
     try {
       const { data, error } = await (supabase.rpc as any)('search_businesses', {
         _query: searchQuery,
-        _limit: 30,
+        _limit: 50,
         _offset: 0,
         _country_code: effectiveCountry,
         _district: districtFilter.trim(),
+        _business_type: filterType === 'all' ? '' : filterType,
       });
       if (error) throw error;
-      const allResults = (data as DiscoveredBusiness[]) || [];
-      const displayResults = filterType === 'all' ? allResults : allResults.filter(b => b.business_type === filterType);
-
-      // Enrich with last_active_at so we can show "Active X ago" badges.
-      const ids = displayResults.map(b => b.id);
-      if (ids.length) {
-        const { data: activity } = await supabase
-          .from('businesses')
-          .select('id,last_active_at')
-          .in('id', ids);
-        const map = new Map<string, string>();
-        (activity || []).forEach((row: any) => map.set(row.id, row.last_active_at));
-        displayResults.forEach(b => { b.last_active_at = map.get(b.id) || null; });
-      }
+      const displayResults = (data as DiscoveredBusiness[]) || [];
 
       setResults(displayResults);
       setHasSearched(true);

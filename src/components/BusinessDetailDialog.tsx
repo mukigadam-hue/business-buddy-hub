@@ -78,6 +78,15 @@ interface Props {
   onOrderOrBook?: (biz: BusinessInfo) => void;
 }
 
+export interface CartLine {
+  id: string;
+  name: string;
+  category: string;
+  quality: string;
+  unit_price: number;
+  quantity: number;
+}
+
 function ProductsWithLightbox({
   products,
   fmt,
@@ -86,14 +95,14 @@ function ProductsWithLightbox({
 }: {
   products: Product[];
   fmt: (n: number) => string;
-  onContinueWithSelection?: (selected: Product[]) => void;
+  onContinueWithSelection?: (selected: CartLine[]) => void;
   continueLabel?: string;
 }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const [query, setQuery] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Record<string, number>>({});
 
   function openImage(url: string) {
     setLightboxImages([url]);
@@ -110,19 +119,32 @@ function ProductsWithLightbox({
       )
     : products;
 
-  const selectedProducts = products.filter(p => selectedIds.has(p.id));
+  const selectedLines: CartLine[] = products
+    .filter(p => selected[p.id] && selected[p.id] > 0)
+    .map(p => ({
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      quality: p.quality,
+      unit_price: Number(p.retail_price) || 0,
+      quantity: selected[p.id],
+    }));
+  const totalQty = selectedLines.reduce((s, l) => s + l.quantity, 0);
+  const totalValue = selectedLines.reduce((s, l) => s + l.quantity * l.unit_price, 0);
 
   function toggle(id: string) {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+    setSelected(prev => {
+      const next = { ...prev };
+      if (next[id]) delete next[id]; else next[id] = 1;
       return next;
     });
+  }
+  function setQty(id: string, qty: number) {
+    setSelected(prev => ({ ...prev, [id]: Math.max(1, Math.floor(qty) || 1) }));
   }
 
   return (
     <div className="space-y-2 mt-2">
-      {/* Search bar — find any item in this business's stock */}
       <div className="relative">
         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -136,19 +158,20 @@ function ProductsWithLightbox({
       {filtered.length === 0 ? (
         <p className="text-center text-xs text-muted-foreground py-6">No items match "{query}"</p>
       ) : filtered.map(p => {
-        const checked = selectedIds.has(p.id);
+        const qty = selected[p.id] || 0;
+        const checked = qty > 0;
         return (
-          <label
+          <div
             key={p.id}
-            className={`flex items-center gap-3 p-3 rounded-lg border bg-card cursor-pointer transition-colors ${checked ? 'border-primary ring-1 ring-primary/30 bg-primary/5' : 'hover:bg-accent/40'}`}
+            className={`flex items-center gap-3 p-3 rounded-lg border bg-card transition-colors ${checked ? 'border-primary ring-1 ring-primary/30 bg-primary/5' : 'hover:bg-accent/40'}`}
           >
             <Checkbox checked={checked} onCheckedChange={() => toggle(p.id)} />
             {p.image_url_1 ? (
               <img
                 src={p.image_url_1}
                 alt={p.name}
-                className="h-12 w-12 rounded object-cover border cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); openImage(p.image_url_1!); }}
+                className="h-12 w-12 rounded object-cover border cursor-pointer hover:opacity-80"
+                onClick={() => openImage(p.image_url_1!)}
               />
             ) : (
               <div className="h-12 w-12 rounded bg-muted flex items-center justify-center text-base">📦</div>
@@ -159,26 +182,46 @@ function ProductsWithLightbox({
                 {p.category && <span>{p.category}</span>}
                 {p.quality && <span>• {p.quality}</span>}
               </div>
+              <p className="text-xs font-semibold text-primary mt-0.5">{fmt(p.retail_price)}</p>
+              {checked && (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className="text-[10px] text-muted-foreground">Qty:</span>
+                  <Button type="button" size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => setQty(p.id, qty - 1)}>−</Button>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={qty}
+                    onChange={e => setQty(p.id, parseInt(e.target.value) || 1)}
+                    className="h-6 w-14 text-xs text-center px-1"
+                  />
+                  <Button type="button" size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => setQty(p.id, qty + 1)}>+</Button>
+                  <span className="text-[10px] text-muted-foreground ml-1">= {fmt(qty * Number(p.retail_price || 0))}</span>
+                </div>
+              )}
             </div>
             <div className="text-right shrink-0">
-              <p className="text-sm font-semibold text-primary">{fmt(p.retail_price)}</p>
               <p className="text-[10px] text-muted-foreground">{p.quantity > 0 ? `${p.quantity} in stock` : 'Out of stock'}</p>
             </div>
-          </label>
+          </div>
         );
       })}
 
       {onContinueWithSelection && (
-        <div className="sticky bottom-0 -mx-1 pt-2 pb-1 bg-gradient-to-t from-background via-background to-transparent">
+        <div className="sticky bottom-0 -mx-1 pt-2 pb-1 bg-gradient-to-t from-background via-background to-transparent space-y-1">
+          {selectedLines.length > 0 && (
+            <p className="text-[11px] text-center text-muted-foreground">
+              {selectedLines.length} item{selectedLines.length === 1 ? '' : 's'} · {totalQty} unit{totalQty === 1 ? '' : 's'} · Total {fmt(totalValue)}
+            </p>
+          )}
           <Button
             className="w-full gap-2"
-            disabled={selectedProducts.length === 0}
-            onClick={() => onContinueWithSelection(selectedProducts)}
+            disabled={selectedLines.length === 0}
+            onClick={() => onContinueWithSelection(selectedLines)}
           >
             <ShoppingCart className="h-4 w-4" />
-            {selectedProducts.length === 0
-              ? 'Select items to continue ordering'
-              : `${continueLabel || 'Continue to Order'} (${selectedProducts.length} selected)`}
+            {selectedLines.length === 0
+              ? 'Tick items above & set quantity'
+              : `${continueLabel || 'Continue to Order'} (${selectedLines.length})`}
           </Button>
         </div>
       )}

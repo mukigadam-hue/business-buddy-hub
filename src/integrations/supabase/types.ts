@@ -568,6 +568,7 @@ export type Database = {
           email: string
           id: string
           is_discoverable: boolean
+          last_active_at: string
           logo_url: string | null
           name: string
           owner_id: string
@@ -587,6 +588,7 @@ export type Database = {
           email?: string
           id?: string
           is_discoverable?: boolean
+          last_active_at?: string
           logo_url?: string | null
           name: string
           owner_id: string
@@ -606,6 +608,7 @@ export type Database = {
           email?: string
           id?: string
           is_discoverable?: boolean
+          last_active_at?: string
           logo_url?: string | null
           name?: string
           owner_id?: string
@@ -2520,6 +2523,13 @@ export type Database = {
           reviewer_name: string
         }[]
       }
+      get_country_business_counts: {
+        Args: never
+        Returns: {
+          business_count: number
+          country_code: string
+        }[]
+      }
       get_user_role_in_business: {
         Args: { _business_id: string; _user_id: string }
         Returns: string
@@ -2642,6 +2652,10 @@ export type Database = {
       set_settings_password: {
         Args: { _business_id: string; _password: string }
         Returns: boolean
+      }
+      touch_business_activity: {
+        Args: { _business_id: string }
+        Returns: undefined
       }
       update_registered_phone: {
         Args: { _new_country_code: string; _new_phone: string }

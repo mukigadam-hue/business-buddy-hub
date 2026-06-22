@@ -417,7 +417,7 @@ export default function PhoneAuthPage() {
         {/* === SIGN IN === */}
         {mode === "signin" && (
           <div className="space-y-4">
-            <h2 className="font-semibold text-lg">Welcome back</h2>
+            <h2 className="font-semibold text-lg text-center">Welcome</h2>
 
             {/* Method toggle: phone+PIN (new) vs email+password (legacy) */}
             <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg">

@@ -357,6 +357,21 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentBusinessId, user]);
 
+  // Heartbeat: mark the current business as recently active so others see
+  // accurate "Active X ago" status in Discover. Fires immediately and every 2 minutes.
+  useEffect(() => {
+    if (!currentBusinessId || !user) return;
+    const touch = () => {
+      if (!navigator.onLine) return;
+      (supabase.rpc as any)('touch_business_activity', { _business_id: currentBusinessId }).catch(() => {});
+    };
+    touch();
+    const interval = setInterval(touch, 120_000);
+    const onVisible = () => { if (document.visibilityState === 'visible') touch(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
+  }, [currentBusinessId, user]);
+
   useEffect(() => {
     const handleOfflineSyncComplete = (event: Event) => {
       const optimisticIds = new Set((event as CustomEvent<{ optimisticIds?: string[] }>).detail?.optimisticIds || []);

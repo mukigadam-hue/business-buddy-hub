@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useBusiness } from '@/context/BusinessContext';
-import { useCurrency } from '@/hooks/useCurrency';
+
 import { toast } from 'sonner';
 import {
   MapPin, Phone, Mail, Factory, Store, Star, ThumbsUp, Copy, Check,

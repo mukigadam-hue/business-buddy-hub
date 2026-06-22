@@ -86,12 +86,37 @@ export default function PhoneAuthPage() {
   const [loading, setLoading] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
 
+  // Sign-in method toggle (legacy email/password users supported alongside phone+PIN)
+  const [signinMethod, setSigninMethod] = useState<"phone" | "email">("phone");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
   // Recovery sub-state
   const [recoveryPhone, setRecoveryPhone] = useState("");
   const [recoveryCountry, setRecoveryCountry] = useState<Country>(() => detectDefaultCountry());
   const [newPin, setNewPin] = useState("");
   const [newPinConfirm, setNewPinConfirm] = useState("");
   const [newRecoveryEmail, setNewRecoveryEmail] = useState("");
+
+  // Restore last-used identifier on first mount, jump straight to sign-in
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LAST_AUTH_KEY);
+      if (!raw) return;
+      const last = JSON.parse(raw) as LastAuth;
+      setMode("signin");
+      if (last.method === "email") {
+        setSigninMethod("email");
+        setLoginEmail(last.email || "");
+      } else if (last.method === "phone") {
+        setSigninMethod("phone");
+        setPhone(last.phone || "");
+        const match = COUNTRIES.find((c) => c.code === last.iso) || COUNTRIES.find((c) => c.dial === last.dial);
+        if (match) setCountry(match);
+      }
+    } catch {}
+  }, []);
 
   const fullPhone = useMemo(
     () => `${country.dial}${phone.replace(/\D/g, "")}`,

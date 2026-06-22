@@ -1,7 +1,7 @@
 import BulkCleanupButton from '@/components/BulkCleanupButton';
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +35,7 @@ export default function OrdersPage() {
   const { user } = useAuth();
   const { fmt } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const [tab, setTab] = useState('live_orders');
   const isAdmin = userRole === 'owner' || userRole === 'admin';
   const { locked: submitLocked, withLock } = useSubmitLock();
@@ -138,6 +139,7 @@ export default function OrdersPage() {
     const supplierId = searchParams.get('supplier_id');
     const supplierName = searchParams.get('supplier_name');
     const preselectedItemsParam = searchParams.get('items');
+    const stateCart = (location.state as any)?.cart as Array<{ id: string; name: string; category: string; quality: string; unit_price: number; quantity: number }> | undefined;
     if (supplierId && supplierName) {
       setOrderMode('request');
       setTab('my_requests');
@@ -149,21 +151,36 @@ export default function OrdersPage() {
       supabase.rpc('get_business_public_products', { _business_id: supplierId }).then(({ data }) => {
         const products = (data as any[]) || [];
         setSupplierProducts(products);
-        // Pre-fill the order form with the first item the user ticked in Discover.
-        // Remaining selected items stay highlighted via the supplier list so the
-        // user can add them one-by-one with the existing order procedure.
-        if (preselectedItemsParam) {
+
+        // PRIMARY: cart passed via router state from Discover (with quantities + prices)
+        if (stateCart && stateCart.length > 0) {
+          setItems(stateCart.map(line => ({
+            item_name: toSentenceCase(line.name),
+            category: toSentenceCase(line.category || ''),
+            quality: toSentenceCase(line.quality || ''),
+            quantity: Math.max(1, Number(line.quantity) || 1),
+            price_type: 'retail',
+            unit_price: Number(line.unit_price) || 0,
+          })));
+          toast.success(`${stateCart.length} item${stateCart.length === 1 ? '' : 's'} added from Discover — review then send your request.`);
+        } else if (preselectedItemsParam) {
+          // Legacy URL fallback: names only, qty defaults to 1
           const names = preselectedItemsParam.split('|').map(s => s.trim()).filter(Boolean);
-          if (names.length) {
-            const first = products.find(p => (p.name || '').toLowerCase() === names[0].toLowerCase()) || { name: names[0], category: '', quality: '' };
-            setForm(f => ({ ...f, name: first.name || names[0], category: first.category || '', quality: first.quality || '' }));
-            if (names.length > 1) {
-              toast.info(`Selected ${names.length} items from Discover. First item filled — tap the others below to add them.`);
-            }
-          }
+          const built = names.map(n => {
+            const p = products.find(p => (p.name || '').toLowerCase() === n.toLowerCase());
+            return {
+              item_name: toSentenceCase(p?.name || n),
+              category: toSentenceCase(p?.category || ''),
+              quality: toSentenceCase(p?.quality || ''),
+              quantity: 1,
+              price_type: 'retail',
+              unit_price: Number(p?.retail_price) || 0,
+            };
+          });
+          if (built.length) setItems(built);
         }
       });
-      // Clean URL params
+      // Clean URL params (state already consumed via React)
       setSearchParams({}, { replace: true });
     }
   }, []);

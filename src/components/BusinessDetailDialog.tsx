@@ -231,15 +231,31 @@ function ProductsWithLightbox({
   );
 }
 
-function PropertyAssetsWithLightbox({ assets, fmt }: { assets: PropertyAssetPreview[]; fmt: (n: number) => string }) {
+function PropertyAssetsWithLightbox({
+  assets,
+  fmt,
+  onContinueWithSelection,
+}: {
+  assets: PropertyAssetPreview[];
+  fmt: (n: number) => string;
+  onContinueWithSelection?: (selectedAssetIds: string[]) => void;
+}) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIdx, setLightboxIdx] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   function openImage(url: string) {
     setLightboxImages([url]);
     setLightboxIdx(0);
     setLightboxOpen(true);
+  }
+  function toggle(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   }
 
   return (
@@ -247,11 +263,13 @@ function PropertyAssetsWithLightbox({ assets, fmt }: { assets: PropertyAssetPrev
       {assets.map((asset) => {
         const prices = [asset.hourly_price, asset.daily_price, asset.monthly_price].filter((price) => Number(price) > 0);
         const fromPrice = prices.length > 0 ? Math.min(...prices) : 0;
+        const checked = selectedIds.has(asset.id);
 
         return (
-          <div key={asset.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+          <label key={asset.id} className={`flex items-center gap-3 p-3 rounded-lg border bg-card cursor-pointer ${checked ? 'border-primary ring-1 ring-primary/30 bg-primary/5' : 'hover:bg-accent/40'}`}>
+            {onContinueWithSelection && <Checkbox checked={checked} onCheckedChange={() => toggle(asset.id)} />}
             {asset.image_url_1 ? (
-              <img src={asset.image_url_1} alt={asset.name} className="h-12 w-12 rounded object-cover border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => openImage(asset.image_url_1!)} />
+              <img src={asset.image_url_1} alt={asset.name} className="h-12 w-12 rounded object-cover border cursor-pointer hover:opacity-80" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openImage(asset.image_url_1!); }} />
             ) : (
               <div className="h-12 w-12 rounded bg-muted flex items-center justify-center text-base">🏠</div>
             )}
@@ -268,9 +286,23 @@ function PropertyAssetsWithLightbox({ assets, fmt }: { assets: PropertyAssetPrev
                 {asset.hourly_price > 0 ? 'Hourly' : asset.daily_price > 0 ? 'Daily' : asset.monthly_price > 0 ? 'Monthly' : 'Custom'}
               </p>
             </div>
-          </div>
+          </label>
         );
       })}
+
+      {onContinueWithSelection && (
+        <div className="sticky bottom-0 -mx-1 pt-2 pb-1 bg-gradient-to-t from-background via-background to-transparent">
+          <Button
+            className="w-full gap-2"
+            disabled={selectedIds.size === 0}
+            onClick={() => onContinueWithSelection(Array.from(selectedIds))}
+          >
+            <CalendarCheck className="h-4 w-4" />
+            {selectedIds.size === 0 ? 'Tick assets to continue booking' : `Continue to Book (${selectedIds.size})`}
+          </Button>
+        </div>
+      )}
+
       <ImageLightbox images={lightboxImages} initialIndex={lightboxIdx} open={lightboxOpen} onOpenChange={setLightboxOpen} title="Asset photo" />
     </div>
   );

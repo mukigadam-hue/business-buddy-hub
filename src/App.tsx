@@ -13,6 +13,8 @@ import AppLayout from "@/components/AppLayout";
 import AdMobManager from "@/components/AdMobManager";
 import UpdateGate from "@/components/UpdateGate";
 import AuthPage from "./pages/AuthPage";
+import PhoneAuthPage from "./pages/PhoneAuthPage";
+import { SecurityUpgradeModal } from "./components/auth/SecurityUpgradeModal";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import BusinessSetupPage from "./pages/BusinessSetupPage";
 import VerifyReceiptPage from "./pages/VerifyReceiptPage";

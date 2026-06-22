@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Briefcase, Loader2, ShieldCheck, ArrowLeft, KeyRound } from "lucide-react";
+import { Briefcase, Loader2, ShieldCheck, ArrowLeft, KeyRound, Eye, EyeOff } from "lucide-react";
 import { CountryDialPicker } from "@/components/auth/CountryDialPicker";
 import { SimulatedSmsScreen } from "@/components/auth/SimulatedSmsScreen";
 import { COUNTRIES, detectDefaultCountry, type Country } from "@/lib/countries";
@@ -23,36 +23,48 @@ function PinBoxes({
   autoFocus?: boolean;
   id?: string;
 }) {
+  const [reveal, setReveal] = useState(false);
   // Single hidden numeric input drives a 5-slot visual display.
   return (
-    <div className="relative">
-      <input
-        id={id}
-        autoFocus={autoFocus}
-        inputMode="numeric"
-        pattern="\d*"
-        maxLength={5}
-        value={value}
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 5))}
-        className="absolute inset-0 opacity-0 w-full h-full cursor-text"
-        aria-label="5-digit PIN"
-      />
-      <div className="flex gap-2 pointer-events-none">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div
-            key={i}
-            className={`h-12 flex-1 rounded-lg border-2 flex items-center justify-center text-xl font-semibold transition-all ${
-              value[i]
-                ? "border-primary bg-primary/5"
-                : value.length === i
-                  ? "border-primary/60 bg-background"
-                  : "border-border bg-muted/30"
-            }`}
-          >
-            {value[i] ? "•" : ""}
-          </div>
-        ))}
+    <div className="flex gap-2 items-center">
+      <div className="relative flex-1">
+        <input
+          id={id}
+          autoFocus={autoFocus}
+          inputMode="numeric"
+          pattern="\d*"
+          maxLength={5}
+          value={value}
+          onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 5))}
+          className="absolute inset-0 opacity-0 w-full h-full cursor-text z-10"
+          aria-label="5-digit PIN"
+        />
+        <div className="flex gap-2 pointer-events-none">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-12 flex-1 rounded-lg border-2 flex items-center justify-center text-xl font-semibold transition-all ${
+                value[i]
+                  ? "border-primary bg-primary/5"
+                  : value.length === i
+                    ? "border-primary/60 bg-background"
+                    : "border-border bg-muted/30"
+              }`}
+            >
+              {value[i] ? (reveal ? value[i] : "•") : ""}
+            </div>
+          ))}
+        </div>
       </div>
+      <button
+        type="button"
+        onClick={() => setReveal((v) => !v)}
+        className="h-12 w-12 rounded-lg border-2 border-border bg-muted/30 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/60 transition-colors shrink-0"
+        aria-label={reveal ? "Hide PIN" : "Show PIN"}
+        tabIndex={-1}
+      >
+        {reveal ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+      </button>
     </div>
   );
 }

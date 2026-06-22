@@ -103,7 +103,10 @@ export default function ServicesPage() {
   const prevServices = services.filter(s => new Date(s.created_at).toDateString() !== new Date().toDateString());
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const [historySearch, setHistorySearch] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'debt'>('all');
   const visibleServices = (activeTab === 'today' ? todayServices : prevServices).filter(s => {
+    if (paymentFilter === 'paid' && s.payment_status !== 'paid') return false;
+    if (paymentFilter === 'debt' && s.payment_status !== 'partial' && s.payment_status !== 'unpaid') return false;
     const q = historySearch.trim().toLowerCase();
     if (!q) return true;
     return (s.service_name || '').toLowerCase().includes(q)

@@ -4,11 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Briefcase, Loader2, ShieldCheck, ArrowLeft, KeyRound, Eye, EyeOff } from "lucide-react";
+import { Briefcase, Loader2, ShieldCheck, ArrowLeft, KeyRound, Eye, EyeOff, Mail, Phone } from "lucide-react";
 import { CountryDialPicker } from "@/components/auth/CountryDialPicker";
 import { SimulatedSmsScreen } from "@/components/auth/SimulatedSmsScreen";
 import { COUNTRIES, detectDefaultCountry, type Country } from "@/lib/countries";
 import { phoneSignIn, phoneSignUp, phoneResetPin } from "@/lib/phoneAuth";
+import { supabase } from "@/integrations/supabase/client";
+
+const LAST_AUTH_KEY = "bm:last-auth";
+type LastAuth =
+  | { method: "phone"; phone: string; dial: string; iso: string }
+  | { method: "email"; email: string };
 
 type Mode = "signin" | "signup" | "recover-phone" | "recover-sms" | "recover-reset";
 
@@ -80,12 +86,37 @@ export default function PhoneAuthPage() {
   const [loading, setLoading] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
 
+  // Sign-in method toggle (legacy email/password users supported alongside phone+PIN)
+  const [signinMethod, setSigninMethod] = useState<"phone" | "email">("phone");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
   // Recovery sub-state
   const [recoveryPhone, setRecoveryPhone] = useState("");
   const [recoveryCountry, setRecoveryCountry] = useState<Country>(() => detectDefaultCountry());
   const [newPin, setNewPin] = useState("");
   const [newPinConfirm, setNewPinConfirm] = useState("");
   const [newRecoveryEmail, setNewRecoveryEmail] = useState("");
+
+  // Restore last-used identifier on first mount, jump straight to sign-in
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LAST_AUTH_KEY);
+      if (!raw) return;
+      const last = JSON.parse(raw) as LastAuth;
+      setMode("signin");
+      if (last.method === "email") {
+        setSigninMethod("email");
+        setLoginEmail(last.email || "");
+      } else if (last.method === "phone") {
+        setSigninMethod("phone");
+        setPhone(last.phone || "");
+        const match = COUNTRIES.find((c) => c.code === last.iso) || COUNTRIES.find((c) => c.dial === last.dial);
+        if (match) setCountry(match);
+      }
+    } catch {}
+  }, []);
 
   const fullPhone = useMemo(
     () => `${country.dial}${phone.replace(/\D/g, "")}`,
@@ -124,6 +155,12 @@ export default function PhoneAuthPage() {
         full_name: fullName.trim(),
         email: email.trim().toLowerCase(),
       });
+      try {
+        localStorage.setItem(
+          LAST_AUTH_KEY,
+          JSON.stringify({ method: "phone", phone, dial: country.dial, iso: country.code }),
+        );
+      } catch {}
       toast.success("Welcome! You're signed in.");
     } catch (e: any) {
       toast.error(e.message || "Could not create account");
@@ -144,11 +181,59 @@ export default function PhoneAuthPage() {
     setLoading(true);
     try {
       await phoneSignIn(fullPhone, pin);
+      try {
+        localStorage.setItem(
+          LAST_AUTH_KEY,
+          JSON.stringify({ method: "phone", phone, dial: country.dial, iso: country.code }),
+        );
+      } catch {}
       toast.success("Welcome back!");
     } catch (e: any) {
       toast.error(e.message || "Could not sign in");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onEmailSignIn = async () => {
+    const em = loginEmail.trim().toLowerCase();
+    if (!em || !em.includes("@")) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    if (!loginPassword) {
+      toast.error("Enter your password");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: em, password: loginPassword });
+      if (error) throw error;
+      try {
+        localStorage.setItem(LAST_AUTH_KEY, JSON.stringify({ method: "email", email: em }));
+      } catch {}
+      toast.success("Welcome back!");
+    } catch (e: any) {
+      toast.error(e.message || "Could not sign in");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onEmailReset = async () => {
+    const em = loginEmail.trim().toLowerCase();
+    if (!em || !em.includes("@")) {
+      toast.error("Enter your email first");
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(em, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Password reset link sent to your email");
+    } catch (e: any) {
+      toast.error(e.message || "Could not send reset email");
     }
   };
 
@@ -294,37 +379,117 @@ export default function PhoneAuthPage() {
         {mode === "signin" && (
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">Welcome back</h2>
-            <div>
-              <Label className="mb-2 block">Phone number</Label>
-              <div className="flex">
-                <CountryDialPicker value={country} onChange={setCountry} />
-                <Input
-                  inputMode="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                  placeholder="700 123 456"
-                  className="h-12 rounded-l-none flex-1"
-                />
-              </div>
+
+            {/* Method toggle: phone+PIN (new) vs email+password (legacy) */}
+            <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg">
+              <button
+                type="button"
+                onClick={() => setSigninMethod("phone")}
+                className={`h-9 rounded-md text-sm font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  signinMethod === "phone" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                <Phone className="h-3.5 w-3.5" /> Phone + PIN
+              </button>
+              <button
+                type="button"
+                onClick={() => setSigninMethod("email")}
+                className={`h-9 rounded-md text-sm font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  signinMethod === "email" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                <Mail className="h-3.5 w-3.5" /> Email + Password
+              </button>
             </div>
 
-            <div>
-              <Label className="mb-2 block">5-digit PIN</Label>
-              <PinBoxes value={pin} onChange={setPin} autoFocus />
-            </div>
+            {signinMethod === "phone" ? (
+              <>
+                <div>
+                  <Label className="mb-2 block">Phone number</Label>
+                  <div className="flex">
+                    <CountryDialPicker value={country} onChange={setCountry} />
+                    <Input
+                      inputMode="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                      placeholder="700 123 456"
+                      className="h-12 rounded-l-none flex-1"
+                    />
+                  </div>
+                </div>
 
-            <Button onClick={onSignIn} disabled={loading} className="w-full h-12 text-base font-semibold">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
-            </Button>
+                <div>
+                  <Label className="mb-2 block">5-digit PIN</Label>
+                  <PinBoxes value={pin} onChange={setPin} autoFocus />
+                </div>
 
-            <button
-              type="button"
-              onClick={() => { setRecoveryPhone(phone); setRecoveryCountry(country); setMode("recover-phone"); }}
-              className="w-full text-sm text-primary font-medium hover:underline flex items-center justify-center gap-1.5 py-2"
-            >
-              <KeyRound className="h-4 w-4" />
-              Forgot PIN / Recover my business
-            </button>
+                <Button onClick={onSignIn} disabled={loading} className="w-full h-12 text-base font-semibold">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => { setRecoveryPhone(phone); setRecoveryCountry(country); setMode("recover-phone"); }}
+                  className="w-full text-sm text-primary font-medium hover:underline flex items-center justify-center gap-1.5 py-2"
+                >
+                  <KeyRound className="h-4 w-4" />
+                  Forgot PIN / Recover my business
+                </button>
+              </>
+            ) : (
+              <>
+                <div>
+                  <Label className="mb-2 block">Email</Label>
+                  <Input
+                    type="email"
+                    autoComplete="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="h-12"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-2 block">Password</Label>
+                  <div className="relative">
+                    <Input
+                      type={showLoginPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="Your password"
+                      className="h-12 pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword((v) => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center text-muted-foreground hover:text-foreground"
+                      aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                      tabIndex={-1}
+                    >
+                      {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button onClick={onEmailSignIn} disabled={loading} className="w-full h-12 text-base font-semibold">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={onEmailReset}
+                  className="w-full text-sm text-primary font-medium hover:underline flex items-center justify-center gap-1.5 py-2"
+                >
+                  <KeyRound className="h-4 w-4" />
+                  Forgot password? Email me a reset link
+                </button>
+
+                <p className="text-[11px] text-muted-foreground text-center">
+                  For users who registered with the old email/password sign-up.
+                </p>
+              </>
+            )}
 
             <div className="text-center text-sm pt-2 border-t">
               New here?{" "}

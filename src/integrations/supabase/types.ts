@@ -568,7 +568,7 @@ export type Database = {
           email: string
           id: string
           is_discoverable: boolean
-          last_active_at: string
+          last_active_at: string | null
           logo_url: string | null
           name: string
           owner_id: string
@@ -588,7 +588,7 @@ export type Database = {
           email?: string
           id?: string
           is_discoverable?: boolean
-          last_active_at?: string
+          last_active_at?: string | null
           logo_url?: string | null
           name: string
           owner_id: string
@@ -608,7 +608,7 @@ export type Database = {
           email?: string
           id?: string
           is_discoverable?: boolean
-          last_active_at?: string
+          last_active_at?: string | null
           logo_url?: string | null
           name?: string
           owner_id?: string

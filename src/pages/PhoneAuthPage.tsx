@@ -155,6 +155,12 @@ export default function PhoneAuthPage() {
         full_name: fullName.trim(),
         email: email.trim().toLowerCase(),
       });
+      try {
+        localStorage.setItem(
+          LAST_AUTH_KEY,
+          JSON.stringify({ method: "phone", phone, dial: country.dial, iso: country.code }),
+        );
+      } catch {}
       toast.success("Welcome! You're signed in.");
     } catch (e: any) {
       toast.error(e.message || "Could not create account");
@@ -175,11 +181,59 @@ export default function PhoneAuthPage() {
     setLoading(true);
     try {
       await phoneSignIn(fullPhone, pin);
+      try {
+        localStorage.setItem(
+          LAST_AUTH_KEY,
+          JSON.stringify({ method: "phone", phone, dial: country.dial, iso: country.code }),
+        );
+      } catch {}
       toast.success("Welcome back!");
     } catch (e: any) {
       toast.error(e.message || "Could not sign in");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onEmailSignIn = async () => {
+    const em = loginEmail.trim().toLowerCase();
+    if (!em || !em.includes("@")) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    if (!loginPassword) {
+      toast.error("Enter your password");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: em, password: loginPassword });
+      if (error) throw error;
+      try {
+        localStorage.setItem(LAST_AUTH_KEY, JSON.stringify({ method: "email", email: em }));
+      } catch {}
+      toast.success("Welcome back!");
+    } catch (e: any) {
+      toast.error(e.message || "Could not sign in");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onEmailReset = async () => {
+    const em = loginEmail.trim().toLowerCase();
+    if (!em || !em.includes("@")) {
+      toast.error("Enter your email first");
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(em, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Password reset link sent to your email");
+    } catch (e: any) {
+      toast.error(e.message || "Could not send reset email");
     }
   };
 

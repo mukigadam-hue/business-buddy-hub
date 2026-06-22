@@ -14,6 +14,8 @@ import AdSpace from '@/components/AdSpace';
 import { useBusiness } from '@/context/BusinessContext';
 import { getCountryFlag, getCountryByCode, COUNTRIES } from '@/lib/countries';
 import { activityStatus } from '@/lib/relativeTime';
+import { formatPhoneForDisplay } from '@/lib/phoneDisplay';
+import { Package as PackageIcon } from 'lucide-react';
 
 interface DiscoveredBusiness {
   id: string;

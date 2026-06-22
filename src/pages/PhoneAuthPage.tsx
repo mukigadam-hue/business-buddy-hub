@@ -401,6 +401,8 @@ export default function PhoneAuthPage() {
         <p className="text-[10px] text-center text-muted-foreground mt-6">
           By continuing you agree to our{" "}
           <a href="/privacy" className="underline">privacy policy</a>.
+          {" · "}
+          <a href="/login-email" className="underline">Use email instead</a>
         </p>
       </Card>
     </div>

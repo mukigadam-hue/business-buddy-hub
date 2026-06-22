@@ -13,7 +13,7 @@ import ImageLightbox from '@/components/ImageLightbox';
 import AdSpace from '@/components/AdSpace';
 import { useBusiness } from '@/context/BusinessContext';
 import { getCountryFlag, getCountryByCode, COUNTRIES } from '@/lib/countries';
-import { timeAgo, activityDotClass } from '@/lib/relativeTime';
+import { activityStatus } from '@/lib/relativeTime';
 
 interface DiscoveredBusiness {
   id: string;

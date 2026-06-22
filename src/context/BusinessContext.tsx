@@ -361,9 +361,13 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   // accurate "Active X ago" status in Discover. Fires immediately and every 2 minutes.
   useEffect(() => {
     if (!currentBusinessId || !user) return;
-    const touch = () => {
+    const touch = async () => {
       if (!navigator.onLine) return;
-      (supabase.rpc as any)('touch_business_activity', { _business_id: currentBusinessId }).catch(() => {});
+      try {
+        await (supabase.rpc as any)('touch_business_activity', { _business_id: currentBusinessId });
+      } catch {
+        // ignore heartbeat failures
+      }
     };
     touch();
     const interval = setInterval(touch, 120_000);

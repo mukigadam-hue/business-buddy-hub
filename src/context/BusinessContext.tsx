@@ -299,7 +299,25 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const setCurrentBusinessId = useCallback((id: string) => {
     const nextId = id || null;
-    setCurrentBusinessIdState(nextId);
+    // CRITICAL: when switching to a DIFFERENT business, immediately wipe all
+    // per-business state and its persisted cache so the UI never flashes the
+    // previous business's items, sales, orders, etc. while new data loads.
+    setCurrentBusinessIdState(prev => {
+      if (prev && nextId && prev !== nextId) {
+        setStock([]);
+        setSales([]);
+        setPurchases([]);
+        setOrders([]);
+        setServices([]);
+        setExpenses([]);
+        setNotifications(EMPTY_NOTIFICATIONS);
+        setDebtPayments([]);
+        [CACHE_KEYS.stock, CACHE_KEYS.sales, CACHE_KEYS.purchases,
+         CACHE_KEYS.orders, CACHE_KEYS.services, CACHE_KEYS.expenses]
+          .forEach(k => removeJsonSync(k));
+      }
+      return nextId;
+    });
     if (nextId) {
       cachePersist(CACHE_KEYS.currentBusiness, nextId);
       // Sync currency from the selected business unless user has a personal override for it

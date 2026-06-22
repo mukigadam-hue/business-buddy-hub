@@ -287,6 +287,29 @@ export default function PhoneAuthPage() {
         {/* === SIGN UP === */}
         {mode === "signup" && (
           <div className="space-y-4">
+            {/* Prominent "already have an account" banner — top of screen */}
+            <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
+              <p className="text-sm font-semibold text-foreground mb-2">
+                Already have an account?
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Continue where you left off — sign in with your phone &amp; PIN, or your old email &amp; password.
+              </p>
+              <Button
+                onClick={() => setMode("signin")}
+                variant="default"
+                className="w-full h-11 font-semibold"
+              >
+                Sign in to my account
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground font-medium">OR CREATE NEW</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
             <div>
               <Label className="mb-2 block">Your name (optional)</Label>
               <Input

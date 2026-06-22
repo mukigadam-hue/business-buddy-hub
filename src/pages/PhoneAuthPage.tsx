@@ -82,7 +82,7 @@ export default function PhoneAuthPage() {
   const [confirmPin, setConfirmPin] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [mode, setMode] = useState<Mode>("signup");
+  const [mode, setMode] = useState<Mode>("signin");
   const [loading, setLoading] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
 
@@ -287,6 +287,29 @@ export default function PhoneAuthPage() {
         {/* === SIGN UP === */}
         {mode === "signup" && (
           <div className="space-y-4">
+            {/* Prominent "already have an account" banner — top of screen */}
+            <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
+              <p className="text-sm font-semibold text-foreground mb-2">
+                Already have an account?
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Continue where you left off — sign in with your phone &amp; PIN, or your old email &amp; password.
+              </p>
+              <Button
+                onClick={() => setMode("signin")}
+                variant="default"
+                className="w-full h-11 font-semibold"
+              >
+                Sign in to my account
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground font-medium">OR CREATE NEW</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
             <div>
               <Label className="mb-2 block">Your name (optional)</Label>
               <Input
@@ -366,14 +389,9 @@ export default function PhoneAuthPage() {
               <p>You'll get straight into the app. We'll offer to back up your data later, only when you're ready.</p>
             </div>
 
-            <div className="text-center text-sm pt-2 border-t">
-              Already have an account?{" "}
-              <button onClick={() => setMode("signin")} className="text-primary font-medium hover:underline">
-                Sign in
-              </button>
-            </div>
           </div>
         )}
+
 
         {/* === SIGN IN === */}
         {mode === "signin" && (

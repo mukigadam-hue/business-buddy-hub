@@ -31,7 +31,7 @@ export function timeAgo(input: string | number | Date | null | undefined): strin
 export type ActivityTone = 'live' | 'online' | 'recent' | 'today' | 'idle' | 'stale' | 'dead' | 'unknown';
 
 export interface ActivityStatus {
-  label: string;        // Human-readable status, e.g. "Online now", "Active 4 min ago", "Inactive — last seen 3 months ago"
+  label: string;        // Human-readable status, e.g. "Online now", "Active 4 min ago", "Last viewed 3 months ago"
   short: string;        // Compact label for tight UI spots
   dotClass: string;     // Tailwind classes for the status dot
   tone: ActivityTone;
@@ -41,8 +41,8 @@ export interface ActivityStatus {
 export function activityStatus(input: string | number | Date | null | undefined): ActivityStatus {
   if (!input) {
     return {
-      label: 'Never opened the app',
-      short: 'Never active',
+      label: 'Last viewed — unknown',
+      short: 'Unknown',
       dotClass: 'bg-muted-foreground/40',
       tone: 'unknown',
       isActive: false,
@@ -52,7 +52,7 @@ export function activityStatus(input: string | number | Date | null | undefined)
     ? new Date(input).getTime()
     : input.getTime();
   if (!Number.isFinite(then)) {
-    return { label: 'Never opened the app', short: 'Never active', dotClass: 'bg-muted-foreground/40', tone: 'unknown', isActive: false };
+    return { label: 'Last viewed — unknown', short: 'Unknown', dotClass: 'bg-muted-foreground/40', tone: 'unknown', isActive: false };
   }
   const sec = Math.max(0, Math.floor((Date.now() - then) / 1000));
 
@@ -98,7 +98,7 @@ export function activityStatus(input: string | number | Date | null | undefined)
   if (sec < 7 * 24 * 60 * 60) {
     const d = Math.floor(sec / 86400);
     return {
-      label: `Last seen ${d} day${d === 1 ? '' : 's'} ago`,
+      label: `Last viewed ${d} day${d === 1 ? '' : 's'} ago`,
       short: `${d}d ago`,
       dotClass: 'bg-orange-500',
       tone: 'idle',
@@ -108,7 +108,7 @@ export function activityStatus(input: string | number | Date | null | undefined)
   if (sec < 30 * 24 * 60 * 60) {
     const d = Math.floor(sec / 86400);
     return {
-      label: `Inactive — last seen ${d} days ago`,
+      label: `Last viewed ${d} days ago`,
       short: `${d}d ago`,
       dotClass: 'bg-red-500/80',
       tone: 'stale',
@@ -116,7 +116,7 @@ export function activityStatus(input: string | number | Date | null | undefined)
     };
   }
   return {
-    label: `Inactive — last seen ${timeAgo(then)}`,
+    label: `Last viewed ${timeAgo(then)}`,
     short: timeAgo(then),
     dotClass: 'bg-muted-foreground/60',
     tone: 'dead',

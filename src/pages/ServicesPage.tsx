@@ -103,7 +103,10 @@ export default function ServicesPage() {
   const prevServices = services.filter(s => new Date(s.created_at).toDateString() !== new Date().toDateString());
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const [historySearch, setHistorySearch] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'debt'>('all');
   const visibleServices = (activeTab === 'today' ? todayServices : prevServices).filter(s => {
+    if (paymentFilter === 'paid' && s.payment_status !== 'paid') return false;
+    if (paymentFilter === 'debt' && s.payment_status !== 'partial' && s.payment_status !== 'unpaid') return false;
     const q = historySearch.trim().toLowerCase();
     if (!q) return true;
     return (s.service_name || '').toLowerCase().includes(q)
@@ -308,6 +311,16 @@ export default function ServicesPage() {
         <button onClick={() => setActiveTab('previous')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'previous' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
           Previous ({prevServices.length})
         </button>
+      </div>
+
+      {/* Payment filter */}
+      <div className="flex gap-1.5 flex-wrap">
+        {(['all', 'paid', 'debt'] as const).map(f => (
+          <button key={f} onClick={() => setPaymentFilter(f)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${paymentFilter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            {f === 'all' ? `📋 ${t('sales.all', 'All')}` : f === 'paid' ? `✅ ${t('sales.paid', 'Paid')}` : `❌ ${t('sales.debts', 'Debts')}`}
+          </button>
+        ))}
       </div>
       <Input
         value={historySearch}

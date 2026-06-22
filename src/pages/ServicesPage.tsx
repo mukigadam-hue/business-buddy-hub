@@ -312,6 +312,16 @@ export default function ServicesPage() {
           Previous ({prevServices.length})
         </button>
       </div>
+
+      {/* Payment filter */}
+      <div className="flex gap-1.5 flex-wrap">
+        {(['all', 'paid', 'debt'] as const).map(f => (
+          <button key={f} onClick={() => setPaymentFilter(f)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${paymentFilter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            {f === 'all' ? `📋 ${t('sales.all', 'All')}` : f === 'paid' ? `✅ ${t('sales.paid', 'Paid')}` : `❌ ${t('sales.debts', 'Debts')}`}
+          </button>
+        ))}
+      </div>
       <Input
         value={historySearch}
         onChange={e => setHistorySearch(e.target.value)}

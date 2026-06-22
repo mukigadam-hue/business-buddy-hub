@@ -1327,28 +1327,43 @@ export type Database = {
       }
       profiles: {
         Row: {
+          country_code: string
           created_at: string
           email: string
           full_name: string
           id: string
           is_premium: boolean
           phone: string
+          phone_changed_at: string | null
+          pin_hash: string | null
+          recovery_email: string
+          verification_status: string
         }
         Insert: {
+          country_code?: string
           created_at?: string
           email?: string
           full_name?: string
           id: string
           is_premium?: boolean
           phone?: string
+          phone_changed_at?: string | null
+          pin_hash?: string | null
+          recovery_email?: string
+          verification_status?: string
         }
         Update: {
+          country_code?: string
           created_at?: string
           email?: string
           full_name?: string
           id?: string
           is_premium?: boolean
           phone?: string
+          phone_changed_at?: string | null
+          pin_hash?: string | null
+          recovery_email?: string
+          verification_status?: string
         }
         Relationships: []
       }
@@ -2547,6 +2562,11 @@ export type Database = {
           masked_email: string
         }[]
       }
+      mark_account_verified: {
+        Args: { _recovery_email: string }
+        Returns: boolean
+      }
+      phone_exists: { Args: { _phone: string }; Returns: boolean }
       recompute_invoice_status: {
         Args: { _source_id: string; _source_type: string }
         Returns: undefined
@@ -2621,6 +2641,10 @@ export type Database = {
       }
       set_settings_password: {
         Args: { _business_id: string; _password: string }
+        Returns: boolean
+      }
+      update_registered_phone: {
+        Args: { _new_country_code: string; _new_phone: string }
         Returns: boolean
       }
       verify_receipt: { Args: { _id: string; _type: string }; Returns: Json }

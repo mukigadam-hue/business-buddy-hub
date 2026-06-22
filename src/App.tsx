@@ -13,6 +13,8 @@ import AppLayout from "@/components/AppLayout";
 import AdMobManager from "@/components/AdMobManager";
 import UpdateGate from "@/components/UpdateGate";
 import AuthPage from "./pages/AuthPage";
+import PhoneAuthPage from "./pages/PhoneAuthPage";
+import { SecurityUpgradeModal } from "./components/auth/SecurityUpgradeModal";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import BusinessSetupPage from "./pages/BusinessSetupPage";
 import VerifyReceiptPage from "./pages/VerifyReceiptPage";
@@ -103,10 +105,13 @@ function AppContent() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify/:type/:id" element={<VerifyReceiptPage />} />
+          {/* Legacy email/password auth — kept available for existing users */}
+          <Route path="/login-email" element={<AuthPage />} />
           {/* Auth-gated routes */}
           <Route path="/*" element={
-            !user ? <AuthPage /> : (
+            !user ? <PhoneAuthPage /> : (
               <BusinessProvider>
+                <SecurityUpgradeModal />
                 <BusinessContent />
               </BusinessProvider>
             )

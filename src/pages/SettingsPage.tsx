@@ -24,6 +24,7 @@ import PersonalPreferencesSettings from '@/components/PersonalPreferencesSetting
 import { toSentenceCase } from '@/lib/utils';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';
 import RecycleBinPanel from '@/components/RecycleBinPanel';
+import { ChangePhoneCard } from '@/components/auth/ChangePhoneCard';
 
 function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' | 'property' }) {
   const { createBusiness, currentBusiness } = useBusiness();
@@ -622,6 +623,7 @@ export default function SettingsPage() {
             </h2>
             <p className="text-xs text-muted-foreground">Signed in as <strong>{user?.email}</strong></p>
             <div className="grid grid-cols-1 gap-2">
+              <ChangePhoneCard />
               <Button variant="outline" className="w-full justify-start" onClick={() => setShowChangeEmail(true)}>
                 <Mail className="h-4 w-4 mr-2" /> Change Email
               </Button>
@@ -1590,6 +1592,7 @@ export default function SettingsPage() {
           <p className="text-xs text-muted-foreground">Signed in as <strong>{user?.email}</strong></p>
 
           <div className="grid grid-cols-1 gap-2">
+            <ChangePhoneCard />
             <Button variant="outline" className="w-full justify-start" onClick={() => setShowChangeEmail(true)}>
               <Mail className="h-4 w-4 mr-2" /> Change Email
             </Button>

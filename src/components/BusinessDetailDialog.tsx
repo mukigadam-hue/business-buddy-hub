@@ -387,7 +387,7 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
           <div className="space-y-1 mt-3 text-xs text-muted-foreground">
             {business.products_description && <p className="text-foreground text-sm">{business.products_description}</p>}
             {business.address && <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3 shrink-0" /><span>{business.address}</span></div>}
-            {business.contact && <div className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" /><span>{business.contact}</span></div>}
+            {business.contact && <div className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" /><span dir="ltr">{formatPhoneForDisplay(business.contact, business.country_code)}</span></div>}
             {business.email && <div className="flex items-center gap-1.5"><Mail className="h-3 w-3 shrink-0" /><span>{business.email}</span></div>}
           </div>
 

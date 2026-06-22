@@ -1,39 +1,41 @@
 // Country dial codes + currency, ordered with East Africa first (primary market).
 export interface Country {
-  code: string;        // ISO2
+  code: string;            // ISO2
   name: string;
-  dial: string;        // e.g. "+256" (alias: phonePrefix)
-  phonePrefix: string; // same as dial
+  dial: string;            // e.g. "+256"
+  phonePrefix: string;     // alias of dial, used by some legacy components
   flag: string;
   currencySymbol: string;
-  language: string;    // primary language code (e.g. "en")
+  language: string;        // primary BCP-47 language tag (e.g. "en", "sw")
 }
 
-export const COUNTRIES: Country[] = [
-  { code: "UG", name: "Uganda",          dial: "+256", flag: "🇺🇬", currencySymbol: "USh" },
-  { code: "KE", name: "Kenya",           dial: "+254", flag: "🇰🇪", currencySymbol: "KSh" },
-  { code: "TZ", name: "Tanzania",        dial: "+255", flag: "🇹🇿", currencySymbol: "TSh" },
-  { code: "RW", name: "Rwanda",          dial: "+250", flag: "🇷🇼", currencySymbol: "RF" },
-  { code: "BI", name: "Burundi",         dial: "+257", flag: "🇧🇮", currencySymbol: "FBu" },
-  { code: "SS", name: "South Sudan",     dial: "+211", flag: "🇸🇸", currencySymbol: "SSP" },
-  { code: "ET", name: "Ethiopia",        dial: "+251", flag: "🇪🇹", currencySymbol: "Br" },
-  { code: "CD", name: "DR Congo",        dial: "+243", flag: "🇨🇩", currencySymbol: "FC" },
-  { code: "NG", name: "Nigeria",         dial: "+234", flag: "🇳🇬", currencySymbol: "₦" },
-  { code: "GH", name: "Ghana",           dial: "+233", flag: "🇬🇭", currencySymbol: "₵" },
-  { code: "ZA", name: "South Africa",    dial: "+27",  flag: "🇿🇦", currencySymbol: "R" },
-  { code: "EG", name: "Egypt",           dial: "+20",  flag: "🇪🇬", currencySymbol: "E£" },
-  { code: "GB", name: "United Kingdom",  dial: "+44",  flag: "🇬🇧", currencySymbol: "£" },
-  { code: "US", name: "United States",   dial: "+1",   flag: "🇺🇸", currencySymbol: "$" },
-  { code: "CA", name: "Canada",          dial: "+1",   flag: "🇨🇦", currencySymbol: "C$" },
-  { code: "IN", name: "India",           dial: "+91",  flag: "🇮🇳", currencySymbol: "₹" },
-  { code: "PK", name: "Pakistan",        dial: "+92",  flag: "🇵🇰", currencySymbol: "₨" },
-  { code: "AE", name: "UAE",             dial: "+971", flag: "🇦🇪", currencySymbol: "AED" },
-  { code: "SA", name: "Saudi Arabia",    dial: "+966", flag: "🇸🇦", currencySymbol: "SAR" },
-  { code: "DE", name: "Germany",         dial: "+49",  flag: "🇩🇪", currencySymbol: "€" },
-  { code: "FR", name: "France",          dial: "+33",  flag: "🇫🇷", currencySymbol: "€" },
-  { code: "CN", name: "China",           dial: "+86",  flag: "🇨🇳", currencySymbol: "¥" },
-  { code: "AU", name: "Australia",       dial: "+61",  flag: "🇦🇺", currencySymbol: "A$" },
+const RAW: Array<Omit<Country, "phonePrefix">> = [
+  { code: "UG", name: "Uganda",          dial: "+256", flag: "🇺🇬", currencySymbol: "USh", language: "en" },
+  { code: "KE", name: "Kenya",           dial: "+254", flag: "🇰🇪", currencySymbol: "KSh", language: "sw" },
+  { code: "TZ", name: "Tanzania",        dial: "+255", flag: "🇹🇿", currencySymbol: "TSh", language: "sw" },
+  { code: "RW", name: "Rwanda",          dial: "+250", flag: "🇷🇼", currencySymbol: "RF",  language: "rw" },
+  { code: "BI", name: "Burundi",         dial: "+257", flag: "🇧🇮", currencySymbol: "FBu", language: "fr" },
+  { code: "SS", name: "South Sudan",     dial: "+211", flag: "🇸🇸", currencySymbol: "SSP", language: "en" },
+  { code: "ET", name: "Ethiopia",        dial: "+251", flag: "🇪🇹", currencySymbol: "Br",  language: "am" },
+  { code: "CD", name: "DR Congo",        dial: "+243", flag: "🇨🇩", currencySymbol: "FC",  language: "fr" },
+  { code: "NG", name: "Nigeria",         dial: "+234", flag: "🇳🇬", currencySymbol: "₦",   language: "en" },
+  { code: "GH", name: "Ghana",           dial: "+233", flag: "🇬🇭", currencySymbol: "₵",   language: "en" },
+  { code: "ZA", name: "South Africa",    dial: "+27",  flag: "🇿🇦", currencySymbol: "R",   language: "en" },
+  { code: "EG", name: "Egypt",           dial: "+20",  flag: "🇪🇬", currencySymbol: "E£",  language: "ar" },
+  { code: "GB", name: "United Kingdom",  dial: "+44",  flag: "🇬🇧", currencySymbol: "£",   language: "en" },
+  { code: "US", name: "United States",   dial: "+1",   flag: "🇺🇸", currencySymbol: "$",   language: "en" },
+  { code: "CA", name: "Canada",          dial: "+1",   flag: "🇨🇦", currencySymbol: "C$",  language: "en" },
+  { code: "IN", name: "India",           dial: "+91",  flag: "🇮🇳", currencySymbol: "₹",   language: "hi" },
+  { code: "PK", name: "Pakistan",        dial: "+92",  flag: "🇵🇰", currencySymbol: "₨",   language: "ur" },
+  { code: "AE", name: "UAE",             dial: "+971", flag: "🇦🇪", currencySymbol: "AED", language: "ar" },
+  { code: "SA", name: "Saudi Arabia",    dial: "+966", flag: "🇸🇦", currencySymbol: "SAR", language: "ar" },
+  { code: "DE", name: "Germany",         dial: "+49",  flag: "🇩🇪", currencySymbol: "€",   language: "de" },
+  { code: "FR", name: "France",          dial: "+33",  flag: "🇫🇷", currencySymbol: "€",   language: "fr" },
+  { code: "CN", name: "China",           dial: "+86",  flag: "🇨🇳", currencySymbol: "¥",   language: "zh" },
+  { code: "AU", name: "Australia",       dial: "+61",  flag: "🇦🇺", currencySymbol: "A$",  language: "en" },
 ];
+
+export const COUNTRIES: Country[] = RAW.map((c) => ({ ...c, phonePrefix: c.dial }));
 
 // Back-compat alias used elsewhere in the app.
 export const countries = COUNTRIES;

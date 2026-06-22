@@ -530,14 +530,26 @@ export default function PhoneAuthPage() {
               </>
             )}
 
-            <div className="text-center text-sm pt-2 border-t">
-              New here?{" "}
-              <button onClick={() => setMode("signup")} className="text-primary font-medium hover:underline">
-                Create account
-              </button>
+            {/* Prominent "Create new account" card — highlighted differently from Sign in */}
+            <div className="mt-4 rounded-xl border-2 border-dashed border-amber-500/60 bg-amber-500/10 p-4">
+              <p className="text-sm font-bold text-foreground mb-1 flex items-center gap-1.5">
+                <UserPlus className="h-4 w-4 text-amber-600" />
+                New to BizTrack?
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                You don't have an account yet — tap below to register your business in seconds.
+              </p>
+              <Button
+                onClick={() => setMode("signup")}
+                variant="outline"
+                className="w-full h-11 font-semibold border-2 border-amber-500 text-amber-700 hover:bg-amber-500 hover:text-white dark:text-amber-400"
+              >
+                Create a new account
+              </Button>
             </div>
           </div>
         )}
+
 
         {/* === RECOVERY: phone entry === */}
         {mode === "recover-phone" && (

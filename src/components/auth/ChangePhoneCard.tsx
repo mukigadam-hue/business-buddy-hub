@@ -16,6 +16,7 @@ export function ChangePhoneCard() {
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPin, setShowPin] = useState(false);
 
   const submit = async () => {
     if (phone.replace(/\D/g, "").length < 6) {

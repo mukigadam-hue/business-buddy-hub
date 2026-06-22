@@ -2,9 +2,11 @@
 export interface Country {
   code: string;        // ISO2
   name: string;
-  dial: string;        // e.g. "+256"
+  dial: string;        // e.g. "+256" (alias: phonePrefix)
+  phonePrefix: string; // same as dial
   flag: string;
   currencySymbol: string;
+  language: string;    // primary language code (e.g. "en")
 }
 
 export const COUNTRIES: Country[] = [

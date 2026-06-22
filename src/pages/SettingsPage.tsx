@@ -24,6 +24,7 @@ import PersonalPreferencesSettings from '@/components/PersonalPreferencesSetting
 import { toSentenceCase } from '@/lib/utils';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';
 import RecycleBinPanel from '@/components/RecycleBinPanel';
+import { ChangePhoneCard } from '@/components/auth/ChangePhoneCard';
 
 function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' | 'property' }) {
   const { createBusiness, currentBusiness } = useBusiness();

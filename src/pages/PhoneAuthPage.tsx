@@ -273,17 +273,37 @@ export default function PhoneAuthPage() {
 
   // -------- Render --------
   return (
-    <div className="min-h-screen-safe bg-gradient-to-br from-primary/5 via-background to-amber-500/5 flex items-center justify-center p-4 overflow-y-auto">
-      <Card className="w-full max-w-md p-6 sm:p-8 shadow-xl border-2">
+    <div
+      className="min-h-screen-safe flex flex-col items-center justify-start p-4 sm:p-6 overflow-y-auto"
+      style={{ background: 'linear-gradient(145deg, hsl(217 72% 12%) 0%, hsl(217 72% 18%) 35%, hsl(210 60% 25%) 65%, hsl(42 80% 45%) 100%)' }}
+    >
+      {/* Hero Section */}
+      <div className="w-full max-w-md sm:max-w-xl text-center pt-6 sm:pt-10 pb-5 sm:pb-8 px-2">
+        <h1
+          className="text-2xl sm:text-4xl font-extrabold drop-shadow-lg leading-tight mb-2 sm:mb-4"
+          style={{ color: 'hsl(210, 40%, 98%)' }}
+        >
+          Grow Your Business with BizTrack
+        </h1>
+        <p
+          className="text-sm sm:text-base leading-relaxed max-w-md mx-auto font-medium"
+          style={{ color: 'hsla(210, 40%, 98%, 0.85)' }}
+        >
+          The all-in-one dashboard to track sales, manage expenses, and stay organized.
+        </p>
+      </div>
+
+      <Card className="w-full max-w-md p-6 sm:p-8 shadow-xl border-2 bg-card/95 backdrop-blur-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-white shadow-lg">
             <Briefcase className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="font-bold text-lg leading-tight">Business Manager</h1>
+            <h2 className="font-bold text-lg leading-tight">Business Manager</h2>
             <p className="text-xs text-muted-foreground">Phone-first &middot; no email needed</p>
           </div>
         </div>
+
 
         {/* === SIGN UP === */}
         {mode === "signup" && (

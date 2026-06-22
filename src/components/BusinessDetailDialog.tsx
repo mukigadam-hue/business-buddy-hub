@@ -19,6 +19,7 @@ import { Search as SearchIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatPhoneForDisplay } from '@/lib/phoneDisplay';
+import { resolveDisplayCurrency } from '@/lib/countryCurrency';
 import { formatDistanceToNow } from 'date-fns';
 import ImageLightbox from './ImageLightbox';
 
@@ -236,7 +237,7 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const currencySymbol = (business?.currency_symbol && business.currency_symbol.trim()) || 'KSh';
+  const currencySymbol = resolveDisplayCurrency(business?.currency_symbol, business?.country_code);
   const fmt = useCallback((n: number) => {
     return `${currencySymbol} ${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }, [currencySymbol]);

@@ -2591,6 +2591,7 @@ export type Database = {
       }
       search_businesses: {
         Args: {
+          _business_type?: string
           _country_code?: string
           _district?: string
           _limit?: number
@@ -2603,9 +2604,11 @@ export type Database = {
           business_type: string
           contact: string
           country_code: string
+          currency_symbol: string
           district: string
           email: string
           id: string
+          last_active_at: string
           logo_url: string
           name: string
           products_description: string

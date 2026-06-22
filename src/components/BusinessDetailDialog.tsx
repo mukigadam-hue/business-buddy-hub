@@ -8,8 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { useBusiness } from '@/context/BusinessContext';
-import { useCurrency } from '@/hooks/useCurrency';
+
+
 import { toast } from 'sonner';
 import {
   MapPin, Phone, Mail, Factory, Store, Star, ThumbsUp, Copy, Check,
@@ -33,6 +33,7 @@ interface BusinessInfo {
   business_code: string | null;
   products_description: string;
   country_code?: string;
+  currency_symbol?: string | null;
 }
 
 interface Product {
@@ -234,8 +235,11 @@ function PropertyAssetsWithLightbox({ assets, fmt }: { assets: PropertyAssetPrev
 export default function BusinessDetailDialog({ business, open, onOpenChange, onOrderOrBook }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { currentBusiness } = useBusiness();
-  const { fmt } = useCurrency();
+  
+  const currencySymbol = (business?.currency_symbol && business.currency_symbol.trim()) || 'KSh';
+  const fmt = useCallback((n: number) => {
+    return `${currencySymbol} ${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }, [currencySymbol]);
   const [products, setProducts] = useState<Product[]>([]);
   const [propertyAssets, setPropertyAssets] = useState<PropertyAssetPreview[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);

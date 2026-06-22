@@ -232,6 +232,7 @@ function PropertyAssetsWithLightbox({ assets, fmt }: { assets: PropertyAssetPrev
 }
 
 export default function BusinessDetailDialog({ business, open, onOpenChange, onOrderOrBook }: Props) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { currentBusiness } = useBusiness();
   const { fmt } = useCurrency();

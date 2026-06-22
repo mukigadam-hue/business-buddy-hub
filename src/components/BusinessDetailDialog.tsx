@@ -15,6 +15,10 @@ import {
   MapPin, Phone, Mail, Factory, Store, Star, ThumbsUp, Copy, Check,
   Package, MessageSquare, Send, Loader2, ShoppingCart, CalendarCheck, Home,
 } from 'lucide-react';
+import { Search as SearchIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { formatPhoneForDisplay } from '@/lib/phoneDisplay';
 import { formatDistanceToNow } from 'date-fns';
 import ImageLightbox from './ImageLightbox';
 

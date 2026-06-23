@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Package, TrendingUp, AlertTriangle, XCircle, DollarSign, ShoppingCart, Wrench, Camera } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import QuickAddItem from '@/components/QuickAddItem';
+import MassInventoryScan from '@/components/MassInventoryScan';
+import { Sparkles } from 'lucide-react';
 import AdSpace from '@/components/AdSpace';
 import BannerAd from '@/components/BannerAd';
 import NativeAd from '@/components/NativeAd';
@@ -64,6 +66,7 @@ export default function Dashboard() {
   const [showAllSales, setShowAllSales] = useState(false);
   const [showAllServices, setShowAllServices] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [showMassScan, setShowMassScan] = useState(false);
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const visibleTop = showAllTop ? topSelling : topSelling.slice(0, 5);
   const allAlerts = [...outOfStock, ...lowStock];
@@ -148,6 +151,24 @@ export default function Dashboard() {
         <Camera className="h-5 w-5 mr-2" /> {t('dashboard.addItemWithPhotos')}
       </Button>
       <QuickAddItem open={showQuickAdd} onOpenChange={setShowQuickAdd} />
+
+      <button
+        onClick={() => setShowMassScan(true)}
+        className="w-full text-left rounded-lg border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent hover:from-primary/15 px-4 py-3 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold text-sm sm:text-base">✨ Mass AI Inventory Scan (Scan Whole Shelf)</p>
+            <p className="text-[11px] sm:text-xs text-muted-foreground leading-snug">
+              Snap a photo of your shelves or wall display to automatically list all items using Google Gemini AI.
+            </p>
+          </div>
+        </div>
+      </button>
+      <MassInventoryScan open={showMassScan} onOpenChange={setShowMassScan} />
 
       {/* Single home-screen native AdMob slot (renders inside Despia native shell) */}
       <NativeAd placement="home" />

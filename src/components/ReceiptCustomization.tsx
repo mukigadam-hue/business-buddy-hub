@@ -13,7 +13,7 @@ import { Save, Trash2, Stamp } from 'lucide-react';
 import ReceiptWatermarkOverlay from '@/components/ReceiptWatermarkOverlay';
 
 export default function ReceiptCustomization() {
-  const { currentBusiness, refreshAll } = useBusiness() as any;
+  const { currentBusiness, refreshData } = useBusiness() as any;
   const [imageUrl, setImageUrl] = useState<string>('');
   const [text, setText] = useState<string>('');
   const [size, setSize] = useState<number>(120);

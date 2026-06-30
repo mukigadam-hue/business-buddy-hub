@@ -171,11 +171,12 @@ export default function Receipt({ items, grandTotal, buyerName, sellerName, cust
               {isInvoice ? 'Please settle the outstanding balance. Thank you!' : 'Thank you for your business!'}
             </p>
           </CardContent>
-          {/* Permanent app branding — bottom-left corner of every receipt */}
-          <div className="absolute bottom-1 left-1.5 z-20 flex items-center gap-1 bg-background/70 backdrop-blur-sm rounded-md px-1.5 py-0.5 pointer-events-none">
-            <img src="/app-icon.png" alt="" className="h-3.5 w-3.5 rounded-sm" />
-            <span className="text-[8px] font-semibold text-foreground/70 leading-none">Ndamwesiga</span>
+          {/* Permanent app branding — bottom-left corner, captured into every exported/printed/shared receipt */}
+          <div className="absolute bottom-1 left-1.5 z-20 flex items-center gap-1 rounded-md px-1.5 py-0.5 pointer-events-none" style={{ backgroundColor: 'rgba(255,255,255,0.85)', border: '1px solid rgba(0,0,0,0.08)' }}>
+            <img src="/app-icon.png" alt="" crossOrigin="anonymous" style={{ height: 14, width: 14, borderRadius: 2 }} />
+            <span style={{ fontSize: 8, fontWeight: 700, color: '#222', lineHeight: 1, letterSpacing: '0.02em' }}>com.despia.biztrack</span>
           </div>
+
         </Card>
       </div>
       <ReceiptActions

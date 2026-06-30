@@ -573,6 +573,12 @@ export type Database = {
           name: string
           owner_id: string
           products_description: string
+          receipt_watermark_opacity: number
+          receipt_watermark_repeat: number
+          receipt_watermark_rotation: number
+          receipt_watermark_size: number
+          receipt_watermark_text: string | null
+          receipt_watermark_url: string | null
           settings_password: string | null
           total_capital: number
         }
@@ -593,6 +599,12 @@ export type Database = {
           name: string
           owner_id: string
           products_description?: string
+          receipt_watermark_opacity?: number
+          receipt_watermark_repeat?: number
+          receipt_watermark_rotation?: number
+          receipt_watermark_size?: number
+          receipt_watermark_text?: string | null
+          receipt_watermark_url?: string | null
           settings_password?: string | null
           total_capital?: number
         }
@@ -613,6 +625,12 @@ export type Database = {
           name?: string
           owner_id?: string
           products_description?: string
+          receipt_watermark_opacity?: number
+          receipt_watermark_repeat?: number
+          receipt_watermark_rotation?: number
+          receipt_watermark_size?: number
+          receipt_watermark_text?: string | null
+          receipt_watermark_url?: string | null
           settings_password?: string | null
           total_capital?: number
         }

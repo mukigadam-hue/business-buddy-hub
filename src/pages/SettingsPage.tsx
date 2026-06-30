@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AdSpace from '@/components/AdSpace';
 import LanguageSelector from '@/components/LanguageSelector';
 import PersonalPreferencesSettings from '@/components/PersonalPreferencesSettings';
+import ReceiptCustomization from '@/components/ReceiptCustomization';
 
 import { toSentenceCase } from '@/lib/utils';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';
@@ -891,6 +892,9 @@ export default function SettingsPage() {
           <p className="text-xs text-muted-foreground">{t('settings.preview')}: <span className="font-semibold text-success">{currencyInput || 'KSh'} 1,000.00</span></p>
         </CardContent>
       </Card>
+
+      {!isPersonal && <ReceiptCustomization />}
+
 
       {/* Language Settings */}
       <Card className="shadow-card">

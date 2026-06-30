@@ -161,6 +161,12 @@ export interface Business {
   products_description: string;
   is_discoverable: boolean;
   created_at: string;
+  receipt_watermark_url?: string | null;
+  receipt_watermark_text?: string | null;
+  receipt_watermark_size?: number | null;
+  receipt_watermark_opacity?: number | null;
+  receipt_watermark_repeat?: number | null;
+  receipt_watermark_rotation?: number | null;
 }
 
 export interface BusinessMembership {
@@ -434,7 +440,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         const businessIds = membershipData.map(m => m.business_id);
         const { data: businessData, error: bizError } = await supabase
           .from('businesses')
-          .select('id,name,address,contact,email,total_capital,logo_url,owner_id,business_type,business_code,country_code,district,currency_symbol,products_description,is_discoverable,created_at')
+          .select('id,name,address,contact,email,total_capital,logo_url,owner_id,business_type,business_code,country_code,district,currency_symbol,products_description,is_discoverable,created_at,receipt_watermark_url,receipt_watermark_text,receipt_watermark_size,receipt_watermark_opacity,receipt_watermark_repeat,receipt_watermark_rotation')
           .in('id', businessIds);
         
         if (bizError) {

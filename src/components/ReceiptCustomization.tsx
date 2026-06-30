@@ -49,7 +49,7 @@ export default function ReceiptCustomization() {
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success('Receipt watermark saved');
-    refreshAll?.();
+    refreshData?.();
   }
 
   async function clearAll() {

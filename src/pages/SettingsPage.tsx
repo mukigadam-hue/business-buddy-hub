@@ -893,6 +893,9 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {!isPersonal && <ReceiptCustomization />}
+
+
       {/* Language Settings */}
       <Card className="shadow-card">
         <CardContent className="p-4">

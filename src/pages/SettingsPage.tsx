@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AdSpace from '@/components/AdSpace';
 import LanguageSelector from '@/components/LanguageSelector';
 import PersonalPreferencesSettings from '@/components/PersonalPreferencesSettings';
+import ReceiptCustomization from '@/components/ReceiptCustomization';
 
 import { toSentenceCase } from '@/lib/utils';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';

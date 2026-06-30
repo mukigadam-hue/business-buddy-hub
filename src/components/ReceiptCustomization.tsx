@@ -13,7 +13,7 @@ import { Save, Trash2, Stamp } from 'lucide-react';
 import ReceiptWatermarkOverlay from '@/components/ReceiptWatermarkOverlay';
 
 export default function ReceiptCustomization() {
-  const { currentBusiness, refreshData } = useBusiness() as any;
+  const { currentBusiness, updateBusiness } = useBusiness() as any;
   const [imageUrl, setImageUrl] = useState<string>('');
   const [text, setText] = useState<string>('');
   const [size, setSize] = useState<number>(120);
@@ -35,22 +35,20 @@ export default function ReceiptCustomization() {
   async function save() {
     if (!currentBusiness) return;
     setSaving(true);
-    const { error } = await supabase
-      .from('businesses')
-      .update({
+    try {
+      await updateBusiness({
         receipt_watermark_url: imageUrl || null,
         receipt_watermark_text: text?.trim() || null,
         receipt_watermark_size: size,
         receipt_watermark_opacity: opacity,
         receipt_watermark_repeat: repeat,
         receipt_watermark_rotation: rotation,
-      } as any)
-      .eq('id', currentBusiness.id);
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success('Receipt watermark saved');
-    refreshData?.();
+      } as any);
+    } finally {
+      setSaving(false);
+    }
   }
+
 
   async function clearAll() {
     setImageUrl('');

@@ -41,6 +41,7 @@ interface ReceiptProps {
 export default function Receipt({ items, grandTotal, buyerName, sellerName, customerName, code, date, type, businessInfo, counterpartyInfo, recordedBy, recordedByRole, amountPaid, paymentStatus, verifyId, verifyType }: ReceiptProps) {
   const { fmt } = useCurrency();
   const { canShareReceipts, canDownloadReceipts, canPrintReceipts } = usePremium();
+  const { currentBusiness } = useBusiness();
   const buyer = buyerName || customerName || '';
   const receiptRef = useRef<HTMLDivElement>(null);
   const paid = Number(amountPaid ?? grandTotal);
@@ -53,8 +54,16 @@ export default function Receipt({ items, grandTotal, buyerName, sellerName, cust
   return (
     <div className="space-y-2">
       <div ref={receiptRef}>
-        <Card className="shadow-card max-w-sm mx-auto">
-          <CardContent className="p-4 space-y-3 text-sm overflow-y-auto max-h-[70vh]">
+        <Card className="shadow-card max-w-sm mx-auto relative overflow-hidden">
+          <ReceiptWatermarkOverlay
+            imageUrl={currentBusiness?.receipt_watermark_url}
+            text={currentBusiness?.receipt_watermark_text}
+            size={currentBusiness?.receipt_watermark_size}
+            opacity={currentBusiness?.receipt_watermark_opacity}
+            repeat={currentBusiness?.receipt_watermark_repeat}
+            rotation={currentBusiness?.receipt_watermark_rotation}
+          />
+          <CardContent className="relative z-10 p-4 pb-10 space-y-3 text-sm overflow-y-auto max-h-[70vh]">
             {businessInfo && (
               <div className="text-center space-y-0.5">
                 <h3 className="font-bold text-base">{businessInfo.name}</h3>

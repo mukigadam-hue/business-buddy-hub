@@ -161,6 +161,12 @@ export interface Business {
   products_description: string;
   is_discoverable: boolean;
   created_at: string;
+  receipt_watermark_url?: string | null;
+  receipt_watermark_text?: string | null;
+  receipt_watermark_size?: number | null;
+  receipt_watermark_opacity?: number | null;
+  receipt_watermark_repeat?: number | null;
+  receipt_watermark_rotation?: number | null;
 }
 
 export interface BusinessMembership {

@@ -5,6 +5,8 @@ import { useCurrency } from '@/hooks/useCurrency';
 import ReceiptActions from '@/components/ReceiptActions';
 import { usePremium } from '@/hooks/usePremium';
 import ReceiptQR from '@/components/ReceiptQR';
+import ReceiptWatermarkOverlay from '@/components/ReceiptWatermarkOverlay';
+import { useBusiness } from '@/context/BusinessContext';
 
 interface ReceiptItem {
   itemName: string;

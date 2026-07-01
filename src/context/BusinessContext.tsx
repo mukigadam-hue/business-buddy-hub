@@ -188,6 +188,7 @@ export interface ReceiptRecord {
   items: any[];
   business_info: any;
   code: string | null;
+  watermark_snapshot?: any;
   created_at: string;
 }
 

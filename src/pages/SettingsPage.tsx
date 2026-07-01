@@ -1696,6 +1696,7 @@ export default function SettingsPage() {
               businessInfo={viewingReceipt.business_info as any}
               verifyId={viewingReceipt.id}
               verifyType="archive"
+              brandingSnapshot={(viewingReceipt as any).watermark_snapshot ?? null}
             />
           )}
         </DialogContent>

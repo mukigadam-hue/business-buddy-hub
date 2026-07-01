@@ -1278,8 +1278,19 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
 
   const saveReceipt = useCallback(async (receipt: Omit<ReceiptRecord, 'id' | 'created_at'>) => {
     if (!currentBusinessId) return;
-    await supabase.from('receipts').insert({ ...receipt } as any);
-  }, [currentBusinessId]);
+    // Snapshot current branding/watermark so historic receipts keep their look even if settings change later.
+    const b = businesses.find(x => x.id === currentBusinessId);
+    const watermark_snapshot = b ? {
+      logo_url: b.logo_url ?? null,
+      receipt_watermark_url: b.receipt_watermark_url ?? null,
+      receipt_watermark_text: b.receipt_watermark_text ?? null,
+      receipt_watermark_size: b.receipt_watermark_size ?? null,
+      receipt_watermark_opacity: b.receipt_watermark_opacity ?? null,
+      receipt_watermark_repeat: b.receipt_watermark_repeat ?? null,
+      receipt_watermark_rotation: b.receipt_watermark_rotation ?? null,
+    } : null;
+    await supabase.from('receipts').insert({ ...(receipt as any), watermark_snapshot } as any);
+  }, [currentBusinessId, businesses]);
 
   const getReceipts = useCallback(async (): Promise<ReceiptRecord[]> => {
     if (!currentBusinessId) return [];

@@ -1932,6 +1932,7 @@ export type Database = {
           receipt_type: string
           seller_name: string
           transaction_id: string
+          watermark_snapshot: Json | null
         }
         Insert: {
           business_id: string
@@ -1945,6 +1946,7 @@ export type Database = {
           receipt_type?: string
           seller_name?: string
           transaction_id: string
+          watermark_snapshot?: Json | null
         }
         Update: {
           business_id?: string
@@ -1958,6 +1960,7 @@ export type Database = {
           receipt_type?: string
           seller_name?: string
           transaction_id?: string
+          watermark_snapshot?: Json | null
         }
         Relationships: []
       }

@@ -2283,11 +2283,13 @@ export type Database = {
       stock_items: {
         Row: {
           barcode: string
+          base_unit_type: string | null
           boxes_per_container: number
           business_id: string
           buying_price: number
           cartons_per_box: number
           category: string
+          conversion_factor: number
           created_at: string
           deleted_at: string | null
           deleted_by: string
@@ -2295,6 +2297,7 @@ export type Database = {
           image_url_1: string | null
           image_url_2: string | null
           image_url_3: string | null
+          is_unmeasurable: boolean
           min_stock_level: number
           name: string
           pieces_per_carton: number
@@ -2302,17 +2305,21 @@ export type Database = {
           quantity: number
           retail_price: number
           tax_rate: number
+          total_stock_base_units: number
           unit_type: string
           updated_at: string
+          wholesale_cost_per_base_unit: number
           wholesale_price: number
         }
         Insert: {
           barcode?: string
+          base_unit_type?: string | null
           boxes_per_container?: number
           business_id: string
           buying_price?: number
           cartons_per_box?: number
           category?: string
+          conversion_factor?: number
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string
@@ -2320,6 +2327,7 @@ export type Database = {
           image_url_1?: string | null
           image_url_2?: string | null
           image_url_3?: string | null
+          is_unmeasurable?: boolean
           min_stock_level?: number
           name: string
           pieces_per_carton?: number
@@ -2327,17 +2335,21 @@ export type Database = {
           quantity?: number
           retail_price?: number
           tax_rate?: number
+          total_stock_base_units?: number
           unit_type?: string
           updated_at?: string
+          wholesale_cost_per_base_unit?: number
           wholesale_price?: number
         }
         Update: {
           barcode?: string
+          base_unit_type?: string | null
           boxes_per_container?: number
           business_id?: string
           buying_price?: number
           cartons_per_box?: number
           category?: string
+          conversion_factor?: number
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string
@@ -2345,6 +2357,7 @@ export type Database = {
           image_url_1?: string | null
           image_url_2?: string | null
           image_url_3?: string | null
+          is_unmeasurable?: boolean
           min_stock_level?: number
           name?: string
           pieces_per_carton?: number
@@ -2352,8 +2365,10 @@ export type Database = {
           quantity?: number
           retail_price?: number
           tax_rate?: number
+          total_stock_base_units?: number
           unit_type?: string
           updated_at?: string
+          wholesale_cost_per_base_unit?: number
           wholesale_price?: number
         }
         Relationships: [

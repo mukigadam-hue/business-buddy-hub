@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,6 +21,8 @@ import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
+import { METRIC_OPTIONS, conversionFor } from '@/lib/intangibleUnits';
+import { supabase } from '@/integrations/supabase/client';
 
 const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls', 'Bags', 'Boxes', 'Pairs', 'Sets', 'Bundles', 'Gallons'];
 
@@ -30,6 +33,14 @@ export default function PurchasesPage() {
   const { fmt } = useCurrency();
   const userFullName = user?.user_metadata?.full_name || '';
   const roleLabel = userRole === 'owner' ? '(Owner)' : userRole === 'admin' ? '(Admin)' : '(Worker)';
+
+  // Intangible / bulk-estimation toggle & inputs (does not affect standard items)
+  const [intangibleOn, setIntangibleOn] = useState(false);
+  const [intMetric, setIntMetric] = useState<'Liters' | 'Kilograms' | 'Pieces'>('Liters');
+  const [intBulkQty, setIntBulkQty] = useState(''); // e.g. 20 (Liters in a jerrycan)
+  const [intWholesaleCost, setIntWholesaleCost] = useState(''); // total paid for the bulk
+  const [intRetailPerUnit, setIntRetailPerUnit] = useState(''); // expected retail per Liter/Kg/Piece
+  const [intWholesalePerUnit, setIntWholesalePerUnit] = useState(''); // expected wholesale per full unit
   const [items, setItems] = useState<{
     item_name: string; category: string; quality: string; unit_type: string;
     quantity: number; unit_price: number; wholesale_price: number; retail_price: number;
@@ -137,6 +148,74 @@ export default function PurchasesPage() {
     setPaymentStatus('paid');
     setAmountPaid('');
   }
+
+  // Save an intangible / bulk-estimation purchase (e.g. a 20L jerrycan of waragi).
+  // Runs on its own so it does not interfere with the normal multi-item tray flow.
+  async function handleSaveIntangible() {
+    if (!currentBusiness) return;
+    const bulkQty = parseFloat(intBulkQty) || 0;                  // e.g. 20 (Liters)
+    const totalCost = parseFloat(intWholesaleCost) || 0;          // e.g. 30000 UGX
+    const retail = parseFloat(intRetailPerUnit) || 0;             // e.g. 5000 UGX / Liter
+    const wholesalePerUnit = parseFloat(intWholesalePerUnit) || retail;
+    if (!form.name.trim() || bulkQty <= 0 || totalCost <= 0 || retail <= 0) {
+      toast.error('Fill item name, bulk qty, wholesale cost & retail price');
+      return;
+    }
+    const conversion = conversionFor(intMetric);
+    const totalBaseUnits = bulkQty * conversion;                   // e.g. 20000 ml
+    const wholesaleCostPerBaseUnit = totalCost / totalBaseUnits;   // e.g. 1.5 UGX/ml
+    const costPerFullUnit = totalCost / bulkQty;                   // e.g. 1500 UGX/L
+    const itemName = toSentenceCase(form.name.trim());
+    const categoryName = toSentenceCase(form.category.trim());
+    const qualityName = toSentenceCase(form.quality.trim());
+
+    await addPurchase(
+      [{
+        item_name: itemName, category: categoryName, quality: qualityName,
+        quantity: bulkQty, unit_price: costPerFullUnit,
+        wholesale_price: wholesalePerUnit, retail_price: retail,
+        subtotal: totalCost,
+      }],
+      totalCost,
+      supplier.trim() || 'Unknown',
+      toTitleCase(recordedBy.trim()) || 'Staff',
+      paymentStatus,
+      paymentStatus === 'paid' ? totalCost : (parseFloat(amountPaid) || 0),
+    );
+
+    // Patch the resulting stock row with intangible tracking metadata.
+    // Wait briefly for realtime/insert to settle, then look it up by identity.
+    try {
+      await new Promise(r => setTimeout(r, 600));
+      const { data: existing } = await supabase
+        .from('stock_items')
+        .select('id, total_stock_base_units')
+        .eq('business_id', currentBusiness.id)
+        .ilike('name', itemName)
+        .ilike('category', categoryName || '')
+        .ilike('quality', qualityName || '')
+        .limit(1)
+        .maybeSingle();
+      if (existing?.id) {
+        const prevBase = Number(existing.total_stock_base_units || 0);
+        await supabase.from('stock_items').update({
+          is_unmeasurable: true,
+          base_unit_type: intMetric,
+          conversion_factor: conversion,
+          total_stock_base_units: prevBase + totalBaseUnits,
+          wholesale_cost_per_base_unit: wholesaleCostPerBaseUnit,
+          unit_type: intMetric,
+        } as any).eq('id', existing.id);
+      }
+    } catch (e) {
+      console.warn('Intangible metadata patch failed', e);
+    }
+
+    setIntBulkQty(''); setIntWholesaleCost(''); setIntRetailPerUnit(''); setIntWholesalePerUnit('');
+    setForm({ name: '', category: '', quality: '', unit_type: 'Pieces', quantity: '1', unit_price: '', wholesale_price: '', retail_price: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0', serial_numbers: '' });
+    toast.success('Bulk / intangible stock recorded');
+  }
+
 
   function PurchaseCard({ p }: { p: typeof purchases[0] }) {
     const isPaid = p.payment_status === 'paid';
@@ -274,6 +353,62 @@ export default function PurchasesPage() {
                 >
                   ➕ Add as new item: "{stockSearch || '...'}"
                 </button>
+              </div>
+            )}
+          </div>
+
+          {/* Intangible / Bulk Estimation Item — optional, layered on top of the standard flow */}
+          <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <Label className="text-sm font-semibold flex items-center gap-1.5">
+                  🧪 Configure as Intangible / Bulk Estimation Item
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  For items sold by unmeasured portions — e.g. a glass from a 20L jerrycan of waragi, or a heap from a sack of onions.
+                </p>
+              </div>
+              <Switch checked={intangibleOn} onCheckedChange={setIntangibleOn} />
+            </div>
+            {intangibleOn && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Metric</Label>
+                    <Select value={intMetric} onValueChange={(v) => setIntMetric(v as any)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {METRIC_OPTIONS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Bulk Quantity ({intMetric})</Label>
+                    <Input type="number" min="0" step="0.01" value={intBulkQty} onChange={e => setIntBulkQty(e.target.value)} placeholder="e.g. 20" />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-xs">Total Wholesale Purchase Cost</Label>
+                    <Input type="number" min="0" step="0.01" value={intWholesaleCost} onChange={e => setIntWholesaleCost(e.target.value)} placeholder="Total paid for the bulk" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Retail / {intMetric.replace(/s$/, '')}</Label>
+                    <Input type="number" min="0" step="0.01" value={intRetailPerUnit} onChange={e => setIntRetailPerUnit(e.target.value)} placeholder="Expected retail price" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Wholesale / {intMetric.replace(/s$/, '')}</Label>
+                    <Input type="number" min="0" step="0.01" value={intWholesalePerUnit} onChange={e => setIntWholesalePerUnit(e.target.value)} placeholder="Optional" />
+                  </div>
+                </div>
+                {parseFloat(intBulkQty) > 0 && parseFloat(intWholesaleCost) > 0 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    → Cost per base unit: <span className="font-semibold text-foreground">{fmt((parseFloat(intWholesaleCost) || 0) / ((parseFloat(intBulkQty) || 1) * conversionFor(intMetric)))}</span>
+                    {' · '}Stock added: <span className="font-semibold text-foreground">{(parseFloat(intBulkQty) || 0) * conversionFor(intMetric)} base units ({intBulkQty} {intMetric})</span>
+                  </p>
+                )}
+                <Button onClick={handleSaveIntangible} disabled={!form.name.trim() || submitLocked} className="w-full" variant="default">
+                  💾 Save Intangible / Bulk Purchase
+                </Button>
+                <p className="text-[10px] text-muted-foreground">Uses the Item Name / Category / Quality typed below. Skips the multi-item tray.</p>
               </div>
             )}
           </div>

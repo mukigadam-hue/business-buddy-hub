@@ -22,6 +22,7 @@ import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
+import { cashToFullUnits } from '@/lib/intangibleUnits';
 
 export default function SalesPage() {
   const { t } = useTranslation();
@@ -116,19 +117,40 @@ export default function SalesPage() {
   function addItem() {
     const stockItem = activeStock.find(s => s.id === selectedStock);
     if (!stockItem) return;
-    const finalQty = parseInt(bulkPkg.pieces_per_carton) > 0 ? (parseFloat(bulkQuantity) || parseFloat(quantity) || 1) : (parseFloat(quantity) || 1);
+    const isIntangible = !!(stockItem as any).is_unmeasurable;
     const basePrice = priceType === 'wholesale' ? Number(stockItem.wholesale_price) : Number(stockItem.retail_price);
-    const unitPrice = customPrice.trim() ? (parseFloat(customPrice) || basePrice) : basePrice;
+
+    let finalQty: number;
+    let unitPrice: number;
+    let priceLabel: string;
+
+    if (isIntangible) {
+      // Custom price field carries CASH RECEIVED. Derive fractional qty in full units.
+      const cash = parseFloat(customPrice) || 0;
+      if (cash <= 0 || basePrice <= 0) {
+        return; // silent — button already disabled by check below
+      }
+      finalQty = cashToFullUnits(cash, basePrice);
+      unitPrice = basePrice;
+      priceLabel = priceType; // subtotal = qty * unitPrice = cash
+    } else {
+      finalQty = parseInt(bulkPkg.pieces_per_carton) > 0
+        ? (parseFloat(bulkQuantity) || parseFloat(quantity) || 1)
+        : (parseFloat(quantity) || 1);
+      unitPrice = customPrice.trim() ? (parseFloat(customPrice) || basePrice) : basePrice;
+      priceLabel = customPrice.trim() ? 'custom' : priceType;
+    }
+
     setItems(prev => [...prev, {
       stock_item_id: stockItem.id,
       item_name: stockItem.name,
       category: stockItem.category,
       quality: stockItem.quality,
       quantity: finalQty,
-      price_type: customPrice.trim() ? 'custom' : priceType,
+      price_type: priceLabel,
       unit_price: unitPrice,
       serial_numbers: serialInput.trim() || undefined,
-      custom_price: customPrice.trim() ? unitPrice : undefined,
+      custom_price: !isIntangible && customPrice.trim() ? unitPrice : undefined,
     }]);
     setSelectedStock('');
     setQuantity('1');
@@ -432,48 +454,81 @@ export default function SalesPage() {
                   );
                 })()}
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div><Label>{t('sales.qty')}</Label><Input type="number" min="0.01" step="0.01" value={quantity} onChange={e => setQuantity(e.target.value)}
-                  readOnly={parseInt(bulkPkg.pieces_per_carton) > 0}
-                  className={parseInt(bulkPkg.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''} />
-                  {parseInt(bulkPkg.pieces_per_carton) > 0 && <p className="text-[10px] text-muted-foreground mt-0.5">{t('sales.autoCalcBulk')}</p>}
-                </div>
-                <div>
-                  <Label>{t('sales.priceType')}</Label>
-                  <Select value={priceType} onValueChange={v => setPriceType(v as 'wholesale' | 'retail')}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="retail">{t('sales.retail')}</SelectItem>
-                      <SelectItem value="wholesale">{t('sales.wholesale')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>{t('sales.altPrice')} <span className="text-[10px] text-muted-foreground">{t('sales.optional')}</span></Label>
-                  <Input type="number" min="0" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder={t('sales.customPh')} />
-                </div>
-              </div>
-
-              <BulkPackagingFields
-                piecesPerCarton={bulkPkg.pieces_per_carton}
-                cartonsPerBox={bulkPkg.cartons_per_box}
-                boxesPerContainer={bulkPkg.boxes_per_container}
-                onChange={(field, value) => setBulkPkg(f => ({ ...f, [field]: value }))}
-                onQuantityCalculated={(total) => { setQuantity(String(total)); setBulkQuantity(String(total)); }}
-                currentQuantity={quantity}
-              />
-
-              {selectedStock && (() => {
-                const si = activeStock.find(s => s.id === selectedStock);
-                if (!si) return null;
-                const basePrice = priceType === 'wholesale' ? Number(si.wholesale_price) : Number(si.retail_price);
-                const effectivePrice = customPrice.trim() ? (parseFloat(customPrice) || basePrice) : basePrice;
-                const totalQty = parseFloat(quantity) || 0;
+              {(() => {
+                const selectedItem = activeStock.find(s => s.id === selectedStock);
+                const isIntangible = !!(selectedItem && (selectedItem as any).is_unmeasurable);
+                const basePriceLive = selectedItem
+                  ? (priceType === 'wholesale' ? Number(selectedItem.wholesale_price) : Number(selectedItem.retail_price))
+                  : 0;
+                const derivedIntQty = isIntangible ? cashToFullUnits(parseFloat(customPrice) || 0, basePriceLive) : 0;
+                const displayQty = isIntangible ? (derivedIntQty > 0 ? derivedIntQty.toFixed(4) : '') : quantity;
                 return (
-                  <div className="text-xs text-muted-foreground bg-muted/40 rounded p-2">
-                    {customPrice.trim() && <span className="text-warning font-medium mr-2">⚡ Custom price: {fmt(effectivePrice)}</span>}
-                    Subtotal: <span className="font-bold text-foreground">{fmt(totalQty * effectivePrice)}</span>
-                  </div>
+                  <>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label>{t('sales.qty')}{isIntangible && selectedItem?.base_unit_type ? ` (${selectedItem.base_unit_type})` : ''}</Label>
+                        <Input
+                          type="number" min="0.01" step="0.0001"
+                          value={displayQty}
+                          onChange={e => { if (!isIntangible) setQuantity(e.target.value); }}
+                          readOnly={isIntangible || parseInt(bulkPkg.pieces_per_carton) > 0}
+                          className={(isIntangible || parseInt(bulkPkg.pieces_per_carton) > 0) ? 'bg-muted cursor-not-allowed' : ''}
+                          placeholder={isIntangible ? 'Auto from cash' : undefined}
+                        />
+                        {isIntangible ? (
+                          <p className="text-[10px] text-warning mt-0.5">Auto-calculated from cash received</p>
+                        ) : parseInt(bulkPkg.pieces_per_carton) > 0 ? (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{t('sales.autoCalcBulk')}</p>
+                        ) : null}
+                      </div>
+                      <div>
+                        <Label>{t('sales.priceType')}</Label>
+                        <Select value={priceType} onValueChange={v => setPriceType(v as 'wholesale' | 'retail')}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="retail">{t('sales.retail')}</SelectItem>
+                            <SelectItem value="wholesale">{t('sales.wholesale')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>{t('sales.altPrice')} <span className="text-[10px] text-muted-foreground">{t('sales.optional')}</span></Label>
+                        <Input
+                          type="number" min="0" step="0.01"
+                          value={customPrice}
+                          onChange={e => setCustomPrice(e.target.value)}
+                          placeholder={isIntangible ? 'Enter cash amount received (UGX)...' : 'Enter bargained price per unit...'}
+                        />
+                      </div>
+                    </div>
+
+                    <BulkPackagingFields
+                      piecesPerCarton={bulkPkg.pieces_per_carton}
+                      cartonsPerBox={bulkPkg.cartons_per_box}
+                      boxesPerContainer={bulkPkg.boxes_per_container}
+                      onChange={(field, value) => setBulkPkg(f => ({ ...f, [field]: value }))}
+                      onQuantityCalculated={(total) => { setQuantity(String(total)); setBulkQuantity(String(total)); }}
+                      currentQuantity={quantity}
+                    />
+
+                    {selectedItem && (() => {
+                      const effectivePrice = !isIntangible && customPrice.trim() ? (parseFloat(customPrice) || basePriceLive) : basePriceLive;
+                      const totalQty = isIntangible ? derivedIntQty : (parseFloat(quantity) || 0);
+                      const subtotal = isIntangible ? (parseFloat(customPrice) || 0) : (totalQty * effectivePrice);
+                      return (
+                        <div className="text-xs text-muted-foreground bg-muted/40 rounded p-2">
+                          {isIntangible ? (
+                            <span className="text-warning font-medium mr-2">
+                              🧪 Bulk item · {derivedIntQty > 0 ? `${derivedIntQty.toFixed(4)} ${selectedItem.base_unit_type || ''} → ` : ''}
+                            </span>
+                          ) : customPrice.trim() ? (
+                            <span className="text-warning font-medium mr-2">⚡ Custom price: {fmt(effectivePrice)}</span>
+                          ) : null}
+                          Subtotal: <span className="font-bold text-foreground">{fmt(subtotal)}</span>
+                        </div>
+                      );
+                    })()}
+                  </>
                 );
               })()}
               {selectedStock && (

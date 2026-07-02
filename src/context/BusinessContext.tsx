@@ -27,6 +27,12 @@ export interface StockItem {
   updated_at: string;
   deleted_at: string | null;
   deleted_by: string;
+  // Optional intangible / bulk-estimation tracking (defaults keep normal items unaffected)
+  is_unmeasurable?: boolean;
+  base_unit_type?: string | null;
+  conversion_factor?: number | null;
+  total_stock_base_units?: number | null;
+  wholesale_cost_per_base_unit?: number | null;
 }
 
 export interface SaleItem {

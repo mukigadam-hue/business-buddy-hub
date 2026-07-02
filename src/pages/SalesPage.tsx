@@ -22,6 +22,7 @@ import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
+import { cashToFullUnits } from '@/lib/intangibleUnits';
 
 export default function SalesPage() {
   const { t } = useTranslation();

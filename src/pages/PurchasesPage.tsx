@@ -28,7 +28,7 @@ const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls'
 
 export default function PurchasesPage() {
   const { t } = useTranslation();
-  const { stock, purchases, addPurchase, updatePurchasePayment, userRole, currentBusiness, currentBusinessId } = useBusiness();
+  const { stock, purchases, addPurchase, updatePurchasePayment, userRole, currentBusiness } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
   const userFullName = user?.user_metadata?.full_name || '';

@@ -28,11 +28,19 @@ const UNIT_TYPES = ['Pieces', 'Kilograms', 'Litres', 'Metres', 'Tonnes', 'Rolls'
 
 export default function PurchasesPage() {
   const { t } = useTranslation();
-  const { stock, purchases, addPurchase, updatePurchasePayment, userRole, currentBusiness } = useBusiness();
+  const { stock, purchases, addPurchase, updatePurchasePayment, userRole, currentBusiness, currentBusinessId } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
   const userFullName = user?.user_metadata?.full_name || '';
   const roleLabel = userRole === 'owner' ? '(Owner)' : userRole === 'admin' ? '(Admin)' : '(Worker)';
+
+  // Intangible / bulk-estimation toggle & inputs (does not affect standard items)
+  const [intangibleOn, setIntangibleOn] = useState(false);
+  const [intMetric, setIntMetric] = useState<'Liters' | 'Kilograms' | 'Pieces'>('Liters');
+  const [intBulkQty, setIntBulkQty] = useState(''); // e.g. 20 (Liters in a jerrycan)
+  const [intWholesaleCost, setIntWholesaleCost] = useState(''); // total paid for the bulk
+  const [intRetailPerUnit, setIntRetailPerUnit] = useState(''); // expected retail per Liter/Kg/Piece
+  const [intWholesalePerUnit, setIntWholesalePerUnit] = useState(''); // expected wholesale per full unit
   const [items, setItems] = useState<{
     item_name: string; category: string; quality: string; unit_type: string;
     quantity: number; unit_price: number; wholesale_price: number; retail_price: number;

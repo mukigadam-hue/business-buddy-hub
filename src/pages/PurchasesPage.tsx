@@ -357,6 +357,62 @@ export default function PurchasesPage() {
             )}
           </div>
 
+          {/* Intangible / Bulk Estimation Item — optional, layered on top of the standard flow */}
+          <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <Label className="text-sm font-semibold flex items-center gap-1.5">
+                  🧪 Configure as Intangible / Bulk Estimation Item
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  For items sold by unmeasured portions — e.g. a glass from a 20L jerrycan of waragi, or a heap from a sack of onions.
+                </p>
+              </div>
+              <Switch checked={intangibleOn} onCheckedChange={setIntangibleOn} />
+            </div>
+            {intangibleOn && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Metric</Label>
+                    <Select value={intMetric} onValueChange={(v) => setIntMetric(v as any)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {METRIC_OPTIONS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Bulk Quantity ({intMetric})</Label>
+                    <Input type="number" min="0" step="0.01" value={intBulkQty} onChange={e => setIntBulkQty(e.target.value)} placeholder="e.g. 20" />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-xs">Total Wholesale Purchase Cost</Label>
+                    <Input type="number" min="0" step="0.01" value={intWholesaleCost} onChange={e => setIntWholesaleCost(e.target.value)} placeholder="Total paid for the bulk" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Retail / {intMetric.replace(/s$/, '')}</Label>
+                    <Input type="number" min="0" step="0.01" value={intRetailPerUnit} onChange={e => setIntRetailPerUnit(e.target.value)} placeholder="Expected retail price" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Wholesale / {intMetric.replace(/s$/, '')}</Label>
+                    <Input type="number" min="0" step="0.01" value={intWholesalePerUnit} onChange={e => setIntWholesalePerUnit(e.target.value)} placeholder="Optional" />
+                  </div>
+                </div>
+                {parseFloat(intBulkQty) > 0 && parseFloat(intWholesaleCost) > 0 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    → Cost per base unit: <span className="font-semibold text-foreground">{fmt((parseFloat(intWholesaleCost) || 0) / ((parseFloat(intBulkQty) || 1) * conversionFor(intMetric)))}</span>
+                    {' · '}Stock added: <span className="font-semibold text-foreground">{(parseFloat(intBulkQty) || 0) * conversionFor(intMetric)} base units ({intBulkQty} {intMetric})</span>
+                  </p>
+                )}
+                <Button onClick={handleSaveIntangible} disabled={!form.name.trim() || submitLocked} className="w-full" variant="default">
+                  💾 Save Intangible / Bulk Purchase
+                </Button>
+                <p className="text-[10px] text-muted-foreground">Uses the Item Name / Category / Quality typed below. Skips the multi-item tray.</p>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <Label>{t('purchases.itemName')}</Label>

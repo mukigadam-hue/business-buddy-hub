@@ -117,19 +117,40 @@ export default function SalesPage() {
   function addItem() {
     const stockItem = activeStock.find(s => s.id === selectedStock);
     if (!stockItem) return;
-    const finalQty = parseInt(bulkPkg.pieces_per_carton) > 0 ? (parseFloat(bulkQuantity) || parseFloat(quantity) || 1) : (parseFloat(quantity) || 1);
+    const isIntangible = !!(stockItem as any).is_unmeasurable;
     const basePrice = priceType === 'wholesale' ? Number(stockItem.wholesale_price) : Number(stockItem.retail_price);
-    const unitPrice = customPrice.trim() ? (parseFloat(customPrice) || basePrice) : basePrice;
+
+    let finalQty: number;
+    let unitPrice: number;
+    let priceLabel: string;
+
+    if (isIntangible) {
+      // Custom price field carries CASH RECEIVED. Derive fractional qty in full units.
+      const cash = parseFloat(customPrice) || 0;
+      if (cash <= 0 || basePrice <= 0) {
+        return; // silent — button already disabled by check below
+      }
+      finalQty = cashToFullUnits(cash, basePrice);
+      unitPrice = basePrice;
+      priceLabel = priceType; // subtotal = qty * unitPrice = cash
+    } else {
+      finalQty = parseInt(bulkPkg.pieces_per_carton) > 0
+        ? (parseFloat(bulkQuantity) || parseFloat(quantity) || 1)
+        : (parseFloat(quantity) || 1);
+      unitPrice = customPrice.trim() ? (parseFloat(customPrice) || basePrice) : basePrice;
+      priceLabel = customPrice.trim() ? 'custom' : priceType;
+    }
+
     setItems(prev => [...prev, {
       stock_item_id: stockItem.id,
       item_name: stockItem.name,
       category: stockItem.category,
       quality: stockItem.quality,
       quantity: finalQty,
-      price_type: customPrice.trim() ? 'custom' : priceType,
+      price_type: priceLabel,
       unit_price: unitPrice,
       serial_numbers: serialInput.trim() || undefined,
-      custom_price: customPrice.trim() ? unitPrice : undefined,
+      custom_price: !isIntangible && customPrice.trim() ? unitPrice : undefined,
     }]);
     setSelectedStock('');
     setQuantity('1');

@@ -149,6 +149,74 @@ export default function PurchasesPage() {
     setAmountPaid('');
   }
 
+  // Save an intangible / bulk-estimation purchase (e.g. a 20L jerrycan of waragi).
+  // Runs on its own so it does not interfere with the normal multi-item tray flow.
+  async function handleSaveIntangible() {
+    if (!currentBusiness) return;
+    const bulkQty = parseFloat(intBulkQty) || 0;                  // e.g. 20 (Liters)
+    const totalCost = parseFloat(intWholesaleCost) || 0;          // e.g. 30000 UGX
+    const retail = parseFloat(intRetailPerUnit) || 0;             // e.g. 5000 UGX / Liter
+    const wholesalePerUnit = parseFloat(intWholesalePerUnit) || retail;
+    if (!form.name.trim() || bulkQty <= 0 || totalCost <= 0 || retail <= 0) {
+      toast.error('Fill item name, bulk qty, wholesale cost & retail price');
+      return;
+    }
+    const conversion = conversionFor(intMetric);
+    const totalBaseUnits = bulkQty * conversion;                   // e.g. 20000 ml
+    const wholesaleCostPerBaseUnit = totalCost / totalBaseUnits;   // e.g. 1.5 UGX/ml
+    const costPerFullUnit = totalCost / bulkQty;                   // e.g. 1500 UGX/L
+    const itemName = toSentenceCase(form.name.trim());
+    const categoryName = toSentenceCase(form.category.trim());
+    const qualityName = toSentenceCase(form.quality.trim());
+
+    await addPurchase(
+      [{
+        item_name: itemName, category: categoryName, quality: qualityName,
+        quantity: bulkQty, unit_price: costPerFullUnit,
+        wholesale_price: wholesalePerUnit, retail_price: retail,
+        subtotal: totalCost,
+      }],
+      totalCost,
+      supplier.trim() || 'Unknown',
+      toTitleCase(recordedBy.trim()) || 'Staff',
+      paymentStatus,
+      paymentStatus === 'paid' ? totalCost : (parseFloat(amountPaid) || 0),
+    );
+
+    // Patch the resulting stock row with intangible tracking metadata.
+    // Wait briefly for realtime/insert to settle, then look it up by identity.
+    try {
+      await new Promise(r => setTimeout(r, 600));
+      const { data: existing } = await supabase
+        .from('stock_items')
+        .select('id, total_stock_base_units')
+        .eq('business_id', currentBusiness.id)
+        .ilike('name', itemName)
+        .ilike('category', categoryName || '')
+        .ilike('quality', qualityName || '')
+        .limit(1)
+        .maybeSingle();
+      if (existing?.id) {
+        const prevBase = Number(existing.total_stock_base_units || 0);
+        await supabase.from('stock_items').update({
+          is_unmeasurable: true,
+          base_unit_type: intMetric,
+          conversion_factor: conversion,
+          total_stock_base_units: prevBase + totalBaseUnits,
+          wholesale_cost_per_base_unit: wholesaleCostPerBaseUnit,
+          unit_type: intMetric,
+        } as any).eq('id', existing.id);
+      }
+    } catch (e) {
+      console.warn('Intangible metadata patch failed', e);
+    }
+
+    setIntBulkQty(''); setIntWholesaleCost(''); setIntRetailPerUnit(''); setIntWholesalePerUnit('');
+    setForm({ name: '', category: '', quality: '', unit_type: 'Pieces', quantity: '1', unit_price: '', wholesale_price: '', retail_price: '', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0', serial_numbers: '' });
+    toast.success('Bulk / intangible stock recorded');
+  }
+
+
   function PurchaseCard({ p }: { p: typeof purchases[0] }) {
     const isPaid = p.payment_status === 'paid';
     const isPartial = p.payment_status === 'partial';

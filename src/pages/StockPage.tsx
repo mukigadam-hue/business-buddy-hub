@@ -16,6 +16,8 @@ import BarcodeScanHandler from '@/components/BarcodeScanHandler';
 import type { StockItem } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagingInfo';
+import { Switch } from '@/components/ui/switch';
+import { METRIC_OPTIONS, conversionFor } from '@/lib/intangibleUnits';
 
 import { toSentenceCase } from '@/lib/utils';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
@@ -113,6 +115,8 @@ export default function StockPage() {
     buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5',
     tax_rate: '0',
     pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0',
+    is_unmeasurable: false, base_unit_type: 'Liters',
+    total_stock_base_units: '', wholesale_cost_per_base_unit: '',
   });
 
   const activeStock = stock.filter(s => !s.deleted_at);
@@ -131,30 +135,43 @@ export default function StockPage() {
   const existingCategories = [...new Set(stock.map(s => s.category).filter(Boolean))];
 
   function resetForm() {
-    setForm({ name: '', category: '', quality: '', unit_type: 'Pieces', barcode: '', buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5', tax_rate: '0', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0' });
+    setForm({ name: '', category: '', quality: '', unit_type: 'Pieces', barcode: '', buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5', tax_rate: '0', pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0', is_unmeasurable: false, base_unit_type: 'Liters', total_stock_base_units: '', wholesale_cost_per_base_unit: '' });
     setEditItem(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const itemData = {
+    const isU = form.is_unmeasurable;
+    const conversion = conversionFor(form.base_unit_type);
+    const totalBase = parseFloat(form.total_stock_base_units) || 0;
+    const costPerBase = parseFloat(form.wholesale_cost_per_base_unit) || 0;
+    // When intangible: quantity is expressed in FULL units (decimal) derived from base units
+    const derivedQty = isU ? (conversion > 0 ? totalBase / conversion : 0) : (parseFloat(form.quantity) || 0);
+    const derivedBuying = isU ? costPerBase * conversion : (parseFloat(form.buying_price) || 0);
+
+    const itemData: any = {
       name: toSentenceCase(form.name.trim()),
       category: toSentenceCase(form.category.trim()),
       quality: toSentenceCase(form.quality.trim()),
-      unit_type: form.unit_type,
+      unit_type: isU ? form.base_unit_type : form.unit_type,
       barcode: form.barcode.trim(),
-      buying_price: parseFloat(form.buying_price) || 0,
-      wholesale_price: parseFloat(form.wholesale_price) || 0,
+      buying_price: derivedBuying,
+      wholesale_price: parseFloat(form.wholesale_price) || derivedBuying,
       retail_price: parseFloat(form.retail_price) || 0,
-      quantity: parseFloat(form.quantity) || 0,
+      quantity: derivedQty,
       min_stock_level: parseFloat(form.min_stock_level) || 5,
       tax_rate: parseFloat(form.tax_rate) || 0,
       image_url_1: editItem?.image_url_1 || '',
       image_url_2: editItem?.image_url_2 || '',
       image_url_3: editItem?.image_url_3 || '',
-      pieces_per_carton: parseFloat(form.pieces_per_carton) || 0,
-      cartons_per_box: parseFloat(form.cartons_per_box) || 0,
-      boxes_per_container: parseFloat(form.boxes_per_container) || 0,
+      pieces_per_carton: isU ? 0 : (parseFloat(form.pieces_per_carton) || 0),
+      cartons_per_box: isU ? 0 : (parseFloat(form.cartons_per_box) || 0),
+      boxes_per_container: isU ? 0 : (parseFloat(form.boxes_per_container) || 0),
+      is_unmeasurable: isU,
+      base_unit_type: isU ? form.base_unit_type : null,
+      conversion_factor: isU ? conversion : null,
+      total_stock_base_units: isU ? totalBase : null,
+      wholesale_cost_per_base_unit: isU ? costPerBase : null,
     };
     if (editItem) {
       await updateStockItem(editItem.id, itemData);
@@ -167,6 +184,8 @@ export default function StockPage() {
 
   function openEdit(item: StockItem) {
     setEditItem(item);
+    const isU = !!(item as any).is_unmeasurable;
+    const bmt = (item as any).base_unit_type || 'Liters';
     setForm({
       name: item.name, category: item.category, quality: item.quality,
       unit_type: (item as any).unit_type || 'Pieces',
@@ -177,6 +196,10 @@ export default function StockPage() {
       pieces_per_carton: String((item as any).pieces_per_carton || 0),
       cartons_per_box: String((item as any).cartons_per_box || 0),
       boxes_per_container: String((item as any).boxes_per_container || 0),
+      is_unmeasurable: isU,
+      base_unit_type: bmt,
+      total_stock_base_units: String((item as any).total_stock_base_units ?? ''),
+      wholesale_cost_per_base_unit: String((item as any).wholesale_cost_per_base_unit ?? ''),
     });
     setOpen(true);
   }
@@ -242,39 +265,92 @@ export default function StockPage() {
                       <Input value={form.quality} onChange={e => setForm(f => ({ ...f, quality: e.target.value }))} onBlur={() => setForm(f => ({ ...f, quality: toSentenceCase(f.quality) }))} placeholder="e.g. New, Grade A..." />
                     </div>
                    </div>
-                  <div>
-                    <Label>Unit Type</Label>
-                    <Select value={form.unit_type} onValueChange={v => setForm(f => ({ ...f, unit_type: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{UNIT_TYPES.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Buying/Shopping Price (Cost from supplier)</Label>
-                    <Input type="number" min="0" step="0.01" value={form.buying_price} onChange={e => setForm(f => ({ ...f, buying_price: e.target.value }))} required placeholder="Price you buy at" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Wholesale Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} required placeholder="Sell to wholesalers" /></div>
-                    <div><Label>Retail Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} required placeholder="Sell to customers" /></div>
-                  </div>
-                  <BulkPackagingFields
-                    piecesPerCarton={form.pieces_per_carton}
-                    cartonsPerBox={form.cartons_per_box}
-                    boxesPerContainer={form.boxes_per_container}
-                    onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
-                    onQuantityCalculated={(total) => setForm(f => ({ ...f, quantity: String(total) }))}
-                    currentQuantity={form.quantity}
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>Quantity ({form.unit_type})</Label>
-                      <Input type="number" min="0" step="0.01" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} required
-                        readOnly={parseInt(form.pieces_per_carton) > 0}
-                        className={parseInt(form.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''} />
-                      {parseInt(form.pieces_per_carton) > 0 && <p className="text-[10px] text-muted-foreground mt-0.5">Auto-calculated from bulk</p>}
+                  <div className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-2.5 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold">Intangible / Bulk-Estimation Item</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">e.g. waragi sold by the glass from a 20L jerrycan, loose onions from a sack.</p>
+                      </div>
+                      <Switch checked={form.is_unmeasurable} onCheckedChange={v => setForm(f => ({ ...f, is_unmeasurable: v }))} />
                     </div>
-                    <div><Label>Min Stock Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
+                    {form.is_unmeasurable && (
+                      <div className="space-y-2">
+                        <div>
+                          <Label className="text-xs">Metric</Label>
+                          <Select value={form.base_unit_type} onValueChange={v => setForm(f => ({ ...f, base_unit_type: v }))}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {METRIC_OPTIONS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs">Total stock ({METRIC_OPTIONS.find(m => m.value === form.base_unit_type)?.baseLabel})</Label>
+                            <Input type="number" min="0" step="0.01" value={form.total_stock_base_units} onChange={e => setForm(f => ({ ...f, total_stock_base_units: e.target.value }))} placeholder="e.g. 20000" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Wholesale cost / {METRIC_OPTIONS.find(m => m.value === form.base_unit_type)?.baseLabel}</Label>
+                            <Input type="number" min="0" step="0.0001" value={form.wholesale_cost_per_base_unit} onChange={e => setForm(f => ({ ...f, wholesale_cost_per_base_unit: e.target.value }))} placeholder="e.g. 5" />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          Full unit ({form.base_unit_type}) = {conversionFor(form.base_unit_type)} {METRIC_OPTIONS.find(m => m.value === form.base_unit_type)?.baseLabel}.
+                          Retail price below is per <strong>{form.base_unit_type.replace(/s$/, '')}</strong>. Sales page will convert cash → quantity automatically.
+                        </p>
+                      </div>
+                    )}
                   </div>
+
+                  {!form.is_unmeasurable && (
+                    <div>
+                      <Label>Unit Type</Label>
+                      <Select value={form.unit_type} onValueChange={v => setForm(f => ({ ...f, unit_type: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{UNIT_TYPES.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {!form.is_unmeasurable && (
+                    <div>
+                      <Label>Buying/Shopping Price (Cost from supplier)</Label>
+                      <Input type="number" min="0" step="0.01" value={form.buying_price} onChange={e => setForm(f => ({ ...f, buying_price: e.target.value }))} required placeholder="Price you buy at" />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    {!form.is_unmeasurable && (
+                      <div><Label>Wholesale Price (Selling)</Label><Input type="number" min="0" step="0.01" value={form.wholesale_price} onChange={e => setForm(f => ({ ...f, wholesale_price: e.target.value }))} required placeholder="Sell to wholesalers" /></div>
+                    )}
+                    <div className={form.is_unmeasurable ? 'col-span-2' : ''}>
+                      <Label>Retail Price {form.is_unmeasurable ? `(per ${form.base_unit_type.replace(/s$/, '')})` : '(Selling)'}</Label>
+                      <Input type="number" min="0" step="0.01" value={form.retail_price} onChange={e => setForm(f => ({ ...f, retail_price: e.target.value }))} required placeholder="Sell to customers" />
+                    </div>
+                  </div>
+                  {!form.is_unmeasurable && (
+                    <>
+                      <BulkPackagingFields
+                        piecesPerCarton={form.pieces_per_carton}
+                        cartonsPerBox={form.cartons_per_box}
+                        boxesPerContainer={form.boxes_per_container}
+                        onChange={(field, value) => setForm(f => ({ ...f, [field]: value }))}
+                        onQuantityCalculated={(total) => setForm(f => ({ ...f, quantity: String(total) }))}
+                        currentQuantity={form.quantity}
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Quantity ({form.unit_type})</Label>
+                          <Input type="number" min="0" step="0.01" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} required
+                            readOnly={parseInt(form.pieces_per_carton) > 0}
+                            className={parseInt(form.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''} />
+                          {parseInt(form.pieces_per_carton) > 0 && <p className="text-[10px] text-muted-foreground mt-0.5">Auto-calculated from bulk</p>}
+                        </div>
+                        <div><Label>Min Stock Level</Label><Input type="number" min="0" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
+                      </div>
+                    </>
+                  )}
+                  {form.is_unmeasurable && (
+                    <div><Label>Min Stock Level ({METRIC_OPTIONS.find(m => m.value === form.base_unit_type)?.baseLabel})</Label><Input type="number" min="0" step="0.01" value={form.min_stock_level} onChange={e => setForm(f => ({ ...f, min_stock_level: e.target.value }))} /></div>
+                  )}
                   <div>
                     <Label>Tax Rate (%)</Label>
                     <Input type="number" min="0" step="0.1" value={form.tax_rate} onChange={e => setForm(f => ({ ...f, tax_rate: e.target.value }))} placeholder="0" />

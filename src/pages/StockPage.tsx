@@ -16,6 +16,8 @@ import BarcodeScanHandler from '@/components/BarcodeScanHandler';
 import type { StockItem } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 import BulkPackagingInfo, { BulkPackagingFields } from '@/components/BulkPackagingInfo';
+import { Switch } from '@/components/ui/switch';
+import { METRIC_OPTIONS, conversionFor } from '@/lib/intangibleUnits';
 
 import { toSentenceCase } from '@/lib/utils';
 import { useSubmitLock } from '@/hooks/useSubmitLock';

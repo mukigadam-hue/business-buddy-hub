@@ -171,6 +171,8 @@ export default function StockPage() {
 
   function openEdit(item: StockItem) {
     setEditItem(item);
+    const isU = !!(item as any).is_unmeasurable;
+    const bmt = (item as any).base_unit_type || 'Liters';
     setForm({
       name: item.name, category: item.category, quality: item.quality,
       unit_type: (item as any).unit_type || 'Pieces',
@@ -181,6 +183,10 @@ export default function StockPage() {
       pieces_per_carton: String((item as any).pieces_per_carton || 0),
       cartons_per_box: String((item as any).cartons_per_box || 0),
       boxes_per_container: String((item as any).boxes_per_container || 0),
+      is_unmeasurable: isU,
+      base_unit_type: bmt,
+      total_stock_base_units: String((item as any).total_stock_base_units ?? ''),
+      wholesale_cost_per_base_unit: String((item as any).wholesale_cost_per_base_unit ?? ''),
     });
     setOpen(true);
   }

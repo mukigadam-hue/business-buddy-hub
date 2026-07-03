@@ -141,24 +141,37 @@ export default function StockPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const itemData = {
+    const isU = form.is_unmeasurable;
+    const conversion = conversionFor(form.base_unit_type);
+    const totalBase = parseFloat(form.total_stock_base_units) || 0;
+    const costPerBase = parseFloat(form.wholesale_cost_per_base_unit) || 0;
+    // When intangible: quantity is expressed in FULL units (decimal) derived from base units
+    const derivedQty = isU ? (conversion > 0 ? totalBase / conversion : 0) : (parseFloat(form.quantity) || 0);
+    const derivedBuying = isU ? costPerBase * conversion : (parseFloat(form.buying_price) || 0);
+
+    const itemData: any = {
       name: toSentenceCase(form.name.trim()),
       category: toSentenceCase(form.category.trim()),
       quality: toSentenceCase(form.quality.trim()),
-      unit_type: form.unit_type,
+      unit_type: isU ? form.base_unit_type : form.unit_type,
       barcode: form.barcode.trim(),
-      buying_price: parseFloat(form.buying_price) || 0,
-      wholesale_price: parseFloat(form.wholesale_price) || 0,
+      buying_price: derivedBuying,
+      wholesale_price: parseFloat(form.wholesale_price) || derivedBuying,
       retail_price: parseFloat(form.retail_price) || 0,
-      quantity: parseFloat(form.quantity) || 0,
+      quantity: derivedQty,
       min_stock_level: parseFloat(form.min_stock_level) || 5,
       tax_rate: parseFloat(form.tax_rate) || 0,
       image_url_1: editItem?.image_url_1 || '',
       image_url_2: editItem?.image_url_2 || '',
       image_url_3: editItem?.image_url_3 || '',
-      pieces_per_carton: parseFloat(form.pieces_per_carton) || 0,
-      cartons_per_box: parseFloat(form.cartons_per_box) || 0,
-      boxes_per_container: parseFloat(form.boxes_per_container) || 0,
+      pieces_per_carton: isU ? 0 : (parseFloat(form.pieces_per_carton) || 0),
+      cartons_per_box: isU ? 0 : (parseFloat(form.cartons_per_box) || 0),
+      boxes_per_container: isU ? 0 : (parseFloat(form.boxes_per_container) || 0),
+      is_unmeasurable: isU,
+      base_unit_type: isU ? form.base_unit_type : null,
+      conversion_factor: isU ? conversion : null,
+      total_stock_base_units: isU ? totalBase : null,
+      wholesale_cost_per_base_unit: isU ? costPerBase : null,
     };
     if (editItem) {
       await updateStockItem(editItem.id, itemData);

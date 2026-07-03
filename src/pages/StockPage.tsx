@@ -115,6 +115,8 @@ export default function StockPage() {
     buying_price: '', wholesale_price: '', retail_price: '', quantity: '', min_stock_level: '5',
     tax_rate: '0',
     pieces_per_carton: '0', cartons_per_box: '0', boxes_per_container: '0',
+    is_unmeasurable: false, base_unit_type: 'Liters',
+    total_stock_base_units: '', wholesale_cost_per_base_unit: '',
   });
 
   const activeStock = stock.filter(s => !s.deleted_at);

@@ -177,8 +177,23 @@ export function initInterstitialAds() {
 
   fireDespia('admob_initialize://');
   loadInterstitial();
-  // Optimistic readiness flag in case the shell doesn't fire onAdLoaded.
-  setTimeout(() => { if (!interstitialAd) interstitialAd = { ready: true }; }, 4000);
+  // Optimistic readiness flag — Despia doesn't reliably surface `onAdLoaded`,
+  // and per the Despia AdMob doc the native wrapper holds the preloaded ad
+  // in memory until we fire `displayinterstitialad://`. Without this flag we
+  // would gate ourselves out and produce the "100% match, 0 impressions"
+  // symptom. Mark ready shortly after init.
+  setTimeout(() => { if (!interstitialAd) interstitialAd = { ready: true }; }, 1500);
+
+  // Expose a Despia-friendly alias so any legacy code / manual QA can call
+  // `window.Despia.showInterstitial()` from the console to force a trigger.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).Despia = (window as any).Despia || {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).Despia.showInterstitial = (reason = 'manual') => triggerNativeAd(reason);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).Despia.loadInterstitial = () => loadInterstitial();
+  } catch {}
 }
 
 /* ---------------------------- gating predicate ---------------------------- */

@@ -214,11 +214,15 @@ function showWithDelay(reason: string) {
     adLog(`[AD-INTERSTITIAL] Skipped (not in Despia shell). reason=${reason}`);
     return;
   }
-  // Validation Check — equivalent to `if (interstitialAd != null)`.
+  // NOTE: we intentionally do NOT gate on `interstitialAd != null` here.
+  // Despia's WebView often never emits `onAdLoaded`, so gating on it would
+  // silently suppress every real trigger (the "100% match, 0 impressions"
+  // failure mode). We rely on the frequency cap above + Despia's own
+  // "no-ad → no-op" behavior instead. If nothing is loaded, also re-request
+  // a preload so the next trigger has a fresh ad ready.
   if (!interstitialAd) {
-    console.log(`[AD-INTERSTITIAL] No ad ready — calling load() and skipping. reason=${reason}`);
+    console.log(`[AD-INTERSTITIAL] No preload confirmation — firing anyway + reloading. reason=${reason}`);
     loadInterstitial();
-    return;
   }
   const now = Date.now();
   // Record before firing so concurrent triggers can't double-show.

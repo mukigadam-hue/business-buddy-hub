@@ -79,42 +79,60 @@ let interstitialAd: { ready: true } | null = null;
 /* ---------------------------- bridge invocation --------------------------- */
 
 /**
- * Dedicated invoker for the Despia interstitial bridge. Wraps the
- * `displayinterstitialad://` URL scheme so every call site funnels through a
- * single place and lifecycle logs are guaranteed.
- *
- * Uses `window.location.assign(...)` (rather than `href = ...`) because some
- * Despia builds intercept the assign navigation more reliably from inside
- * setTimeout callbacks and dialog onClose handlers.
+ * Fire a Despia bridge URL. The Despia native shell intercepts navigations to
+ * custom `xxx://` schemes. We try MULTIPLE invocation channels because the
+ * WebView will honor whichever it happens to hook — the global `despia()`
+ * function (when injected), a hidden iframe navigation (most reliable across
+ * Despia builds, especially from timers/dialog callbacks), and finally a
+ * top-level `location.assign` as last resort. Firing more than one is safe;
+ * the shell dedupes on the scheme.
  */
-export function triggerNativeAd(reason = 'unspecified') {
-  console.log(`[AD-INTERSTITIAL] Attempting to trigger Despia Ad. reason=${reason}`);
+function fireDespia(cmd: string) {
+  if (typeof window === 'undefined') return;
+  let delivered = false;
+
+  // 1) Global despia(...) function, if the native shell injected it.
   try {
-    // Prefer the global despia(...) bridge if injected by the native shell.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fn = (typeof window !== 'undefined' ? (window as any).despia : undefined) as
+    const w = window as any;
+    const fn = (typeof w.despia === 'function' ? w.despia : undefined) as
       | ((c: string) => void)
       | undefined;
-    if (typeof fn === 'function') {
-      fn('displayinterstitialad://');
-    } else if (typeof window !== 'undefined') {
-      window.location.assign('displayinterstitialad://');
-    }
+    if (fn) { fn(cmd); delivered = true; }
   } catch (e) {
-    console.log(`[AD-INTERSTITIAL] triggerNativeAd error: ${(e as Error)?.message ?? e}`);
+    adLog(`[AD-INTERSTITIAL] despia() call failed (${cmd}): ${(e as Error)?.message ?? e}`);
+  }
+
+  // 2) Hidden iframe navigation — the canonical Despia trigger pattern. This
+  //    works even when top-level `location.assign` is blocked by the SPA
+  //    router or React re-renders steal focus.
+  try {
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.src = cmd;
+    document.body.appendChild(iframe);
+    setTimeout(() => { try { iframe.remove(); } catch {} }, 1500);
+    delivered = true;
+  } catch (e) {
+    adLog(`[AD-INTERSTITIAL] iframe bridge failed (${cmd}): ${(e as Error)?.message ?? e}`);
+  }
+
+  // 3) Last-resort top-level assign.
+  if (!delivered) {
+    try { window.location.assign(cmd); } catch (e) {
+      adLog(`[AD-INTERSTITIAL] location.assign failed (${cmd}): ${(e as Error)?.message ?? e}`);
+    }
   }
 }
 
-function fireDespia(cmd: string) {
-  if (typeof window === 'undefined') return;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fn = (window as any).despia as ((c: string) => void) | undefined;
-    if (typeof fn === 'function') { fn(cmd); return; }
-    window.location.assign(cmd);
-  } catch (e) {
-    adLog(`[AD-INTERSTITIAL] Bridge call failed (${cmd}): ${(e as Error)?.message ?? e}`);
-  }
+/**
+ * Dedicated invoker for the Despia interstitial bridge. Every call site funnels
+ * through here so logs stay consistent.
+ */
+export function triggerNativeAd(reason = 'unspecified') {
+  console.log(`[AD-INTERSTITIAL] Attempting to trigger Despia Ad. reason=${reason}`);
+  fireDespia('displayinterstitialad://');
 }
 
 /** Preload the next interstitial. Equivalent to `InterstitialAd.load()`. */
@@ -159,8 +177,23 @@ export function initInterstitialAds() {
 
   fireDespia('admob_initialize://');
   loadInterstitial();
-  // Optimistic readiness flag in case the shell doesn't fire onAdLoaded.
-  setTimeout(() => { if (!interstitialAd) interstitialAd = { ready: true }; }, 4000);
+  // Optimistic readiness flag — Despia doesn't reliably surface `onAdLoaded`,
+  // and per the Despia AdMob doc the native wrapper holds the preloaded ad
+  // in memory until we fire `displayinterstitialad://`. Without this flag we
+  // would gate ourselves out and produce the "100% match, 0 impressions"
+  // symptom. Mark ready shortly after init.
+  setTimeout(() => { if (!interstitialAd) interstitialAd = { ready: true }; }, 1500);
+
+  // Expose a Despia-friendly alias so any legacy code / manual QA can call
+  // `window.Despia.showInterstitial()` from the console to force a trigger.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).Despia = (window as any).Despia || {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).Despia.showInterstitial = (reason = 'manual') => triggerNativeAd(reason);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).Despia.loadInterstitial = () => loadInterstitial();
+  } catch {}
 }
 
 /* ---------------------------- gating predicate ---------------------------- */
@@ -181,11 +214,15 @@ function showWithDelay(reason: string) {
     adLog(`[AD-INTERSTITIAL] Skipped (not in Despia shell). reason=${reason}`);
     return;
   }
-  // Validation Check — equivalent to `if (interstitialAd != null)`.
+  // NOTE: we intentionally do NOT gate on `interstitialAd != null` here.
+  // Despia's WebView often never emits `onAdLoaded`, so gating on it would
+  // silently suppress every real trigger (the "100% match, 0 impressions"
+  // failure mode). We rely on the frequency cap above + Despia's own
+  // "no-ad → no-op" behavior instead. If nothing is loaded, also re-request
+  // a preload so the next trigger has a fresh ad ready.
   if (!interstitialAd) {
-    console.log(`[AD-INTERSTITIAL] No ad ready — calling load() and skipping. reason=${reason}`);
+    console.log(`[AD-INTERSTITIAL] No preload confirmation — firing anyway + reloading. reason=${reason}`);
     loadInterstitial();
-    return;
   }
   const now = Date.now();
   // Record before firing so concurrent triggers can't double-show.

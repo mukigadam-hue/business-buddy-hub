@@ -4,6 +4,7 @@ import { triggerInterstitialOnScreenChange } from '@/lib/interstitialAd';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search, AlertTriangle, ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react';
 import ProofVideoButton from '@/components/ProofVideoButton';
+import BottomBannerAd from '@/components/BottomBannerAd';
 import LegalHelpModal from '@/components/LegalHelpModal';
 import { HelpCircle } from 'lucide-react';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';

@@ -455,7 +455,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 min-h-0 overflow-y-auto pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-10">
+        <main className="flex-1 min-w-0 min-h-0 overflow-y-auto pb-[calc(5.5rem+60px+env(safe-area-inset-bottom,0px))] md:pb-[calc(2.5rem+60px)]">
           {/* Mobile refresh bar */}
           <div className="md:hidden flex items-center justify-between px-3 pt-2 pb-1">
             <span className="text-xs font-semibold text-muted-foreground truncate">{currentBusiness?.name}</span>

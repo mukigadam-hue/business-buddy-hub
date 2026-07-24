@@ -15,7 +15,16 @@ import { bridgeShowBanner, bridgeHideBanner, detectShell, BANNER_HEIGHT_PX } fro
 export default function BottomBannerAd() {
   useEffect(() => {
     bridgeShowBanner();
-    return () => { bridgeHideBanner(); };
+    // Refresh the banner every 120s so AdMob serves a fresh creative.
+    const interval = window.setInterval(() => {
+      bridgeHideBanner();
+      // Small gap so the native shell tears down before requesting again.
+      window.setTimeout(() => bridgeShowBanner(), 250);
+    }, 120_000);
+    return () => {
+      window.clearInterval(interval);
+      bridgeHideBanner();
+    };
   }, []);
 
   const shell = detectShell();

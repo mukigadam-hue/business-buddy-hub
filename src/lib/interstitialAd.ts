@@ -1,4 +1,16 @@
-import { adLog, isDespiaNativeShell } from './despiaAds';
+import { adLog } from './despiaAds';
+import {
+  bridgeShowInterstitial,
+  bridgePreloadInterstitial,
+  bridgeInitAdMob,
+  isNativeShell,
+  detectShell,
+} from './nativeAdBridge';
+
+// Back-compat alias — the rest of this file was originally written against
+// `isDespiaNativeShell`. The migration to WebViewGold makes it a superset
+// check ("is there any native shell wrapping the WebView?").
+const isDespiaNativeShell = isNativeShell;
 
 /**
  * Despia Interstitial Ad Manager — dual-trigger logic with dedicated
@@ -131,15 +143,15 @@ function fireDespia(cmd: string) {
  * through here so logs stay consistent.
  */
 export function triggerNativeAd(reason = 'unspecified') {
-  console.log(`[AD-INTERSTITIAL] Attempting to trigger Despia Ad. reason=${reason}`);
-  fireDespia('displayinterstitialad://');
+  console.log(`[AD-INTERSTITIAL] Attempting to trigger interstitial (${detectShell()}). reason=${reason}`);
+  bridgeShowInterstitial();
 }
 
 /** Preload the next interstitial. Equivalent to `InterstitialAd.load()`. */
 export function loadInterstitial() {
   if (!isDespiaNativeShell()) return;
   console.log('[AD-INTERSTITIAL] load() requested.');
-  fireDespia('preloadinterstitialad://');
+  bridgePreloadInterstitial();
 }
 
 /**
@@ -175,7 +187,7 @@ export function initInterstitialAds() {
     };
   } catch {}
 
-  fireDespia('admob_initialize://');
+  bridgeInitAdMob();
   loadInterstitial();
   // Optimistic readiness flag — Despia doesn't reliably surface `onAdLoaded`,
   // and per the Despia AdMob doc the native wrapper holds the preloaded ad

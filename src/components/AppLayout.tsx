@@ -4,6 +4,7 @@ import { triggerInterstitialOnScreenChange } from '@/lib/interstitialAd';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search, AlertTriangle, ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react';
 import ProofVideoButton from '@/components/ProofVideoButton';
+import BottomBannerAd from '@/components/BottomBannerAd';
 import LegalHelpModal from '@/components/LegalHelpModal';
 import { HelpCircle } from 'lucide-react';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
@@ -455,7 +456,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 min-h-0 overflow-y-auto pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-10">
+        <main className="flex-1 min-w-0 min-h-0 overflow-y-auto pb-[calc(5.5rem+60px+env(safe-area-inset-bottom,0px))] md:pb-[calc(2.5rem+60px)]">
           {/* Mobile refresh bar */}
           <div className="md:hidden flex items-center justify-between px-3 pt-2 pb-1">
             <span className="text-xs font-semibold text-muted-foreground truncate">{currentBusiness?.name}</span>
@@ -477,8 +478,11 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
       {/* Floating Screenshot Button — always visible regardless of scroll */}
       <ScreenshotButton variant="floating" />
 
+      {/* Persistent bottom AdMob banner (native shell) + web fallback */}
+      <BottomBannerAd />
+
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border flex justify-around items-center py-1.5 pb-safe px-safe">
+      <nav className="md:hidden fixed left-0 right-0 z-50 bg-card border-t border-border flex justify-around items-center py-1.5 pb-safe px-safe" style={{ bottom: 'calc(60px + env(safe-area-inset-bottom, 0px))' }}>
         {mobileMainNav.map(({ to, label, icon: Icon }) => {
           const active = pathname === to;
           return (

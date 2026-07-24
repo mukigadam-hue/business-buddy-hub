@@ -478,7 +478,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
       <ScreenshotButton variant="floating" />
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border flex justify-around items-center py-1.5 pb-safe px-safe">
+      <nav className="md:hidden fixed left-0 right-0 z-50 bg-card border-t border-border flex justify-around items-center py-1.5 pb-safe px-safe" style={{ bottom: 'calc(60px + env(safe-area-inset-bottom, 0px))' }}>
         {mobileMainNav.map(({ to, label, icon: Icon }) => {
           const active = pathname === to;
           return (

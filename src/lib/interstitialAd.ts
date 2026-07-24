@@ -187,7 +187,7 @@ export function initInterstitialAds() {
     };
   } catch {}
 
-  fireDespia('admob_initialize://');
+  bridgeInitAdMob();
   loadInterstitial();
   // Optimistic readiness flag — Despia doesn't reliably surface `onAdLoaded`,
   // and per the Despia AdMob doc the native wrapper holds the preloaded ad

@@ -1,4 +1,16 @@
-import { adLog, isDespiaNativeShell } from './despiaAds';
+import { adLog } from './despiaAds';
+import {
+  bridgeShowInterstitial,
+  bridgePreloadInterstitial,
+  bridgeInitAdMob,
+  isNativeShell,
+  detectShell,
+} from './nativeAdBridge';
+
+// Back-compat alias — the rest of this file was originally written against
+// `isDespiaNativeShell`. The migration to WebViewGold makes it a superset
+// check ("is there any native shell wrapping the WebView?").
+const isDespiaNativeShell = isNativeShell;
 
 /**
  * Despia Interstitial Ad Manager — dual-trigger logic with dedicated

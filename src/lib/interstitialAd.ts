@@ -143,15 +143,15 @@ function fireDespia(cmd: string) {
  * through here so logs stay consistent.
  */
 export function triggerNativeAd(reason = 'unspecified') {
-  console.log(`[AD-INTERSTITIAL] Attempting to trigger Despia Ad. reason=${reason}`);
-  fireDespia('displayinterstitialad://');
+  console.log(`[AD-INTERSTITIAL] Attempting to trigger interstitial (${detectShell()}). reason=${reason}`);
+  bridgeShowInterstitial();
 }
 
 /** Preload the next interstitial. Equivalent to `InterstitialAd.load()`. */
 export function loadInterstitial() {
   if (!isDespiaNativeShell()) return;
   console.log('[AD-INTERSTITIAL] load() requested.');
-  fireDespia('preloadinterstitialad://');
+  bridgePreloadInterstitial();
 }
 
 /**

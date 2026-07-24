@@ -477,6 +477,9 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
       {/* Floating Screenshot Button — always visible regardless of scroll */}
       <ScreenshotButton variant="floating" />
 
+      {/* Persistent bottom AdMob banner (native shell) + web fallback */}
+      <BottomBannerAd />
+
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed left-0 right-0 z-50 bg-card border-t border-border flex justify-around items-center py-1.5 pb-safe px-safe" style={{ bottom: 'calc(60px + env(safe-area-inset-bottom, 0px))' }}>
         {mobileMainNav.map(({ to, label, icon: Icon }) => {

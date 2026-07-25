@@ -41,14 +41,16 @@ export default function PrivacyPolicy() {
           <section className="space-y-3">
             <h2 className="text-xl font-semibold text-foreground">2. Information We Collect</h2>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li><strong className="text-foreground">Account Information:</strong> email, full name, phone number, password (stored as a secure hash), and optional profile photo.</li>
-              <li><strong className="text-foreground">Business Information:</strong> business name, address, district/region, country, business type, and currency.</li>
-              <li><strong className="text-foreground">Financial &amp; Transaction Data:</strong> sales, purchases, expenses, services, orders, debts, stock and waste records you create inside the App.</li>
-              <li><strong className="text-foreground">Team &amp; Contact Data:</strong> names, phone numbers and payment details for team members and B2B contacts you choose to add.</li>
-              <li><strong className="text-foreground">Property &amp; Booking Data:</strong> asset listings, rental bookings and tenant details where you use the property module.</li>
-              <li><strong className="text-foreground">Photos &amp; Files:</strong> images of products, receipts and proof videos that you upload from your device camera or gallery.</li>
+              <li><strong className="text-foreground">Account Information:</strong> email, full name, phone number (with country dial code), 5-digit PIN or password (stored as a secure hash), optional profile photo, and — if you choose Google sign-in — the basic Google profile fields (name, email, avatar) returned by Google OAuth.</li>
+              <li><strong className="text-foreground">Business Information:</strong> business name, address, district/region, country, business type (Retail/Wholesale Business, Factory, or FlexRent property), currency, and an 11-character regional business ID.</li>
+              <li><strong className="text-foreground">Financial &amp; Transaction Data:</strong> sales, purchases, expenses, services, orders, bookings, debts/credits with partial payments, stock, waste, and production records you create inside the App.</li>
+              <li><strong className="text-foreground">Inventory &amp; AI Scan Data:</strong> product names, categories, prices, quantities, bulk/intangible unit conversions, barcodes you scan, and photos of shelves/products submitted to the <strong className="text-foreground">Mass AI Inventory Scan</strong> feature. Shelf photos are sent to Google's Gemini AI (via our secure backend) to detect items and crop per-item images; photos are not used to train Google's models and are not retained by the AI provider beyond the request.</li>
+              <li><strong className="text-foreground">Team, Worker &amp; Contact Data:</strong> names, phone numbers, payment details and per-day worker-activity logs for team members you add, plus B2B contacts and 11-character Business Codes you interact with.</li>
+              <li><strong className="text-foreground">B2B Discovery Data:</strong> if you opt in, your business appears in the public Discover directory with business name, country/district, business type, product list, contact you choose to share, and a <em>last-active</em> timestamp so other users can see whether the account is actively used.</li>
+              <li><strong className="text-foreground">Property &amp; Booking Data:</strong> asset listings, rental bookings, capacity/availability and tenant details for the FlexRent module.</li>
+              <li><strong className="text-foreground">Receipts &amp; Media:</strong> receipt customizations (business logo, watermark text/image), proof videos (short 320×240 clips), product photos, and any files you upload from camera or gallery.</li>
               <li><strong className="text-foreground">Device &amp; Technical Data:</strong> device model, OS version, app version, language, crash logs, and a non-permanent advertising identifier used by Google AdMob.</li>
-              <li><strong className="text-foreground">Approximate Location:</strong> only the district/region you enter manually. We do not collect precise GPS location.</li>
+              <li><strong className="text-foreground">Approximate Location:</strong> only the country and district/region you enter manually, plus the country/language reported by your device to localize ads and currency. We do not collect precise GPS location.</li>
             </ul>
           </section>
 

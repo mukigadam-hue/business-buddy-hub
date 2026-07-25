@@ -475,9 +475,6 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
       {/* Proof Video Floating Button - visible on all screens */}
       <ProofVideoButton />
 
-      {/* Floating Screenshot Button — always visible regardless of scroll */}
-      <ScreenshotButton variant="floating" />
-
       {/* Persistent bottom AdMob banner (native shell) + web fallback */}
       <BottomBannerAd />
 

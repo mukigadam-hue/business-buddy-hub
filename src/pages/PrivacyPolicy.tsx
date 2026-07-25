@@ -117,9 +117,11 @@ export default function PrivacyPolicy() {
             <h2 className="text-xl font-semibold text-foreground">7. Data Security</h2>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>All traffic between the App and our servers is encrypted with TLS/HTTPS.</li>
-              <li>Row-Level Security policies isolate every business's data from other tenants.</li>
-              <li>Passwords are stored as one-way hashes; we never see them in plain text.</li>
-              <li>Sensitive secrets are stored in an encrypted secrets vault.</li>
+              <li>Row-Level Security policies isolate every business's data from other tenants, including worker activity, orders, receipts and property bookings.</li>
+              <li>Passwords and 5-digit PINs are stored as one-way hashes; we never see them in plain text. Optional password visibility toggles ("eye" icons) only reveal what you have just typed on your own device.</li>
+              <li>Google's HIBP leaked-password protection is enforced on all new passwords.</li>
+              <li>Sensitive secrets (including the AI API key) are stored in an encrypted secrets vault and never exposed to the client.</li>
+              <li>A public demo/reviewer account (used for Google Play review) contains only sample data and is periodically reset.</li>
             </ul>
           </section>
 

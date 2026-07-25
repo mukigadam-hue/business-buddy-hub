@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import ScreenshotButton from '@/components/ScreenshotButton';
+
 import { toast } from 'sonner';
 
 function useNavItems() {

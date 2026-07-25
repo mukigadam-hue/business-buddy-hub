@@ -94,6 +94,20 @@ export default function PhoneAuthPage() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const onGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (error) throw error;
+    } catch (e: any) {
+      toast.error(e.message || "Google sign-in failed");
+      setGoogleLoading(false);
+    }
+  };
 
   // Recovery sub-state
   const [recoveryPhone, setRecoveryPhone] = useState("");

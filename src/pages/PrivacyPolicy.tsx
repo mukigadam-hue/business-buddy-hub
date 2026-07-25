@@ -57,11 +57,13 @@ export default function PrivacyPolicy() {
           <section className="space-y-3">
             <h2 className="text-xl font-semibold text-foreground">3. How We Use Your Information</h2>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>Provide core business management features (sales, stock, orders, receipts, factory and property modules).</li>
-              <li>Authenticate you, secure your account, and sync data across your devices.</li>
-              <li>Enable optional B2B features (discovery, orders, contacts) when you turn them on.</li>
-              <li>Send you in-app notifications and important account or order alerts.</li>
-              <li>Display advertisements through Google AdMob to users on the free tier.</li>
+              <li>Provide core business, factory and FlexRent management features (sales, stock, orders, bookings, receipts, debts/credits, waste, production).</li>
+              <li>Authenticate you via email + password, phone + 5-digit PIN, Google OAuth, or the public demo/reviewer account, and sync your data across devices.</li>
+              <li>Run the <strong className="text-foreground">Mass AI Inventory Scan</strong>: send shelf photos to Google Gemini through our backend to detect items and generate cropped product images for your stock.</li>
+              <li>Enable optional B2B Discovery, orders and contacts — including showing your business's <em>last-active</em> time so other users can identify active suppliers.</li>
+              <li>Record per-worker daily activity so business owners can review who did what inside their own business.</li>
+              <li>Send in-app notifications and important account, order or booking alerts.</li>
+              <li>Display localized advertisements through Google AdMob (interstitial and bottom banner) to users on the free tier, in the language/region reported by your device.</li>
               <li>Diagnose crashes, improve stability, and prevent abuse or fraud.</li>
               <li>Comply with applicable laws and respond to lawful requests.</li>
             </ul>

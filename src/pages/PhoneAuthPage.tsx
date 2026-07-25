@@ -490,6 +490,24 @@ export default function PhoneAuthPage() {
               Forgot your password? Just tap Google — no password needed.
             </p>
 
+            {/* Demo / Reviewer login — bypasses the login wall for Google Play
+                reviewers and lets curious users try the app without signing up. */}
+            <Button
+              variant="secondary"
+              onClick={onDemoSignIn}
+              disabled={demoLoading}
+              className="w-full h-11 font-medium"
+            >
+              {demoLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>🎬 Try demo account (no signup)</>
+              )}
+            </Button>
+            <p className="text-[11px] text-muted-foreground text-center -mt-2">
+              For reviewers & first-time visitors — instant access, no phone or email required.
+            </p>
+
             <div className="flex items-center gap-3">
               <Separator className="flex-1" />
               <span className="text-xs text-muted-foreground">or</span>

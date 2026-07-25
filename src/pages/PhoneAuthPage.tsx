@@ -10,6 +10,8 @@ import { SimulatedSmsScreen } from "@/components/auth/SimulatedSmsScreen";
 import { COUNTRIES, detectDefaultCountry, type Country } from "@/lib/countries";
 import { phoneSignIn, phoneSignUp, phoneResetPin } from "@/lib/phoneAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
+import { Separator } from "@/components/ui/separator";
 import LegalHelpModal from "@/components/LegalHelpModal";
 
 const LAST_AUTH_KEY = "bm:last-auth";

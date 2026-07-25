@@ -327,7 +327,12 @@ export default function PhoneAuthPage() {
   return (
     <div
       className="min-h-screen-safe flex flex-col items-center justify-start p-4 sm:p-6 overflow-y-auto"
-      style={{ background: 'linear-gradient(145deg, hsl(217 72% 12%) 0%, hsl(217 72% 18%) 35%, hsl(210 60% 25%) 65%, hsl(42 80% 45%) 100%)' }}
+      style={{
+        background: 'linear-gradient(145deg, hsl(217 72% 12%) 0%, hsl(217 72% 18%) 35%, hsl(210 60% 25%) 65%, hsl(42 80% 45%) 100%)',
+        // Reserve space for the native/WebViewGold AdMob banner + device safe area
+        // so nothing (PIN boxes, submit button, help card) hides behind the ad.
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)',
+      }}
     >
       {/* Hero Section */}
       <div className="w-full max-w-md sm:max-w-xl text-center pt-6 sm:pt-10 pb-5 sm:pb-8 px-2">

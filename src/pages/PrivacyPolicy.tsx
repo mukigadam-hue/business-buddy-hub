@@ -72,10 +72,11 @@ export default function PrivacyPolicy() {
           <section className="space-y-3">
             <h2 className="text-xl font-semibold text-foreground">4. Advertising &amp; Google AdMob</h2>
             <p className="text-muted-foreground leading-relaxed">
-              The free version of the App displays ads served by Google AdMob. AdMob may
-              collect and process the device's advertising ID, coarse network information,
-              and standard ad-event data in order to serve and measure ads. We do not share
-              your name, email, business records or financial data with AdMob.
+              The free version of the App displays interstitial and bottom-banner ads served by Google AdMob through the
+              WebViewGold native shell. AdMob may collect and process the device's advertising ID, coarse network
+              information, language/region and standard ad-event data in order to serve and measure localized ads. We do
+              not share your name, email, business records or financial data with AdMob. Banners refresh approximately
+              every 120 seconds.
             </p>
             <p className="text-muted-foreground leading-relaxed">
               You can reset or limit your advertising ID at any time in your Android device
@@ -88,10 +89,11 @@ export default function PrivacyPolicy() {
           <section className="space-y-3">
             <h2 className="text-xl font-semibold text-foreground">5. Permissions We Request</h2>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li><strong className="text-foreground">Internet / Network state:</strong> required to sync data with our backend.</li>
-              <li><strong className="text-foreground">Camera:</strong> only when you choose to take a product photo, scan a barcode, or record a proof video.</li>
-              <li><strong className="text-foreground">Photos / Media / Files:</strong> only when you choose to upload an image or receipt from your gallery.</li>
-              <li><strong className="text-foreground">Notifications:</strong> to deliver order alerts and reminders.</li>
+              <li><strong className="text-foreground">Internet / Network state:</strong> required to sync data with our backend and to run the AI inventory scan.</li>
+              <li><strong className="text-foreground">Camera:</strong> only when you choose to take a product photo, scan a barcode, record a proof video, or capture a shelf photo for the Mass AI Inventory Scan.</li>
+              <li><strong className="text-foreground">Photos / Media / Files:</strong> only when you choose to upload an image, watermark logo, or receipt from your gallery.</li>
+              <li><strong className="text-foreground">Microphone:</strong> only when you choose to record a proof video with sound.</li>
+              <li><strong className="text-foreground">Notifications:</strong> to deliver order, booking and debt-reminder alerts.</li>
               <li><strong className="text-foreground">Advertising ID:</strong> used by Google AdMob (free tier only).</li>
             </ul>
           </section>
@@ -103,8 +105,10 @@ export default function PrivacyPolicy() {
               information. We share data only in the limited cases below:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li><strong className="text-foreground">Other businesses inside the App</strong> – only the public profile fields you choose to make discoverable (business name, district, products description, contact you opt in to share).</li>
-              <li><strong className="text-foreground">Service providers</strong> – our managed cloud backend (database, authentication, storage, edge functions) and Google AdMob, strictly to operate the service.</li>
+              <li><strong className="text-foreground">Other businesses inside the App</strong> – only the public Discover profile fields you choose to make discoverable (business name, country/district, business type, products description, last-active time, and any contact you opt in to share).</li>
+              <li><strong className="text-foreground">Service providers</strong> – our managed cloud backend (database, authentication, storage, edge functions), Google AdMob and the WebViewGold native shell, strictly to operate the service.</li>
+              <li><strong className="text-foreground">AI processing</strong> – shelf photos submitted to Mass AI Inventory Scan are forwarded to Google Gemini for detection and cropping; only the image and a generic prompt are sent, and results are returned immediately without long-term retention by the AI provider.</li>
+              <li><strong className="text-foreground">Google Sign-In</strong> – when you choose "Continue with Google", Google shares your basic profile fields with us to create or match your account, per Google's privacy terms.</li>
               <li><strong className="text-foreground">Legal &amp; safety</strong> – when required by law, court order, or to protect rights, safety and integrity of users.</li>
             </ul>
           </section>

@@ -435,7 +435,7 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { import('@/lib/interstitialAd').then(m => m.triggerInterstitial('close-discover-business')); } onOpenChange(o); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="p-4 pb-2">
           <div className="flex items-start gap-3">

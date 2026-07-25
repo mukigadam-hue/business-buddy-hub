@@ -169,7 +169,7 @@ export default function StockPage() {
       boxes_per_container: isU ? 0 : (parseFloat(form.boxes_per_container) || 0),
       is_unmeasurable: isU,
       base_unit_type: isU ? form.base_unit_type : null,
-      conversion_factor: isU ? conversion : null,
+      conversion_factor: isU ? (conversion || 1) : 1,
       total_stock_base_units: isU ? totalBase : null,
       wholesale_cost_per_base_unit: isU ? costPerBase : null,
     };

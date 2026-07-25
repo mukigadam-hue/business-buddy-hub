@@ -9,6 +9,7 @@ import { Loader2, ScanLine, Trash2, CheckCircle2, Sparkles } from 'lucide-react'
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
+import ImageUpload from '@/components/ImageUpload';
 import { compressImage } from '@/lib/compressImage';
 
 interface MassInventoryScanProps {
@@ -26,7 +27,8 @@ interface DetectedItem {
   retail: number;
   serial_number?: string;
   bulk_packaging?: boolean;
-  quantity: number;
+  quantity: string; // string to allow proper editing including empty
+  image_url?: string;
 }
 
 function fileToDataUrl(file: File | Blob): Promise<string> {
@@ -46,11 +48,13 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
   const [scanning, setScanning] = useState(false);
   const [items, setItems] = useState<DetectedItem[] | null>(null);
   const [saving, setSaving] = useState(false);
+  const [shelfPhotoUrl, setShelfPhotoUrl] = useState<string>('');
 
   function reset() {
     setItems(null);
     setScanning(false);
     setSaving(false);
+    setShelfPhotoUrl('');
   }
 
   function openCamera() {
@@ -58,6 +62,20 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
       fileInputRef.current?.click();
     } else {
       setWebcamOpen(true);
+    }
+  }
+
+  async function uploadShelfPhoto(file: File | Blob): Promise<string> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const uid = user?.id || 'anon';
+      const fileName = `${uid}/mass-scan/${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from('item-images').upload(fileName, file, { upsert: true, contentType: 'image/jpeg' });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('item-images').getPublicUrl(fileName);
+      return publicUrl;
+    } catch {
+      return '';
     }
   }
 
@@ -70,7 +88,11 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
     setItems(null);
     try {
       const compressed = await compressImage(file).catch(() => file);
-      const dataUrl = await fileToDataUrl(compressed);
+      const [dataUrl, publicUrl] = await Promise.all([
+        fileToDataUrl(compressed),
+        uploadShelfPhoto(compressed),
+      ]);
+      setShelfPhotoUrl(publicUrl);
 
       const { data, error } = await supabase.functions.invoke('mass-inventory-scan', {
         body: {
@@ -83,15 +105,14 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      const detected: DetectedItem[] = Array.isArray(data?.items) ? data.items : [];
+      const detected: any[] = Array.isArray(data?.items) ? data.items : [];
       if (detected.length === 0) {
         toast.error('No items detected. Try a clearer photo.');
         setScanning(false);
         return;
       }
 
-      // Normalize
-      const normalized = detected.map((it) => ({
+      const normalized: DetectedItem[] = detected.map((it) => ({
         item_name: it.item_name || '',
         category: it.category || '',
         quality: it.quality || '',
@@ -101,7 +122,8 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
         retail: Number(it.retail) || 0,
         serial_number: it.serial_number || '',
         bulk_packaging: !!it.bulk_packaging,
-        quantity: Number(it.quantity) || 1,
+        quantity: String(Number(it.quantity) || 1),
+        image_url: publicUrl, // default photo = shelf photo, user may override
       }));
       setItems(normalized);
       toast.success(`AI detected ${normalized.length} item${normalized.length === 1 ? '' : 's'}`);
@@ -137,9 +159,9 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
           buying_price: it.cost_per_unit || 0,
           wholesale_price: it.wholesale || 0,
           retail_price: it.retail || 0,
-          quantity: it.quantity || 0,
+          quantity: Number(it.quantity) || 0,
           min_stock_level: 5,
-          image_url_1: '',
+          image_url_1: it.image_url || shelfPhotoUrl || '',
           image_url_2: '',
           image_url_3: '',
         } as any);
@@ -168,11 +190,10 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
               <Sparkles className="h-5 w-5 text-primary" /> Mass AI Inventory Scan
             </DialogTitle>
             <DialogDescription>
-              Snap a photo of your shelves or wall display to automatically list all items using Google Gemini AI.
+              Snap a photo of your shelves or wall display to automatically list all items using Google Gemini AI. The photo is auto-attached to each item — you can replace any image before saving or edit later from My Stock.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Step 1: capture */}
           {!scanning && !items && (
             <div className="space-y-3">
               <Button onClick={openCamera} className="w-full" size="lg">
@@ -184,7 +205,6 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
             </div>
           )}
 
-          {/* Step 2: loading */}
           {scanning && (
             <div className="py-10 flex flex-col items-center gap-3">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -193,12 +213,11 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
             </div>
           )}
 
-          {/* Step 3: bulk review */}
           {items && !scanning && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Review and edit before saving. Set prices and quantities.
+                  Review, edit quantities & prices, and replace photos if needed.
                 </p>
                 <Button variant="outline" size="sm" onClick={openCamera}>
                   Rescan
@@ -220,13 +239,26 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    <div>
-                      <Label className="text-xs">Item Name</Label>
-                      <Input
-                        value={it.item_name}
-                        onChange={(e) => updateItem(idx, { item_name: e.target.value })}
+
+                    <div className="flex gap-3">
+                      <ImageUpload
+                        bucket="item-images"
+                        path={`mass-scan-item-${idx}`}
+                        currentUrl={it.image_url}
+                        onUploaded={(url) => updateItem(idx, { image_url: url })}
+                        onRemoved={() => updateItem(idx, { image_url: '' })}
+                        size="sm"
+                        label="Photo"
                       />
+                      <div className="flex-1">
+                        <Label className="text-xs">Item Name</Label>
+                        <Input
+                          value={it.item_name}
+                          onChange={(e) => updateItem(idx, { item_name: e.target.value })}
+                        />
+                      </div>
                     </div>
+
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs">Category</Label>
@@ -255,9 +287,12 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
                         <Label className="text-xs">Quantity</Label>
                         <Input
                           type="number"
+                          inputMode="decimal"
                           step="0.01"
+                          min="0"
                           value={it.quantity}
-                          onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) || 0 })}
+                          onChange={(e) => updateItem(idx, { quantity: e.target.value })}
+                          onFocus={(e) => e.target.select()}
                         />
                       </div>
                     </div>
@@ -306,7 +341,6 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
             </div>
           )}
 
-          {/* Hidden mobile camera input */}
           <input
             ref={fileInputRef}
             type="file"

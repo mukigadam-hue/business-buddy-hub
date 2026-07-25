@@ -22,7 +22,7 @@ export default function PrivacyPolicy() {
           <p><strong className="text-foreground">Official website:</strong> https://ndamwesigaapp.store</p>
           <p><strong className="text-foreground">Privacy Policy URL:</strong> https://ndamwesigaapp.store/privacy</p>
           <p><strong className="text-foreground">Contact:</strong> nextworldforbetterquality@gmail.com</p>
-          <p><strong className="text-foreground">Effective date:</strong> May 5, 2026</p>
+          <p><strong className="text-foreground">Effective date:</strong> July 25, 2026</p>
         </div>
 
         <div className="prose prose-sm dark:prose-invert max-w-none space-y-6">

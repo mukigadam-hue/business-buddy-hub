@@ -1,5 +1,5 @@
 // Mass AI Inventory Scan: takes a photo (base64 data URL) of shelves/displays and
-// returns a JSON array of detected items via Lovable AI Gateway (google/gemini-2.5-flash).
+// returns a JSON array of detected items with bounding boxes via Lovable AI Gateway.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,23 +28,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    const systemPrompt = `You are an expert retail inventory assistant. Look at the uploaded image of multiple store stock items on shelves, displays, or hangers. The current business profile is a ${businessType || "general retail business"} named "${businessName || "the shop"}". Use this context to identify items correctly.
+    const systemPrompt = `You are an expert retail inventory assistant analyzing a photograph of shelves, walls or displays for a ${businessType || "general retail"} business named "${businessName || "the shop"}".
 
-For each distinct item you see, generate a data object. Output ONLY a clean JSON array of objects with no markdown blocks or chat text.
+For EACH distinct product visible in the image, return one JSON object. Group identical duplicates together (e.g. 6 identical boxes = one entry with quantity 6) and pick the tightest bounding box that contains ALL those duplicates as one region. For a unique item, box just that item tightly.
 
-Use this exact structure:
+CRITICAL — bounding boxes:
+- Use Gemini's normalized coordinate system: integers 0–1000.
+- Format: [ymin, xmin, ymax, xmax] (top, left, bottom, right).
+- Box each item tightly — no big empty margins, no covering the whole shelf.
+
+Output ONLY a valid JSON array, no markdown fences, no commentary. Exact structure:
 [
   {
-    "item_name": "Brand and full product name here",
-    "category": "Broad category name based on the item type",
-    "quality": "Estimate based on packaging look, e.g., Grade A, Original, Generic",
+    "item_name": "Brand and full product name",
+    "category": "Broad category",
+    "quality": "e.g. Original, Grade A, Generic",
     "unit_type": "Pieces",
-    "cost_per_unit": 0.00,
-    "wholesale": 0.00,
-    "retail": 0.00,
+    "cost_per_unit": 0,
+    "wholesale": 0,
+    "retail": 0,
     "serial_number": "",
     "bulk_packaging": false,
-    "quantity": 1
+    "quantity": 1,
+    "bbox": [ymin, xmin, ymax, xmax]
   }
 ]`;
 
@@ -79,7 +85,6 @@ Use this exact structure:
     const aiJson = await aiRes.json();
     const raw: string = aiJson?.choices?.[0]?.message?.content ?? "";
 
-    // Strip markdown fences if present and locate JSON array
     let cleaned = raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
     const first = cleaned.indexOf("[");
     const last = cleaned.lastIndexOf("]");

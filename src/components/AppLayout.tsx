@@ -498,9 +498,14 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
               <span>{t('nav.more')}</span>
             </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto pb-[calc(80px+env(safe-area-inset-bottom,0px))]">
             <SheetHeader>
-              <SheetTitle className="text-left">{t('nav.menu')}</SheetTitle>
+              <div className="flex items-center justify-between gap-2">
+                <SheetTitle className="text-left">{t('nav.menu')}</SheetTitle>
+                <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10 text-[11px] h-8 px-2 shrink-0" onClick={signOut}>
+                  <LogOut className="h-3.5 w-3.5 mr-1" /> {t('nav.signOut')}
+                </Button>
+              </div>
             </SheetHeader>
 
             {/* 3-Entity Quick Switch */}

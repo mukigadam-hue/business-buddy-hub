@@ -38,10 +38,11 @@ const LAST_AD_KEY = 'lastAdTime';
 const SHOWN_TIMES_KEY = 'adShownTimes';
 const SUPPRESS_KEY = 'suppressNextInterstitial';
 
-const WINDOW_MS = 90 * 60 * 1000;
-const MAX_PER_WINDOW = 2;
-const MIN_GAP_MS = 35 * 60 * 1000;
-const SCREEN_CHANGE_GAP_MS = 45 * 60 * 1000;
+const WINDOW_MS = 60 * 60 * 1000;
+const MAX_PER_WINDOW = 6;
+const MIN_GAP_MS = 4 * 60 * 1000;
+const SCREEN_CHANGE_GAP_MS = 6 * 60 * 1000;
+
 
 // 450ms delay before firing the ad bridge so the UI finishes its current
 // transition (dialog close animation, route change paint) before AdMob takes

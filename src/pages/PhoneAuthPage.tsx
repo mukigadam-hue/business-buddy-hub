@@ -248,7 +248,10 @@ export default function PhoneAuthPage() {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
-      toast.success("Password reset link sent to your email");
+      toast.success(
+        `Reset link sent to ${em}. Check your inbox (and spam folder) — tap the link to set a new password, then come back here to sign in.`,
+        { duration: 10000 },
+      );
     } catch (e: any) {
       toast.error(e.message || "Could not send reset email");
     }

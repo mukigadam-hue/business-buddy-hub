@@ -30,19 +30,44 @@ export function isNativeShell(): boolean {
   return detectShell() !== 'none';
 }
 
+/**
+ * Resolve the current locale for ad targeting. We combine the app's chosen
+ * i18n language (persisted in localStorage under `i18nextLng`) with the
+ * device/browser language and region so AdMob / WebViewGold can request
+ * creatives in the user's native language and country.
+ */
+export function getAdLocale(): { language: string; region: string; locale: string } {
+  if (typeof window === 'undefined') return { language: 'en', region: 'US', locale: 'en-US' };
+  let lang = '';
+  try { lang = window.localStorage.getItem('i18nextLng') || ''; } catch {}
+  if (!lang) lang = window.navigator?.language || 'en';
+  const nav = window.navigator?.language || 'en-US';
+  const language = (lang.split('-')[0] || 'en').toLowerCase();
+  const region = ((nav.split('-')[1] || lang.split('-')[1] || 'US')).toUpperCase();
+  return { language, region, locale: `${language}-${region}` };
+}
+
+/** Append locale query params to a bridge URL so the native shell can localize ads. */
+function withLocale(cmd: string): string {
+  const { language, region, locale } = getAdLocale();
+  const sep = cmd.includes('?') ? '&' : '?';
+  return `${cmd}${sep}lang=${encodeURIComponent(language)}&region=${encodeURIComponent(region)}&locale=${encodeURIComponent(locale)}`;
+}
+
 /** Fire a URL-scheme bridge command via the most reliable channels. */
 export function fireBridge(cmd: string) {
   if (typeof window === 'undefined') return;
+  const url = withLocale(cmd);
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any;
-    if (typeof w.despia === 'function') { try { w.despia(cmd); } catch {} }
+    if (typeof w.despia === 'function') { try { w.despia(url); } catch {} }
   } catch {}
   try {
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     iframe.setAttribute('aria-hidden', 'true');
-    iframe.src = cmd;
+    iframe.src = url;
     document.body.appendChild(iframe);
     setTimeout(() => { try { iframe.remove(); } catch {} }, 1500);
   } catch {}

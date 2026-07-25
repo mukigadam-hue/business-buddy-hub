@@ -591,11 +591,6 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
                 <a href="https://x.com/mukigaDam" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">𝕏</a>
                 <a href="https://facebook.com/CurrentVIBE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">📘</a>
               </div>
-              <div className="flex items-center justify-between mt-1">
-                <Button variant="ghost" size="sm" className="text-destructive text-[11px] h-6 px-1.5" onClick={signOut}>
-                  <LogOut className="h-3 w-3 mr-1" /> {t('nav.signOut')}
-                </Button>
-              </div>
             </div>
           </SheetContent>
         </Sheet>

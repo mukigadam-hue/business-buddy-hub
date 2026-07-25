@@ -95,6 +95,7 @@ export default function PhoneAuthPage() {
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const onGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -106,6 +107,38 @@ export default function PhoneAuthPage() {
     } catch (e: any) {
       toast.error(e.message || "Google sign-in failed");
       setGoogleLoading(false);
+    }
+  };
+
+  // Demo / Reviewer login — required by Google Play policy so app reviewers
+  // (and anyone who wants to try the app) can bypass the phone+PIN login wall.
+  const onDemoSignIn = async () => {
+    setDemoLoading(true);
+    try {
+      const res = await fetch(
+        "https://evuswzfmrfkmlcdsphgu.supabase.co/functions/v1/demo-login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey:
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2dXN3emZtcmZrbWxjZHNwaGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNTYzNjIsImV4cCI6MjA4NjczMjM2Mn0.mfuHVhSIxCMe68o7SPQtMJ4ELMIYQDTMTpoctrz1FO8",
+          },
+          body: JSON.stringify({}),
+        },
+      );
+      const json = await res.json();
+      if (!res.ok || !json?.email) throw new Error(json?.error || "Demo login unavailable");
+      const { error } = await supabase.auth.signInWithPassword({
+        email: json.email,
+        password: json.password,
+      });
+      if (error) throw error;
+      toast.success("Signed in as demo reviewer");
+    } catch (e: any) {
+      toast.error(e.message || "Demo sign-in failed");
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -455,6 +488,24 @@ export default function PhoneAuthPage() {
             </Button>
             <p className="text-[11px] text-muted-foreground text-center -mt-2">
               Forgot your password? Just tap Google — no password needed.
+            </p>
+
+            {/* Demo / Reviewer login — bypasses the login wall for Google Play
+                reviewers and lets curious users try the app without signing up. */}
+            <Button
+              variant="secondary"
+              onClick={onDemoSignIn}
+              disabled={demoLoading}
+              className="w-full h-11 font-medium"
+            >
+              {demoLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>🎬 Try demo account (no signup)</>
+              )}
+            </Button>
+            <p className="text-[11px] text-muted-foreground text-center -mt-2">
+              For reviewers & first-time visitors — instant access, no phone or email required.
             </p>
 
             <div className="flex items-center gap-3">

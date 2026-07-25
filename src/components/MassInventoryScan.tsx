@@ -147,19 +147,47 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
         return;
       }
 
-      const normalized: DetectedItem[] = detected.map((it) => ({
-        item_name: it.item_name || '',
-        category: it.category || '',
-        quality: it.quality || '',
-        unit_type: it.unit_type || 'Pieces',
-        cost_per_unit: Number(it.cost_per_unit) || 0,
-        wholesale: Number(it.wholesale) || 0,
-        retail: Number(it.retail) || 0,
-        serial_number: it.serial_number || '',
-        bulk_packaging: !!it.bulk_packaging,
-        quantity: String(Number(it.quantity) || 1),
-        image_url: publicUrl, // default photo = shelf photo, user may override
-      }));
+      setScanning(true); // keep spinner while cropping
+      const { data: { user } } = await supabase.auth.getUser();
+      const uid = user?.id || 'anon';
+
+      const normalized: DetectedItem[] = await Promise.all(
+        detected.map(async (it, idx) => {
+          const bbox = Array.isArray(it.bbox) && it.bbox.length === 4
+            ? (it.bbox.map((n: any) => Number(n)) as [number, number, number, number])
+            : undefined;
+          let itemImageUrl = publicUrl; // fallback: whole shelf photo
+          if (bbox) {
+            const cropped = await cropFromBbox(compressed, bbox);
+            if (cropped) {
+              const fname = `${uid}/mass-scan/item-${Date.now()}-${idx}.jpg`;
+              const { error: upErr } = await supabase.storage
+                .from('item-images')
+                .upload(fname, cropped, { upsert: true, contentType: 'image/jpeg' });
+              if (!upErr) {
+                const { data: { publicUrl: itemUrl } } = supabase.storage
+                  .from('item-images')
+                  .getPublicUrl(fname);
+                itemImageUrl = itemUrl;
+              }
+            }
+          }
+          return {
+            item_name: it.item_name || '',
+            category: it.category || '',
+            quality: it.quality || '',
+            unit_type: it.unit_type || 'Pieces',
+            cost_per_unit: Number(it.cost_per_unit) || 0,
+            wholesale: Number(it.wholesale) || 0,
+            retail: Number(it.retail) || 0,
+            serial_number: it.serial_number || '',
+            bulk_packaging: !!it.bulk_packaging,
+            quantity: String(Number(it.quantity) || 1),
+            image_url: itemImageUrl,
+            bbox,
+          };
+        }),
+      );
       setItems(normalized);
       toast.success(`AI detected ${normalized.length} item${normalized.length === 1 ? '' : 's'}`);
     } catch (err: any) {

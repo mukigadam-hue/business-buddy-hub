@@ -349,6 +349,29 @@ export default function PhoneAuthPage() {
         >
           The all-in-one dashboard to track sales, manage expenses, and stay organized.
         </p>
+
+        {/* Google Play install badge — shown only on web (hidden inside the native app shell). */}
+        {typeof window !== 'undefined' &&
+          !/despia|biztrack|webviewgold|wvg/i.test(window.navigator.userAgent) && (
+            <a
+              href="https://play.google.com/store/apps/details?id=com.despia.biztrack"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Download BizTrack on Google Play"
+              className="mt-5 inline-flex items-center gap-3 rounded-xl bg-black/90 hover:bg-black text-white px-5 py-3 shadow-2xl border border-white/10 transition-transform hover:scale-[1.03] active:scale-[0.98]"
+            >
+              <svg viewBox="0 0 512 512" className="h-7 w-7" aria-hidden="true">
+                <path fill="#EA4335" d="M325.3 234.3 104.6 13l280.8 161.2z" />
+                <path fill="#FBBC04" d="m408.6 351.9-83.3-48.1-58.2 51.1 141.5 81.3c19.1-11 32.2-30.4 32.2-52.3-.1-13.7-11.9-25.5-32.2-32z" />
+                <path fill="#4285F4" d="M104.6 499 325.3 277.7l-58.2-51.1L104.6 13z" />
+                <path fill="#34A853" d="M104.6 13v486l162.5-146.3z" />
+              </svg>
+              <span className="flex flex-col text-left leading-tight">
+                <span className="text-[10px] uppercase tracking-wider opacity-80">Get it on</span>
+                <span className="text-base font-semibold">Google Play</span>
+              </span>
+            </a>
+          )}
       </div>
 
       <Card className="w-full max-w-md p-6 sm:p-8 shadow-xl border-2 bg-card/95 backdrop-blur-sm">

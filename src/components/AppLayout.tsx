@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import ScreenshotButton from '@/components/ScreenshotButton';
+import { isNativeShell, BANNER_HEIGHT_PX } from '@/lib/nativeAdBridge';
 
 import { toast } from 'sonner';
 

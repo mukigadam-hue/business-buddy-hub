@@ -273,6 +273,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Banner space reservation: the native shell (WebViewGold/Despia) renders
+  // the AdMob banner as a native view OUTSIDE the WebView and typically
+  // resizes the WebView height itself. Reserving 60px inside the app on
+  // native shells therefore produces an empty gap ABOVE the real ad. We
+  // only reserve space on web/PWA where our own placeholder is drawn.
+  const [reserveBanner, setReserveBanner] = useState(false);
+  useEffect(() => {
+    setReserveBanner(!isNativeShell());
+  }, []);
+  const bannerPx = reserveBanner ? BANNER_HEIGHT_PX : 0;
+
   // Trigger B: fire an interstitial when the user switches between main
   // screens (subject to 45-min gap + global 2/90min cap, see interstitialAd.ts).
   const lastPathRef = useRef<string | null>(null);

@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import ScreenshotButton from '@/components/ScreenshotButton';
+import { isNativeShell, BANNER_HEIGHT_PX } from '@/lib/nativeAdBridge';
 
 import { toast } from 'sonner';
 
@@ -272,6 +273,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Banner space reservation: the native shell (WebViewGold/Despia) renders
+  // the AdMob banner as a native view OUTSIDE the WebView and typically
+  // resizes the WebView height itself. Reserving 60px inside the app on
+  // native shells therefore produces an empty gap ABOVE the real ad. We
+  // only reserve space on web/PWA where our own placeholder is drawn.
+  const [reserveBanner, setReserveBanner] = useState(false);
+  useEffect(() => {
+    setReserveBanner(!isNativeShell());
+  }, []);
+  const bannerPx = reserveBanner ? BANNER_HEIGHT_PX : 0;
+
   // Trigger B: fire an interstitial when the user switches between main
   // screens (subject to 45-min gap + global 2/90min cap, see interstitialAd.ts).
   const lastPathRef = useRef<string | null>(null);
@@ -457,7 +469,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 min-h-0 overflow-y-auto pb-[calc(5.5rem+60px+env(safe-area-inset-bottom,0px))] md:pb-[calc(2.5rem+60px)]">
+        <main className="flex-1 min-w-0 min-h-0 overflow-y-auto" style={{ paddingBottom: `calc(5.5rem + ${bannerPx}px + env(safe-area-inset-bottom, 0px))` }}>
           {/* Mobile refresh bar */}
           <div className="md:hidden flex items-center justify-between px-3 pt-2 pb-1">
             <span className="text-xs font-semibold text-muted-foreground truncate">{currentBusiness?.name}</span>
@@ -480,7 +492,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
       <BottomBannerAd />
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed left-0 right-0 z-50 bg-card border-t border-border flex justify-around items-center py-1.5 pb-safe px-safe" style={{ bottom: 'calc(60px + env(safe-area-inset-bottom, 0px))' }}>
+      <nav className="md:hidden fixed left-0 right-0 z-50 bg-card border-t border-border flex justify-around items-center py-1.5 pb-safe px-safe" style={{ bottom: `calc(${bannerPx}px + env(safe-area-inset-bottom, 0px))` }}>
         {mobileMainNav.map(({ to, label, icon: Icon }) => {
           const active = pathname === to;
           return (

@@ -467,7 +467,11 @@ export default function SalesPage() {
                   ? (priceType === 'wholesale' ? Number(selectedItem.wholesale_price) : Number(selectedItem.retail_price))
                   : 0;
                 const derivedIntQty = isIntangible ? cashToFullUnits(parseFloat(customPrice) || 0, basePriceLive) : 0;
-                const displayQty = isIntangible ? (derivedIntQty > 0 ? derivedIntQty.toFixed(4) : '') : quantity;
+                // For intangible items: if the user typed a quantity, use it;
+                // otherwise show the qty derived from the cash-received field.
+                const displayQty = isIntangible
+                  ? (quantity !== '' ? quantity : (derivedIntQty > 0 ? derivedIntQty.toFixed(4) : ''))
+                  : quantity;
                 return (
                   <>
                     <div className="grid grid-cols-3 gap-2">
@@ -476,13 +480,13 @@ export default function SalesPage() {
                         <Input
                           type="number" min="0.01" step="0.0001"
                           value={displayQty}
-                          onChange={e => { if (!isIntangible) setQuantity(e.target.value); }}
-                          readOnly={isIntangible || parseInt(bulkPkg.pieces_per_carton) > 0}
-                          className={(isIntangible || parseInt(bulkPkg.pieces_per_carton) > 0) ? 'bg-muted cursor-not-allowed' : ''}
-                          placeholder={isIntangible ? 'Auto from cash' : undefined}
+                          onChange={e => setQuantity(e.target.value)}
+                          readOnly={parseInt(bulkPkg.pieces_per_carton) > 0}
+                          className={parseInt(bulkPkg.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''}
+                          placeholder={isIntangible ? 'Type qty or leave blank' : undefined}
                         />
                         {isIntangible ? (
-                          <p className="text-[10px] text-warning mt-0.5">Auto-calculated from cash received</p>
+                          <p className="text-[10px] text-warning mt-0.5">Type quantity OR enter cash in Alt. Price</p>
                         ) : parseInt(bulkPkg.pieces_per_carton) > 0 ? (
                           <p className="text-[10px] text-muted-foreground mt-0.5">{t('sales.autoCalcBulk')}</p>
                         ) : null}

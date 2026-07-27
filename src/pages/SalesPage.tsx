@@ -522,14 +522,17 @@ export default function SalesPage() {
                     />
 
                     {selectedItem && (() => {
+                      const typedQtyNum = parseFloat(quantity) || 0;
                       const effectivePrice = !isIntangible && customPrice.trim() ? (parseFloat(customPrice) || basePriceLive) : basePriceLive;
-                      const totalQty = isIntangible ? derivedIntQty : (parseFloat(quantity) || 0);
-                      const subtotal = isIntangible ? (parseFloat(customPrice) || 0) : (totalQty * effectivePrice);
+                      const effectiveIntQty = isIntangible ? (typedQtyNum > 0 ? typedQtyNum : derivedIntQty) : typedQtyNum;
+                      const subtotal = isIntangible
+                        ? (typedQtyNum > 0 ? typedQtyNum * basePriceLive : (parseFloat(customPrice) || 0))
+                        : (effectiveIntQty * effectivePrice);
                       return (
                         <div className="text-xs text-muted-foreground bg-muted/40 rounded p-2">
                           {isIntangible ? (
                             <span className="text-warning font-medium mr-2">
-                              🧪 Bulk item · {derivedIntQty > 0 ? `${derivedIntQty.toFixed(4)} ${selectedItem.base_unit_type || ''} → ` : ''}
+                              🧪 Bulk item · {effectiveIntQty > 0 ? `${effectiveIntQty.toFixed(4)} ${selectedItem.base_unit_type || ''} → ` : ''}
                             </span>
                           ) : customPrice.trim() ? (
                             <span className="text-warning font-medium mr-2">⚡ Custom price: {fmt(effectivePrice)}</span>

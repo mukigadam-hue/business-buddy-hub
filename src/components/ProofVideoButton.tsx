@@ -252,7 +252,8 @@ export default function ProofVideoButton() {
       <>
         <button
           onClick={() => { setRequestDialogOpen(true); loadTargets(); }}
-          className="fixed bottom-36 right-4 md:bottom-24 md:right-6 z-[55] flex items-center gap-2 px-3 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          className="fixed right-4 md:bottom-24 md:right-6 z-[55] flex items-center gap-2 px-3 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          style={{ bottom: 'calc(11rem + env(safe-area-inset-bottom, 0px))' }}
           title="Request proof video"
         >
           <Video className="h-5 w-5" />

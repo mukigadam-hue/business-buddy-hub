@@ -273,16 +273,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Banner space reservation: the native shell (WebViewGold/Despia) renders
-  // the AdMob banner as a native view OUTSIDE the WebView and typically
-  // resizes the WebView height itself. Reserving 60px inside the app on
-  // native shells therefore produces an empty gap ABOVE the real ad. We
-  // only reserve space on web/PWA where our own placeholder is drawn.
-  const [reserveBanner, setReserveBanner] = useState(false);
-  useEffect(() => {
-    setReserveBanner(!isNativeShell());
-  }, []);
-  const bannerPx = reserveBanner ? BANNER_HEIGHT_PX : 0;
+  // Banner space reservation: on many devices (Samsung Galaxy and other
+  // Android WebView builds) the native shell paints the AdMob banner as an
+  // OVERLAY on top of the WebView instead of resizing the WebView height.
+  // If we don't reserve space, the banner covers the bottom navigation
+  // (Home / Stock / Sales / Alerts / More) and makes it inaccessible.
+  // Always reserve the banner height so bottom controls stay tappable on
+  // every device; the reserved area is transparent so a real native banner
+  // still shows through.
+  const bannerPx = BANNER_HEIGHT_PX;
 
   // Trigger B: fire an interstitial when the user switches between main
   // screens (subject to 45-min gap + global 2/90min cap, see interstitialAd.ts).

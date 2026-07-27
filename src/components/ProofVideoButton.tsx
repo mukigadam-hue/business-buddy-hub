@@ -226,11 +226,12 @@ export default function ProofVideoButton() {
       <>
         <button
           onClick={handleStartRecording}
-          className={`fixed bottom-36 right-4 md:bottom-24 md:right-6 z-[60] flex items-center gap-2 px-4 py-3 rounded-full shadow-2xl transition-all ${
+          className={`fixed right-4 md:bottom-24 md:right-6 z-[60] flex items-center gap-2 px-4 py-3 rounded-full shadow-2xl transition-all ${
             alertPulse
               ? 'bg-destructive text-destructive-foreground animate-bounce shadow-destructive/50'
               : 'bg-destructive text-destructive-foreground'
           }`}
+          style={{ bottom: 'calc(11rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <Bell className="h-5 w-5 animate-pulse" />
           <span className="text-sm font-bold">📹 Record Proof Video!</span>
@@ -252,7 +253,8 @@ export default function ProofVideoButton() {
       <>
         <button
           onClick={() => { setRequestDialogOpen(true); loadTargets(); }}
-          className="fixed bottom-36 right-4 md:bottom-24 md:right-6 z-[55] flex items-center gap-2 px-3 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          className="fixed right-4 md:bottom-24 md:right-6 z-[55] flex items-center gap-2 px-3 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          style={{ bottom: 'calc(11rem + env(safe-area-inset-bottom, 0px))' }}
           title="Request proof video"
         >
           <Video className="h-5 w-5" />

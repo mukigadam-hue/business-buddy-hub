@@ -28,23 +28,22 @@ export default function BottomBannerAd() {
   }, []);
 
   const shell = detectShell();
-  // Native shell paints the banner itself — reserve space but don't overlay.
-  const isNative = shell !== 'none';
+  // Native shell paints the banner itself as an overlay above the WebView.
+  // Render nothing here so the user never sees an empty "Sponsored · Ad"
+  // placeholder stacked above the real native AdMob banner.
+  if (shell !== 'none') return null;
 
   return (
     <div
-      aria-hidden={isNative}
       className="fixed left-0 right-0 z-40 pointer-events-none"
       style={{
         bottom: 'env(safe-area-inset-bottom, 0px)',
         height: BANNER_HEIGHT_PX,
       }}
     >
-      {!isNative && (
-        <div className="mx-auto max-w-md h-full flex items-center justify-center bg-muted/60 border-t border-border text-[11px] text-muted-foreground">
-          Sponsored · Ad
-        </div>
-      )}
+      <div className="mx-auto max-w-md h-full flex items-center justify-center bg-muted/60 border-t border-border text-[11px] text-muted-foreground">
+        Sponsored · Ad
+      </div>
     </div>
   );
 }

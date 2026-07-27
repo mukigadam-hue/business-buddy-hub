@@ -23,6 +23,13 @@ export function detectShell(): NativeShell {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const w = window as any;
   if (w?.Android?.webviewgold || w?.webkit?.messageHandlers?.webviewgold) return 'webviewgold';
+  if (typeof w?.despia === 'function') return 'despia';
+  // Android WebView (Samsung Galaxy, Xiaomi, etc.) — production Play Store
+  // builds shipped via WebViewGold/Despia identify as "wv" in the UA even
+  // when the wrapper marker is absent. Treat any Android WebView as a native
+  // shell so we don't render the web-only ad placeholder alongside the real
+  // native AdMob banner.
+  if (/\bwv\b/.test(ua) && /android/.test(ua)) return 'webviewgold';
   return 'none';
 }
 

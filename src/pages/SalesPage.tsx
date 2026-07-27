@@ -125,14 +125,20 @@ export default function SalesPage() {
     let priceLabel: string;
 
     if (isIntangible) {
-      // Custom price field carries CASH RECEIVED. Derive fractional qty in full units.
+      // Intangible items accept EITHER a manual quantity (in full units) OR
+      // a cash amount in the "Alt. Price" field which we convert to qty.
+      const typedQty = parseFloat(quantity) || 0;
       const cash = parseFloat(customPrice) || 0;
-      if (cash <= 0 || basePrice <= 0) {
+      if (typedQty > 0 && basePrice > 0) {
+        finalQty = typedQty;
+        unitPrice = basePrice;
+      } else if (cash > 0 && basePrice > 0) {
+        finalQty = cashToFullUnits(cash, basePrice);
+        unitPrice = basePrice;
+      } else {
         return; // silent — button already disabled by check below
       }
-      finalQty = cashToFullUnits(cash, basePrice);
-      unitPrice = basePrice;
-      priceLabel = priceType; // subtotal = qty * unitPrice = cash
+      priceLabel = priceType;
     } else {
       finalQty = parseInt(bulkPkg.pieces_per_carton) > 0
         ? (parseFloat(bulkQuantity) || parseFloat(quantity) || 1)
@@ -461,7 +467,11 @@ export default function SalesPage() {
                   ? (priceType === 'wholesale' ? Number(selectedItem.wholesale_price) : Number(selectedItem.retail_price))
                   : 0;
                 const derivedIntQty = isIntangible ? cashToFullUnits(parseFloat(customPrice) || 0, basePriceLive) : 0;
-                const displayQty = isIntangible ? (derivedIntQty > 0 ? derivedIntQty.toFixed(4) : '') : quantity;
+                // For intangible items: if the user typed a quantity, use it;
+                // otherwise show the qty derived from the cash-received field.
+                const displayQty = isIntangible
+                  ? (quantity !== '' ? quantity : (derivedIntQty > 0 ? derivedIntQty.toFixed(4) : ''))
+                  : quantity;
                 return (
                   <>
                     <div className="grid grid-cols-3 gap-2">
@@ -470,13 +480,13 @@ export default function SalesPage() {
                         <Input
                           type="number" min="0.01" step="0.0001"
                           value={displayQty}
-                          onChange={e => { if (!isIntangible) setQuantity(e.target.value); }}
-                          readOnly={isIntangible || parseInt(bulkPkg.pieces_per_carton) > 0}
-                          className={(isIntangible || parseInt(bulkPkg.pieces_per_carton) > 0) ? 'bg-muted cursor-not-allowed' : ''}
-                          placeholder={isIntangible ? 'Auto from cash' : undefined}
+                          onChange={e => setQuantity(e.target.value)}
+                          readOnly={parseInt(bulkPkg.pieces_per_carton) > 0}
+                          className={parseInt(bulkPkg.pieces_per_carton) > 0 ? 'bg-muted cursor-not-allowed' : ''}
+                          placeholder={isIntangible ? 'Type qty or leave blank' : undefined}
                         />
                         {isIntangible ? (
-                          <p className="text-[10px] text-warning mt-0.5">Auto-calculated from cash received</p>
+                          <p className="text-[10px] text-warning mt-0.5">Type quantity OR enter cash in Alt. Price</p>
                         ) : parseInt(bulkPkg.pieces_per_carton) > 0 ? (
                           <p className="text-[10px] text-muted-foreground mt-0.5">{t('sales.autoCalcBulk')}</p>
                         ) : null}
@@ -512,14 +522,17 @@ export default function SalesPage() {
                     />
 
                     {selectedItem && (() => {
+                      const typedQtyNum = parseFloat(quantity) || 0;
                       const effectivePrice = !isIntangible && customPrice.trim() ? (parseFloat(customPrice) || basePriceLive) : basePriceLive;
-                      const totalQty = isIntangible ? derivedIntQty : (parseFloat(quantity) || 0);
-                      const subtotal = isIntangible ? (parseFloat(customPrice) || 0) : (totalQty * effectivePrice);
+                      const effectiveIntQty = isIntangible ? (typedQtyNum > 0 ? typedQtyNum : derivedIntQty) : typedQtyNum;
+                      const subtotal = isIntangible
+                        ? (typedQtyNum > 0 ? typedQtyNum * basePriceLive : (parseFloat(customPrice) || 0))
+                        : (effectiveIntQty * effectivePrice);
                       return (
                         <div className="text-xs text-muted-foreground bg-muted/40 rounded p-2">
                           {isIntangible ? (
                             <span className="text-warning font-medium mr-2">
-                              🧪 Bulk item · {derivedIntQty > 0 ? `${derivedIntQty.toFixed(4)} ${selectedItem.base_unit_type || ''} → ` : ''}
+                              🧪 Bulk item · {effectiveIntQty > 0 ? `${effectiveIntQty.toFixed(4)} ${selectedItem.base_unit_type || ''} → ` : ''}
                             </span>
                           ) : customPrice.trim() ? (
                             <span className="text-warning font-medium mr-2">⚡ Custom price: {fmt(effectivePrice)}</span>

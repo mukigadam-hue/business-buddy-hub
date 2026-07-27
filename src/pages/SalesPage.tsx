@@ -125,14 +125,20 @@ export default function SalesPage() {
     let priceLabel: string;
 
     if (isIntangible) {
-      // Custom price field carries CASH RECEIVED. Derive fractional qty in full units.
+      // Intangible items accept EITHER a manual quantity (in full units) OR
+      // a cash amount in the "Alt. Price" field which we convert to qty.
+      const typedQty = parseFloat(quantity) || 0;
       const cash = parseFloat(customPrice) || 0;
-      if (cash <= 0 || basePrice <= 0) {
+      if (typedQty > 0 && basePrice > 0) {
+        finalQty = typedQty;
+        unitPrice = basePrice;
+      } else if (cash > 0 && basePrice > 0) {
+        finalQty = cashToFullUnits(cash, basePrice);
+        unitPrice = basePrice;
+      } else {
         return; // silent — button already disabled by check below
       }
-      finalQty = cashToFullUnits(cash, basePrice);
-      unitPrice = basePrice;
-      priceLabel = priceType; // subtotal = qty * unitPrice = cash
+      priceLabel = priceType;
     } else {
       finalQty = parseInt(bulkPkg.pieces_per_carton) > 0
         ? (parseFloat(bulkQuantity) || parseFloat(quantity) || 1)

@@ -148,14 +148,15 @@ export default function Receipt({
                 </div>
 
                 {isFirst && counterpartyInfo && (
-                  <div className="bg-accent/10 rounded-md px-2 py-1 text-center leading-tight">
-                    <p className="text-[9px] text-muted-foreground uppercase font-semibold">
+                  <div className="bg-accent/10 rounded-md px-2 py-1 text-center">
+                    <p className="text-[9px] text-muted-foreground uppercase font-semibold" style={{ lineHeight: 1.6 }}>
                       {type === 'purchase' ? 'Supplier' : 'Customer Business'}
                     </p>
-                    <p className="text-xs font-semibold">{counterpartyInfo.name}</p>
-                    {counterpartyInfo.contact && <p className="text-[10px] text-muted-foreground">{counterpartyInfo.contact}</p>}
+                    <p className="text-xs font-semibold" style={{ lineHeight: 1.5 }}>{counterpartyInfo.name}</p>
+                    {counterpartyInfo.contact && <p className="text-[10px] text-muted-foreground" style={{ lineHeight: 1.6, wordBreak: 'break-word' }}>{counterpartyInfo.contact}</p>}
                   </div>
                 )}
+
 
                 <Separator />
 

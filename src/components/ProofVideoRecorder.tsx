@@ -156,18 +156,12 @@ export default function ProofVideoRecorder({
     setRecording(false);
   }
 
-  function saveToDevice() {
+  async function saveToDevice() {
     if (chunksRef.current.length === 0) return;
-    const blob = new Blob(chunksRef.current, { type: chunksRef.current[0].type || 'video/webm' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `proof-video-${Date.now()}.webm`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    
+    const type = chunksRef.current[0].type || 'video/webm';
+    const blob = new Blob(chunksRef.current, { type });
+    await saveFile(blob, `proof-video-${Date.now()}.webm`, type);
+
     stopStream();
     onComplete();
     onOpenChange(false);

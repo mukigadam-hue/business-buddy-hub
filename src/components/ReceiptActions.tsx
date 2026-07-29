@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { triggerInterstitial } from '@/lib/interstitialAd';
+import { saveFile, shareFile, nativeFileShare, type DownloadResult } from '@/lib/nativeDownload';
 import {
   DropdownMenu,
   DropdownMenuContent,

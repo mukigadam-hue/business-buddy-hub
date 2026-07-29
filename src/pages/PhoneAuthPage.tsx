@@ -13,6 +13,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Separator } from "@/components/ui/separator";
 import LegalHelpModal from "@/components/LegalHelpModal";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const LAST_AUTH_KEY = "bm:last-auth";
 type LastAuth =
@@ -96,6 +100,7 @@ export default function PhoneAuthPage() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [notRegisteredOpen, setNotRegisteredOpen] = useState(false);
 
   const onGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -239,7 +244,14 @@ export default function PhoneAuthPage() {
       } catch {}
       toast.success("Welcome back!");
     } catch (e: any) {
-      toast.error(e.message || "Could not sign in");
+      const msg: string = e?.message || "Could not sign in";
+      // If the phone isn't registered, prompt the user to create an account
+      // right away instead of failing silently with a toast.
+      if (/no account found/i.test(msg) || /404/.test(msg)) {
+        setNotRegisteredOpen(true);
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -326,15 +338,24 @@ export default function PhoneAuthPage() {
   // -------- Render --------
   return (
     <div
-      className="flex flex-col items-center justify-start p-4 sm:p-6"
+      className="flex flex-col items-center justify-start p-4 sm:p-6 overflow-y-auto overscroll-y-contain"
       style={{
-        minHeight: 'auto',
+        // Own scroll container so keyboard + fixed AdMob banner never trap content.
+        // 100dvh follows the visual viewport on Android WebView, so when the
+        // keyboard opens the container shrinks and the inner content becomes
+        // scrollable within it.
+        height: '100dvh',
+        maxHeight: '100dvh',
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'pan-y',
         background: 'linear-gradient(145deg, hsl(217 72% 12%) 0%, hsl(217 72% 18%) 35%, hsl(210 60% 25%) 65%, hsl(42 80% 45%) 100%)',
-        // Reserve space for the native/WebViewGold AdMob banner + device safe area + on-screen keyboard
-        // so nothing (PIN boxes, submit button, help card) hides behind the ad or the keyboard.
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 240px)',
+        // Reserve space for the native/WebViewGold AdMob banner + safe area
+        // plus room for the on-screen keyboard so the Sign in / Create account
+        // buttons never hide behind the banner or the keyboard.
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 360px)',
       }}
     >
+
       {/* Hero Section */}
       <div className="w-full max-w-md sm:max-w-xl text-center pt-6 sm:pt-10 pb-5 sm:pb-8 px-2">
         <h1
@@ -771,6 +792,37 @@ export default function PhoneAuthPage() {
           <a href="/login-email" className="underline">Use email instead</a>
         </p>
       </Card>
+
+      {/* Auto-detected: phone not registered → invite to create an account */}
+      <AlertDialog open={notRegisteredOpen} onOpenChange={setNotRegisteredOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-amber-600" />
+              New here? Create an account
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              We couldn't find an account for <strong>{fullPhone}</strong>. It looks like you
+              haven't registered yet. Tap <strong>Create account</strong> to continue — we'll
+              keep the phone number and PIN you already typed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Try a different number</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setNotRegisteredOpen(false);
+                // Preserve the phone + PIN the user already typed and jump to signup.
+                setConfirmPin(pin);
+                setMode("signup");
+              }}
+            >
+              Create account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+

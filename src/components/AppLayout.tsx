@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search, AlertTriangle, ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react';
 import ProofVideoButton from '@/components/ProofVideoButton';
 import BottomBannerAd from '@/components/BottomBannerAd';
+import DemoAccountBanner from '@/components/DemoAccountBanner';
 import LegalHelpModal from '@/components/LegalHelpModal';
 import { HelpCircle } from 'lucide-react';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
@@ -478,6 +479,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
               </Button>
             </div>
           </div>
+          <DemoAccountBanner />
           <div className="p-3 sm:p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">{children}</div>
           {/* Desktop prev/next page nav */}
           <DesktopPageNav navItems={navItems} pathname={pathname} />

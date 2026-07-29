@@ -30,7 +30,7 @@ export function CountryDialPicker({ value, onChange }: Props) {
         <Button
           type="button"
           variant="outline"
-          className="h-12 px-3 gap-2 shrink-0 rounded-r-none border-r-0"
+          className="h-11 shrink-0 gap-2 rounded-r-none border-r-0 px-3 sm:h-12"
           aria-label="Select country code"
         >
           <span className="text-xl leading-none">{value.flag}</span>

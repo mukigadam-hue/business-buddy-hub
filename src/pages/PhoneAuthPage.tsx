@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Separator } from "@/components/ui/separator";
 import LegalHelpModal from "@/components/LegalHelpModal";
+import { isNativeShell } from "@/lib/nativeAdBridge";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -387,9 +388,15 @@ export default function PhoneAuthPage() {
           The all-in-one dashboard to track sales, manage expenses, and stay organized.
         </p>
 
-        {/* Google Play install badge — shown only on web (hidden inside the native app shell). */}
+        {/* Google Play install badge — shown ONLY to web visitors on the Lovable
+            preview / published web URL. Hidden inside any native app shell
+            (WebViewGold, Despia, Android WebView) since installed users are
+            already on the app. */}
         {typeof window !== 'undefined' &&
-          !/despia|biztrack|webviewgold|wvg/i.test(window.navigator.userAgent) && (
+          !isNativeShell() &&
+          /(^|\.)lovable\.(app|dev)$|(^|\.)lovableproject\.com$|localhost/i.test(
+            window.location.hostname,
+          ) && (
             <a
               href="https://play.google.com/store/apps/details?id=com.despia.biztrack"
               target="_blank"

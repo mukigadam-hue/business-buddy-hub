@@ -4,6 +4,7 @@ import { Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { isDespiaShell, takeNativeScreenshot } from '@/lib/despiaScreenshot';
+import { saveFile } from '@/lib/nativeDownload';
 
 interface ScreenshotButtonProps {
   variant?: 'icon' | 'compact' | 'floating';

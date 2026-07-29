@@ -188,6 +188,27 @@ export default function PhoneAuthPage() {
     setConfirmPin("");
   }, [mode]);
 
+  useEffect(() => {
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const isFormField = ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(target.tagName);
+      if (!isFormField) return;
+
+      window.setTimeout(() => {
+        target.scrollIntoView({
+          block: "center",
+          inline: "nearest",
+          behavior: "auto",
+        });
+      }, 250);
+    };
+
+    document.addEventListener("focusin", handleFocusIn);
+    return () => document.removeEventListener("focusin", handleFocusIn);
+  }, []);
+
   const onSignUp = async () => {
     if (phone.replace(/\D/g, "").length < 6) {
       toast.error("Enter a valid phone number");
@@ -338,21 +359,16 @@ export default function PhoneAuthPage() {
   // -------- Render --------
   return (
     <div
-      className="flex flex-col items-center justify-start p-4 sm:p-6 overflow-y-auto overscroll-y-contain"
+      data-auth-scroll-root
+      className="flex min-h-[100svh] w-full flex-col items-center justify-start overflow-x-hidden p-4 sm:p-6"
       style={{
-        // Own scroll container so keyboard + fixed AdMob banner never trap content.
-        // 100dvh follows the visual viewport on Android WebView, so when the
-        // keyboard opens the container shrinks and the inner content becomes
-        // scrollable within it.
-        height: '100dvh',
-        maxHeight: '100dvh',
         WebkitOverflowScrolling: 'touch',
         touchAction: 'pan-y',
         background: 'linear-gradient(145deg, hsl(217 72% 12%) 0%, hsl(217 72% 18%) 35%, hsl(210 60% 25%) 65%, hsl(42 80% 45%) 100%)',
-        // Reserve space for the native/WebViewGold AdMob banner + safe area
-        // plus room for the on-screen keyboard so the Sign in / Create account
-        // buttons never hide behind the banner or the keyboard.
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 360px)',
+        // Let the PAGE scroll naturally on mobile WebViews instead of locking
+        // content inside a fixed-height inner container. Reserve extra bottom
+        // room so the native banner ad never covers the auth controls.
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 9rem)',
       }}
     >
 

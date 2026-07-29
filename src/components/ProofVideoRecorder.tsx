@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Video, Square, X, Loader2, Flashlight, FlashlightOff } from 'lucide-react';
+import { saveFile } from '@/lib/nativeDownload';
 
 interface ProofVideoRecorderProps {
   open: boolean;

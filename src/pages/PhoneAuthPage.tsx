@@ -361,7 +361,7 @@ export default function PhoneAuthPage() {
   return (
     <div
       data-auth-scroll-root
-      className="flex min-h-[100svh] w-full flex-col items-center justify-start overflow-x-hidden p-4 sm:p-6"
+      className="flex min-h-[100svh] w-full flex-col items-center justify-start overflow-x-hidden px-3 py-2 sm:p-6"
       style={{
         WebkitOverflowScrolling: 'touch',
         touchAction: 'pan-y',
@@ -369,20 +369,20 @@ export default function PhoneAuthPage() {
         // Let the PAGE scroll naturally on mobile WebViews instead of locking
         // content inside a fixed-height inner container. Reserve extra bottom
         // room so the native banner ad never covers the auth controls.
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 9rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 7rem)',
       }}
     >
 
       {/* Hero Section */}
-      <div className="w-full max-w-md sm:max-w-xl text-center pt-6 sm:pt-10 pb-5 sm:pb-8 px-2">
+      <div className="w-full max-w-md sm:max-w-xl text-center pt-2 sm:pt-10 pb-3 sm:pb-8 px-1 sm:px-2">
         <h1
-          className="text-2xl sm:text-4xl font-extrabold drop-shadow-lg leading-tight mb-2 sm:mb-4"
+          className="text-2xl sm:text-4xl font-extrabold drop-shadow-lg leading-tight mb-1.5 sm:mb-4"
           style={{ color: 'hsl(210, 40%, 98%)' }}
         >
           Grow Your Business with BizTrack
         </h1>
         <p
-          className="text-sm sm:text-base leading-relaxed max-w-md mx-auto font-medium"
+          className="text-sm sm:text-base leading-snug max-w-md mx-auto font-medium"
           style={{ color: 'hsla(210, 40%, 98%, 0.85)' }}
         >
           The all-in-one dashboard to track sales, manage expenses, and stay organized.
@@ -418,12 +418,12 @@ export default function PhoneAuthPage() {
           )}
       </div>
 
-      <Card className="w-full max-w-md p-6 sm:p-8 shadow-xl border-2 bg-card/95 backdrop-blur-sm">
-        <div className="flex items-center gap-3 mb-6">
+      <Card className="w-full max-w-md p-4 sm:p-8 shadow-xl border-2 bg-card/95 backdrop-blur-sm">
+        <div className="flex items-center gap-3 mb-3 sm:mb-6">
           <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-white shadow-lg">
             <Briefcase className="h-6 w-6" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 className="font-bold text-lg leading-tight">Business Manager</h2>
             <p className="text-xs text-muted-foreground">Phone-first &middot; no email needed</p>
           </div>
@@ -541,7 +541,7 @@ export default function PhoneAuthPage() {
 
         {/* === SIGN IN === */}
         {mode === "signin" && (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <h2 className="font-semibold text-lg text-center">Welcome</h2>
 
             {/* Google sign-in — easiest recovery path, no password needed */}
@@ -549,7 +549,7 @@ export default function PhoneAuthPage() {
               variant="outline"
               onClick={onGoogleSignIn}
               disabled={googleLoading}
-              className="w-full h-12 flex items-center gap-3 font-medium"
+              className="w-full h-11 sm:h-12 flex items-center gap-3 font-medium"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -559,7 +559,7 @@ export default function PhoneAuthPage() {
               </svg>
               {googleLoading ? "Connecting…" : "Continue with Google"}
             </Button>
-            <p className="text-[11px] text-muted-foreground text-center -mt-2">
+            <p className="text-[11px] text-muted-foreground text-center -mt-2 leading-snug">
               Forgot your password? Just tap Google — no password needed.
             </p>
 
@@ -577,7 +577,7 @@ export default function PhoneAuthPage() {
                 <>🎬 Try demo account (no signup)</>
               )}
             </Button>
-            <p className="text-[11px] text-muted-foreground text-center -mt-2">
+            <p className="text-[11px] text-muted-foreground text-center -mt-2 leading-snug">
               For reviewers & first-time visitors — instant access, no phone or email required.
             </p>
 
@@ -612,7 +612,7 @@ export default function PhoneAuthPage() {
             {signinMethod === "phone" ? (
               <>
                 <div>
-                  <Label className="mb-2 block">Phone number</Label>
+                  <Label className="mb-1.5 block">Phone number</Label>
                   <div className="flex">
                     <CountryDialPicker value={country} onChange={setCountry} />
                     <Input
@@ -620,24 +620,24 @@ export default function PhoneAuthPage() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
                       placeholder="700 123 456"
-                      className="h-12 rounded-l-none flex-1"
+                      className="h-11 sm:h-12 rounded-l-none flex-1"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label className="mb-2 block">5-digit PIN</Label>
+                  <Label className="mb-1.5 block">5-digit PIN</Label>
                   <PinBoxes value={pin} onChange={setPin} autoFocus />
                 </div>
 
-                <Button onClick={onSignIn} disabled={loading} className="w-full h-12 text-base font-semibold">
+                <Button onClick={onSignIn} disabled={loading} className="w-full h-11 sm:h-12 text-base font-semibold">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
                 </Button>
 
                 <button
                   type="button"
                   onClick={() => { setRecoveryPhone(phone); setRecoveryCountry(country); setMode("recover-phone"); }}
-                  className="w-full text-sm text-primary font-medium hover:underline flex items-center justify-center gap-1.5 py-2"
+                  className="w-full text-sm text-primary font-medium hover:underline flex items-center justify-center gap-1.5 py-1"
                 >
                   <KeyRound className="h-4 w-4" />
                   Forgot PIN / Recover my business
@@ -699,12 +699,12 @@ export default function PhoneAuthPage() {
             )}
 
             {/* Prominent "Create new account" card — highlighted differently from Sign in */}
-            <div className="mt-4 rounded-xl border-2 border-dashed border-amber-500/60 bg-amber-500/10 p-4">
+            <div className="mt-2 sm:mt-4 rounded-xl border-2 border-dashed border-amber-500/60 bg-amber-500/10 p-3 sm:p-4">
               <p className="text-sm font-bold text-foreground mb-1 flex items-center gap-1.5">
                 <UserPlus className="h-4 w-4 text-amber-600" />
                 New to BizTrack?
               </p>
-              <p className="text-xs text-muted-foreground mb-3">
+              <p className="text-xs text-muted-foreground mb-2 sm:mb-3 leading-snug">
                 You don't have an account yet — tap below to register your business in seconds.
               </p>
               <Button

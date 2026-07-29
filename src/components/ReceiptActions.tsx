@@ -92,28 +92,11 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     return pdf ? pdf.output('blob') : null;
   }, [getPageCanvases]);
 
-  function downloadBlob(blob: Blob, name: string) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  }
-
-  async function nativeFileShare(blob: Blob, name: string, mime: string): Promise<boolean> {
-    try {
-      const file = new File([blob], name, { type: mime });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file] });
-        return true;
-      }
-    } catch (err: any) {
-      if (err.name === 'AbortError') return true;
-    }
-    return false;
+  function reportSave(result: DownloadResult, label: string) {
+    if (result === 'shared') toast.success(`${label} ready — choose where to save it.`);
+    else if (result === 'native-download') toast.success(`${label} downloading to your device…`);
+    else if (result === 'browser-download') toast.success(`${label} saved!`);
+    else toast.error(`Could not save the ${label.toLowerCase()}. Check your connection and try again.`);
   }
 
   async function handleShareAsImage() {
@@ -121,11 +104,7 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     try {
       const blob = await getStitchedImageBlob();
       if (!blob) { toast.error('Failed to generate image'); return; }
-      const shared = await nativeFileShare(blob, `${fileName}.png`, 'image/png');
-      if (!shared) {
-        downloadBlob(blob, `${fileName}.png`);
-        toast.success('Image downloaded — share it from your gallery!');
-      }
+      reportSave(await shareFile(blob, `${fileName}.png`, 'image/png'), 'Image');
       triggerInterstitial('export-share-image');
     } catch { toast.error('Share failed'); }
     finally { setBusy(false); }
@@ -136,11 +115,7 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     try {
       const blob = await getPDFBlob();
       if (!blob) { toast.error('Failed to generate PDF'); return; }
-      const shared = await nativeFileShare(blob, `${fileName}.pdf`, 'application/pdf');
-      if (!shared) {
-        downloadBlob(blob, `${fileName}.pdf`);
-        toast.success('PDF downloaded — share it from your files!');
-      }
+      reportSave(await shareFile(blob, `${fileName}.pdf`, 'application/pdf'), 'PDF');
       triggerInterstitial('export-share-pdf');
     } catch { toast.error('Share failed'); }
     finally { setBusy(false); }
@@ -151,8 +126,7 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     try {
       const blob = await getStitchedImageBlob();
       if (!blob) { toast.error('Failed'); return; }
-      downloadBlob(blob, `${fileName}.png`);
-      toast.success('Image saved!');
+      reportSave(await saveFile(blob, `${fileName}.png`, 'image/png'), 'Image');
       triggerInterstitial('export-save-image');
     } catch { toast.error('Save failed'); }
     finally { setBusy(false); }
@@ -163,12 +137,12 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
     try {
       const blob = await getPDFBlob();
       if (!blob) { toast.error('Failed'); return; }
-      downloadBlob(blob, `${fileName}.pdf`);
-      toast.success('PDF saved!');
+      reportSave(await saveFile(blob, `${fileName}.pdf`, 'application/pdf'), 'PDF');
       triggerInterstitial('export-save-pdf');
     } catch { toast.error('Save failed'); }
     finally { setBusy(false); }
   }
+
 
   async function handlePrint() {
     setBusy(true);

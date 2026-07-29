@@ -478,6 +478,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
               </Button>
             </div>
           </div>
+          <DemoAccountBanner />
           <div className="p-3 sm:p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">{children}</div>
           {/* Desktop prev/next page nav */}
           <DesktopPageNav navItems={navItems} pathname={pathname} />

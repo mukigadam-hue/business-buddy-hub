@@ -47,14 +47,7 @@ export default function ScreenshotButton({ variant = 'icon', className }: Screen
         toast.error('Could not capture screenshot');
         return;
       }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `screenshot-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      await saveFile(blob, `screenshot-${Date.now()}.png`, 'image/png');
       toast.success('Screenshot downloaded');
     } catch (err) {
       console.error('Screenshot failed:', err);

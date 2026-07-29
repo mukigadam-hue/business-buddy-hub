@@ -167,7 +167,7 @@ export default function ReceiptActions({ receiptRef, fileName = 'receipt', canSh
           </head><body onload="setTimeout(function(){window.print()},500)">${body}</body></html>`);
         printWindow.document.close();
       } else if (blob) {
-        downloadBlob(blob, `${fileName}.png`);
+        await saveFile(blob, `${fileName}.png`, 'image/png');
         toast.info('Receipt saved — open and print from your gallery/files app.');
       }
       triggerInterstitial('export-print');

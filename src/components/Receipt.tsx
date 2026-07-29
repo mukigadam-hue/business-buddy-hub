@@ -129,30 +129,34 @@ export default function Receipt({
                     <div style={{ width: 36, flexShrink: 0 }} />
                   )}
                   {businessInfo && (
-                    <div className="flex-1 text-center leading-tight">
-                      <h3 className="font-bold text-sm">{businessInfo.name}</h3>
-                      {businessInfo.address && <p className="text-[10px] text-muted-foreground">{businessInfo.address}</p>}
+                    <div className="flex-1 text-center" style={{ paddingBottom: 2 }}>
+                      <h3 className="font-bold text-sm" style={{ lineHeight: 1.4, paddingBottom: 1 }}>{businessInfo.name}</h3>
+                      {businessInfo.address && (
+                        <p className="text-[10px] text-muted-foreground" style={{ lineHeight: 1.6, paddingBottom: 1, wordBreak: 'break-word' }}>{businessInfo.address}</p>
+                      )}
                       {(businessInfo.contact || businessInfo.email) && (
-                        <p className="text-[10px] text-muted-foreground truncate">
+                        <p className="text-[10px] text-muted-foreground" style={{ lineHeight: 1.6, paddingBottom: 2, wordBreak: 'break-word' }}>
                           {[businessInfo.contact, businessInfo.email].filter(Boolean).join(' · ')}
                         </p>
                       )}
                     </div>
                   )}
+
                   <div className="text-[9px] font-semibold text-muted-foreground whitespace-nowrap" style={{ width: 36, textAlign: 'right' }}>
                     Page {pageIdx + 1}/{totalPages}
                   </div>
                 </div>
 
                 {isFirst && counterpartyInfo && (
-                  <div className="bg-accent/10 rounded-md px-2 py-1 text-center leading-tight">
-                    <p className="text-[9px] text-muted-foreground uppercase font-semibold">
+                  <div className="bg-accent/10 rounded-md px-2 py-1 text-center">
+                    <p className="text-[9px] text-muted-foreground uppercase font-semibold" style={{ lineHeight: 1.6 }}>
                       {type === 'purchase' ? 'Supplier' : 'Customer Business'}
                     </p>
-                    <p className="text-xs font-semibold">{counterpartyInfo.name}</p>
-                    {counterpartyInfo.contact && <p className="text-[10px] text-muted-foreground">{counterpartyInfo.contact}</p>}
+                    <p className="text-xs font-semibold" style={{ lineHeight: 1.5 }}>{counterpartyInfo.name}</p>
+                    {counterpartyInfo.contact && <p className="text-[10px] text-muted-foreground" style={{ lineHeight: 1.6, wordBreak: 'break-word' }}>{counterpartyInfo.contact}</p>}
                   </div>
                 )}
+
 
                 <Separator />
 

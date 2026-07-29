@@ -40,7 +40,7 @@ function PinBoxes({
   const [reveal, setReveal] = useState(false);
   // Single hidden numeric input drives a 5-slot visual display.
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex items-center gap-1.5 sm:gap-2">
       <div className="relative flex-1">
         <input
           id={id}
@@ -53,11 +53,11 @@ function PinBoxes({
           className="absolute inset-0 opacity-0 w-full h-full cursor-text z-10"
           aria-label="5-digit PIN"
         />
-        <div className="flex gap-2 pointer-events-none">
+        <div className="flex gap-1.5 pointer-events-none sm:gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className={`h-12 flex-1 rounded-lg border-2 flex items-center justify-center text-xl font-semibold transition-all ${
+              className={`flex h-11 flex-1 items-center justify-center rounded-md border-2 text-lg font-semibold transition-all sm:h-12 sm:rounded-lg sm:text-xl ${
                 value[i]
                   ? "border-primary bg-primary/5"
                   : value.length === i
@@ -73,7 +73,7 @@ function PinBoxes({
       <button
         type="button"
         onClick={() => setReveal((v) => !v)}
-        className="h-12 w-12 rounded-lg border-2 border-border bg-muted/30 flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/60 transition-colors shrink-0"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border-2 border-border bg-muted/30 text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground sm:h-12 sm:w-12 sm:rounded-lg"
         aria-label={reveal ? "Hide PIN" : "Show PIN"}
         tabIndex={-1}
       >
@@ -361,7 +361,7 @@ export default function PhoneAuthPage() {
   return (
     <div
       data-auth-scroll-root
-      className="flex min-h-[100svh] w-full flex-col items-center justify-start overflow-x-hidden px-3 py-2 sm:p-6"
+      className="flex min-h-[100svh] w-full flex-col items-center justify-start overflow-x-hidden px-2.5 pb-0 pt-1.5 sm:p-6"
       style={{
         WebkitOverflowScrolling: 'touch',
         touchAction: 'pan-y',
@@ -369,20 +369,20 @@ export default function PhoneAuthPage() {
         // Let the PAGE scroll naturally on mobile WebViews instead of locking
         // content inside a fixed-height inner container. Reserve extra bottom
         // room so the native banner ad never covers the auth controls.
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 7rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4.75rem)',
       }}
     >
 
       {/* Hero Section */}
-      <div className="w-full max-w-md sm:max-w-xl text-center pt-2 sm:pt-10 pb-3 sm:pb-8 px-1 sm:px-2">
+      <div className="w-full max-w-md px-1 text-center pb-2 pt-1 sm:max-w-xl sm:px-2 sm:pb-8 sm:pt-10">
         <h1
-          className="text-2xl sm:text-4xl font-extrabold drop-shadow-lg leading-tight mb-1.5 sm:mb-4"
+          className="mb-1 text-2xl font-extrabold leading-tight drop-shadow-lg sm:mb-4 sm:text-4xl"
           style={{ color: 'hsl(210, 40%, 98%)' }}
         >
           Grow Your Business with BizTrack
         </h1>
         <p
-          className="text-sm sm:text-base leading-snug max-w-md mx-auto font-medium"
+          className="mx-auto max-w-md text-sm font-medium leading-snug sm:text-base"
           style={{ color: 'hsla(210, 40%, 98%, 0.85)' }}
         >
           The all-in-one dashboard to track sales, manage expenses, and stay organized.
@@ -418,9 +418,9 @@ export default function PhoneAuthPage() {
           )}
       </div>
 
-      <Card className="w-full max-w-md p-4 sm:p-8 shadow-xl border-2 bg-card/95 backdrop-blur-sm">
-        <div className="flex items-center gap-3 mb-3 sm:mb-6">
-          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-white shadow-lg">
+      <Card className="w-full max-w-md border-2 bg-card/95 p-3 shadow-xl backdrop-blur-sm sm:p-8">
+        <div className="mb-2 flex items-center gap-3 sm:mb-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-amber-500 text-white shadow-lg sm:h-11 sm:w-11">
             <Briefcase className="h-6 w-6" />
           </div>
           <div className="min-w-0">
@@ -541,7 +541,7 @@ export default function PhoneAuthPage() {
 
         {/* === SIGN IN === */}
         {mode === "signin" && (
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-2.5 sm:space-y-4">
             <h2 className="font-semibold text-lg text-center">Welcome</h2>
 
             {/* Google sign-in — easiest recovery path, no password needed */}
@@ -549,7 +549,7 @@ export default function PhoneAuthPage() {
               variant="outline"
               onClick={onGoogleSignIn}
               disabled={googleLoading}
-              className="w-full h-11 sm:h-12 flex items-center gap-3 font-medium"
+              className="flex h-11 w-full items-center gap-3 font-medium"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -559,7 +559,7 @@ export default function PhoneAuthPage() {
               </svg>
               {googleLoading ? "Connecting…" : "Continue with Google"}
             </Button>
-            <p className="text-[11px] text-muted-foreground text-center -mt-2 leading-snug">
+            <p className="hidden text-[10px] leading-snug text-muted-foreground sm:block">
               Forgot your password? Just tap Google — no password needed.
             </p>
 
@@ -569,7 +569,7 @@ export default function PhoneAuthPage() {
               variant="secondary"
               onClick={onDemoSignIn}
               disabled={demoLoading}
-              className="w-full h-11 font-medium"
+              className="h-11 w-full font-medium"
             >
               {demoLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -577,22 +577,22 @@ export default function PhoneAuthPage() {
                 <>🎬 Try demo account (no signup)</>
               )}
             </Button>
-            <p className="text-[11px] text-muted-foreground text-center -mt-2 leading-snug">
+            <p className="hidden text-[10px] leading-snug text-muted-foreground sm:block">
               For reviewers & first-time visitors — instant access, no phone or email required.
             </p>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <Separator className="flex-1" />
               <span className="text-xs text-muted-foreground">or</span>
               <Separator className="flex-1" />
             </div>
 
             {/* Method toggle: phone+PIN (new) vs email+password (legacy) */}
-            <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg">
+            <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
               <button
                 type="button"
                 onClick={() => setSigninMethod("phone")}
-                className={`h-9 rounded-md text-sm font-medium flex items-center justify-center gap-1.5 transition-all ${
+                className={`flex h-11 items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-all ${
                   signinMethod === "phone" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
                 }`}
               >
@@ -601,7 +601,7 @@ export default function PhoneAuthPage() {
               <button
                 type="button"
                 onClick={() => setSigninMethod("email")}
-                className={`h-9 rounded-md text-sm font-medium flex items-center justify-center gap-1.5 transition-all ${
+                className={`flex h-11 items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-all ${
                   signinMethod === "email" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
                 }`}
               >
@@ -612,7 +612,7 @@ export default function PhoneAuthPage() {
             {signinMethod === "phone" ? (
               <>
                 <div>
-                  <Label className="mb-1.5 block">Phone number</Label>
+                  <Label className="mb-1 block">Phone number</Label>
                   <div className="flex">
                     <CountryDialPicker value={country} onChange={setCountry} />
                     <Input
@@ -620,24 +620,24 @@ export default function PhoneAuthPage() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
                       placeholder="700 123 456"
-                      className="h-11 sm:h-12 rounded-l-none flex-1"
+                      className="h-11 flex-1 rounded-l-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label className="mb-1.5 block">5-digit PIN</Label>
+                  <Label className="mb-1 block">5-digit PIN</Label>
                   <PinBoxes value={pin} onChange={setPin} autoFocus />
                 </div>
 
-                <Button onClick={onSignIn} disabled={loading} className="w-full h-11 sm:h-12 text-base font-semibold">
+                <Button onClick={onSignIn} disabled={loading} className="h-11 w-full text-base font-semibold">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
                 </Button>
 
                 <button
                   type="button"
                   onClick={() => { setRecoveryPhone(phone); setRecoveryCountry(country); setMode("recover-phone"); }}
-                  className="w-full text-sm text-primary font-medium hover:underline flex items-center justify-center gap-1.5 py-1"
+                  className="flex w-full items-center justify-center gap-1.5 py-0.5 text-sm font-medium text-primary hover:underline"
                 >
                   <KeyRound className="h-4 w-4" />
                   Forgot PIN / Recover my business
@@ -699,21 +699,25 @@ export default function PhoneAuthPage() {
             )}
 
             {/* Prominent "Create new account" card — highlighted differently from Sign in */}
-            <div className="mt-2 sm:mt-4 rounded-xl border-2 border-dashed border-amber-500/60 bg-amber-500/10 p-3 sm:p-4">
-              <p className="text-sm font-bold text-foreground mb-1 flex items-center gap-1.5">
-                <UserPlus className="h-4 w-4 text-amber-600" />
-                New to BizTrack?
-              </p>
-              <p className="text-xs text-muted-foreground mb-2 sm:mb-3 leading-snug">
-                You don't have an account yet — tap below to register your business in seconds.
-              </p>
-              <Button
-                onClick={() => setMode("signup")}
-                variant="outline"
-                className="w-full h-11 font-semibold border-2 border-amber-500 text-amber-700 hover:bg-amber-500 hover:text-white dark:text-amber-400"
-              >
-                Create a new account
-              </Button>
+            <div className="mt-1 rounded-xl border-2 border-dashed border-amber-500/60 bg-amber-500/10 p-2.5 sm:mt-4 sm:p-4">
+              <div className="grid grid-cols-[1fr_auto] items-center gap-2.5">
+                <div className="min-w-0">
+                  <p className="mb-0.5 flex items-center gap-1.5 text-sm font-bold text-foreground">
+                    <UserPlus className="h-4 w-4 shrink-0 text-amber-600" />
+                    New to BizTrack?
+                  </p>
+                  <p className="text-[11px] leading-snug text-muted-foreground sm:text-xs">
+                    Create your account in seconds.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setMode("signup")}
+                  variant="outline"
+                  className="h-11 border-2 border-amber-500 px-3 font-semibold text-amber-700 hover:bg-amber-500 hover:text-white dark:text-amber-400"
+                >
+                  Create account
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -794,21 +798,21 @@ export default function PhoneAuthPage() {
           </div>
         )}
 
-        <div className="mt-6 rounded-lg border border-primary/20 bg-primary/5 p-3 text-center space-y-2">
-          <p className="text-xs font-medium text-foreground leading-relaxed">
+        <div className="mt-4 space-y-1.5 rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-center sm:mt-6 sm:space-y-2 sm:p-3">
+          <p className="text-[11px] font-medium leading-relaxed text-foreground sm:text-xs">
             ✨ Before you leave or continue, tap <strong>Help &amp; Legal</strong> below to discover everything this app can do for your business!
           </p>
           <LegalHelpModal
             defaultTab="guide"
             trigger={
-              <Button variant="default" size="sm" className="gap-2 text-xs animate-pulse">
+              <Button variant="default" size="sm" className="h-10 gap-2 text-xs animate-pulse">
                 <HelpCircle className="h-4 w-4" /> Help &amp; Legal
               </Button>
             }
           />
         </div>
 
-        <p className="text-[10px] text-center text-muted-foreground mt-4">
+        <p className="mt-3 text-center text-[9px] leading-tight text-muted-foreground sm:mt-4 sm:text-[10px]">
           By continuing you agree to our{" "}
           <a href="/privacy" className="underline">privacy policy</a>.
           {" · "}

@@ -153,7 +153,7 @@
   /* Fix for old WebView and older browsers that freeze with overflow:hidden on body */
   #root {
     min-height: calc(100svh - var(--safe-top) - var(--safe-bottom));
-    overflow-y: auto;
+    overflow: visible;
     -webkit-overflow-scrolling: touch;
   }
 

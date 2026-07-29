@@ -244,7 +244,14 @@ export default function PhoneAuthPage() {
       } catch {}
       toast.success("Welcome back!");
     } catch (e: any) {
-      toast.error(e.message || "Could not sign in");
+      const msg: string = e?.message || "Could not sign in";
+      // If the phone isn't registered, prompt the user to create an account
+      // right away instead of failing silently with a toast.
+      if (/no account found/i.test(msg) || /404/.test(msg)) {
+        setNotRegisteredOpen(true);
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }

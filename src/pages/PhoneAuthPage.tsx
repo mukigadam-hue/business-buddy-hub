@@ -100,6 +100,7 @@ export default function PhoneAuthPage() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [notRegisteredOpen, setNotRegisteredOpen] = useState(false);
 
   const onGoogleSignIn = async () => {
     setGoogleLoading(true);

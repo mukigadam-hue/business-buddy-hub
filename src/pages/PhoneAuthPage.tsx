@@ -792,6 +792,37 @@ export default function PhoneAuthPage() {
           <a href="/login-email" className="underline">Use email instead</a>
         </p>
       </Card>
+
+      {/* Auto-detected: phone not registered → invite to create an account */}
+      <AlertDialog open={notRegisteredOpen} onOpenChange={setNotRegisteredOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-amber-600" />
+              New here? Create an account
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              We couldn't find an account for <strong>{fullPhone}</strong>. It looks like you
+              haven't registered yet. Tap <strong>Create account</strong> to continue — we'll
+              keep the phone number and PIN you already typed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Try a different number</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setNotRegisteredOpen(false);
+                // Preserve the phone + PIN the user already typed and jump to signup.
+                setConfirmPin(pin);
+                setMode("signup");
+              }}
+            >
+              Create account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+

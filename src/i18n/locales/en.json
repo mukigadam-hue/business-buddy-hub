@@ -1403,6 +1403,15 @@
     "reminderBody": "You have not recorded the cash found in the drawer for",
     "reminderBody2": "Record it now so your audit stays accurate.",
     "later": "Later",
-    "recordNow": "Record now"
+    "recordNow": "Record now",
+    "extra": "Extra",
+    "surplusValue": "Value of extra (unrecorded) stock",
+    "debtsTitle": "Debts in this period",
+    "receivables": "Customers owe the business (credit sales)",
+    "payables": "Business owes suppliers (goods on credit)",
+    "noDebts": "Nothing outstanding.",
+    "debtsHint": "Debts are not cash yet, so they do not change the balance above. They are listed here and on the data sheet so payments can be made and recorded any time.",
+    "memoReceivable": "Memo: owed to us by customers",
+    "memoPayable": "Memo: owed by us to suppliers"
   }
 }

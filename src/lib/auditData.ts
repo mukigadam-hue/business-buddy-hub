@@ -170,3 +170,55 @@ export async function fetchAllStockItems(businessId: string): Promise<SoldItem[]
     };
   });
 }
+
+export type DebtRow = {
+  kind: 'sale' | 'service' | 'order' | 'purchase';
+  id: string;
+  party: string;          // customer or supplier name
+  date: string;           // YYYY-MM-DD
+  total: number;
+  paid: number;
+  balance: number;
+};
+
+export type DebtTotals = {
+  receivables: DebtRow[];      // money customers owe the business
+  payables: DebtRow[];         // money the business owes suppliers
+  receivableTotal: number;
+  payableTotal: number;
+};
+
+/**
+ * Unpaid balances created inside the audit period.
+ * Receivables = credit sales / services / orders.
+ * Payables = purchases taken from suppliers on credit.
+ */
+export async function fetchPeriodDebts(businessId: string, start: string, end: string): Promise<DebtTotals> {
+  const from = start + 'T00:00:00.000Z';
+  const to = new Date(new Date(end + 'T00:00:00Z').getTime() + 86400000).toISOString();
+  const range = (q: any) => q.eq('business_id', businessId).is('deleted_at', null).gte('created_at', from).lt('created_at', to);
+
+  const [sales, services, orders, purchases] = await Promise.all([
+    range(supabase.from('sales').select('id, created_at, customer_name, grand_total, amount_paid, balance')),
+    range(supabase.from('services').select('id, created_at, customer_name, cost, amount_paid, balance')),
+    range(supabase.from('orders').select('id, created_at, customer_name, grand_total, amount_paid, balance')),
+    range(supabase.from('purchases').select('id, created_at, supplier, grand_total, amount_paid, balance')),
+  ]);
+
+  const receivables: DebtRow[] = [];
+  const payables: DebtRow[] = [];
+  const push = (arr: DebtRow[], kind: DebtRow['kind'], r: any, party: string, total: number) => {
+    const bal = Number(r.balance) || 0;
+    if (bal > 0.009) arr.push({ kind, id: r.id, party: party || '—', date: dayKey(r.created_at), total, paid: Number(r.amount_paid) || 0, balance: bal });
+  };
+
+  (sales.data || []).forEach((r: any) => push(receivables, 'sale', r, r.customer_name, Number(r.grand_total) || 0));
+  (services.data || []).forEach((r: any) => push(receivables, 'service', r, r.customer_name, Number(r.cost) || 0));
+  (orders.data || []).forEach((r: any) => push(receivables, 'order', r, r.customer_name, Number(r.grand_total) || 0));
+  (purchases.data || []).forEach((r: any) => push(payables, 'purchase', r, r.supplier, Number(r.grand_total) || 0));
+
+  const sum = (a: DebtRow[]) => a.reduce((s, r) => s + r.balance, 0);
+  receivables.sort((a, b) => b.balance - a.balance);
+  payables.sort((a, b) => b.balance - a.balance);
+  return { receivables, payables, receivableTotal: sum(receivables), payableTotal: sum(payables) };
+}

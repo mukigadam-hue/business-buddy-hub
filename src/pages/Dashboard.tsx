@@ -12,6 +12,7 @@ import QuickAddItem from '@/components/QuickAddItem';
 import MassInventoryScan from '@/components/MassInventoryScan';
 import { Sparkles } from 'lucide-react';
 import AdSpace from '@/components/AdSpace';
+import CollapsibleSection from '@/components/CollapsibleSection';
 import BannerAd from '@/components/BannerAd';
 import NativeAd from '@/components/NativeAd';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -267,6 +268,10 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground">{purchaseDebts.length} {t('nav.purchases').toLowerCase()}</p>
               </div>
             </div>
+            <CollapsibleSection
+              title={<span className="text-xs font-semibold uppercase text-muted-foreground">📋 {t('dashboard.outstandingDebts')}</span>}
+              summary={salesDebts.length + serviceDebts.length + purchaseDebts.length}
+            >
             {salesDebts.length > 0 && (
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">🔴 {t('dashboard.customersOweYou')} ({t('nav.sales')}):</p>
@@ -297,6 +302,7 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+            </CollapsibleSection>
           </CardContent>
         </Card>
       )}

@@ -4,13 +4,19 @@ import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
+import CollapsibleSection from '@/components/CollapsibleSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
-  ClipboardCheck, Search, Eye, EyeOff, Save, Lock, ChevronDown, ChevronUp, History, Loader2,
+  ClipboardCheck, Search, Eye, EyeOff, Lock, ChevronDown, ChevronUp, History, Loader2, FileSpreadsheet, Download,
 } from 'lucide-react';
+import { saveFile } from '@/lib/nativeDownload';
+import {
+  buildAuditCsv, sheetFileName, saveSheetPermanently, listSavedSheets, downloadSavedSheet,
+  type SavedSheet,
+} from '@/components/audit/auditSheet';
 import {
   fetchPeriodTotals, fetchSoldItems, fetchAllStockItems, localDayKey,
   type DayTotals, type SoldItem,
@@ -48,6 +54,8 @@ export default function BusinessAuditPanel() {
   const [showStock, setShowStock] = useState(false);
   const [showProfit, setShowProfit] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sheets, setSheets] = useState<SavedSheet[]>([]);
+  const [sheetBusy, setSheetBusy] = useState(false);
 
   const today = localDayKey(new Date());
 
@@ -61,6 +69,7 @@ export default function BusinessAuditPanel() {
   }, [businessId]);
 
   useEffect(() => { if (open) loadSession(); }, [open, loadSession]);
+  useEffect(() => { if (open) listSavedSheets().then(setSheets).catch(() => {}); }, [open]);
 
   // Load the whole period once a session is open
   const loadPeriod = useCallback(async () => {
@@ -156,6 +165,62 @@ export default function BusinessAuditPanel() {
     return { expected, counted, cashVariance, shortfallValue, netBalance, profit, recordedDays: recordedDays.length };
   }, [days, cash, counts, period]);
 
+  /** Items for the sheet: everything sold in the period plus anything counted. */
+  const sheetItems = useMemo(() => {
+    const byKey = new Map<string, SoldItem>();
+    soldItems.forEach(i => byKey.set(i.stock_item_id || `name:${i.item_name}`, i));
+    Object.entries(counts).forEach(([k, c]) => {
+      if (!byKey.has(k)) {
+        const src = allItems.find(a => (a.stock_item_id || `name:${a.item_name}`) === k);
+        byKey.set(k, src || {
+          stock_item_id: c.stock_item_id, item_name: c.item_name, category: '', quality: '',
+          qty_sold: 0, system_qty: c.system_qty, unit_value: c.unit_value,
+          price_basis: c.price_basis as 'wholesale' | 'retail',
+        });
+      }
+    });
+    return Array.from(byKey.entries()).map(([k, i]) => ({
+      ...i, physical_qty: counts[k] ? counts[k].physical_qty : null,
+    }));
+  }, [soldItems, allItems, counts]);
+
+  function buildSheet() {
+    return buildAuditCsv({
+      businessName: currentBusiness?.name || 'Business',
+      currency: fmt,
+      startDate: session?.start_date || today,
+      endDate: today,
+      days,
+      cash,
+      items: sheetItems,
+      cashVariance: totals.cashVariance,
+      shortfallValue: totals.shortfallValue,
+      netBalance: totals.netBalance,
+    });
+  }
+
+  async function downloadSheet() {
+    if (!session) return;
+    setSheetBusy(true);
+    try {
+      const csv = buildSheet();
+      const name = sheetFileName(currentBusiness?.name || 'Business', session.start_date, today);
+      await saveSheetPermanently(session.id, name, csv);
+      await saveFile(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), name, 'text/csv');
+      toast.success(t('audit.sheetSaved', 'Data sheet downloaded and saved for future reference'));
+      listSavedSheets().then(setSheets).catch(() => {});
+    } catch {
+      toast.error(t('audit.sheetFailed', 'Could not create the data sheet'));
+    } finally { setSheetBusy(false); }
+  }
+
+  async function openSavedSheet(s: SavedSheet) {
+    const blob = await downloadSavedSheet(s.path);
+    if (!blob) { toast.error(t('audit.sheetFailed', 'Could not create the data sheet')); return; }
+    await saveFile(blob, s.name, 'text/csv');
+  }
+
+
   async function closeSession() {
     if (!businessId || !session) return;
     setSaving(true);
@@ -166,6 +231,10 @@ export default function BusinessAuditPanel() {
       net_balance: totals.netBalance, profit_amount: totals.profit,
     } as any).eq('id', session.id);
     if (error) { setSaving(false); toast.error(error.message); return; }
+    // keep a permanent copy of the accountability sheet for this closed period
+    try {
+      await saveSheetPermanently(session.id, sheetFileName(currentBusiness?.name || 'Business', session.start_date, today), buildSheet());
+    } catch { /* non-blocking */ }
     const next = localDayKey(new Date(Date.now() + 86400000));
     await supabase.from('audit_sessions').insert({ business_id: businessId, start_date: next, status: 'open' } as any);
     setSaving(false);
@@ -175,8 +244,9 @@ export default function BusinessAuditPanel() {
 
   if (!canAudit) return null;
 
-  const displayItems = itemSearch.trim()
-    ? allItems.filter(i => i.item_name.toLowerCase().includes(itemSearch.trim().toLowerCase()))
+  const q = itemSearch.trim().toLowerCase();
+  const displayItems = q
+    ? allItems.filter(i => `${i.item_name} ${i.category} ${i.quality}`.toLowerCase().includes(q))
     : soldItems;
 
   return (
@@ -287,8 +357,15 @@ export default function BusinessAuditPanel() {
                           const shortfall = rec ? Math.max(item.system_qty - rec.physical_qty, 0) : null;
                           return (
                             <div key={key} className="py-2 space-y-1">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs font-medium truncate">{item.item_name}</span>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-xs font-medium break-words">{item.item_name}</p>
+                                  {(item.category || item.quality) && (
+                                    <p className="text-[10px] text-muted-foreground break-words">
+                                      {[item.category, item.quality].filter(Boolean).join(' · ')}
+                                    </p>
+                                  )}
+                                </div>
                                 <span className="text-[11px] text-muted-foreground shrink-0">
                                   {t('audit.appQty', 'App')}: <span className="font-bold text-foreground">{item.system_qty}</span>
                                 </span>
@@ -335,6 +412,20 @@ export default function BusinessAuditPanel() {
                   </p>
                 </div>
 
+                {/* Shareable accountability data sheet (no profit / loss) */}
+                <div className="p-3 rounded-lg border space-y-2">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4 text-primary" /> {t('audit.sheetTitle', 'Accountability data sheet')}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t('audit.sheetHint', 'Download the full workflow — daily cash, stock count and the final balance — to share with workers. Profit and loss are never included. Every sheet is saved permanently.')}
+                  </p>
+                  <Button variant="outline" className="w-full min-h-[44px]" onClick={downloadSheet} disabled={sheetBusy}>
+                    {sheetBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                    {t('audit.downloadSheet', 'Download data sheet')}
+                  </Button>
+                </div>
+
                 {/* Profit / loss */}
                 <div className="p-3 rounded-lg border space-y-2">
                   <Button variant="outline" className="w-full min-h-[44px]" onClick={() => setShowProfit(p => !p)}>
@@ -365,10 +456,31 @@ export default function BusinessAuditPanel() {
               </>
             )}
 
+            {/* Saved sheets */}
+            {sheets.length > 0 && (
+              <div className="rounded-lg border p-3">
+                <CollapsibleSection
+                  title={<span className="text-sm font-semibold flex items-center gap-2"><FileSpreadsheet className="h-4 w-4" /> {t('audit.savedSheets', 'Saved data sheets')}</span>}
+                  summary={sheets.length}
+                >
+                  {sheets.map(s => (
+                    <button key={s.path} onClick={() => openSavedSheet(s)}
+                      className="w-full flex items-center justify-between gap-2 text-left text-xs p-2 rounded-lg bg-muted/40 border min-h-[44px]">
+                      <span className="truncate">{s.name}</span>
+                      <Download className="h-4 w-4 shrink-0 text-primary" />
+                    </button>
+                  ))}
+                </CollapsibleSection>
+              </div>
+            )}
+
             {/* History */}
             {history.length > 0 && (
-              <div className="rounded-lg border p-3 space-y-2">
-                <h3 className="text-sm font-semibold flex items-center gap-2"><History className="h-4 w-4" /> {t('audit.history', 'Past audits')}</h3>
+              <div className="rounded-lg border p-3">
+                <CollapsibleSection
+                  title={<h3 className="text-sm font-semibold flex items-center gap-2"><History className="h-4 w-4" /> {t('audit.history', 'Past audits')}</h3>}
+                  summary={history.length}
+                >
                 {history.map(h => (
                   <div key={h.id} className="text-xs p-2 rounded-lg bg-muted/40 border">
                     <p className="font-medium">{h.start_date} → {h.end_date}</p>
@@ -378,6 +490,7 @@ export default function BusinessAuditPanel() {
                     </p>
                   </div>
                 ))}
+                </CollapsibleSection>
               </div>
             )}
           </div>

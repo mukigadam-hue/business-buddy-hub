@@ -9,8 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
-  ClipboardCheck, Search, Eye, EyeOff, Save, Lock, ChevronDown, ChevronUp, History, Loader2,
+  ClipboardCheck, Search, Eye, EyeOff, Lock, ChevronDown, ChevronUp, History, Loader2, FileSpreadsheet, Download,
 } from 'lucide-react';
+import { saveFile } from '@/lib/nativeDownload';
+import {
+  buildAuditCsv, sheetFileName, saveSheetPermanently, listSavedSheets, downloadSavedSheet,
+  type SavedSheet,
+} from '@/components/audit/auditSheet';
 import {
   fetchPeriodTotals, fetchSoldItems, fetchAllStockItems, localDayKey,
   type DayTotals, type SoldItem,
@@ -48,6 +53,8 @@ export default function BusinessAuditPanel() {
   const [showStock, setShowStock] = useState(false);
   const [showProfit, setShowProfit] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sheets, setSheets] = useState<SavedSheet[]>([]);
+  const [sheetBusy, setSheetBusy] = useState(false);
 
   const today = localDayKey(new Date());
 
@@ -61,6 +68,7 @@ export default function BusinessAuditPanel() {
   }, [businessId]);
 
   useEffect(() => { if (open) loadSession(); }, [open, loadSession]);
+  useEffect(() => { if (open) listSavedSheets().then(setSheets).catch(() => {}); }, [open]);
 
   // Load the whole period once a session is open
   const loadPeriod = useCallback(async () => {
@@ -175,8 +183,9 @@ export default function BusinessAuditPanel() {
 
   if (!canAudit) return null;
 
-  const displayItems = itemSearch.trim()
-    ? allItems.filter(i => i.item_name.toLowerCase().includes(itemSearch.trim().toLowerCase()))
+  const q = itemSearch.trim().toLowerCase();
+  const displayItems = q
+    ? allItems.filter(i => `${i.item_name} ${i.category} ${i.quality}`.toLowerCase().includes(q))
     : soldItems;
 
   return (
@@ -287,8 +296,15 @@ export default function BusinessAuditPanel() {
                           const shortfall = rec ? Math.max(item.system_qty - rec.physical_qty, 0) : null;
                           return (
                             <div key={key} className="py-2 space-y-1">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs font-medium truncate">{item.item_name}</span>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-xs font-medium break-words">{item.item_name}</p>
+                                  {(item.category || item.quality) && (
+                                    <p className="text-[10px] text-muted-foreground break-words">
+                                      {[item.category, item.quality].filter(Boolean).join(' · ')}
+                                    </p>
+                                  )}
+                                </div>
                                 <span className="text-[11px] text-muted-foreground shrink-0">
                                   {t('audit.appQty', 'App')}: <span className="font-bold text-foreground">{item.system_qty}</span>
                                 </span>

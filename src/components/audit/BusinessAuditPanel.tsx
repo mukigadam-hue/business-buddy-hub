@@ -417,6 +417,40 @@ export default function BusinessAuditPanel() {
                   )}
                 </div>
 
+                {/* Debts inside this period */}
+                <div className="rounded-lg border p-3 space-y-3">
+                  <p className="text-sm font-semibold">💳 {t('audit.debtsTitle', 'Debts in this period')}</p>
+                  <CollapsibleSection
+                    title={<span className="text-xs font-medium">{t('audit.receivables', 'Customers owe the business (credit sales)')}</span>}
+                    summary={<span className="font-bold tabular-nums text-destructive">{fmt(debts.receivableTotal)}</span>}
+                  >
+                    {debts.receivables.length === 0
+                      ? <p className="text-[11px] text-muted-foreground">{t('audit.noDebts', 'Nothing outstanding.')}</p>
+                      : debts.receivables.map(d => (
+                        <div key={`${d.kind}-${d.id}`} className="flex items-center justify-between gap-2 text-[11px] border-b pb-1">
+                          <span className="min-w-0 break-words">{d.party}<span className="text-muted-foreground"> · {d.kind} · {d.date}</span></span>
+                          <span className="tabular-nums font-semibold text-destructive shrink-0">{fmt(d.balance)}</span>
+                        </div>
+                      ))}
+                  </CollapsibleSection>
+                  <CollapsibleSection
+                    title={<span className="text-xs font-medium">{t('audit.payables', 'Business owes suppliers (goods on credit)')}</span>}
+                    summary={<span className="font-bold tabular-nums text-warning">{fmt(debts.payableTotal)}</span>}
+                  >
+                    {debts.payables.length === 0
+                      ? <p className="text-[11px] text-muted-foreground">{t('audit.noDebts', 'Nothing outstanding.')}</p>
+                      : debts.payables.map(d => (
+                        <div key={`${d.kind}-${d.id}`} className="flex items-center justify-between gap-2 text-[11px] border-b pb-1">
+                          <span className="min-w-0 break-words">{d.party}<span className="text-muted-foreground"> · {d.date}</span></span>
+                          <span className="tabular-nums font-semibold shrink-0">{fmt(d.balance)}</span>
+                        </div>
+                      ))}
+                  </CollapsibleSection>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t('audit.debtsHint', 'Debts are not cash yet, so they do not change the balance above. They are listed here and on the data sheet so payments can be made and recorded any time.')}
+                  </p>
+                </div>
+
                 {/* Reconciliation */}
                 <div className="p-3 rounded-lg border-2 border-primary/30 bg-primary/5 space-y-2">
                   <h3 className="text-sm font-bold">🧮 {t('audit.reconciliation', 'Final reconciliation')}</h3>
@@ -424,6 +458,8 @@ export default function BusinessAuditPanel() {
                     <div className="flex justify-between"><span>{t('audit.cashVariance', 'Cash excess / shortage')}</span><span className="tabular-nums font-semibold">{fmt(totals.cashVariance)}</span></div>
                     <div className="flex justify-between"><span>− {t('audit.shortfallValue', 'Value of missing stock')}</span><span className="tabular-nums font-semibold">{fmt(totals.shortfallValue)}</span></div>
                     <div className="flex justify-between"><span>+ {t('audit.surplusValue', 'Value of extra (unrecorded) stock')}</span><span className="tabular-nums font-semibold">{fmt(totals.surplusValue)}</span></div>
+                    <div className="flex justify-between text-muted-foreground"><span>{t('audit.memoReceivable', 'Memo: owed to us by customers')}</span><span className="tabular-nums">{fmt(debts.receivableTotal)}</span></div>
+                    <div className="flex justify-between text-muted-foreground"><span>{t('audit.memoPayable', 'Memo: owed by us to suppliers')}</span><span className="tabular-nums">{fmt(debts.payableTotal)}</span></div>
                     <div className="flex justify-between border-t pt-1"><span className="font-bold">{t('audit.netBalance', 'Balance')}</span>
                       <span className={`tabular-nums font-bold ${totals.netBalance === 0 ? 'text-success' : totals.netBalance < 0 ? 'text-destructive' : 'text-info'}`}>{fmt(totals.netBalance)}</span>
                     </div>

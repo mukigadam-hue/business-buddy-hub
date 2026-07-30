@@ -62,6 +62,203 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_daily_cash: {
+        Row: {
+          audit_date: string
+          business_id: string
+          counted_cash: number
+          created_at: string
+          expected_cash: number
+          id: string
+          note: string
+          recorded_by: string | null
+          recorded_by_name: string
+          session_id: string | null
+          updated_at: string
+          variance: number
+        }
+        Insert: {
+          audit_date: string
+          business_id: string
+          counted_cash?: number
+          created_at?: string
+          expected_cash?: number
+          id?: string
+          note?: string
+          recorded_by?: string | null
+          recorded_by_name?: string
+          session_id?: string | null
+          updated_at?: string
+          variance?: number
+        }
+        Update: {
+          audit_date?: string
+          business_id?: string
+          counted_cash?: number
+          created_at?: string
+          expected_cash?: number
+          id?: string
+          note?: string
+          recorded_by?: string | null
+          recorded_by_name?: string
+          session_id?: string | null
+          updated_at?: string
+          variance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_daily_cash_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_daily_cash_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_sessions: {
+        Row: {
+          business_id: string
+          cash_variance_total: number
+          closed_at: string | null
+          closing_note: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string
+          end_date: string | null
+          id: string
+          net_balance: number
+          opening_note: string
+          profit_amount: number
+          start_date: string
+          status: string
+          stock_shortfall_value: number
+          total_counted_cash: number
+          total_expected_cash: number
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          cash_variance_total?: number
+          closed_at?: string | null
+          closing_note?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string
+          end_date?: string | null
+          id?: string
+          net_balance?: number
+          opening_note?: string
+          profit_amount?: number
+          start_date: string
+          status?: string
+          stock_shortfall_value?: number
+          total_counted_cash?: number
+          total_expected_cash?: number
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          cash_variance_total?: number
+          closed_at?: string | null
+          closing_note?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string
+          end_date?: string | null
+          id?: string
+          net_balance?: number
+          opening_note?: string
+          profit_amount?: number
+          start_date?: string
+          status?: string
+          stock_shortfall_value?: number
+          total_counted_cash?: number
+          total_expected_cash?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_sessions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_stock_counts: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          item_name: string
+          note: string
+          physical_qty: number
+          price_basis: string
+          session_id: string
+          shortfall_qty: number
+          shortfall_value: number
+          stock_item_id: string | null
+          system_qty: number
+          unit_value: number
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          item_name?: string
+          note?: string
+          physical_qty?: number
+          price_basis?: string
+          session_id: string
+          shortfall_qty?: number
+          shortfall_value?: number
+          stock_item_id?: string | null
+          system_qty?: number
+          unit_value?: number
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          item_name?: string
+          note?: string
+          physical_qty?: number
+          price_basis?: string
+          session_id?: string
+          shortfall_qty?: number
+          shortfall_value?: number
+          stock_item_id?: string | null
+          system_qty?: number
+          unit_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_stock_counts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_stock_counts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_blocks: {
         Row: {
           blocked_business_id: string

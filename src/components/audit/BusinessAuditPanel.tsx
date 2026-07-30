@@ -18,8 +18,8 @@ import {
   type SavedSheet,
 } from '@/components/audit/auditSheet';
 import {
-  fetchPeriodTotals, fetchSoldItems, fetchAllStockItems, localDayKey,
-  type DayTotals, type SoldItem,
+  fetchPeriodTotals, fetchSoldItems, fetchAllStockItems, fetchPeriodDebts, localDayKey,
+  type DayTotals, type SoldItem, type DebtTotals,
 } from '@/lib/auditData';
 
 type Session = {
@@ -56,6 +56,7 @@ export default function BusinessAuditPanel() {
   const [saving, setSaving] = useState(false);
   const [sheets, setSheets] = useState<SavedSheet[]>([]);
   const [sheetBusy, setSheetBusy] = useState(false);
+  const [debts, setDebts] = useState<DebtTotals>({ receivables: [], payables: [], receivableTotal: 0, payableTotal: 0 });
 
   const today = localDayKey(new Date());
 
@@ -76,10 +77,11 @@ export default function BusinessAuditPanel() {
     if (!businessId || !session) return;
     setLoading(true);
     try {
-      const [totals, sold, all, cashRows, countRows] = await Promise.all([
+      const [totals, sold, all, debtData, cashRows, countRows] = await Promise.all([
         fetchPeriodTotals(businessId, session.start_date, today),
         fetchSoldItems(businessId, session.start_date, today),
         fetchAllStockItems(businessId),
+        fetchPeriodDebts(businessId, session.start_date, today),
         supabase.from('audit_daily_cash').select('*').eq('business_id', businessId).gte('audit_date', session.start_date),
         supabase.from('audit_stock_counts').select('*').eq('session_id', session.id),
       ]);
@@ -87,6 +89,7 @@ export default function BusinessAuditPanel() {
       setPeriod({ revenue: totals.revenue, cogsPurchases: totals.cogsPurchases, expensesTotal: totals.expensesTotal, wasteTotal: totals.wasteTotal });
       setSoldItems(sold);
       setAllItems(all);
+      setDebts(debtData);
       const cm: Record<string, CashRow> = {};
       (cashRows.data || []).forEach((r: any) => { cm[r.audit_date] = { id: r.id, audit_date: r.audit_date, counted_cash: Number(r.counted_cash), note: r.note || '' }; });
       setCash(cm);
@@ -137,11 +140,13 @@ export default function BusinessAuditPanel() {
     const physical = parseFloat(value);
     if (isNaN(physical)) return;
     const shortfallQty = Math.max(item.system_qty - physical, 0);
+    const surplusQty = Math.max(physical - item.system_qty, 0);
     const { error } = await supabase.from('audit_stock_counts').upsert({
       business_id: businessId, session_id: session.id, stock_item_id: item.stock_item_id,
       item_name: item.item_name, system_qty: item.system_qty, physical_qty: physical,
       shortfall_qty: shortfallQty, unit_value: item.unit_value, price_basis: item.price_basis,
       shortfall_value: shortfallQty * item.unit_value,
+      note: surplusQty > 0 ? `Extra ${surplusQty} unrecorded units found` : '',
     } as any, { onConflict: 'session_id,stock_item_id' });
     if (error) { toast.error(error.message); return; }
     setCounts(c => ({
@@ -160,9 +165,10 @@ export default function BusinessAuditPanel() {
     const recordedDays = days.filter(d => cash[d.date]);
     const cashVariance = recordedDays.reduce((s, d) => s + (cash[d.date].counted_cash - d.expected), 0);
     const shortfallValue = Object.values(counts).reduce((s, c) => s + Math.max(c.system_qty - c.physical_qty, 0) * c.unit_value, 0);
-    const netBalance = cashVariance - shortfallValue;
-    const profit = period.revenue - period.cogsPurchases - period.expensesTotal - period.wasteTotal - shortfallValue;
-    return { expected, counted, cashVariance, shortfallValue, netBalance, profit, recordedDays: recordedDays.length };
+    const surplusValue = Object.values(counts).reduce((s, c) => s + Math.max(c.physical_qty - c.system_qty, 0) * c.unit_value, 0);
+    const netBalance = cashVariance - shortfallValue + surplusValue;
+    const profit = period.revenue - period.cogsPurchases - period.expensesTotal - period.wasteTotal - shortfallValue + surplusValue;
+    return { expected, counted, cashVariance, shortfallValue, surplusValue, netBalance, profit, recordedDays: recordedDays.length };
   }, [days, cash, counts, period]);
 
   /** Items for the sheet: everything sold in the period plus anything counted. */
@@ -195,6 +201,11 @@ export default function BusinessAuditPanel() {
       items: sheetItems,
       cashVariance: totals.cashVariance,
       shortfallValue: totals.shortfallValue,
+      surplusValue: totals.surplusValue,
+      receivables: debts.receivables,
+      payables: debts.payables,
+      receivableTotal: debts.receivableTotal,
+      payableTotal: debts.payableTotal,
       netBalance: totals.netBalance,
     });
   }
@@ -354,7 +365,9 @@ export default function BusinessAuditPanel() {
                         {displayItems.map(item => {
                           const key = item.stock_item_id || `name:${item.item_name}`;
                           const rec = counts[key];
-                          const shortfall = rec ? Math.max(item.system_qty - rec.physical_qty, 0) : null;
+                          const diff = rec ? rec.physical_qty - item.system_qty : null;
+                          const shortfall = diff == null ? null : Math.max(-diff, 0);
+                          const surplus = diff == null ? null : Math.max(diff, 0);
                           return (
                             <div key={key} className="py-2 space-y-1">
                               <div className="flex items-start justify-between gap-2">
@@ -377,8 +390,14 @@ export default function BusinessAuditPanel() {
                                   defaultValue={rec ? String(rec.physical_qty) : ''}
                                   onBlur={e => { if (e.target.value !== '' && (!rec || Number(e.target.value) !== rec.physical_qty)) saveCount(item, e.target.value); }}
                                 />
-                                <span className={`text-[11px] tabular-nums ${shortfall ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
-                                  {shortfall == null ? '—' : shortfall > 0 ? `${t('audit.missing', 'Missing')} ${shortfall} = ${fmt(shortfall * item.unit_value)}` : t('audit.matches', 'Matches')}
+                                <span className={`text-[11px] tabular-nums ${shortfall ? 'text-destructive font-semibold' : surplus ? 'text-info font-semibold' : 'text-muted-foreground'}`}>
+                                  {diff == null
+                                    ? '—'
+                                    : shortfall
+                                      ? `${t('audit.missing', 'Missing')} ${shortfall} = ${fmt(shortfall * item.unit_value)}`
+                                      : surplus
+                                        ? `${t('audit.extra', 'Extra')} ${surplus} = ${fmt(surplus * item.unit_value)}`
+                                        : t('audit.matches', 'Matches')}
                                 </span>
                               </div>
                             </div>
@@ -386,8 +405,13 @@ export default function BusinessAuditPanel() {
                         })}
                         {displayItems.length === 0 && <p className="py-3 text-xs text-muted-foreground">{t('audit.noItems', 'Nothing to count yet.')}</p>}
                       </div>
-                      <div className="p-2 rounded-lg bg-destructive/5 border border-destructive/20 text-xs">
-                        {t('audit.shortfallValue', 'Value of missing stock')}: <span className="font-bold tabular-nums text-destructive">{fmt(totals.shortfallValue)}</span>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="p-2 rounded-lg bg-destructive/5 border border-destructive/20 text-xs">
+                          {t('audit.shortfallValue', 'Value of missing stock')}: <span className="font-bold tabular-nums text-destructive">{fmt(totals.shortfallValue)}</span>
+                        </div>
+                        <div className="p-2 rounded-lg bg-info/5 border border-info/20 text-xs">
+                          {t('audit.surplusValue', 'Value of extra (unrecorded) stock')}: <span className="font-bold tabular-nums text-info">{fmt(totals.surplusValue)}</span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -399,6 +423,7 @@ export default function BusinessAuditPanel() {
                   <div className="text-xs space-y-1">
                     <div className="flex justify-between"><span>{t('audit.cashVariance', 'Cash excess / shortage')}</span><span className="tabular-nums font-semibold">{fmt(totals.cashVariance)}</span></div>
                     <div className="flex justify-between"><span>− {t('audit.shortfallValue', 'Value of missing stock')}</span><span className="tabular-nums font-semibold">{fmt(totals.shortfallValue)}</span></div>
+                    <div className="flex justify-between"><span>+ {t('audit.surplusValue', 'Value of extra (unrecorded) stock')}</span><span className="tabular-nums font-semibold">{fmt(totals.surplusValue)}</span></div>
                     <div className="flex justify-between border-t pt-1"><span className="font-bold">{t('audit.netBalance', 'Balance')}</span>
                       <span className={`tabular-nums font-bold ${totals.netBalance === 0 ? 'text-success' : totals.netBalance < 0 ? 'text-destructive' : 'text-info'}`}>{fmt(totals.netBalance)}</span>
                     </div>
@@ -439,6 +464,7 @@ export default function BusinessAuditPanel() {
                       <div className="flex justify-between"><span>− {t('audit.expenses', 'Expenses')}</span><span className="tabular-nums">{fmt(period.expensesTotal)}</span></div>
                       <div className="flex justify-between"><span>− {t('audit.waste', 'Waste')}</span><span className="tabular-nums">{fmt(period.wasteTotal)}</span></div>
                       <div className="flex justify-between"><span>− {t('audit.shortfallValue', 'Value of missing stock')}</span><span className="tabular-nums">{fmt(totals.shortfallValue)}</span></div>
+                      <div className="flex justify-between"><span>+ {t('audit.surplusValue', 'Value of extra (unrecorded) stock')}</span><span className="tabular-nums">{fmt(totals.surplusValue)}</span></div>
                       <div className="flex justify-between border-t pt-1 font-bold">
                         <span>{totals.profit >= 0 ? t('audit.profit', 'Profit') : t('audit.loss', 'Loss')}</span>
                         <span className={`tabular-nums ${totals.profit >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.profit)}</span>

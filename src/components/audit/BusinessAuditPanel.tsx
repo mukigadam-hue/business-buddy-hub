@@ -191,7 +191,7 @@ export default function BusinessAuditPanel() {
   }, [soldItems, allItems, counts]);
 
   function buildSheet() {
-    return buildAuditCsv({
+    return buildAuditPdf({
       businessName: currentBusiness?.name || 'Business',
       currency: fmt,
       startDate: session?.start_date || today,
@@ -214,10 +214,10 @@ export default function BusinessAuditPanel() {
     if (!session) return;
     setSheetBusy(true);
     try {
-      const csv = buildSheet();
+      const blob = buildSheet();
       const name = sheetFileName(currentBusiness?.name || 'Business', session.start_date, today);
-      await saveSheetPermanently(session.id, name, csv);
-      await saveFile(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), name, 'text/csv');
+      await saveSheetPermanently(session.id, name, blob);
+      await saveFile(blob, name, 'application/pdf');
       toast.success(t('audit.sheetSaved', 'Data sheet downloaded and saved for future reference'));
       listSavedSheets().then(setSheets).catch(() => {});
     } catch {
@@ -228,8 +228,9 @@ export default function BusinessAuditPanel() {
   async function openSavedSheet(s: SavedSheet) {
     const blob = await downloadSavedSheet(s.path);
     if (!blob) { toast.error(t('audit.sheetFailed', 'Could not create the data sheet')); return; }
-    await saveFile(blob, s.name, 'text/csv');
+    await saveFile(blob, s.name, sheetMime(s.name));
   }
+
 
 
   async function closeSession() {

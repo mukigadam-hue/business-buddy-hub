@@ -239,11 +239,11 @@ export function buildAuditPdf(i: SheetInput): Blob {
   ];
   table(recCols, [
     ['1', 'Cash excess / shortage (counted cash minus expected cash)', 'Starting figure', num(i.cashVariance)],
-    ['2', 'Value of missing stock (goods gone with no sale recorded)', 'Subtracted (−)', num(i.shortfallValue)],
+    ['2', 'Value of missing stock (goods gone with no sale recorded)', 'Subtracted (minus)', num(i.shortfallValue)],
     ['3', 'Value of extra stock (goods found that were never recorded)', 'Added (+)', num(i.surplusValue)],
     ['4', 'MEMO ONLY — money customers still owe the business', 'Not counted in balance', num(i.receivableTotal)],
     ['5', 'MEMO ONLY — money the business still owes suppliers', 'Not counted in balance', num(i.payableTotal)],
-  ], ['', `FINAL BALANCE  =  ${num(i.cashVariance)}  −  ${num(i.shortfallValue)}  +  ${num(i.surplusValue)}`, '', num(i.netBalance)]);
+  ], ['', `FINAL BALANCE  =  ${num(i.cashVariance)}  minus  ${num(i.shortfallValue)}  plus  ${num(i.surplusValue)}`, '', num(i.netBalance)]);
 
   // Plain-language verdict
   const verdict =
@@ -271,8 +271,12 @@ export function buildAuditPdf(i: SheetInput): Blob {
             fill: [232, 242, 255] as [number, number, number],
           };
 
-  const verdictLines = doc.splitTextToSize(verdict.body, PAGE_W - MARGIN * 2 - 20);
-  const msgLines = doc.splitTextToSize(verdict.msg, PAGE_W - MARGIN * 2 - 20);
+  const boxTextW = PAGE_W - MARGIN * 2 - 24;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const verdictLines = doc.splitTextToSize(verdict.body, boxTextW);
+  doc.setFont('helvetica', 'bold');
+  const msgLines = doc.splitTextToSize(verdict.msg, boxTextW);
   const boxH = 26 + verdictLines.length * 11 + 8 + msgLines.length * 11 + 14;
   need(boxH + 10);
   doc.setFillColor(...verdict.fill);

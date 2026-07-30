@@ -26,6 +26,7 @@ import { toSentenceCase } from '@/lib/utils';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';
 import RecycleBinPanel from '@/components/RecycleBinPanel';
 import { ChangePhoneCard } from '@/components/auth/ChangePhoneCard';
+import BusinessAuditPanel from '@/components/audit/BusinessAuditPanel';
 
 function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' | 'property' }) {
   const { createBusiness, currentBusiness } = useBusiness();
@@ -892,6 +893,8 @@ export default function SettingsPage() {
           <p className="text-xs text-muted-foreground">{t('settings.preview')}: <span className="font-semibold text-success">{currencyInput || 'KSh'} 1,000.00</span></p>
         </CardContent>
       </Card>
+
+      {!isPersonal && <BusinessAuditPanel />}
 
       {!isPersonal && <ReceiptCustomization />}
 

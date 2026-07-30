@@ -1419,6 +1419,14 @@
     "saveDays": "Save {{count}} day(s)",
     "saving": "Saving…",
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
-    "enterAtLeastOne": "Enter the cash for at least one day"
+    "enterAtLeastOne": "Enter the cash for at least one day",
+    "freshStart": "Start with yesterday and continue from there",
+    "freshStartHint": "Too many old days to remember? Start clean from yesterday — older days will be left out so your new accountability (and any new workers) start on a clear record.",
+    "freshStartDone": "Fresh start set. Only yesterday onwards will be tracked from now on.",
+    "nudgeWeekTitle": "A full week of records saved",
+    "nudgeMonthTitle": "A full month of records saved",
+    "nudgeWeekBody": "It has been a week of saving your daily business records. For total accountability, please open Settings → Business Audit and make an accountability for your business, so your records stay organized and your profits keep growing.",
+    "nudgeMonthBody": "It has been a month of saving your daily business records. For total accountability, please open Settings → Business Audit and make an accountability for your business, so your records stay organized and your profits keep growing.",
+    "goToAudit": "Go to audit"
   }
 }

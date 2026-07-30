@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useBusiness } from '@/context/BusinessContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -13,18 +14,37 @@ import { localDayKey, enumerateDays, fetchPeriodTotals } from '@/lib/auditData';
 
 const SNOOZE_MS = 6 * 60 * 60 * 1000; // re-appear every 6 hours
 const MAX_LOOKBACK_DAYS = 30;
+const MANY_DAYS = 5; // from this many missing days we offer the fresh-start option
 
 function snoozeKey(businessId: string) {
   return `bm:audit-reminder-snooze:${businessId}`;
+}
+function baselineKey(businessId: string) {
+  return `bm:audit-baseline:${businessId}`;
+}
+function nudgeKey(businessId: string) {
+  return `bm:audit-period-nudge:${businessId}`;
+}
+
+/** ISO-week token like 2026-W31, used to show the weekly nudge only once per week. */
+function weekToken(d: Date) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((t.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${t.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
 /**
  * Reminds owners/admins to record the cash found in the drawer for every past
  * day that has not been recorded yet. They can always skip — the reminder just
  * comes back after six hours, and lists every day still missing.
+ * It also nudges them to run a full audit at the end of each week and month.
  */
 export default function AuditReminder() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { currentBusiness, userRole } = useBusiness();
   const businessId = currentBusiness?.id;
 
@@ -33,11 +53,41 @@ export default function AuditReminder() {
   const [showForm, setShowForm] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [nudge, setNudge] = useState<'week' | 'month' | null>(null);
+
+
+  const eligible = !!businessId
+    && (currentBusiness as any)?.business_type !== 'personal'
+    && (userRole === 'owner' || userRole === 'admin');
+
+  // ---- weekly / monthly accountability nudge (independent of the 6h snooze) ----
+  useEffect(() => {
+    if (!eligible || !businessId) return;
+    const now = new Date();
+    const isMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() === now.getDate();
+    const isWeekEnd = now.getDay() === 0; // Sunday closes the week
+    if (!isMonthEnd && !isWeekEnd) return;
+    const kind: 'week' | 'month' = isMonthEnd ? 'month' : 'week';
+    const token = `${kind}:${kind === 'month' ? localDayKey(now).slice(0, 7) : weekToken(now)}`;
+    try {
+      if (localStorage.getItem(nudgeKey(businessId)) === token) return;
+    } catch { /* ignore */ }
+    setNudge(kind);
+  }, [eligible, businessId]);
+
+  function dismissNudge() {
+    if (businessId) {
+      const now = new Date();
+      const token = nudge === 'month'
+        ? `month:${localDayKey(now).slice(0, 7)}`
+        : `week:${weekToken(now)}`;
+      try { localStorage.setItem(nudgeKey(businessId), token); } catch { /* ignore */ }
+    }
+    setNudge(null);
+  }
 
   useEffect(() => {
-    const type = (currentBusiness as any)?.business_type;
-    if (!businessId || type === 'personal') return;
-    if (userRole !== 'owner' && userRole !== 'admin') return;
+    if (!eligible || !businessId) return;
 
     try {
       const until = Number(localStorage.getItem(snoozeKey(businessId)) || 0);
@@ -51,7 +101,12 @@ export default function AuditReminder() {
         ? localDayKey(new Date((currentBusiness as any).created_at))
         : today;
       const earliest = localDayKey(new Date(Date.now() - MAX_LOOKBACK_DAYS * 86400000));
-      const start = created > earliest ? created : earliest;
+      let start = created > earliest ? created : earliest;
+      // a fresh start chosen by the owner ignores everything before that date
+      try {
+        const baseline = localStorage.getItem(baselineKey(businessId));
+        if (baseline && baseline > start) start = baseline;
+      } catch { /* ignore */ }
       const end = localDayKey(new Date(Date.now() - 86400000)); // yesterday
       if (end < start) return;
 
@@ -66,7 +121,7 @@ export default function AuditReminder() {
       }
     })();
     return () => { cancelled = true; };
-  }, [businessId, currentBusiness, userRole]);
+  }, [eligible, businessId, currentBusiness]);
 
   const filledCount = useMemo(
     () => Object.values(values).filter(v => v.trim() !== '' && !isNaN(Number(v))).length,
@@ -80,6 +135,19 @@ export default function AuditReminder() {
     setOpen(false);
     setShowForm(false);
   }
+
+  /** Owner cannot remember the old days — start clean from yesterday. */
+  function startFresh() {
+    if (!businessId) return;
+    const yesterday = localDayKey(new Date(Date.now() - 86400000));
+    try { localStorage.setItem(baselineKey(businessId), yesterday); } catch { /* ignore */ }
+    setMissing([yesterday]);
+    setValues({ [yesterday]: '' });
+    setShowForm(true);
+    toast.success(t('audit.freshStartDone', 'Fresh start set. Only yesterday onwards will be tracked from now on.'));
+  }
+
+
 
   async function saveAll() {
     if (!businessId) return;
@@ -128,10 +196,40 @@ export default function AuditReminder() {
     }
   }
 
-  if (!open || !missing.length) return null;
+  const nudgeDialog = nudge ? (
+    <AlertDialog open onOpenChange={o => { if (!o) dismissNudge(); }}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            📊 {nudge === 'month'
+              ? t('audit.nudgeMonthTitle', 'A full month of records saved')
+              : t('audit.nudgeWeekTitle', 'A full week of records saved')}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {nudge === 'month'
+              ? t('audit.nudgeMonthBody', 'It has been a month of saving your daily business records. For total accountability, please open Settings → Business Audit and make an accountability for your business, so your records stay organized and your profits keep growing.')
+              : t('audit.nudgeWeekBody', 'It has been a week of saving your daily business records. For total accountability, please open Settings → Business Audit and make an accountability for your business, so your records stay organized and your profits keep growing.')}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="gap-2">
+          <AlertDialogCancel onClick={dismissNudge} className="mt-0">
+            {t('audit.later', 'Later')}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={() => { dismissNudge(); navigate('/settings'); }}>
+            {t('audit.goToAudit', 'Go to audit')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  ) : null;
+
+  if (!open || !missing.length) return nudgeDialog;
 
   return (
+    <>
+    {nudgeDialog}
     <AlertDialog open onOpenChange={o => { if (!o) snooze(); }}>
+
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle>
@@ -171,6 +269,17 @@ export default function AuditReminder() {
           </div>
         )}
 
+        {missing.length >= MANY_DAYS && (
+          <div className="rounded-md border border-dashed p-3 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {t('audit.freshStartHint', "Too many old days to remember? Start clean from yesterday — older days will be left out so your new accountability (and any new workers) start on a clear record.")}
+            </p>
+            <Button variant="outline" className="w-full h-11" onClick={startFresh}>
+              {t('audit.freshStart', 'Start with yesterday and continue from there')}
+            </Button>
+          </div>
+        )}
+
         <AlertDialogFooter className="gap-2">
           <AlertDialogCancel onClick={snooze} className="mt-0">
             {t('audit.skipForNow', 'Skip for now')}
@@ -187,5 +296,7 @@ export default function AuditReminder() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    </>
   );
 }
+

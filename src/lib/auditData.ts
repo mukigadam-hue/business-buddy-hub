@@ -22,6 +22,8 @@ export type PeriodTotals = {
 export type SoldItem = {
   stock_item_id: string | null;
   item_name: string;
+  category: string;
+  quality: string;
   qty_sold: number;
   system_qty: number;
   unit_value: number;
@@ -110,14 +112,14 @@ export async function fetchSoldItems(businessId: string, start: string, end: str
     .gte('created_at', from).lt('created_at', to);
   const saleIds = (sales || []).map((s: any) => s.id);
 
-  const agg = new Map<string, { name: string; qty: number }>();
+  const agg = new Map<string, { name: string; qty: number; category: string; quality: string }>();
   if (saleIds.length) {
     for (let i = 0; i < saleIds.length; i += 200) {
       const { data: items } = await supabase
-        .from('sale_items').select('stock_item_id, item_name, quantity').in('sale_id', saleIds.slice(i, i + 200));
+        .from('sale_items').select('stock_item_id, item_name, category, quality, quantity').in('sale_id', saleIds.slice(i, i + 200));
       (items || []).forEach((it: any) => {
         const key = it.stock_item_id || `name:${it.item_name}`;
-        const cur = agg.get(key) || { name: it.item_name, qty: 0 };
+        const cur = agg.get(key) || { name: it.item_name, qty: 0, category: it.category || '', quality: it.quality || '' };
         cur.qty += Number(it.quantity) || 0;
         agg.set(key, cur);
       });
@@ -125,7 +127,7 @@ export async function fetchSoldItems(businessId: string, start: string, end: str
   }
 
   const { data: stock } = await supabase
-    .from('stock_items').select('id, name, quantity, wholesale_price, retail_price')
+    .from('stock_items').select('id, name, category, quality, quantity, wholesale_price, retail_price')
     .eq('business_id', businessId).is('deleted_at', null);
   const stockById = new Map((stock || []).map((s: any) => [s.id, s]));
 
@@ -137,6 +139,8 @@ export async function fetchSoldItems(businessId: string, start: string, end: str
     out.push({
       stock_item_id: s ? s.id : null,
       item_name: s?.name || v.name,
+      category: s?.category || v.category || '',
+      quality: s?.quality || v.quality || '',
       qty_sold: v.qty,
       system_qty: Number(s?.quantity) || 0,
       unit_value: wholesale > 0 ? wholesale : retail,
@@ -149,7 +153,7 @@ export async function fetchSoldItems(businessId: string, start: string, end: str
 /** All current stock items — used by the search box inside stock counting. */
 export async function fetchAllStockItems(businessId: string): Promise<SoldItem[]> {
   const { data } = await supabase
-    .from('stock_items').select('id, name, quantity, wholesale_price, retail_price')
+    .from('stock_items').select('id, name, category, quality, quantity, wholesale_price, retail_price')
     .eq('business_id', businessId).is('deleted_at', null).order('name');
   return (data || []).map((s: any) => {
     const wholesale = Number(s.wholesale_price) || 0;
@@ -157,6 +161,8 @@ export async function fetchAllStockItems(businessId: string): Promise<SoldItem[]
     return {
       stock_item_id: s.id,
       item_name: s.name,
+      category: s.category || '',
+      quality: s.quality || '',
       qty_sold: 0,
       system_qty: Number(s.quantity) || 0,
       unit_value: wholesale > 0 ? wholesale : retail,

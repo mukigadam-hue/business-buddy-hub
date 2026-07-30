@@ -164,6 +164,62 @@ export default function BusinessAuditPanel() {
     return { expected, counted, cashVariance, shortfallValue, netBalance, profit, recordedDays: recordedDays.length };
   }, [days, cash, counts, period]);
 
+  /** Items for the sheet: everything sold in the period plus anything counted. */
+  const sheetItems = useMemo(() => {
+    const byKey = new Map<string, SoldItem>();
+    soldItems.forEach(i => byKey.set(i.stock_item_id || `name:${i.item_name}`, i));
+    Object.entries(counts).forEach(([k, c]) => {
+      if (!byKey.has(k)) {
+        const src = allItems.find(a => (a.stock_item_id || `name:${a.item_name}`) === k);
+        byKey.set(k, src || {
+          stock_item_id: c.stock_item_id, item_name: c.item_name, category: '', quality: '',
+          qty_sold: 0, system_qty: c.system_qty, unit_value: c.unit_value,
+          price_basis: c.price_basis as 'wholesale' | 'retail',
+        });
+      }
+    });
+    return Array.from(byKey.entries()).map(([k, i]) => ({
+      ...i, physical_qty: counts[k] ? counts[k].physical_qty : null,
+    }));
+  }, [soldItems, allItems, counts]);
+
+  function buildSheet() {
+    return buildAuditCsv({
+      businessName: currentBusiness?.name || 'Business',
+      currency: fmt,
+      startDate: session?.start_date || today,
+      endDate: today,
+      days,
+      cash,
+      items: sheetItems,
+      cashVariance: totals.cashVariance,
+      shortfallValue: totals.shortfallValue,
+      netBalance: totals.netBalance,
+    });
+  }
+
+  async function downloadSheet() {
+    if (!session) return;
+    setSheetBusy(true);
+    try {
+      const csv = buildSheet();
+      const name = sheetFileName(currentBusiness?.name || 'Business', session.start_date, today);
+      await saveSheetPermanently(session.id, name, csv);
+      await saveFile(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), name, 'text/csv');
+      toast.success(t('audit.sheetSaved', 'Data sheet downloaded and saved for future reference'));
+      listSavedSheets().then(setSheets).catch(() => {});
+    } catch {
+      toast.error(t('audit.sheetFailed', 'Could not create the data sheet'));
+    } finally { setSheetBusy(false); }
+  }
+
+  async function openSavedSheet(s: SavedSheet) {
+    const blob = await downloadSavedSheet(s.path);
+    if (!blob) { toast.error(t('audit.sheetFailed', 'Could not create the data sheet')); return; }
+    await saveFile(blob, s.name, 'text/csv');
+  }
+
+
   async function closeSession() {
     if (!businessId || !session) return;
     setSaving(true);

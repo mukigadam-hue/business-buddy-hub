@@ -4,6 +4,7 @@ import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
+import CollapsibleSection from '@/components/CollapsibleSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -230,6 +231,10 @@ export default function BusinessAuditPanel() {
       net_balance: totals.netBalance, profit_amount: totals.profit,
     } as any).eq('id', session.id);
     if (error) { setSaving(false); toast.error(error.message); return; }
+    // keep a permanent copy of the accountability sheet for this closed period
+    try {
+      await saveSheetPermanently(session.id, sheetFileName(currentBusiness?.name || 'Business', session.start_date, today), buildSheet());
+    } catch { /* non-blocking */ }
     const next = localDayKey(new Date(Date.now() + 86400000));
     await supabase.from('audit_sessions').insert({ business_id: businessId, start_date: next, status: 'open' } as any);
     setSaving(false);
@@ -407,6 +412,20 @@ export default function BusinessAuditPanel() {
                   </p>
                 </div>
 
+                {/* Shareable accountability data sheet (no profit / loss) */}
+                <div className="p-3 rounded-lg border space-y-2">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4 text-primary" /> {t('audit.sheetTitle', 'Accountability data sheet')}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t('audit.sheetHint', 'Download the full workflow — daily cash, stock count and the final balance — to share with workers. Profit and loss are never included. Every sheet is saved permanently.')}
+                  </p>
+                  <Button variant="outline" className="w-full min-h-[44px]" onClick={downloadSheet} disabled={sheetBusy}>
+                    {sheetBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                    {t('audit.downloadSheet', 'Download data sheet')}
+                  </Button>
+                </div>
+
                 {/* Profit / loss */}
                 <div className="p-3 rounded-lg border space-y-2">
                   <Button variant="outline" className="w-full min-h-[44px]" onClick={() => setShowProfit(p => !p)}>
@@ -437,10 +456,31 @@ export default function BusinessAuditPanel() {
               </>
             )}
 
+            {/* Saved sheets */}
+            {sheets.length > 0 && (
+              <div className="rounded-lg border p-3">
+                <CollapsibleSection
+                  title={<span className="text-sm font-semibold flex items-center gap-2"><FileSpreadsheet className="h-4 w-4" /> {t('audit.savedSheets', 'Saved data sheets')}</span>}
+                  summary={sheets.length}
+                >
+                  {sheets.map(s => (
+                    <button key={s.path} onClick={() => openSavedSheet(s)}
+                      className="w-full flex items-center justify-between gap-2 text-left text-xs p-2 rounded-lg bg-muted/40 border min-h-[44px]">
+                      <span className="truncate">{s.name}</span>
+                      <Download className="h-4 w-4 shrink-0 text-primary" />
+                    </button>
+                  ))}
+                </CollapsibleSection>
+              </div>
+            )}
+
             {/* History */}
             {history.length > 0 && (
-              <div className="rounded-lg border p-3 space-y-2">
-                <h3 className="text-sm font-semibold flex items-center gap-2"><History className="h-4 w-4" /> {t('audit.history', 'Past audits')}</h3>
+              <div className="rounded-lg border p-3">
+                <CollapsibleSection
+                  title={<h3 className="text-sm font-semibold flex items-center gap-2"><History className="h-4 w-4" /> {t('audit.history', 'Past audits')}</h3>}
+                  summary={history.length}
+                >
                 {history.map(h => (
                   <div key={h.id} className="text-xs p-2 rounded-lg bg-muted/40 border">
                     <p className="font-medium">{h.start_date} → {h.end_date}</p>
@@ -450,6 +490,7 @@ export default function BusinessAuditPanel() {
                     </p>
                   </div>
                 ))}
+                </CollapsibleSection>
               </div>
             )}
           </div>

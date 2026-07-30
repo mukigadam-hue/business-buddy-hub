@@ -196,10 +196,40 @@ export default function AuditReminder() {
     }
   }
 
-  if (!open || !missing.length) return null;
+  const nudgeDialog = nudge ? (
+    <AlertDialog open onOpenChange={o => { if (!o) dismissNudge(); }}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            📊 {nudge === 'month'
+              ? t('audit.nudgeMonthTitle', 'A full month of records saved')
+              : t('audit.nudgeWeekTitle', 'A full week of records saved')}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {nudge === 'month'
+              ? t('audit.nudgeMonthBody', 'It has been a month of saving your daily business records. For total accountability, please open Settings → Business Audit and make an accountability for your business, so your records stay organized and your profits keep growing.')
+              : t('audit.nudgeWeekBody', 'It has been a week of saving your daily business records. For total accountability, please open Settings → Business Audit and make an accountability for your business, so your records stay organized and your profits keep growing.')}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="gap-2">
+          <AlertDialogCancel onClick={dismissNudge} className="mt-0">
+            {t('audit.later', 'Later')}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={() => { dismissNudge(); navigate('/settings'); }}>
+            {t('audit.goToAudit', 'Go to audit')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  ) : null;
+
+  if (!open || !missing.length) return nudgeDialog;
 
   return (
+    <>
+    {nudgeDialog}
     <AlertDialog open onOpenChange={o => { if (!o) snooze(); }}>
+
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle>

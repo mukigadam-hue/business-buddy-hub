@@ -1405,6 +1405,14 @@
     "noDebts": "Nothing outstanding.",
     "debtsHint": "Debts are not cash yet, so they do not change the balance above. They are listed here and on the data sheet so payments can be made and recorded any time.",
     "memoReceivable": "Memo: owed to us by customers",
-    "memoPayable": "Memo: owed by us to suppliers"
+    "memoPayable": "Memo: owed by us to suppliers",
+    "reminderEncourage": "Recording your money every day keeps your accountability clean, shows exactly where losses come from, and helps you grow your profits. It only takes a few seconds — even a day with no business is worth recording as 0.",
+    "reminderHint": "Enter the total money you found in the drawer for each day. Use 0 for days you did not work.",
+    "skipForNow": "Skip for now",
+    "fillNow": "OK, fill them in",
+    "saveDays": "Save {{count}} day(s)",
+    "saving": "Saving…",
+    "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
+    "enterAtLeastOne": "Enter the cash for at least one day"
   }
 }

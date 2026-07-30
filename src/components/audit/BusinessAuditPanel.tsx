@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { saveFile } from '@/lib/nativeDownload';
 import {
-  buildAuditCsv, sheetFileName, saveSheetPermanently, listSavedSheets, downloadSavedSheet,
+  buildAuditPdf, sheetFileName, sheetMime, saveSheetPermanently, listSavedSheets, downloadSavedSheet,
   type SavedSheet,
 } from '@/components/audit/auditSheet';
 import {

@@ -21,6 +21,7 @@ import AdSpace from '@/components/AdSpace';
 import LanguageSelector from '@/components/LanguageSelector';
 import PersonalPreferencesSettings from '@/components/PersonalPreferencesSettings';
 import ReceiptCustomization from '@/components/ReceiptCustomization';
+import CollapsibleSection from '@/components/CollapsibleSection';
 
 import { toSentenceCase } from '@/lib/utils';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';
@@ -1167,6 +1168,10 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+              <CollapsibleSection
+                title={<span className="text-xs font-semibold uppercase text-muted-foreground">📋 {t('settings.financial.outstandingDebts')}</span>}
+                summary={salesDebts.length + serviceDebts.length + purchaseDebts.length}
+              >
               {/* Critical Debts (7+ days) */}
               {hasCritical && (
                 <div className="p-3 rounded-lg bg-destructive/10 border-2 border-destructive/40 space-y-2">
@@ -1282,6 +1287,7 @@ export default function SettingsPage() {
                 );
               })()}
 
+              </CollapsibleSection>
               <p className="text-[10px] text-muted-foreground text-center italic">
                 💡 {t('settings.financial.debtsAutoUpdate')}
               </p>

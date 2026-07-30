@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useBusiness } from '@/context/BusinessContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -13,18 +14,37 @@ import { localDayKey, enumerateDays, fetchPeriodTotals } from '@/lib/auditData';
 
 const SNOOZE_MS = 6 * 60 * 60 * 1000; // re-appear every 6 hours
 const MAX_LOOKBACK_DAYS = 30;
+const MANY_DAYS = 5; // from this many missing days we offer the fresh-start option
 
 function snoozeKey(businessId: string) {
   return `bm:audit-reminder-snooze:${businessId}`;
+}
+function baselineKey(businessId: string) {
+  return `bm:audit-baseline:${businessId}`;
+}
+function nudgeKey(businessId: string) {
+  return `bm:audit-period-nudge:${businessId}`;
+}
+
+/** ISO-week token like 2026-W31, used to show the weekly nudge only once per week. */
+function weekToken(d: Date) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((t.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${t.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
 /**
  * Reminds owners/admins to record the cash found in the drawer for every past
  * day that has not been recorded yet. They can always skip — the reminder just
  * comes back after six hours, and lists every day still missing.
+ * It also nudges them to run a full audit at the end of each week and month.
  */
 export default function AuditReminder() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { currentBusiness, userRole } = useBusiness();
   const businessId = currentBusiness?.id;
 
@@ -33,6 +53,8 @@ export default function AuditReminder() {
   const [showForm, setShowForm] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [nudge, setNudge] = useState<'week' | 'month' | null>(null);
+
 
   useEffect(() => {
     const type = (currentBusiness as any)?.business_type;

@@ -151,11 +151,11 @@ export function buildAuditPdf(i: SheetInput): Blob {
     { header: 'Repaid debts', width: 60, align: 'right' },
     { header: 'Booking cash', width: 60, align: 'right' },
     { header: 'Expenses out', width: 60, align: 'right' },
-    { header: 'Purchases out', width: 62, align: 'right' },
-    { header: 'Expected in drawer', width: 72, align: 'right' },
-    { header: 'Counted in drawer', width: 72, align: 'right' },
-    { header: 'Difference', width: 62, align: 'right' },
-    { header: 'Note', width: 110 },
+    { header: 'Purchases out', width: 64, align: 'right' },
+    { header: 'Expected in drawer', width: 80, align: 'right' },
+    { header: 'Counted in drawer', width: 80, align: 'right' },
+    { header: 'Difference', width: 64, align: 'right' },
+    { header: 'Note', width: 96 },
   ];
   let totExp = 0, totCount = 0;
   const cashRows: Cell[][] = [...i.days].sort((a, b) => (a.date < b.date ? -1 : 1)).map(d => {
@@ -217,13 +217,13 @@ export function buildAuditPdf(i: SheetInput): Blob {
     { header: 'Balance', width: 90, align: 'right' },
   ];
   table(debtCols, i.receivables.map(d => [d.kind, d.party, d.date, num(d.total), num(d.paid), num(d.balance)]),
-    ['TOTAL OWED TO THE BUSINESS', '', '', '', '', num(i.receivableTotal)]);
+    ['TOTAL', 'TOTAL OWED TO THE BUSINESS', '', '', '', num(i.receivableTotal)]);
   note('These goods and services left the shop but the money has not come in yet. When a customer pays, record the payment in the app straight away.');
 
   // SECTION 4 — payables
   sectionTitle('SECTION 4 — MONEY WE OWE SUPPLIERS (GOODS TAKEN ON CREDIT)');
   table(debtCols, i.payables.map(d => [d.kind, d.party, d.date, num(d.total), num(d.paid), num(d.balance)]),
-    ['TOTAL THE BUSINESS MUST PAY', '', '', '', '', num(i.payableTotal)]);
+    ['TOTAL', 'TOTAL THE BUSINESS MUST PAY', '', '', '', num(i.payableTotal)]);
   note('Workers may pay these suppliers when the boss is away and must record each payment in the app under the same purchase.');
 
   // SECTION 5 — reconciliation

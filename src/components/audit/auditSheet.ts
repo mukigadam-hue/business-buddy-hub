@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { DayTotals, SoldItem } from '@/lib/auditData';
+import type { DayTotals, SoldItem, DebtRow } from '@/lib/auditData';
 
 const BUCKET = 'receipt-exports';
 const FOLDER = 'audit-sheets';
@@ -14,8 +14,14 @@ export type SheetInput = {
   items: Array<SoldItem & { physical_qty: number | null }>;
   cashVariance: number;
   shortfallValue: number;
+  surplusValue: number;
+  receivables: DebtRow[];
+  payables: DebtRow[];
+  receivableTotal: number;
+  payableTotal: number;
   netBalance: number;
 };
+
 
 function esc(v: string | number) {
   const s = String(v ?? '');

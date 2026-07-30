@@ -56,10 +56,38 @@ export default function AuditReminder() {
   const [nudge, setNudge] = useState<'week' | 'month' | null>(null);
 
 
+  const eligible = !!businessId
+    && (currentBusiness as any)?.business_type !== 'personal'
+    && (userRole === 'owner' || userRole === 'admin');
+
+  // ---- weekly / monthly accountability nudge (independent of the 6h snooze) ----
   useEffect(() => {
-    const type = (currentBusiness as any)?.business_type;
-    if (!businessId || type === 'personal') return;
-    if (userRole !== 'owner' && userRole !== 'admin') return;
+    if (!eligible || !businessId) return;
+    const now = new Date();
+    const isMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() === now.getDate();
+    const isWeekEnd = now.getDay() === 0; // Sunday closes the week
+    if (!isMonthEnd && !isWeekEnd) return;
+    const kind: 'week' | 'month' = isMonthEnd ? 'month' : 'week';
+    const token = `${kind}:${kind === 'month' ? localDayKey(now).slice(0, 7) : weekToken(now)}`;
+    try {
+      if (localStorage.getItem(nudgeKey(businessId)) === token) return;
+    } catch { /* ignore */ }
+    setNudge(kind);
+  }, [eligible, businessId]);
+
+  function dismissNudge() {
+    if (businessId) {
+      const now = new Date();
+      const token = nudge === 'month'
+        ? `month:${localDayKey(now).slice(0, 7)}`
+        : `week:${weekToken(now)}`;
+      try { localStorage.setItem(nudgeKey(businessId), token); } catch { /* ignore */ }
+    }
+    setNudge(null);
+  }
+
+  useEffect(() => {
+    if (!eligible || !businessId) return;
 
     try {
       const until = Number(localStorage.getItem(snoozeKey(businessId)) || 0);
@@ -73,7 +101,12 @@ export default function AuditReminder() {
         ? localDayKey(new Date((currentBusiness as any).created_at))
         : today;
       const earliest = localDayKey(new Date(Date.now() - MAX_LOOKBACK_DAYS * 86400000));
-      const start = created > earliest ? created : earliest;
+      let start = created > earliest ? created : earliest;
+      // a fresh start chosen by the owner ignores everything before that date
+      try {
+        const baseline = localStorage.getItem(baselineKey(businessId));
+        if (baseline && baseline > start) start = baseline;
+      } catch { /* ignore */ }
       const end = localDayKey(new Date(Date.now() - 86400000)); // yesterday
       if (end < start) return;
 
@@ -88,7 +121,7 @@ export default function AuditReminder() {
       }
     })();
     return () => { cancelled = true; };
-  }, [businessId, currentBusiness, userRole]);
+  }, [eligible, businessId, currentBusiness]);
 
   const filledCount = useMemo(
     () => Object.values(values).filter(v => v.trim() !== '' && !isNaN(Number(v))).length,
@@ -102,6 +135,19 @@ export default function AuditReminder() {
     setOpen(false);
     setShowForm(false);
   }
+
+  /** Owner cannot remember the old days — start clean from yesterday. */
+  function startFresh() {
+    if (!businessId) return;
+    const yesterday = localDayKey(new Date(Date.now() - 86400000));
+    try { localStorage.setItem(baselineKey(businessId), yesterday); } catch { /* ignore */ }
+    setMissing([yesterday]);
+    setValues({ [yesterday]: '' });
+    setShowForm(true);
+    toast.success(t('audit.freshStartDone', 'Fresh start set. Only yesterday onwards will be tracked from now on.'));
+  }
+
+
 
   async function saveAll() {
     if (!businessId) return;

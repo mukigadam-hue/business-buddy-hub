@@ -227,21 +227,75 @@ export function buildAuditPdf(i: SheetInput): Blob {
   note('Workers may pay these suppliers when the boss is away and must record each payment in the app under the same purchase.');
 
   // SECTION 5 — reconciliation
-  sectionTitle('SECTION 5 — FINAL RECONCILIATION');
-  const recCols: Col[] = [{ header: 'Description', width: 400 }, { header: 'Amount', width: 190, align: 'right' }];
+  sectionTitle('SECTION 5 — FINAL RECONCILIATION (IS EVERYTHING ACCOUNTED FOR?)');
+  note('How the final balance is calculated:  (cash excess or shortage)  MINUS  (value of missing stock)  PLUS  (value of extra stock)  =  FINAL BALANCE. '
+    + 'The two memo lines below are shown for information only — they are NOT added or subtracted, because that money has not moved yet.');
+
+  const recCols: Col[] = [
+    { header: 'Line', width: 40 },
+    { header: 'Description', width: 330 },
+    { header: 'Sign used in the calculation', width: 130 },
+    { header: 'Amount', width: 120, align: 'right' },
+  ];
   table(recCols, [
-    ['Cash excess / shortage', num(i.cashVariance)],
-    ['Less value of missing stock', num(i.shortfallValue)],
-    ['Plus value of extra stock', num(i.surplusValue)],
-    ['Memo — owed to us by customers', num(i.receivableTotal)],
-    ['Memo — owed by us to suppliers', num(i.payableTotal)],
-  ], ['BALANCE', num(i.netBalance)]);
-  note(i.netBalance === 0
-    ? 'Everything was recorded correctly.'
-    : i.netBalance < 0
-      ? 'Money is missing. Items or services were sold or spent without being recorded. This amount is owed to the business.'
-      : 'Extra money or extra stock is present. Likely unrecorded purchases, returns or services. This money cannot be claimed by workers.');
+    ['1', 'Cash excess / shortage (counted cash minus expected cash)', 'Starting figure', num(i.cashVariance)],
+    ['2', 'Value of missing stock (goods gone with no sale recorded)', 'Subtracted (minus)', num(i.shortfallValue)],
+    ['3', 'Value of extra stock (goods found that were never recorded)', 'Added (+)', num(i.surplusValue)],
+    ['4', 'MEMO ONLY — money customers still owe the business', 'Not counted in balance', num(i.receivableTotal)],
+    ['5', 'MEMO ONLY — money the business still owes suppliers', 'Not counted in balance', num(i.payableTotal)],
+  ], ['', `FINAL BALANCE  =  ${num(i.cashVariance)}  minus  ${num(i.shortfallValue)}  plus  ${num(i.surplusValue)}`, '', num(i.netBalance)]);
+
+  // Plain-language verdict
+  const verdict =
+    i.netBalance < 0
+      ? {
+          title: `RESULT: SHORTAGE — ${num(Math.abs(i.netBalance))} IS MISSING FROM THE BUSINESS`,
+          body: 'This is money or goods that left the business without being recorded. It is a LOSS to the business until it is explained or returned. '
+            + 'It does NOT mean the business made a loss overall — it only means this amount cannot be accounted for.',
+          msg: 'MESSAGE TO ALL WORKERS: Please remember to record EVERY transaction in the app — every sale, every service, every payment received, every expense and every item taken out. '
+            + 'Nothing should leave the shop without being entered. Recording as it happens protects you, protects the business, and makes sure nobody is wrongly blamed for missing money.',
+          fill: [255, 232, 232] as [number, number, number],
+        }
+      : i.netBalance === 0
+        ? {
+            title: 'RESULT: BALANCED — NOTHING IS MISSING AND NOTHING IS EXTRA',
+            body: 'The cash counted and the stock counted match exactly what the app expected. Everything that happened in this period was recorded correctly.',
+            msg: 'WELL DONE: This is a perfect record. Thank you for entering every transaction on time. Please keep working this way — accurate records like these are what let the business grow and reward the team.',
+            fill: [230, 248, 236] as [number, number, number],
+          }
+        : {
+            title: `RESULT: SURPLUS — ${num(i.netBalance)} MORE THAN EXPECTED IS PRESENT`,
+            body: 'There is more cash or more stock in the business than the app expected. This is usually caused by purchases, returns or services that were never entered in the app. '
+              + 'It is NOT profit and it does NOT belong to any worker — it must be traced and recorded properly.',
+            msg: 'GOOD WORK, KEEP IT UP: Nothing is missing here. Please continue recording every sale, purchase and payment as it happens — and enter the missing purchases or returns above so the records match perfectly next time.',
+            fill: [232, 242, 255] as [number, number, number],
+          };
+
+  const boxTextW = PAGE_W - MARGIN * 2 - 24;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const verdictLines = doc.splitTextToSize(verdict.body, boxTextW);
+  doc.setFont('helvetica', 'bold');
+  const msgLines = doc.splitTextToSize(verdict.msg, boxTextW);
+  const boxH = 26 + verdictLines.length * 11 + 8 + msgLines.length * 11 + 14;
+  need(boxH + 10);
+  doc.setFillColor(...verdict.fill);
+  doc.setDrawColor(...NAVY);
+  doc.rect(MARGIN, y, PAGE_W - MARGIN * 2, boxH, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(...NAVY);
+  doc.text(verdict.title, MARGIN + 10, y + 18);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  doc.text(verdictLines, MARGIN + 10, y + 32);
+  doc.setFont('helvetica', 'bold');
+  doc.text(msgLines, MARGIN + 10, y + 32 + verdictLines.length * 11 + 10);
+  y += boxH + 16;
+
   note('This sheet is for accountability of cash, stock and debts only. It does not show business profit or loss.');
+
 
   // page numbers
   const pages = doc.getNumberOfPages();

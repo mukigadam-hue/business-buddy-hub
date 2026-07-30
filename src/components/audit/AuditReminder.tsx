@@ -269,6 +269,17 @@ export default function AuditReminder() {
           </div>
         )}
 
+        {missing.length >= MANY_DAYS && (
+          <div className="rounded-md border border-dashed p-3 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {t('audit.freshStartHint', "Too many old days to remember? Start clean from yesterday — older days will be left out so your new accountability (and any new workers) start on a clear record.")}
+            </p>
+            <Button variant="outline" className="w-full h-11" onClick={startFresh}>
+              {t('audit.freshStart', 'Start with yesterday and continue from there')}
+            </Button>
+          </div>
+        )}
+
         <AlertDialogFooter className="gap-2">
           <AlertDialogCancel onClick={snooze} className="mt-0">
             {t('audit.skipForNow', 'Skip for now')}
@@ -285,5 +296,7 @@ export default function AuditReminder() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    </>
   );
 }
+

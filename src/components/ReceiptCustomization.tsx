@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Save, Trash2, Stamp } from 'lucide-react';
 import ReceiptWatermarkOverlay from '@/components/ReceiptWatermarkOverlay';
+import CollapsibleSection from '@/components/CollapsibleSection';
 
 export default function ReceiptCustomization() {
   const { currentBusiness, updateBusiness } = useBusiness() as any;
@@ -60,10 +61,9 @@ export default function ReceiptCustomization() {
   return (
     <Card className="shadow-card border-primary/20">
       <CardContent className="p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          <Stamp className="h-5 w-5 text-primary" />
-          <h2 className="text-base font-semibold">Receipt Watermark</h2>
-        </div>
+        <CollapsibleSection
+          title={<span className="flex items-center gap-2"><Stamp className="h-5 w-5 text-primary" /><span className="text-base font-semibold">Receipt Watermark</span></span>}
+        >
         <p className="text-xs text-muted-foreground">
           Add a logo or text watermark that will appear faintly tiled across every receipt and invoice you issue — without covering the details.
         </p>
@@ -155,6 +155,7 @@ export default function ReceiptCustomization() {
             <Trash2 className="h-4 w-4 mr-2" />Clear
           </Button>
         </div>
+        </CollapsibleSection>
       </CardContent>
     </Card>
   );

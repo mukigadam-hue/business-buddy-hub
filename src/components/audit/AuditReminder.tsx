@@ -149,6 +149,59 @@ export default function AuditReminder() {
 
 
 
+  /** Writes counted cash for the given days straight into the audit tables. */
+  async function persistDays(entries: { date: string; counted: number }[]) {
+    if (!businessId || !entries.length) return false;
+    const dates = entries.map(e => e.date).sort();
+    const totals = await fetchPeriodTotals(businessId, dates[0], dates[dates.length - 1]);
+    const expectedBy = new Map(totals.days.map(d => [d.date, d.expected]));
+
+    const { data: sessions } = await supabase.from('audit_sessions')
+      .select('id').eq('business_id', businessId).eq('status', 'open').limit(1);
+    const sessionId = (sessions || [])[0]?.id ?? null;
+
+    const { error } = await supabase.from('audit_daily_cash').upsert(
+      entries.map(e => {
+        const expected = expectedBy.get(e.date) ?? 0;
+        return {
+          business_id: businessId,
+          session_id: sessionId,
+          audit_date: e.date,
+          expected_cash: expected,
+          counted_cash: e.counted,
+          variance: e.counted - expected,
+          note: '',
+        } as any;
+      }),
+      { onConflict: 'business_id,audit_date' },
+    );
+    if (error) { toast.error(error.message); return false; }
+    return true;
+  }
+
+  /** Saves yesterday's cash straight from the weekly / monthly nudge. */
+  async function saveNudgeCash() {
+    const raw = nudgeCash.trim();
+    if (raw === '' || isNaN(Number(raw))) {
+      toast.error(t('audit.enterAtLeastOne', 'Enter the cash for at least one day'));
+      return;
+    }
+    setNudgeSaving(true);
+    try {
+      const yesterday = localDayKey(new Date(Date.now() - 86400000));
+      const ok = await persistDays([{ date: yesterday, counted: Number(raw) }]);
+      if (!ok) return;
+      toast.success(t('audit.daysRecorded', 'Daily cash recorded. Thank you for keeping your books accurate!'));
+      setMissing(m => m.filter(d => d !== yesterday));
+      setNudgeCash('');
+      dismissNudge();
+    } catch (e: any) {
+      toast.error(e?.message || t('audit.sheetFailed', 'Could not save'));
+    } finally {
+      setNudgeSaving(false);
+    }
+  }
+
   async function saveAll() {
     if (!businessId) return;
     const entries = Object.entries(values)
@@ -158,30 +211,8 @@ export default function AuditReminder() {
 
     setSaving(true);
     try {
-      const dates = entries.map(e => e.date).sort();
-      const totals = await fetchPeriodTotals(businessId, dates[0], dates[dates.length - 1]);
-      const expectedBy = new Map(totals.days.map(d => [d.date, d.expected]));
-
-      const { data: sessions } = await supabase.from('audit_sessions')
-        .select('id').eq('business_id', businessId).eq('status', 'open').limit(1);
-      const sessionId = (sessions || [])[0]?.id ?? null;
-
-      const { error } = await supabase.from('audit_daily_cash').upsert(
-        entries.map(e => {
-          const expected = expectedBy.get(e.date) ?? 0;
-          return {
-            business_id: businessId,
-            session_id: sessionId,
-            audit_date: e.date,
-            expected_cash: expected,
-            counted_cash: e.counted,
-            variance: e.counted - expected,
-            note: '',
-          } as any;
-        }),
-        { onConflict: 'business_id,audit_date' },
-      );
-      if (error) { toast.error(error.message); return; }
+      const ok = await persistDays(entries);
+      if (!ok) return;
 
       const saved = new Set(entries.map(e => e.date));
       const left = missing.filter(d => !saved.has(d));
@@ -195,6 +226,7 @@ export default function AuditReminder() {
       setSaving(false);
     }
   }
+
 
   const nudgeDialog = nudge ? (
     <AlertDialog open onOpenChange={o => { if (!o) dismissNudge(); }}>

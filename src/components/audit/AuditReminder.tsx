@@ -59,8 +59,16 @@ export default function AuditReminder() {
 
 
 
+  // Only real (non-personal) businesses that are at least one full day old, and
+  // only for the owner / admin. Brand-new installs and personal accounts never
+  // see the reminder — there is nothing to account for yet.
+  const createdAt = (currentBusiness as any)?.created_at;
+  const businessIsOldEnough = !!createdAt
+    && localDayKey(new Date(createdAt)) < localDayKey(new Date());
+
   const eligible = !!businessId
     && (currentBusiness as any)?.business_type !== 'personal'
+    && businessIsOldEnough
     && (userRole === 'owner' || userRole === 'admin');
 
   // ---- weekly / monthly accountability nudge (independent of the 6h snooze) ----

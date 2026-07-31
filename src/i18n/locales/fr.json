@@ -1387,6 +1387,8 @@
     "saveDays": "Save {{count}} day(s)",
     "saving": "Saving…",
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
-    "enterAtLeastOne": "Enter the cash for at least one day"
+    "enterAtLeastOne": "Enter the cash for at least one day",
+    "nudgeRecordYesterday": "Enregistrez ici l'argent d'hier",
+    "saveAndContinue": "Enregistrer et continuer"
   }
 }

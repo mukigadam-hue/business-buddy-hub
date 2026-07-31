@@ -50,10 +50,13 @@ export default function AuditReminder() {
 
   const [missing, setMissing] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(true);
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [nudge, setNudge] = useState<'week' | 'month' | null>(null);
+  const [nudgeCash, setNudgeCash] = useState('');
+  const [nudgeSaving, setNudgeSaving] = useState(false);
+
 
 
   const eligible = !!businessId

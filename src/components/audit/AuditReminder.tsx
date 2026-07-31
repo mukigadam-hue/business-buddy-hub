@@ -246,6 +246,28 @@ export default function AuditReminder() {
               : t('audit.nudgeWeekBody', 'It has been a week of saving your daily business records. For total accountability, please open Settings → Business Audit and make an accountability for your business, so your records stay organized and your profits keep growing.')}
           </AlertDialogDescription>
         </AlertDialogHeader>
+
+        <div className="rounded-md border p-3 space-y-2">
+          <p className="text-xs font-medium">
+            {t('audit.nudgeRecordYesterday', "Record yesterday's cash right here")}
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs w-28 shrink-0">{localDayKey(new Date(Date.now() - 86400000))}</span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              placeholder="0"
+              className="h-11"
+              value={nudgeCash}
+              onChange={e => setNudgeCash(e.target.value)}
+            />
+          </div>
+          <Button className="w-full h-11" onClick={saveNudgeCash} disabled={nudgeSaving}>
+            {nudgeSaving ? t('audit.saving', 'Saving…') : t('audit.saveAndContinue', 'Save and continue')}
+          </Button>
+        </div>
+
         <AlertDialogFooter className="gap-2">
           <AlertDialogCancel onClick={dismissNudge} className="mt-0">
             {t('audit.later', 'Later')}
@@ -254,6 +276,7 @@ export default function AuditReminder() {
             {t('audit.goToAudit', 'Go to audit')}
           </AlertDialogAction>
         </AlertDialogFooter>
+
       </AlertDialogContent>
     </AlertDialog>
   ) : null;

@@ -176,7 +176,9 @@ export default function AuditReminder() {
     const yesterday = localDayKey(new Date(Date.now() - 86400000));
     try { localStorage.setItem(baselineKey(businessId), yesterday); } catch { /* ignore */ }
     setMissing([yesterday]);
+    setTotalMissing(1);
     setValues({ [yesterday]: '' });
+
     setShowForm(true);
     toast.success(t('audit.freshStartDone', 'Fresh start set. Only yesterday onwards will be tracked from now on.'));
   }

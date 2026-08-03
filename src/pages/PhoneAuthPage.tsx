@@ -14,6 +14,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { Separator } from "@/components/ui/separator";
 import LegalHelpModal from "@/components/LegalHelpModal";
 import PlayStoreUpdateButton from "@/components/PlayStoreUpdateButton";
+import { BANNER_HEIGHT_PX } from "@/lib/nativeAdBridge";
 import { isNativeShell } from "@/lib/nativeAdBridge";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -799,6 +800,16 @@ export default function PhoneAuthPage() {
           <a href="/login-email" className="underline">Use email instead</a>
         </p>
       </Card>
+
+      {/* Bottom duplicate of the Play Store update button (auth page only).
+          Extra bottom margin keeps it clear of the fixed banner ad. */}
+      <div
+        className="flex w-full max-w-md justify-center px-2 pt-6"
+        style={{ paddingBottom: `calc(${BANNER_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px) + 16px)` }}
+      >
+        <PlayStoreUpdateButton />
+      </div>
+
 
       {/* Auto-detected: phone not registered → invite to create an account */}
       <AlertDialog open={notRegisteredOpen} onOpenChange={setNotRegisteredOpen}>

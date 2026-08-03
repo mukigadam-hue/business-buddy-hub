@@ -256,6 +256,7 @@ export default function BusinessAuditPanel() {
 
   if (!canAudit) return null;
 
+
   const q = itemSearch.trim().toLowerCase();
   const displayItems = q
     ? allItems.filter(i => `${i.item_name} ${i.category} ${i.quality}`.toLowerCase().includes(q))

@@ -42,6 +42,11 @@ export default function PropertyDashboard() {
         <LanguageSelector variant="compact" />
       </div>
 
+      <div className="flex justify-center">
+        <PlayStoreUpdateButton />
+      </div>
+
+
       <AnnouncementsBanner />
       <DailyTipBanner />
 

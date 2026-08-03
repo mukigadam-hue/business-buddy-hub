@@ -92,6 +92,12 @@ export default function Dashboard() {
         <LanguageSelector variant="compact" />
       </div>
 
+      <div className="flex justify-center">
+        <PlayStoreUpdateButton />
+      </div>
+
+
+
       <AnnouncementsBanner />
       <DailyTipBanner />
 

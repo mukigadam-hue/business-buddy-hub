@@ -14,7 +14,10 @@ import { localDayKey, enumerateDays, fetchPeriodTotals } from '@/lib/auditData';
 
 const SNOOZE_MS = 6 * 60 * 60 * 1000; // re-appear every 6 hours
 const MAX_LOOKBACK_DAYS = 30;
+const MAX_LIST_DAYS = 7; // never ask for more than a week at a time
 const MANY_DAYS = 5; // from this many missing days we offer the fresh-start option
+const AUDIT_LINK = '/settings?section=audit#audit';
+
 
 function snoozeKey(businessId: string) {
   return `bm:audit-reminder-snooze:${businessId}`;

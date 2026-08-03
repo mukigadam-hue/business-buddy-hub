@@ -16,6 +16,7 @@ import AdSpace from '@/components/AdSpace';
 import BannerAd from '@/components/BannerAd';
 import DailyTipBanner from '@/components/DailyTipBanner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
+import PlayStoreUpdateButton from '@/components/PlayStoreUpdateButton';
 
 export default function PropertyDashboard() {
   const { t } = useTranslation();

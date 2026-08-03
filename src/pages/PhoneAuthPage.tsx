@@ -388,34 +388,13 @@ export default function PhoneAuthPage() {
           The all-in-one dashboard to track sales, manage expenses, and stay organized.
         </p>
 
-        {/* Google Play install badge — shown ONLY to web visitors on the Lovable
-            preview / published web URL. Hidden inside any native app shell
-            (WebViewGold, Despia, Android WebView) since installed users are
-            already on the app. */}
-        {typeof window !== 'undefined' &&
-          !isNativeShell() &&
-          /(^|\.)lovable\.(app|dev)$|(^|\.)lovableproject\.com$|localhost/i.test(
-            window.location.hostname,
-          ) && (
-            <a
-              href="https://play.google.com/store/apps/details?id=com.despia.biztrack"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Download BizTrack on Google Play"
-              className="mt-5 inline-flex items-center gap-3 rounded-xl bg-black/90 hover:bg-black text-white px-5 py-3 shadow-2xl border border-white/10 transition-transform hover:scale-[1.03] active:scale-[0.98]"
-            >
-              <svg viewBox="0 0 512 512" className="h-7 w-7" aria-hidden="true">
-                <path fill="#EA4335" d="M325.3 234.3 104.6 13l280.8 161.2z" />
-                <path fill="#FBBC04" d="m408.6 351.9-83.3-48.1-58.2 51.1 141.5 81.3c19.1-11 32.2-30.4 32.2-52.3-.1-13.7-11.9-25.5-32.2-32z" />
-                <path fill="#4285F4" d="M104.6 499 325.3 277.7l-58.2-51.1L104.6 13z" />
-                <path fill="#34A853" d="M104.6 13v486l162.5-146.3z" />
-              </svg>
-              <span className="flex flex-col text-left leading-tight">
-                <span className="text-[10px] uppercase tracking-wider opacity-80">Get it on</span>
-                <span className="text-base font-semibold">Google Play</span>
-              </span>
-            </a>
-          )}
+        {/* Google Play — "Check updates on Google Play". Shown to everyone
+            (web visitors and installed users) so updates are always one tap
+            away. */}
+        <div className="mt-5">
+          <PlayStoreUpdateButton />
+        </div>
+
       </div>
 
       <Card className="w-full max-w-md border-2 bg-card/95 p-3 shadow-xl backdrop-blur-sm sm:p-8">

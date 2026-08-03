@@ -53,7 +53,11 @@ export default function FactoryDashboard() {
       <div className="flex items-center justify-start">
         <HelpGuide />
       </div>
+      <div className="flex justify-center">
+        <PlayStoreUpdateButton />
+      </div>
       <AnnouncementsBanner />
+
       <DailyTipBanner />
 
       {/* Header */}

@@ -329,11 +329,17 @@ export default function AuditReminder() {
           <AlertDialogDescription asChild>
             <div className="space-y-2 text-left">
               <p>
-                {t('audit.reminderBody', 'You still have {{count}} day(s) without the cash you found in the drawer recorded.', { count: missing.length })}
+                {t('audit.reminderBody', 'You still have {{count}} day(s) without the cash you found in the drawer recorded.', { count: totalMissing || missing.length })}
               </p>
+              {totalMissing > missing.length && (
+                <p className="text-xs">
+                  {t('audit.reminderCapped', 'To keep it simple, only the last {{count}} day(s) are listed here. Older days can be filled in from the accountability page in Settings.', { count: missing.length })}
+                </p>
+              )}
               <p>
                 {t('audit.reminderEncourage', 'Recording your money every day keeps your accountability clean, shows exactly where losses come from, and helps you grow your profits. It only takes a few seconds — even a day with no business is worth recording as 0.')}
               </p>
+
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>

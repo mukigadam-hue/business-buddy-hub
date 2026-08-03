@@ -262,9 +262,10 @@ export default function BusinessAuditPanel() {
     : soldItems;
 
   return (
-    <Card className="shadow-card border-primary/30">
+    <Card id="business-audit" className="shadow-card border-primary/30">
       <CardContent className="p-4 space-y-3">
         <button className="w-full flex items-center justify-between gap-2 min-h-[44px]" onClick={() => setOpen(o => !o)}>
+
           <span className="flex items-center gap-2 text-base font-semibold">
             <ClipboardCheck className="h-5 w-5 text-primary" /> {t('audit.title', 'Business Audit & Accountability')}
           </span>

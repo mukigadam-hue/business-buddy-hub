@@ -1348,6 +1348,9 @@
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
     "enterAtLeastOne": "Enter the cash for at least one day",
     "nudgeRecordYesterday": "Bargeld von gestern hier eintragen",
-    "saveAndContinue": "Speichern und fortfahren"
+    "saveAndContinue": "Speichern und fortfahren",
+    "reminderCapped": "Zur Vereinfachung werden hier nur die letzten {{count}} Tag(e) aufgelistet. Ältere Tage können auf der Abrechnungsseite in den Einstellungen eingetragen werden.",
+    "paperRecordsHint": "Notierst du das Tagesgeld in einem Buch oder auf Papier? Öffne die Abrechnungsseite und trage alle Tage auf einmal ein.",
+    "openAccountability": "Abrechnung in den Einstellungen öffnen"
   }
 }

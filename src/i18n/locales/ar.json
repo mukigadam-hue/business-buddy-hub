@@ -1348,6 +1348,9 @@
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
     "enterAtLeastOne": "Enter the cash for at least one day",
     "nudgeRecordYesterday": "سجّل نقد الأمس هنا",
-    "saveAndContinue": "احفظ وتابع"
+    "saveAndContinue": "احفظ وتابع",
+    "reminderCapped": "للتبسيط، تُدرج هنا آخر {{count}} يوم فقط. يمكن إدخال الأيام الأقدم من صفحة المحاسبة في الإعدادات.",
+    "paperRecordsHint": "هل كنت تسجل النقد اليومي في دفتر أو على ورق؟ افتح صفحة المحاسبة وأدخل كل تلك الأيام مرة واحدة.",
+    "openAccountability": "افتح المحاسبة في الإعدادات"
   }
 }

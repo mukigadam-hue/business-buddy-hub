@@ -1415,6 +1415,9 @@
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
     "enterAtLeastOne": "Enter the cash for at least one day",
     "nudgeRecordYesterday": "Weka pesa za jana hapa hapa",
-    "saveAndContinue": "Hifadhi na uendelee"
+    "saveAndContinue": "Hifadhi na uendelee",
+    "reminderCapped": "Kwa urahisi, siku {{count}} za mwisho tu zimeorodheshwa hapa. Siku za zamani zinaweza kujazwa kwenye ukurasa wa uwajibikaji katika Mipangilio.",
+    "paperRecordsHint": "Umekuwa unaandika pesa za kila siku kwenye kitabu au karatasi? Fungua ukurasa wa uwajibikaji na uweke siku zote hizo mara moja.",
+    "openAccountability": "Fungua uwajibikaji katika Mipangilio"
   }
 }

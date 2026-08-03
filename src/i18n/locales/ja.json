@@ -1348,6 +1348,9 @@
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
     "enterAtLeastOne": "Enter the cash for at least one day",
     "nudgeRecordYesterday": "昨日の現金をここに記録",
-    "saveAndContinue": "保存して続ける"
+    "saveAndContinue": "保存して続ける",
+    "reminderCapped": "わかりやすくするため、直近 {{count}} 日分のみを表示しています。それより前の日は設定内の会計ページで入力できます。",
+    "paperRecordsHint": "毎日の現金を帳簿や紙に記録していましたか？会計ページを開いて、それらの日をまとめて入力してください。",
+    "openAccountability": "設定で会計を開く"
   }
 }

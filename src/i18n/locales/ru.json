@@ -1348,6 +1348,9 @@
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
     "enterAtLeastOne": "Enter the cash for at least one day",
     "nudgeRecordYesterday": "Запишите вчерашнюю наличность здесь",
-    "saveAndContinue": "Сохранить и продолжить"
+    "saveAndContinue": "Сохранить и продолжить",
+    "reminderCapped": "Для простоты здесь показаны только последние {{count}} дн. Более давние дни можно внести на странице учёта в Настройках.",
+    "paperRecordsHint": "Вы записывали ежедневную выручку в тетрадь или на бумагу? Откройте страницу учёта и внесите все эти дни сразу.",
+    "openAccountability": "Открыть учёт в Настройках"
   }
 }

@@ -1348,6 +1348,9 @@
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
     "enterAtLeastOne": "Enter the cash for at least one day",
     "nudgeRecordYesterday": "कल का नकद यहीं दर्ज करें",
-    "saveAndContinue": "सहेजें और जारी रखें"
+    "saveAndContinue": "सहेजें और जारी रखें",
+    "reminderCapped": "सरलता के लिए यहाँ केवल पिछले {{count}} दिन दिखाए गए हैं। पुराने दिन सेटिंग्स में जवाबदेही पृष्ठ से भरे जा सकते हैं।",
+    "paperRecordsHint": "क्या आप रोज़ का पैसा किताब या कागज़ पर लिखते रहे हैं? जवाबदेही पृष्ठ खोलें और वे सभी दिन एक साथ दर्ज करें।",
+    "openAccountability": "सेटिंग्स में जवाबदेही खोलें"
   }
 }

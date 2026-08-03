@@ -1348,6 +1348,9 @@
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
     "enterAtLeastOne": "Enter the cash for at least one day",
     "nudgeRecordYesterday": "Registre aquí el efectivo de ayer",
-    "saveAndContinue": "Guardar y continuar"
+    "saveAndContinue": "Guardar y continuar",
+    "reminderCapped": "Para simplificar, aquí solo se muestran los últimos {{count}} día(s). Los días anteriores se pueden completar en la página de contabilidad en Ajustes.",
+    "paperRecordsHint": "¿Has estado anotando el dinero diario en un cuaderno o en papel? Abre la página de contabilidad e introduce todos esos días a la vez.",
+    "openAccountability": "Abrir contabilidad en Ajustes"
   }
 }

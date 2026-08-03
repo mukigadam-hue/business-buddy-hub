@@ -1430,6 +1430,9 @@
     "nudgeMonthBody": "It has been a month of saving your daily business records. For total accountability, please open Settings → Business Audit and make an accountability for your business, so your records stay organized and your profits keep growing.",
     "goToAudit": "Go to audit",
     "nudgeRecordYesterday": "Record yesterday's cash right here",
-    "saveAndContinue": "Save and continue"
+    "saveAndContinue": "Save and continue",
+    "reminderCapped": "To keep it simple, only the last {{count}} day(s) are listed here. Older days can be filled in from the accountability page in Settings.",
+    "paperRecordsHint": "Have you been writing the daily money in a book or on paper? Open the accountability page and enter all those days there at once.",
+    "openAccountability": "Open accountability in Settings"
   }
 }

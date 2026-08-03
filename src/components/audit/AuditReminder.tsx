@@ -14,7 +14,10 @@ import { localDayKey, enumerateDays, fetchPeriodTotals } from '@/lib/auditData';
 
 const SNOOZE_MS = 6 * 60 * 60 * 1000; // re-appear every 6 hours
 const MAX_LOOKBACK_DAYS = 30;
+const MAX_LIST_DAYS = 7; // never ask for more than a week at a time
 const MANY_DAYS = 5; // from this many missing days we offer the fresh-start option
+const AUDIT_LINK = '/settings?section=audit#audit';
+
 
 function snoozeKey(businessId: string) {
   return `bm:audit-reminder-snooze:${businessId}`;
@@ -49,6 +52,8 @@ export default function AuditReminder() {
   const businessId = currentBusiness?.id;
 
   const [missing, setMissing] = useState<string[]>([]);
+  const [totalMissing, setTotalMissing] = useState(0);
+
   const [open, setOpen] = useState(false);
   const [showForm, setShowForm] = useState(true);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -121,15 +126,33 @@ export default function AuditReminder() {
       const end = localDayKey(new Date(Date.now() - 86400000)); // yesterday
       if (end < start) return;
 
+      // The cloud copy of the records is the source of truth, so a reinstall or a
+      // brand-new phone still sees every day already recorded. The earliest saved
+      // day also acts as a durable baseline for an earlier "start fresh" choice.
       const { data: rows } = await supabase.from('audit_daily_cash')
         .select('audit_date').eq('business_id', businessId).gte('audit_date', start).lte('audit_date', end);
       const done = new Set((rows || []).map((r: any) => r.audit_date));
+
+      const { data: firstRow } = await supabase.from('audit_daily_cash')
+        .select('audit_date').eq('business_id', businessId)
+        .order('audit_date', { ascending: true }).limit(1);
+      const firstSaved = (firstRow || [])[0]?.audit_date as string | undefined;
+      if (firstSaved && firstSaved > start) {
+        start = firstSaved;
+        try { localStorage.setItem(baselineKey(businessId), firstSaved); } catch { /* ignore */ }
+      }
+
       const gaps = enumerateDays(start, end).filter(d => !done.has(d)).sort().reverse();
       if (!cancelled && gaps.length) {
-        setMissing(gaps);
-        setValues(Object.fromEntries(gaps.map(d => [d, ''])));
+        // Never confront the owner with a month-long list: ask for at most a week
+        // (the most recent days) and point the rest to the audit in Settings.
+        const shown = gaps.slice(0, MAX_LIST_DAYS);
+        setTotalMissing(gaps.length);
+        setMissing(shown);
+        setValues(Object.fromEntries(shown.map(d => [d, ''])));
         setOpen(true);
       }
+
     })();
     return () => { cancelled = true; };
   }, [eligible, businessId, currentBusiness]);
@@ -153,7 +176,9 @@ export default function AuditReminder() {
     const yesterday = localDayKey(new Date(Date.now() - 86400000));
     try { localStorage.setItem(baselineKey(businessId), yesterday); } catch { /* ignore */ }
     setMissing([yesterday]);
+    setTotalMissing(1);
     setValues({ [yesterday]: '' });
+
     setShowForm(true);
     toast.success(t('audit.freshStartDone', 'Fresh start set. Only yesterday onwards will be tracked from now on.'));
   }
@@ -280,7 +305,7 @@ export default function AuditReminder() {
           <AlertDialogCancel onClick={dismissNudge} className="mt-0">
             {t('audit.later', 'Later')}
           </AlertDialogCancel>
-          <AlertDialogAction onClick={() => { dismissNudge(); navigate('/settings'); }}>
+          <AlertDialogAction onClick={() => { dismissNudge(); navigate(AUDIT_LINK); }}>
             {t('audit.goToAudit', 'Go to audit')}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -304,11 +329,17 @@ export default function AuditReminder() {
           <AlertDialogDescription asChild>
             <div className="space-y-2 text-left">
               <p>
-                {t('audit.reminderBody', 'You still have {{count}} day(s) without the cash you found in the drawer recorded.', { count: missing.length })}
+                {t('audit.reminderBody', 'You still have {{count}} day(s) without the cash you found in the drawer recorded.', { count: totalMissing || missing.length })}
               </p>
+              {totalMissing > missing.length && (
+                <p className="text-xs">
+                  {t('audit.reminderCapped', 'To keep it simple, only the last {{count}} day(s) are listed here. Older days can be filled in from the accountability page in Settings.', { count: missing.length })}
+                </p>
+              )}
               <p>
                 {t('audit.reminderEncourage', 'Recording your money every day keeps your accountability clean, shows exactly where losses come from, and helps you grow your profits. It only takes a few seconds — even a day with no business is worth recording as 0.')}
               </p>
+
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -345,6 +376,22 @@ export default function AuditReminder() {
             </Button>
           </div>
         )}
+
+        {(totalMissing >= MANY_DAYS || missing.length >= MANY_DAYS) && (
+          <div className="rounded-md border border-dashed p-3 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {t('audit.paperRecordsHint', 'Have you been writing the daily money in a book or on paper? Open the accountability page and enter all those days there at once.')}
+            </p>
+            <Button
+              variant="secondary"
+              className="w-full h-11"
+              onClick={() => { snooze(); navigate(AUDIT_LINK); }}
+            >
+              {t('audit.openAccountability', 'Open accountability in Settings')}
+            </Button>
+          </div>
+        )}
+
 
         <AlertDialogFooter className="gap-2">
           <AlertDialogCancel onClick={snooze} className="mt-0">

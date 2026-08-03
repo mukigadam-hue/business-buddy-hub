@@ -1348,6 +1348,9 @@
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
     "enterAtLeastOne": "Enter the cash for at least one day",
     "nudgeRecordYesterday": "在此记录昨天的现金",
-    "saveAndContinue": "保存并继续"
+    "saveAndContinue": "保存并继续",
+    "reminderCapped": "为简化操作，此处仅列出最近 {{count}} 天。更早的日期可在“设置”中的账目页面填写。",
+    "paperRecordsHint": "您是否一直把每天的现金记在本子或纸上？打开账目页面，一次性录入所有这些日期。",
+    "openAccountability": "在设置中打开账目"
   }
 }

@@ -1348,6 +1348,9 @@
     "daysRecorded": "Daily cash recorded. Thank you for keeping your books accurate!",
     "enterAtLeastOne": "Enter the cash for at least one day",
     "nudgeRecordYesterday": "어제의 현금을 여기에 기록",
-    "saveAndContinue": "저장하고 계속"
+    "saveAndContinue": "저장하고 계속",
+    "reminderCapped": "간단하게 하기 위해 최근 {{count}}일만 표시합니다. 이전 날짜는 설정의 회계 페이지에서 입력할 수 있습니다.",
+    "paperRecordsHint": "매일의 현금을 장부나 종이에 기록해 두셨나요? 회계 페이지를 열어 그 날짜들을 한 번에 입력하세요.",
+    "openAccountability": "설정에서 회계 열기"
   }
 }

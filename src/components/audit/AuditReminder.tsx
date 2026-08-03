@@ -377,6 +377,22 @@ export default function AuditReminder() {
           </div>
         )}
 
+        {(totalMissing >= MANY_DAYS || missing.length >= MANY_DAYS) && (
+          <div className="rounded-md border border-dashed p-3 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {t('audit.paperRecordsHint', 'Have you been writing the daily money in a book or on paper? Open the accountability page and enter all those days there at once.')}
+            </p>
+            <Button
+              variant="secondary"
+              className="w-full h-11"
+              onClick={() => { snooze(); navigate(AUDIT_LINK); }}
+            >
+              {t('audit.openAccountability', 'Open accountability in Settings')}
+            </Button>
+          </div>
+        )}
+
+
         <AlertDialogFooter className="gap-2">
           <AlertDialogCancel onClick={snooze} className="mt-0">
             {t('audit.skipForNow', 'Skip for now')}

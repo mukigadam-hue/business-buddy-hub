@@ -14,6 +14,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { Separator } from "@/components/ui/separator";
 import LegalHelpModal from "@/components/LegalHelpModal";
 import PlayStoreUpdateButton from "@/components/PlayStoreUpdateButton";
+import { BANNER_HEIGHT_PX } from "@/lib/nativeAdBridge";
 import { isNativeShell } from "@/lib/nativeAdBridge";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,

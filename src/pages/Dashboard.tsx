@@ -20,6 +20,7 @@ import HelpGuide from '@/components/HelpGuide';
 import DailyTipBanner from '@/components/DailyTipBanner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import WorkerActivityTracker from '@/components/WorkerActivityTracker';
+import PlayStoreUpdateButton from '@/components/PlayStoreUpdateButton';
 
 export default function Dashboard() {
   const { t } = useTranslation();

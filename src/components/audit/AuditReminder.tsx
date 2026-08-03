@@ -78,7 +78,12 @@ export default function AuditReminder() {
 
   // ---- weekly / monthly accountability nudge (independent of the 6h snooze) ----
   useEffect(() => {
-    if (!eligible || !businessId) return;
+    if (!eligible || !businessId) {
+      setOpen(false);
+      setMissing([]);
+      setTotalMissing(0);
+      return;
+    }
     const now = new Date();
     const isMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() === now.getDate();
     const isWeekEnd = now.getDay() === 0; // Sunday closes the week
@@ -126,24 +131,27 @@ export default function AuditReminder() {
       const end = localDayKey(new Date(Date.now() - 86400000)); // yesterday
       if (end < start) return;
 
-      // The cloud copy of the records is the source of truth, so a reinstall or a
-      // brand-new phone still sees every day already recorded. The earliest saved
-      // day also acts as a durable baseline for an earlier "start fresh" choice.
-      const { data: rows } = await supabase.from('audit_daily_cash')
-        .select('audit_date').eq('business_id', businessId).gte('audit_date', start).lte('audit_date', end);
-      const done = new Set((rows || []).map((r: any) => r.audit_date));
+      // Load the complete cloud history in one request. Never treat a failed cloud
+      // request as an empty history: doing so would incorrectly ask for old days
+      // after a reinstall or during a temporary connection problem.
+      const { data: rows, error } = await supabase.from('audit_daily_cash')
+        .select('audit_date')
+        .eq('business_id', businessId)
+        .lte('audit_date', end)
+        .order('audit_date', { ascending: true });
+      if (error) return;
 
-      const { data: firstRow } = await supabase.from('audit_daily_cash')
-        .select('audit_date').eq('business_id', businessId)
-        .order('audit_date', { ascending: true }).limit(1);
-      const firstSaved = (firstRow || [])[0]?.audit_date as string | undefined;
+      const firstSaved = (rows || [])[0]?.audit_date as string | undefined;
       if (firstSaved && firstSaved > start) {
         start = firstSaved;
         try { localStorage.setItem(baselineKey(businessId), firstSaved); } catch { /* ignore */ }
       }
 
+      const done = new Set((rows || []).map((r: any) => r.audit_date));
+
       const gaps = enumerateDays(start, end).filter(d => !done.has(d)).sort().reverse();
-      if (!cancelled && gaps.length) {
+      if (cancelled) return;
+      if (gaps.length) {
         // Never confront the owner with a month-long list: ask for at most a week
         // (the most recent days) and point the rest to the audit in Settings.
         const shown = gaps.slice(0, MAX_LIST_DAYS);
@@ -151,6 +159,10 @@ export default function AuditReminder() {
         setMissing(shown);
         setValues(Object.fromEntries(shown.map(d => [d, ''])));
         setOpen(true);
+      } else {
+        setMissing([]);
+        setTotalMissing(0);
+        setOpen(false);
       }
 
     })();
@@ -321,31 +333,31 @@ export default function AuditReminder() {
     {nudgeDialog}
     <AlertDialog open onOpenChange={o => { if (!o) snooze(); }}>
 
-      <AlertDialogContent className="max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            💰 {t('audit.reminderTitle', 'Record your daily cash')}
-          </AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="space-y-2 text-left">
-              <p>
-                {t('audit.reminderBody', 'You still have {{count}} day(s) without the cash you found in the drawer recorded.', { count: totalMissing || missing.length })}
-              </p>
-              {totalMissing > missing.length && (
-                <p className="text-xs">
-                  {t('audit.reminderCapped', 'To keep it simple, only the last {{count}} day(s) are listed here. Older days can be filled in from the accountability page in Settings.', { count: missing.length })}
+      <AlertDialogContent className="left-3 right-3 top-[calc(env(safe-area-inset-top,0px)+8px)] bottom-[calc(72px+env(safe-area-inset-bottom,0px))] mx-auto grid w-auto max-w-md translate-x-0 translate-y-0 grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden p-4 sm:left-1/2 sm:right-auto sm:top-1/2 sm:bottom-auto sm:w-full sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-h-[calc(100dvh-2rem)]">
+        <div className="min-h-0 overflow-y-auto space-y-3 pr-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              💰 {t('audit.reminderTitle', 'Record your daily cash')}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-left">
+                <p>
+                  {t('audit.reminderBody', 'You still have {{count}} day(s) without the cash you found in the drawer recorded.', { count: totalMissing || missing.length })}
                 </p>
-              )}
-              <p>
-                {t('audit.reminderEncourage', 'Recording your money every day keeps your accountability clean, shows exactly where losses come from, and helps you grow your profits. It only takes a few seconds — even a day with no business is worth recording as 0.')}
-              </p>
+                {totalMissing > missing.length && (
+                  <p className="text-xs">
+                    {t('audit.reminderCapped', 'To keep it simple, only the last {{count}} day(s) are listed here. Older days can be filled in from the accountability page in Settings.', { count: missing.length })}
+                  </p>
+                )}
+                <p>
+                  {t('audit.reminderEncourage', 'Recording your money every day keeps your accountability clean, shows exactly where losses come from, and helps you grow your profits. It only takes a few seconds — even a day with no business is worth recording as 0.')}
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
-            </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
-        {showForm && (
-          <div className="max-h-[45vh] overflow-y-auto space-y-2 pr-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+          {showForm && (
+          <div className="space-y-2">
             {missing.map(d => (
               <div key={d} className="flex items-center gap-2">
                 <span className="text-xs font-medium w-28 shrink-0">{d}</span>
@@ -364,7 +376,7 @@ export default function AuditReminder() {
               {t('audit.reminderHint', 'Enter the total money you found in the drawer for each day. Use 0 for days you did not work.')}
             </p>
           </div>
-        )}
+          )}
 
         {missing.length >= MANY_DAYS && (
           <div className="rounded-md border border-dashed p-3 space-y-2">
@@ -391,9 +403,9 @@ export default function AuditReminder() {
             </Button>
           </div>
         )}
+        </div>
 
-
-        <AlertDialogFooter className="gap-2">
+        <AlertDialogFooter className="shrink-0 gap-2 border-t bg-background pt-3">
           <AlertDialogCancel onClick={snooze} className="mt-0">
             {t('audit.skipForNow', 'Skip for now')}
           </AlertDialogCancel>

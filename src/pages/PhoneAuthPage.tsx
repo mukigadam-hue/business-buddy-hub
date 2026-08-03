@@ -363,7 +363,7 @@ export default function PhoneAuthPage() {
   return (
     <div
       data-auth-scroll-root
-      className="flex min-h-[100svh] w-full flex-col items-center justify-start overflow-x-hidden px-2.5 pb-0 pt-1.5 sm:p-6"
+      className="flex min-h-[100svh] w-full flex-col items-center justify-start overflow-x-hidden overflow-y-visible px-2.5 pb-0 pt-1.5 sm:p-6"
       style={{
         WebkitOverflowScrolling: 'touch',
         touchAction: 'pan-y',
@@ -371,9 +371,11 @@ export default function PhoneAuthPage() {
         // Let the PAGE scroll naturally on mobile WebViews instead of locking
         // content inside a fixed-height inner container. Reserve extra bottom
         // room so the native banner ad never covers the auth controls.
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4.75rem)',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.375rem)',
+        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${isNativeShell() ? BANNER_HEIGHT_PX + 40 : 76}px)`,
       }}
     >
+
 
       {/* Hero Section */}
       <div className="w-full max-w-md px-1 text-center pb-2 pt-1 sm:max-w-xl sm:px-2 sm:pb-8 sm:pt-10">

@@ -126,11 +126,13 @@
   }
 
   html {
-    /* Fix scrolling on old Android/iOS devices */
+    /* Single scrolling container: let the document grow with content so
+       Android WebViews (installed app) can always scroll to the very bottom. */
     -webkit-overflow-scrolling: touch;
     overflow-y: auto;
+    overflow-x: hidden;
     min-height: 100%;
-    height: 100%;
+    height: auto;
     background: hsl(var(--background));
   }
 
@@ -142,17 +144,21 @@
     -moz-osx-font-smoothing: grayscale;
     /* Ensure scrolling works on old devices */
     overflow-x: hidden;
-    overflow-y: auto;
+    /* visible (not auto) so the html element remains the scroller — nested
+       scrollers on body freeze in some WebViews */
+    overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     min-height: 100svh;
+    height: auto;
     position: relative;
-    overscroll-behavior-y: contain;
+    overscroll-behavior-y: auto;
     padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
 
   /* Fix for old WebView and older browsers that freeze with overflow:hidden on body */
   #root {
     min-height: calc(100svh - var(--safe-top) - var(--safe-bottom));
+    height: auto;
     overflow: visible;
     -webkit-overflow-scrolling: touch;
   }

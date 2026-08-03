@@ -60,6 +60,21 @@ export default function BusinessAuditPanel() {
 
   const today = localDayKey(new Date());
 
+  // Deep link: /settings?section=audit (or #audit) opens and scrolls straight
+  // into the accountability panel, so nobody has to hunt for it in Settings.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('section') === 'audit'
+      || window.location.hash === '#audit';
+    if (!wanted) return;
+    setOpen(true);
+    const timer = window.setTimeout(() => {
+      document.getElementById('business-audit')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+
+
   const loadSession = useCallback(async () => {
     if (!businessId) return;
     const { data } = await supabase.from('audit_sessions').select('*')

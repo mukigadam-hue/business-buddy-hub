@@ -463,7 +463,8 @@
     "markAllRead": "Soma zote",
     "noNotifications": "Hakuna arifa.",
     "new": "MPYA",
-    "view": "Tazama →"
+    "view": "Tazama →",
+    "checkUpdatesPlay": "Angalia masasisho kwenye Google Play"
   },
   "auth": {
     "signIn": "Ingia",

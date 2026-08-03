@@ -463,7 +463,8 @@
     "markAllRead": "सभी पढ़ा हुआ चिह्नित करें",
     "noNotifications": "कोई सूचना नहीं।",
     "new": "नया",
-    "view": "देखें →"
+    "view": "देखें →",
+    "checkUpdatesPlay": "Google Play पर अपडेट देखें"
   },
   "auth": {
     "signIn": "साइन इन",

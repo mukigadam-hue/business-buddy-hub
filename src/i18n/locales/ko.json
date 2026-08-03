@@ -463,7 +463,8 @@
     "markAllRead": "모두 읽음",
     "noNotifications": "알림 없음.",
     "new": "새로운",
-    "view": "보기 →"
+    "view": "보기 →",
+    "checkUpdatesPlay": "Google Play에서 업데이트 확인"
   },
   "auth": {
     "signIn": "로그인",

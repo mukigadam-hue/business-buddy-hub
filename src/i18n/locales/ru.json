@@ -463,7 +463,8 @@
     "markAllRead": "Отметить все прочитанными",
     "noNotifications": "Нет уведомлений.",
     "new": "НОВОЕ",
-    "view": "Смотреть →"
+    "view": "Смотреть →",
+    "checkUpdatesPlay": "Проверить обновления в Google Play"
   },
   "auth": {
     "signIn": "Войти",

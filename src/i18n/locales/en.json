@@ -470,7 +470,8 @@
     "markAllRead": "Mark all read",
     "noNotifications": "No notifications yet.",
     "new": "NEW",
-    "view": "View →"
+    "view": "View →",
+    "checkUpdatesPlay": "Check updates on Google Play"
   },
   "auth": {
     "signIn": "Sign In",

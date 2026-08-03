@@ -463,7 +463,8 @@
     "markAllRead": "全部标记已读",
     "noNotifications": "暂无通知。",
     "new": "新",
-    "view": "查看 →"
+    "view": "查看 →",
+    "checkUpdatesPlay": "在 Google Play 检查更新"
   },
   "auth": {
     "signIn": "登录",

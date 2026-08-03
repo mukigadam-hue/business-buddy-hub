@@ -463,7 +463,8 @@
     "markAllRead": "すべて既読",
     "noNotifications": "通知なし。",
     "new": "新着",
-    "view": "表示 →"
+    "view": "表示 →",
+    "checkUpdatesPlay": "Google Play で更新を確認"
   },
   "auth": {
     "signIn": "ログイン",

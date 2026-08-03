@@ -305,7 +305,7 @@ export default function AuditReminder() {
           <AlertDialogCancel onClick={dismissNudge} className="mt-0">
             {t('audit.later', 'Later')}
           </AlertDialogCancel>
-          <AlertDialogAction onClick={() => { dismissNudge(); navigate('/settings'); }}>
+          <AlertDialogAction onClick={() => { dismissNudge(); navigate(AUDIT_LINK); }}>
             {t('audit.goToAudit', 'Go to audit')}
           </AlertDialogAction>
         </AlertDialogFooter>

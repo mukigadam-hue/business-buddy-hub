@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Separator } from "@/components/ui/separator";
 import LegalHelpModal from "@/components/LegalHelpModal";
+import PlayStoreUpdateButton from "@/components/PlayStoreUpdateButton";
 import { isNativeShell } from "@/lib/nativeAdBridge";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,

@@ -13,6 +13,7 @@ import BannerAd from '@/components/BannerAd';
 import DailyTipBanner from '@/components/DailyTipBanner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import HelpGuide from '@/components/HelpGuide';
+import PlayStoreUpdateButton from '@/components/PlayStoreUpdateButton';
 import WorkerActivityTracker from '@/components/WorkerActivityTracker';
 
 export default function FactoryDashboard() {
@@ -52,7 +53,11 @@ export default function FactoryDashboard() {
       <div className="flex items-center justify-start">
         <HelpGuide />
       </div>
+      <div className="flex justify-center">
+        <PlayStoreUpdateButton />
+      </div>
       <AnnouncementsBanner />
+
       <DailyTipBanner />
 
       {/* Header */}

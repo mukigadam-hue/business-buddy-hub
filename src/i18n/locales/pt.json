@@ -463,7 +463,8 @@
     "markAllRead": "Marcar tudo como lido",
     "noNotifications": "Sem notificações.",
     "new": "NOVO",
-    "view": "Ver →"
+    "view": "Ver →",
+    "checkUpdatesPlay": "Verificar atualizações no Google Play"
   },
   "auth": {
     "signIn": "Entrar",

@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import AdSpace from '@/components/AdSpace';
 import BannerAd from '@/components/BannerAd';
 import HelpGuide from '@/components/HelpGuide';
+import PlayStoreUpdateButton from '@/components/PlayStoreUpdateButton';
 
 export default function PersonalDashboard() {
   const { currentBusiness, orders } = useBusiness();
@@ -24,6 +25,11 @@ export default function PersonalDashboard() {
         </div>
         <HelpGuide />
       </div>
+
+      <div className="flex justify-center">
+        <PlayStoreUpdateButton />
+      </div>
+
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-3">

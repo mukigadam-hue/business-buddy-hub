@@ -20,6 +20,7 @@ import HelpGuide from '@/components/HelpGuide';
 import DailyTipBanner from '@/components/DailyTipBanner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import WorkerActivityTracker from '@/components/WorkerActivityTracker';
+import PlayStoreUpdateButton from '@/components/PlayStoreUpdateButton';
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -90,6 +91,12 @@ export default function Dashboard() {
         <HelpGuide />
         <LanguageSelector variant="compact" />
       </div>
+
+      <div className="flex justify-center">
+        <PlayStoreUpdateButton />
+      </div>
+
+
 
       <AnnouncementsBanner />
       <DailyTipBanner />

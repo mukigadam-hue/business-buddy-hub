@@ -463,7 +463,8 @@
     "markAllRead": "تحديد الكل كمقروء",
     "noNotifications": "لا توجد إشعارات.",
     "new": "جديد",
-    "view": "عرض →"
+    "view": "عرض →",
+    "checkUpdatesPlay": "التحقق من التحديثات على Google Play"
   },
   "auth": {
     "signIn": "تسجيل الدخول",

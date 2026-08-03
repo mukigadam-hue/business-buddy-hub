@@ -13,6 +13,7 @@ import BannerAd from '@/components/BannerAd';
 import DailyTipBanner from '@/components/DailyTipBanner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import HelpGuide from '@/components/HelpGuide';
+import PlayStoreUpdateButton from '@/components/PlayStoreUpdateButton';
 import WorkerActivityTracker from '@/components/WorkerActivityTracker';
 
 export default function FactoryDashboard() {

@@ -126,15 +126,33 @@ export default function AuditReminder() {
       const end = localDayKey(new Date(Date.now() - 86400000)); // yesterday
       if (end < start) return;
 
+      // The cloud copy of the records is the source of truth, so a reinstall or a
+      // brand-new phone still sees every day already recorded. The earliest saved
+      // day also acts as a durable baseline for an earlier "start fresh" choice.
       const { data: rows } = await supabase.from('audit_daily_cash')
         .select('audit_date').eq('business_id', businessId).gte('audit_date', start).lte('audit_date', end);
       const done = new Set((rows || []).map((r: any) => r.audit_date));
+
+      const { data: firstRow } = await supabase.from('audit_daily_cash')
+        .select('audit_date').eq('business_id', businessId)
+        .order('audit_date', { ascending: true }).limit(1);
+      const firstSaved = (firstRow || [])[0]?.audit_date as string | undefined;
+      if (firstSaved && firstSaved > start) {
+        start = firstSaved;
+        try { localStorage.setItem(baselineKey(businessId), firstSaved); } catch { /* ignore */ }
+      }
+
       const gaps = enumerateDays(start, end).filter(d => !done.has(d)).sort().reverse();
       if (!cancelled && gaps.length) {
-        setMissing(gaps);
-        setValues(Object.fromEntries(gaps.map(d => [d, ''])));
+        // Never confront the owner with a month-long list: ask for at most a week
+        // (the most recent days) and point the rest to the audit in Settings.
+        const shown = gaps.slice(0, MAX_LIST_DAYS);
+        setTotalMissing(gaps.length);
+        setMissing(shown);
+        setValues(Object.fromEntries(shown.map(d => [d, ''])));
         setOpen(true);
       }
+
     })();
     return () => { cancelled = true; };
   }, [eligible, businessId, currentBusiness]);

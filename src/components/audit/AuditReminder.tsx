@@ -52,6 +52,8 @@ export default function AuditReminder() {
   const businessId = currentBusiness?.id;
 
   const [missing, setMissing] = useState<string[]>([]);
+  const [totalMissing, setTotalMissing] = useState(0);
+
   const [open, setOpen] = useState(false);
   const [showForm, setShowForm] = useState(true);
   const [values, setValues] = useState<Record<string, string>>({});

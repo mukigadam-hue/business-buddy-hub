@@ -26,6 +26,11 @@ export default function PersonalDashboard() {
         <HelpGuide />
       </div>
 
+      <div className="flex justify-center">
+        <PlayStoreUpdateButton />
+      </div>
+
+
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="shadow-card">

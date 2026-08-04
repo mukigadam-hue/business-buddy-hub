@@ -288,8 +288,29 @@ export default function BusinessAuditPanel() {
           {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
         <p className="text-xs text-muted-foreground">
-          {t('audit.subtitle', 'Compare daily drawer cash and physical stock against what the app recorded.')}
+          {t('audit.subtitle', 'Compare the daily cash collected and physical stock against what the app recorded.')}
         </p>
+
+        <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 px-3 py-2">
+          <div className="min-w-0">
+            <p className="text-xs font-medium">{t('audit.reminderToggle', 'Daily cash reminder popup')}</p>
+            <p className="text-[11px] text-muted-foreground leading-tight">
+              {t('audit.reminderToggleHint', 'When on, the app reminds you every day to record the cash collected. You can always record it here instead.')}
+            </p>
+          </div>
+          <Switch
+            checked={remindOn}
+            onCheckedChange={v => {
+              if (!businessId) return;
+              setReminderEnabled(businessId, v);
+              setRemindOn(v);
+              toast.success(v
+                ? t('audit.reminderOn', 'Daily reminder turned on.')
+                : t('audit.reminderOff', 'Daily reminder turned off. You can still record daily cash here any time.'));
+            }}
+          />
+        </div>
+
 
         {open && (
           <div className="space-y-4 pt-1">

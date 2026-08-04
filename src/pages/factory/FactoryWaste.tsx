@@ -14,8 +14,8 @@ import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
 import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { WASTE_TYPES, isWasteExpense, wasteCategoryFor } from '@/lib/wasteCategories';
 
-const WASTE_TYPES = ['Expired', 'Faulty', 'Returned', 'Damaged', 'Spoiled', 'Other'];
 
 export default function FactoryWaste() {
   const { t } = useTranslation();
@@ -37,13 +37,10 @@ export default function FactoryWaste() {
   });
 
   // Load waste records from factory expenses with waste categories — exclude order allocation expenses
-  const wasteExpenses = expenses.filter(e =>
-    (WASTE_TYPES.includes(e.category) || e.category === 'Waste') &&
-    !(e as any).from_order_id
-  );
+  const wasteExpenses = expenses.filter(e => isWasteExpense(e as any) && !(e as any).from_order_id);
 
-  const todayWaste = wasteExpenses.filter(e => new Date(e.created_at).toDateString() === new Date().toDateString());
-  const prevWaste = wasteExpenses.filter(e => new Date(e.created_at).toDateString() !== new Date().toDateString());
+  const todayWaste = wasteExpenses.filter(e => new Date(e.expense_date).toDateString() === new Date().toDateString());
+  const prevWaste = wasteExpenses.filter(e => new Date(e.expense_date).toDateString() !== new Date().toDateString());
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
 
   const totalWasteValue = wasteExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -86,7 +83,7 @@ export default function FactoryWaste() {
 
     // Record as factory expense
     await addExpense({
-      category: form.waste_type,
+      category: wasteCategoryFor(form.waste_type),
       description: `[${form.waste_type}] ${toSentenceCase(form.item_name.trim())}${form.category ? ` (${form.category})` : ''} × ${qty}${form.reason ? ` — ${form.reason}` : ''}`,
       amount: valueLost,
       recorded_by: toTitleCase(form.recorded_by.trim()) || 'Staff',

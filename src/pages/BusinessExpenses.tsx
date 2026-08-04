@@ -12,6 +12,7 @@ import AdSpace from '@/components/AdSpace';
 import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { isWasteExpense } from '@/lib/wasteCategories';
 
 const EXPENSE_CATEGORIES = [
   'Rent', 'Electricity', 'Water', 'Internet', 'Cleaning Equipment',
@@ -20,9 +21,6 @@ const EXPENSE_CATEGORIES = [
   'Taxes & Licenses', 'Professional Services', 'Other',
 ];
 
-// Waste categories live in the same expenses table but belong to the Waste
-// module — they must NOT show up here or in financial expense totals.
-const WASTE_CATEGORIES = new Set(['Expired', 'Faulty', 'Returned', 'Damaged', 'Spoiled', 'Waste']);
 
 export default function BusinessExpenses() {
   const { t } = useTranslation();
@@ -31,9 +29,9 @@ export default function BusinessExpenses() {
   const [form, setForm] = useState({ category: '', description: '', amount: '', recorded_by: '', expense_date: new Date().toISOString().slice(0, 10) });
 
   // Hide waste-categorized records from the Expenses view.
-  const operationalExpenses = expenses.filter(e => !WASTE_CATEGORIES.has(e.category));
-  const todayExpenses = operationalExpenses.filter(e => new Date(e.created_at).toDateString() === new Date().toDateString());
-  const prevExpenses = operationalExpenses.filter(e => new Date(e.created_at).toDateString() !== new Date().toDateString());
+  const operationalExpenses = expenses.filter(e => !isWasteExpense(e as any));
+  const todayExpenses = operationalExpenses.filter(e => new Date(e.expense_date).toDateString() === new Date().toDateString());
+  const prevExpenses = operationalExpenses.filter(e => new Date(e.expense_date).toDateString() !== new Date().toDateString());
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
 
   const todayTotal = todayExpenses.reduce((sum, e) => sum + Number(e.amount), 0);

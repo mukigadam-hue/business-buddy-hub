@@ -14,8 +14,8 @@ import { toast } from 'sonner';
 import AdSpace from '@/components/AdSpace';
 import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { WASTE_TYPES, isWasteExpense, wasteCategoryFor } from '@/lib/wasteCategories';
 
-const WASTE_TYPES = ['Expired', 'Faulty', 'Returned', 'Damaged', 'Spoiled', 'Other'];
 
 interface WasteRecord {
   id: string;
@@ -49,10 +49,7 @@ export default function WastePage() {
   });
 
   // Load waste records from expenses with waste categories — exclude order allocation expenses
-  const wasteExpenses = expenses.filter(e => 
-    (WASTE_TYPES.includes(e.category) || e.category === 'Waste') &&
-    !e.from_order_id
-  );
+  const wasteExpenses = expenses.filter(e => isWasteExpense(e as any) && !(e as any).from_order_id);
 
   const todayWaste = wasteExpenses.filter(e => new Date(e.expense_date).toDateString() === new Date().toDateString());
   const prevWaste = wasteExpenses.filter(e => new Date(e.expense_date).toDateString() !== new Date().toDateString());
@@ -98,7 +95,7 @@ export default function WastePage() {
 
     // Record as expense
     await addExpense({
-      category: form.waste_type,
+      category: wasteCategoryFor(form.waste_type),
       description: `[${form.waste_type}] ${toSentenceCase(form.item_name.trim())}${form.category ? ` (${form.category})` : ''} × ${qty}${form.reason ? ` — ${form.reason}` : ''}`,
       amount: valueLost,
       recorded_by: toTitleCase(form.recorded_by.trim()) || 'Staff',

@@ -93,6 +93,17 @@ export default function SalesPage() {
     return false;
   });
 
+  // Known customers (for autocomplete + returning-customer summary)
+  const customerStats = buildCustomerStats(
+    sales,
+    s => s.customer_name || '',
+    s => Number(s.grand_total) || 0,
+    s => Number(s.balance) || 0,
+    s => s.created_at,
+  );
+
+
+
   // Filter stock items by search text
   const filteredStock = activeStock.filter(s => {
     if (s.quantity <= 0) return false;

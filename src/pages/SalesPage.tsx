@@ -392,7 +392,7 @@ export default function SalesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
             <div>
               <Label className="text-xs font-semibold text-destructive">{t('sales.buyerName')} *</Label>
-              <Input value={buyerName} onChange={e => setBuyerName(e.target.value)} onBlur={() => setBuyerName(toTitleCase(buyerName))} placeholder={t('sales.buyerNamePh')} />
+              <CustomerNameInput value={buyerName} onChange={setBuyerName} customers={customerStats} placeholder={t('sales.buyerNamePh')} />
             </div>
             <div>
               <Label className="text-xs font-semibold text-destructive">{t('sales.sellerName')} * {roleLabel}</Label>

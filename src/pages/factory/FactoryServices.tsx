@@ -108,6 +108,43 @@ export default function FactoryServices() {
       || (s.customer_name || '').toLowerCase().includes(q)
       || (s.seller_name || '').toLowerCase().includes(q);
   });
+  const [groupByCustomer, setGroupByCustomer] = useState(true);
+  const customerStats = buildCustomerStats(
+    services,
+    s => s.customer_name || '',
+    s => Number(s.cost) || 0,
+    s => Number(s.balance) || 0,
+    s => s.created_at,
+  );
+
+  function FactoryServiceCard({ s }: { s: ServiceRecord }) {
+    const isOverdue = s.payment_status !== 'paid' && Number(s.balance) > 0 && (Date.now() - new Date(s.created_at).getTime()) > 3 * 24 * 60 * 60 * 1000;
+    return (
+      <div className={`border rounded-lg p-3 flex justify-between items-start ${isOverdue ? 'border-destructive/50 bg-destructive/5' : s.payment_status === 'partial' ? 'border-warning/40 bg-warning/5' : s.payment_status === 'unpaid' ? 'border-destructive/40 bg-destructive/5' : ''}`}>
+        <div className="flex-1">
+          <p className="font-medium text-sm">{s.service_name}</p>
+          <p className="text-xs text-muted-foreground">👤 {s.customer_name}</p>
+          <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString()}</p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <PaymentBadge s={s} />
+            {isOverdue && <span className="text-[10px] font-bold text-destructive animate-pulse">🔴 OVERDUE</span>}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 ml-2">
+          <span className="font-bold text-success bg-success/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(s.cost))}</span>
+          {s.payment_status !== 'paid' && Number(s.balance) > 0 && (
+            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => { setEditPaymentService(s); setEditAmountPaid(''); }}>
+              💰 Pay
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" onClick={() => setReceiptService(s)}><ReceiptIcon className="h-3.5 w-3.5" /></Button>
+          <RecycleDeleteButton table="services" recordId={s.id} />
+        </div>
+      </div>
+    );
+  }
+
+
 
   function PaymentBadge({ s }: { s: ServiceRecord }) {
     if (s.payment_status === 'paid' || !s.payment_status || Number(s.balance) <= 0) {

@@ -9,8 +9,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { localDayKey, enumerateDays, fetchPeriodTotals } from '@/lib/auditData';
+import { isReminderEnabled, setReminderEnabled, onReminderPrefChange } from '@/lib/auditReminderPref';
+
 
 const SNOOZE_MS = 6 * 60 * 60 * 1000; // re-appear every 6 hours
 const MAX_LOOKBACK_DAYS = 30;

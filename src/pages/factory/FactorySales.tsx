@@ -221,7 +221,7 @@ export default function FactorySales() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
             <div>
               <Label className="text-xs font-semibold text-destructive">{t('factoryUI.customerBuyer')} *</Label>
-              <Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toTitleCase(customerName))} placeholder={t('factoryUI.customerNamePh')} required />
+              <CustomerNameInput value={customerName} onChange={setCustomerName} customers={customerStats} placeholder={t('factoryUI.customerNamePh')} required />
             </div>
             <div>
               <Label className="text-xs font-semibold text-destructive">{t('factoryUI.seller')} * {roleLabel}</Label>

@@ -297,10 +297,21 @@ export default function AuditReminder() {
   }
 
 
+  const switchRow = (
+    <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 px-3 py-2">
+      <span className="text-[11px] leading-tight">
+        {t('audit.reminderShowDaily', "Show this daily reminder (turn off if you don't want it again)")}
+      </span>
+      <Switch checked={remindOn} onCheckedChange={v => { if (!v) disableReminder(); }} />
+    </div>
+  );
+
   const nudgeDialog = nudge ? (
     <AlertDialog open onOpenChange={o => { if (!o) dismissNudge(); }}>
       <AlertDialogContent className="max-w-md">
+        {switchRow}
         <AlertDialogHeader>
+
           <AlertDialogTitle>
             📊 {nudge === 'month'
               ? t('audit.nudgeMonthTitle', 'A full month of records saved')

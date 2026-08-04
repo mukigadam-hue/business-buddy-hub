@@ -367,6 +367,7 @@ export default function AuditReminder() {
 
       <AlertDialogContent className="left-3 right-3 top-[calc(env(safe-area-inset-top,0px)+8px)] bottom-[calc(72px+env(safe-area-inset-bottom,0px))] mx-auto grid w-auto max-w-md translate-x-0 translate-y-0 grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden p-4 sm:left-1/2 sm:right-auto sm:top-1/2 sm:bottom-auto sm:w-full sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-h-[calc(100dvh-2rem)]">
         <div className="min-h-0 overflow-y-auto space-y-3 pr-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+          {switchRow}
           <AlertDialogHeader>
             <AlertDialogTitle>
               💰 {t('audit.reminderTitle', 'Record your daily cash')}
@@ -374,8 +375,9 @@ export default function AuditReminder() {
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-left">
                 <p>
-                  {t('audit.reminderBody', 'You still have {{count}} day(s) without the cash you found in the drawer recorded.', { count: totalMissing || missing.length })}
+                  {t('audit.reminderBody', 'You still have {{count}} day(s) without the total cash collected recorded.', { count: totalMissing || missing.length })}
                 </p>
+
                 {totalMissing > missing.length && (
                   <p className="text-xs">
                     {t('audit.reminderCapped', 'To keep it simple, only the last {{count}} day(s) are listed here. Older days can be filled in from the accountability page in Settings.', { count: missing.length })}

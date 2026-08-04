@@ -18,6 +18,8 @@ import type { Sale } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 import RecycleDeleteButton from '@/components/RecycleDeleteButton';
+import CustomerNameInput, { buildCustomerStats } from '@/components/CustomerNameInput';
+import CustomerGroupedList from '@/components/CustomerGroupedList';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';

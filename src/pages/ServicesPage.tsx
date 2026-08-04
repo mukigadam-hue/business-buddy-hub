@@ -106,6 +106,14 @@ export default function ServicesPage() {
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const [historySearch, setHistorySearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'debt'>('all');
+  const [groupByCustomer, setGroupByCustomer] = useState(true);
+  const customerStats = buildCustomerStats(
+    services,
+    s => s.customer_name || '',
+    s => Number(s.cost) || 0,
+    s => Number(s.balance) || 0,
+    s => s.created_at,
+  );
   const visibleServices = (activeTab === 'today' ? todayServices : prevServices).filter(s => {
     if (paymentFilter === 'paid' && s.payment_status !== 'paid') return false;
     if (paymentFilter === 'debt' && s.payment_status !== 'partial' && s.payment_status !== 'unpaid') return false;

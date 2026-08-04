@@ -341,17 +341,37 @@ export default function ServicesPage() {
 
       <Card className="shadow-card">
         <CardContent className="p-4">
+          <div className="flex items-center justify-end mb-3">
+            <button
+              type="button"
+              onClick={() => setGroupByCustomer(v => !v)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium ${groupByCustomer ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+            >
+              👤 {groupByCustomer ? 'Grouped by customer' : 'Group by customer'}
+            </button>
+          </div>
           {visibleServices.length === 0 ? (
             <p className="text-sm text-muted-foreground">No services match.</p>
           ) : (
             <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
-              {visibleServices.map(s => (
+              {groupByCustomer ? (
+                <CustomerGroupedList
+                  records={visibleServices}
+                  getName={s => s.customer_name || ''}
+                  getDate={s => s.created_at}
+                  getTotal={s => Number(s.cost) || 0}
+                  getBalance={s => Number(s.balance) || 0}
+                  defaultExpanded={activeTab === 'today'}
+                  renderRecord={s => <ServiceCard s={s} />}
+                />
+              ) : visibleServices.map(s => (
                 <ServiceCard key={s.id} s={s} />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
 
       <Dialog open={!!receiptService} onOpenChange={o => { if (!o) { setReceiptService(null); import('@/lib/interstitialAd').then(m => m.triggerInterstitial('close-service-receipt')); } }}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">

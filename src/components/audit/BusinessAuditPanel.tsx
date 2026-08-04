@@ -43,6 +43,7 @@ export default function BusinessAuditPanel() {
 
   const [open, setOpen] = useState(false);
   const [remindOn, setRemindOn] = useState(() => isReminderEnabled(businessId));
+  useEffect(() => { setRemindOn(isReminderEnabled(businessId)); }, [businessId]);
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [history, setHistory] = useState<Session[]>([]);

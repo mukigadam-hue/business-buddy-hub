@@ -76,6 +76,54 @@ export default function FactorySales() {
     if ((s.items || []).some((it: any) => (it.item_name || '').toLowerCase().includes(q))) return true;
     return false;
   });
+  const [groupByCustomer, setGroupByCustomer] = useState(true);
+  const customerStats = buildCustomerStats(
+    sales,
+    s => s.customer_name || '',
+    s => Number(s.grand_total) || 0,
+    s => Number(s.balance) || 0,
+    s => s.created_at,
+  );
+
+  function FactorySaleCard({ s }: { s: Sale }) {
+    return (
+      <div className={`border rounded-lg p-3 ${s.payment_status === 'unpaid' ? 'border-destructive/40 bg-destructive/5' : s.payment_status === 'partial' ? 'border-warning/40 bg-warning/5' : ''}`}>
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">👤 {s.customer_name}</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${s.payment_status === 'paid' ? 'bg-success/10 text-success' : s.payment_status === 'partial' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
+              {s.payment_status === 'paid' ? `✅ ${t('invoice.receipt')}` : `📄 ${t('invoice.invoice')} · ${t('invoice.balance')}: ${fmt(Number(s.balance))}${s.payment_status === 'partial' ? ` (${t('invoice.paid')} ${fmt(Number(s.amount_paid))})` : ''}`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-success bg-success/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(s.grand_total))}</span>
+            <Button size="sm" variant="ghost" onClick={() => setReceiptSale(s)}><ReceiptIcon className="h-3.5 w-3.5" /></Button>
+            <RecycleDeleteButton table="sales" recordId={s.id} label={t('common.cancel', 'Cancel')} />
+          </div>
+        </div>
+        {s.payment_status !== 'paid' && <p className="text-xs font-semibold text-destructive">Balance: {fmt(Number(s.balance))}</p>}
+        <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString()}</p>
+        <div className="text-sm text-muted-foreground space-y-1 mt-1">
+          {s.items.map((item, i) => (
+            <div key={i} className="flex justify-between">
+              <span>
+                {item.item_name} × {item.quantity}
+                {item.price_type && item.price_type !== 'service' && item.price_type !== 'part' && <span className="ml-1">({item.price_type})</span>}
+              </span>
+              <span className="tabular-nums">{fmt(Number(item.subtotal))}</span>
+            </div>
+          ))}
+        </div>
+        {s.payment_status !== 'paid' && (
+          <Button size="sm" variant="outline" className="mt-2" onClick={() => { setEditPaymentSale(s); setEditAmountPaid(''); }}>
+            💰 Update Payment
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+
 
   // Filter stock items by search text
   const filteredStock = activeProducts.filter(s => {

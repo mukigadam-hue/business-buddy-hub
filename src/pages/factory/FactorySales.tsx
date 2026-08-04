@@ -18,6 +18,8 @@ import type { Sale } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 import RecycleDeleteButton from '@/components/RecycleDeleteButton';
+import CustomerNameInput, { buildCustomerStats } from '@/components/CustomerNameInput';
+import CustomerGroupedList from '@/components/CustomerGroupedList';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -76,6 +78,54 @@ export default function FactorySales() {
     if ((s.items || []).some((it: any) => (it.item_name || '').toLowerCase().includes(q))) return true;
     return false;
   });
+  const [groupByCustomer, setGroupByCustomer] = useState(true);
+  const customerStats = buildCustomerStats(
+    sales,
+    s => s.customer_name || '',
+    s => Number(s.grand_total) || 0,
+    s => Number(s.balance) || 0,
+    s => s.created_at,
+  );
+
+  function FactorySaleCard({ s }: { s: Sale }) {
+    return (
+      <div className={`border rounded-lg p-3 ${s.payment_status === 'unpaid' ? 'border-destructive/40 bg-destructive/5' : s.payment_status === 'partial' ? 'border-warning/40 bg-warning/5' : ''}`}>
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">👤 {s.customer_name}</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${s.payment_status === 'paid' ? 'bg-success/10 text-success' : s.payment_status === 'partial' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
+              {s.payment_status === 'paid' ? `✅ ${t('invoice.receipt')}` : `📄 ${t('invoice.invoice')} · ${t('invoice.balance')}: ${fmt(Number(s.balance))}${s.payment_status === 'partial' ? ` (${t('invoice.paid')} ${fmt(Number(s.amount_paid))})` : ''}`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-success bg-success/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(s.grand_total))}</span>
+            <Button size="sm" variant="ghost" onClick={() => setReceiptSale(s)}><ReceiptIcon className="h-3.5 w-3.5" /></Button>
+            <RecycleDeleteButton table="sales" recordId={s.id} label={t('common.cancel', 'Cancel')} />
+          </div>
+        </div>
+        {s.payment_status !== 'paid' && <p className="text-xs font-semibold text-destructive">Balance: {fmt(Number(s.balance))}</p>}
+        <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString()}</p>
+        <div className="text-sm text-muted-foreground space-y-1 mt-1">
+          {s.items.map((item, i) => (
+            <div key={i} className="flex justify-between">
+              <span>
+                {item.item_name} × {item.quantity}
+                {item.price_type && item.price_type !== 'service' && item.price_type !== 'part' && <span className="ml-1">({item.price_type})</span>}
+              </span>
+              <span className="tabular-nums">{fmt(Number(item.subtotal))}</span>
+            </div>
+          ))}
+        </div>
+        {s.payment_status !== 'paid' && (
+          <Button size="sm" variant="outline" className="mt-2" onClick={() => { setEditPaymentSale(s); setEditAmountPaid(''); }}>
+            💰 Update Payment
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+
 
   // Filter stock items by search text
   const filteredStock = activeProducts.filter(s => {
@@ -171,7 +221,7 @@ export default function FactorySales() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
             <div>
               <Label className="text-xs font-semibold text-destructive">{t('factoryUI.customerBuyer')} *</Label>
-              <Input value={customerName} onChange={e => setCustomerName(e.target.value)} onBlur={() => setCustomerName(toTitleCase(customerName))} placeholder={t('factoryUI.customerNamePh')} required />
+              <CustomerNameInput value={customerName} onChange={setCustomerName} customers={customerStats} placeholder={t('factoryUI.customerNamePh')} required />
             </div>
             <div>
               <Label className="text-xs font-semibold text-destructive">{t('factoryUI.seller')} * {roleLabel}</Label>
@@ -364,49 +414,35 @@ export default function FactorySales() {
 
       <Card className="shadow-card">
         <CardContent className="p-4">
+          <div className="flex items-center justify-end mb-3">
+            <button
+              type="button"
+              onClick={() => setGroupByCustomer(v => !v)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium ${groupByCustomer ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+            >
+              👤 {groupByCustomer ? 'Grouped by customer' : 'Group by customer'}
+            </button>
+          </div>
           {filteredSales.length === 0 ? (
             <p className="text-sm text-muted-foreground">No sales matching filter.</p>
           ) : (
             <div className="space-y-3 max-h-[500px] overflow-y-auto">
-              {filteredSales.map(s => (
-                <div key={s.id} className={`border rounded-lg p-3 ${s.payment_status === 'unpaid' ? 'border-destructive/40 bg-destructive/5' : s.payment_status === 'partial' ? 'border-warning/40 bg-warning/5' : ''}`}>
-                  <div className="flex justify-between items-center mb-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium">👤 {s.customer_name}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${s.payment_status === 'paid' ? 'bg-success/10 text-success' : s.payment_status === 'partial' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}`}>
-                        {s.payment_status === 'paid' ? `✅ ${t('invoice.receipt')}` : `📄 ${t('invoice.invoice')} · ${t('invoice.balance')}: ${fmt(Number(s.balance))}${s.payment_status === 'partial' ? ` (${t('invoice.paid')} ${fmt(Number(s.amount_paid))})` : ''}`}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-success bg-success/10 px-2 py-0.5 rounded-md text-sm tabular-nums">{fmt(Number(s.grand_total))}</span>
-                      <Button size="sm" variant="ghost" onClick={() => setReceiptSale(s)}><ReceiptIcon className="h-3.5 w-3.5" /></Button>
-                      <RecycleDeleteButton table="sales" recordId={s.id} label={t('common.cancel', 'Cancel')} />
-                    </div>
-                  </div>
-                  {s.payment_status !== 'paid' && <p className="text-xs font-semibold text-destructive">Balance: {fmt(Number(s.balance))}</p>}
-                  <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString()}</p>
-                  <div className="text-sm text-muted-foreground space-y-1 mt-1">
-                    {s.items.map((item, i) => (
-                      <div key={i} className="flex justify-between">
-                        <span>
-                          {item.item_name} × {item.quantity}
-                          {item.price_type && item.price_type !== 'service' && item.price_type !== 'part' && <span className="ml-1">({item.price_type})</span>}
-                        </span>
-                        <span className="tabular-nums">{fmt(Number(item.subtotal))}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {s.payment_status !== 'paid' && (
-                    <Button size="sm" variant="outline" className="mt-2" onClick={() => { setEditPaymentSale(s); setEditAmountPaid(''); }}>
-                      💰 Update Payment
-                    </Button>
-                  )}
-                </div>
-              ))}
+              {groupByCustomer ? (
+                <CustomerGroupedList
+                  records={filteredSales}
+                  getName={s => s.customer_name || ''}
+                  getDate={s => s.created_at}
+                  getTotal={s => Number(s.grand_total) || 0}
+                  getBalance={s => Number(s.balance) || 0}
+                  defaultExpanded={activeTab === 'today'}
+                  renderRecord={s => <FactorySaleCard s={s} />}
+                />
+              ) : filteredSales.map(s => <FactorySaleCard key={s.id} s={s} />)}
             </div>
           )}
         </CardContent>
       </Card>
+
 
       {/* Receipt Dialog */}
       <Dialog open={!!receiptSale} onOpenChange={o => { if (!o) { setReceiptSale(null); import('@/lib/interstitialAd').then(m => m.triggerInterstitial('close-sale-receipt')); } }}>

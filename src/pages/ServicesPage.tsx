@@ -14,6 +14,8 @@ import Receipt from '@/components/Receipt';
 import type { ServiceRecord } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 import RecycleDeleteButton from '@/components/RecycleDeleteButton';
+import CustomerNameInput, { buildCustomerStats } from '@/components/CustomerNameInput';
+import CustomerGroupedList from '@/components/CustomerGroupedList';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
@@ -104,6 +106,14 @@ export default function ServicesPage() {
   const [activeTab, setActiveTab] = useState<'today' | 'previous'>('today');
   const [historySearch, setHistorySearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'debt'>('all');
+  const [groupByCustomer, setGroupByCustomer] = useState(true);
+  const customerStats = buildCustomerStats(
+    services,
+    s => s.customer_name || '',
+    s => Number(s.cost) || 0,
+    s => Number(s.balance) || 0,
+    s => s.created_at,
+  );
   const visibleServices = (activeTab === 'today' ? todayServices : prevServices).filter(s => {
     if (paymentFilter === 'paid' && s.payment_status !== 'paid') return false;
     if (paymentFilter === 'debt' && s.payment_status !== 'partial' && s.payment_status !== 'unpaid') return false;
@@ -167,8 +177,8 @@ export default function ServicesPage() {
             <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
               <div>
                 <Label className="text-xs font-semibold text-destructive">Customer (Buyer) *</Label>
-                <Input value={form.customer_name} onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
-                  onBlur={() => setForm(f => ({ ...f, customer_name: toTitleCase(f.customer_name) }))} placeholder="Customer name" required />
+                <CustomerNameInput value={form.customer_name} onChange={v => setForm(f => ({ ...f, customer_name: v }))}
+                  customers={customerStats} placeholder="Customer name" required />
               </div>
               <div>
                 <Label className="text-xs font-semibold text-destructive">Seller *</Label>
@@ -331,17 +341,37 @@ export default function ServicesPage() {
 
       <Card className="shadow-card">
         <CardContent className="p-4">
+          <div className="flex items-center justify-end mb-3">
+            <button
+              type="button"
+              onClick={() => setGroupByCustomer(v => !v)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium ${groupByCustomer ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+            >
+              👤 {groupByCustomer ? 'Grouped by customer' : 'Group by customer'}
+            </button>
+          </div>
           {visibleServices.length === 0 ? (
             <p className="text-sm text-muted-foreground">No services match.</p>
           ) : (
             <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
-              {visibleServices.map(s => (
+              {groupByCustomer ? (
+                <CustomerGroupedList
+                  records={visibleServices}
+                  getName={s => s.customer_name || ''}
+                  getDate={s => s.created_at}
+                  getTotal={s => Number(s.cost) || 0}
+                  getBalance={s => Number(s.balance) || 0}
+                  defaultExpanded={activeTab === 'today'}
+                  renderRecord={s => <ServiceCard s={s} />}
+                />
+              ) : visibleServices.map(s => (
                 <ServiceCard key={s.id} s={s} />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
 
       <Dialog open={!!receiptService} onOpenChange={o => { if (!o) { setReceiptService(null); import('@/lib/interstitialAd').then(m => m.triggerInterstitial('close-service-receipt')); } }}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">

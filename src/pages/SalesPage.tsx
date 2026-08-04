@@ -18,6 +18,8 @@ import type { Sale } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 import { BulkPackagingFields } from '@/components/BulkPackagingInfo';
 import RecycleDeleteButton from '@/components/RecycleDeleteButton';
+import CustomerNameInput, { buildCustomerStats } from '@/components/CustomerNameInput';
+import CustomerGroupedList from '@/components/CustomerGroupedList';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -76,6 +78,7 @@ export default function SalesPage() {
   const [partScannerOpen, setPartScannerOpen] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'debt'>('all');
   const [historySearch, setHistorySearch] = useState('');
+  const [groupByCustomer, setGroupByCustomer] = useState(true);
   const activeStock = stock.filter(s => !s.deleted_at);
   const todaySales = sales.filter(s => new Date(s.created_at).toDateString() === new Date().toDateString());
   const previousSales = sales.filter(s => new Date(s.created_at).toDateString() !== new Date().toDateString());
@@ -90,6 +93,17 @@ export default function SalesPage() {
     if ((s.items || []).some((it: any) => (it.item_name || '').toLowerCase().includes(q))) return true;
     return false;
   });
+
+  // Known customers (for autocomplete + returning-customer summary)
+  const customerStats = buildCustomerStats(
+    sales,
+    s => s.customer_name || '',
+    s => Number(s.grand_total) || 0,
+    s => Number(s.balance) || 0,
+    s => s.created_at,
+  );
+
+
 
   // Filter stock items by search text
   const filteredStock = activeStock.filter(s => {
@@ -392,7 +406,7 @@ export default function SalesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
             <div>
               <Label className="text-xs font-semibold text-destructive">{t('sales.buyerName')} *</Label>
-              <Input value={buyerName} onChange={e => setBuyerName(e.target.value)} onBlur={() => setBuyerName(toTitleCase(buyerName))} placeholder={t('sales.buyerNamePh')} />
+              <CustomerNameInput value={buyerName} onChange={setBuyerName} customers={customerStats} placeholder={t('sales.buyerNamePh')} />
             </div>
             <div>
               <Label className="text-xs font-semibold text-destructive">{t('sales.sellerName')} * {roleLabel}</Label>
@@ -802,20 +816,40 @@ export default function SalesPage() {
 
       <Card className="shadow-card">
         <CardContent className="p-4">
-          <h2 className="text-base font-semibold mb-3">
-            {activeTab === 'today' ? t('sales.todaySales') : t('sales.previousSales')}
-          </h2>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="text-base font-semibold">
+              {activeTab === 'today' ? t('sales.todaySales') : t('sales.previousSales')}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setGroupByCustomer(v => !v)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium ${groupByCustomer ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+            >
+              👤 {groupByCustomer ? 'Grouped by customer' : 'Group by customer'}
+            </button>
+          </div>
           {filteredSales.length === 0 ? (
             <p className="text-sm text-muted-foreground">No sales {activeTab === 'today' ? 'today' : 'from previous days'} matching filter.</p>
           ) : (
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-              {filteredSales.map(sale => (
+              {groupByCustomer ? (
+                <CustomerGroupedList
+                  records={filteredSales}
+                  getName={s => s.customer_name || ''}
+                  getDate={s => s.created_at}
+                  getTotal={s => Number(s.grand_total) || 0}
+                  getBalance={s => Number(s.balance) || 0}
+                  defaultExpanded={activeTab === 'today'}
+                  renderRecord={sale => <SaleCard sale={sale} />}
+                />
+              ) : filteredSales.map(sale => (
                 <SaleCard key={sale.id} sale={sale} />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
 
       <Dialog open={!!receiptSale} onOpenChange={o => { if (!o) { setReceiptSale(null); import('@/lib/interstitialAd').then(m => m.triggerInterstitial('close-sale-receipt')); } }}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">

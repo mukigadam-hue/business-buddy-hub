@@ -171,7 +171,7 @@ export default function FactoryServices() {
           <h2 className="text-base font-semibold mb-3">{t('factoryUI.recordService')}</h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg border">
-              <div><Label className="text-xs font-semibold text-destructive">{t('factoryUI.customer')} *</Label><Input value={form.customer_name} onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))} required /></div>
+              <div><Label className="text-xs font-semibold text-destructive">{t('factoryUI.customer')} *</Label><CustomerNameInput value={form.customer_name} onChange={v => setForm(f => ({ ...f, customer_name: v }))} customers={customerStats} required /></div>
               <div><Label className="text-xs font-semibold text-destructive">{t('factoryUI.seller')} *</Label><Input value={form.seller_name} onChange={e => setForm(f => ({ ...f, seller_name: e.target.value }))} required /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">

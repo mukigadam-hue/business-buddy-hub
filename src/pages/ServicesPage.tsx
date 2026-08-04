@@ -14,6 +14,8 @@ import Receipt from '@/components/Receipt';
 import type { ServiceRecord } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
 import RecycleDeleteButton from '@/components/RecycleDeleteButton';
+import CustomerNameInput, { buildCustomerStats } from '@/components/CustomerNameInput';
+import CustomerGroupedList from '@/components/CustomerGroupedList';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 

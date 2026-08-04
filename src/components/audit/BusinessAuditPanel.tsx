@@ -8,6 +8,8 @@ import CollapsibleSection from '@/components/CollapsibleSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { isReminderEnabled, setReminderEnabled } from '@/lib/auditReminderPref';
 import { toast } from 'sonner';
 import {
   ClipboardCheck, Search, Eye, EyeOff, Lock, ChevronDown, ChevronUp, History, Loader2, FileSpreadsheet, Download,
@@ -40,6 +42,7 @@ export default function BusinessAuditPanel() {
   const canAudit = userRole === 'owner' || userRole === 'admin';
 
   const [open, setOpen] = useState(false);
+  const [remindOn, setRemindOn] = useState(() => isReminderEnabled(businessId));
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [history, setHistory] = useState<Session[]>([]);
@@ -346,7 +349,7 @@ export default function BusinessAuditPanel() {
                   <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 px-2 py-2 bg-muted text-[11px] font-semibold">
                     <span>{t('audit.day', 'Day')}</span>
                     <span className="text-right">{t('audit.appCash', 'App cash')}</span>
-                    <span className="text-right">{t('audit.drawer', 'In drawer')}</span>
+                    <span className="text-right">{t('audit.drawer', 'Cash collected')}</span>
                     <span className="text-right">{t('audit.diff', 'Diff')}</span>
                   </div>
                   <div className="max-h-[360px] overflow-y-auto divide-y">

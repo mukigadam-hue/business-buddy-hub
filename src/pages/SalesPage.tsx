@@ -815,20 +815,40 @@ export default function SalesPage() {
 
       <Card className="shadow-card">
         <CardContent className="p-4">
-          <h2 className="text-base font-semibold mb-3">
-            {activeTab === 'today' ? t('sales.todaySales') : t('sales.previousSales')}
-          </h2>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="text-base font-semibold">
+              {activeTab === 'today' ? t('sales.todaySales') : t('sales.previousSales')}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setGroupByCustomer(v => !v)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium ${groupByCustomer ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+            >
+              👤 {groupByCustomer ? 'Grouped by customer' : 'Group by customer'}
+            </button>
+          </div>
           {filteredSales.length === 0 ? (
             <p className="text-sm text-muted-foreground">No sales {activeTab === 'today' ? 'today' : 'from previous days'} matching filter.</p>
           ) : (
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-              {filteredSales.map(sale => (
+              {groupByCustomer ? (
+                <CustomerGroupedList
+                  records={filteredSales}
+                  getName={s => s.customer_name || ''}
+                  getDate={s => s.created_at}
+                  getTotal={s => Number(s.grand_total) || 0}
+                  getBalance={s => Number(s.balance) || 0}
+                  defaultExpanded={activeTab === 'today'}
+                  renderRecord={sale => <SaleCard sale={sale} />}
+                />
+              ) : filteredSales.map(sale => (
                 <SaleCard key={sale.id} sale={sale} />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
 
       <Dialog open={!!receiptSale} onOpenChange={o => { if (!o) { setReceiptSale(null); import('@/lib/interstitialAd').then(m => m.triggerInterstitial('close-sale-receipt')); } }}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">

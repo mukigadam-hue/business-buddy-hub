@@ -1358,7 +1358,7 @@
   },
   "audit": {
     "title": "Business Audit & Accountability",
-    "subtitle": "Compare daily drawer cash and physical stock against what the app recorded.",
+    "subtitle": "Compare the daily cash collected and physical stock against what the app recorded.",
     "startPrompt": "Choose the date this audit should start from",
     "startHint": "New businesses can start from their first day. Older businesses may pick any date they want to be accountable from.",
     "startDate": "Start date",
@@ -1367,7 +1367,7 @@
     "periodLabel": "Current period",
     "day": "Day",
     "appCash": "App cash",
-    "drawer": "In drawer",
+    "drawer": "Cash collected",
     "diff": "Diff",
     "noDays": "No business days in this period yet.",
     "daySaved": "Day saved",
@@ -1401,7 +1401,7 @@
     "closeHint": "The results are saved permanently and the next audit starts where this one ended.",
     "history": "Past audits",
     "reminderTitle": "Record your daily cash",
-    "reminderBody": "You still have {{count}} day(s) without the cash you found in the drawer recorded.",
+    "reminderBody": "You still have {{count}} day(s) without the total cash collected recorded.",
     "later": "Later",
     "recordNow": "Record now",
     "extra": "Extra",
@@ -1414,7 +1414,7 @@
     "memoReceivable": "Memo: owed to us by customers",
     "memoPayable": "Memo: owed by us to suppliers",
     "reminderEncourage": "Recording your money every day keeps your accountability clean, shows exactly where losses come from, and helps you grow your profits. It only takes a few seconds — even a day with no business is worth recording as 0.",
-    "reminderHint": "Enter the total money you found in the drawer for each day. Use 0 for days you did not work.",
+    "reminderHint": "Enter the total cash collected for each day. Use 0 for days you did not work.",
     "skipForNow": "Skip for now",
     "fillNow": "OK, fill them in",
     "saveDays": "Save {{count}} day(s)",
@@ -1433,6 +1433,12 @@
     "saveAndContinue": "Save and continue",
     "reminderCapped": "To keep it simple, only the last {{count}} day(s) are listed here. Older days can be filled in from the accountability page in Settings.",
     "paperRecordsHint": "Have you been writing the daily money in a book or on paper? Open the accountability page and enter all those days there at once.",
-    "openAccountability": "Open accountability in Settings"
+    "openAccountability": "Open accountability in Settings",
+    "reminderShowDaily": "Show this daily reminder (turn off if you don't want it again)",
+    "reminderOffNotice": "Daily reminder turned off. Recording your money every day is still important — you can switch the reminder back on any time in Settings → Business Audit & Accountability.",
+    "reminderToggle": "Daily cash reminder popup",
+    "reminderToggleHint": "When on, the app reminds you every day to record the cash collected. You can always record it here instead.",
+    "reminderOn": "Daily reminder turned on.",
+    "reminderOff": "Daily reminder turned off. You can still record daily cash here any time."
   }
 }

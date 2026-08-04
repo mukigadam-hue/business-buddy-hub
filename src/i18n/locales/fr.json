@@ -1393,6 +1393,12 @@
     "saveAndContinue": "Enregistrer et continuer",
     "reminderCapped": "Pour simplifier, seuls les {{count}} derniers jours sont listés ici. Les jours plus anciens peuvent être saisis depuis la page de comptabilité dans les Paramètres.",
     "paperRecordsHint": "Notez-vous l'argent quotidien dans un cahier ou sur papier ? Ouvrez la page de comptabilité et saisissez tous ces jours d'un coup.",
-    "openAccountability": "Ouvrir la comptabilité dans les Paramètres"
+    "openAccountability": "Ouvrir la comptabilité dans les Paramètres",
+    "reminderShowDaily": "Show this daily reminder (turn off if you don't want it again)",
+    "reminderOffNotice": "Daily reminder turned off. Recording your money every day is still important — you can switch the reminder back on any time in Settings → Business Audit & Accountability.",
+    "reminderToggle": "Daily cash reminder popup",
+    "reminderToggleHint": "When on, the app reminds you every day to record the cash collected. You can always record it here instead.",
+    "reminderOn": "Daily reminder turned on.",
+    "reminderOff": "Daily reminder turned off. You can still record daily cash here any time."
   }
 }

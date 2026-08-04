@@ -1351,6 +1351,12 @@
     "saveAndContinue": "保存して続ける",
     "reminderCapped": "わかりやすくするため、直近 {{count}} 日分のみを表示しています。それより前の日は設定内の会計ページで入力できます。",
     "paperRecordsHint": "毎日の現金を帳簿や紙に記録していましたか？会計ページを開いて、それらの日をまとめて入力してください。",
-    "openAccountability": "設定で会計を開く"
+    "openAccountability": "設定で会計を開く",
+    "reminderShowDaily": "Show this daily reminder (turn off if you don't want it again)",
+    "reminderOffNotice": "Daily reminder turned off. Recording your money every day is still important — you can switch the reminder back on any time in Settings → Business Audit & Accountability.",
+    "reminderToggle": "Daily cash reminder popup",
+    "reminderToggleHint": "When on, the app reminds you every day to record the cash collected. You can always record it here instead.",
+    "reminderOn": "Daily reminder turned on.",
+    "reminderOff": "Daily reminder turned off. You can still record daily cash here any time."
   }
 }

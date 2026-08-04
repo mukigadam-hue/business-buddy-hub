@@ -9,8 +9,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { localDayKey, enumerateDays, fetchPeriodTotals } from '@/lib/auditData';
+import { isReminderEnabled, setReminderEnabled, onReminderPrefChange } from '@/lib/auditReminderPref';
+
 
 const SNOOZE_MS = 6 * 60 * 60 * 1000; // re-appear every 6 hours
 const MAX_LOOKBACK_DAYS = 30;
@@ -61,20 +64,38 @@ export default function AuditReminder() {
   const [nudge, setNudge] = useState<'week' | 'month' | null>(null);
   const [nudgeCash, setNudgeCash] = useState('');
   const [nudgeSaving, setNudgeSaving] = useState(false);
+  const [remindOn, setRemindOn] = useState(() => isReminderEnabled(businessId));
 
+  useEffect(() => { setRemindOn(isReminderEnabled(businessId)); }, [businessId]);
+  useEffect(() => onReminderPrefChange(() => setRemindOn(isReminderEnabled(businessId))), [businessId]);
 
+  /** Owner turns the daily popup off — accountability in Settings keeps working. */
+  function disableReminder() {
+    if (!businessId) return;
+    setReminderEnabled(businessId, false);
+    setRemindOn(false);
+    setOpen(false);
+    setNudge(null);
+    toast.info(t('audit.reminderOffNotice', 'Daily reminder turned off. Recording your money every day is still important — you can switch the reminder back on any time in Settings → Business Audit & Accountability.'), { duration: 8000 });
+  }
 
-  // Only real (non-personal) businesses that are at least one full day old, and
-  // only for the owner / admin. Brand-new installs and personal accounts never
-  // see the reminder — there is nothing to account for yet.
+  // Only real trading businesses (not personal accounts and not FlexRent
+  // property rentals, which rarely take cash every day) that are at least one
+  // full day old, and only for the owner / admin. Rental owners can still use
+  // the optional accountability panel in Settings whenever they want.
   const createdAt = (currentBusiness as any)?.created_at;
   const businessIsOldEnough = !!createdAt
     && localDayKey(new Date(createdAt)) < localDayKey(new Date());
 
+  const businessType = (currentBusiness as any)?.business_type;
+
   const eligible = !!businessId
-    && (currentBusiness as any)?.business_type !== 'personal'
+    && businessType !== 'personal'
+    && businessType !== 'property'
     && businessIsOldEnough
+    && remindOn
     && (userRole === 'owner' || userRole === 'admin');
+
 
   // ---- weekly / monthly accountability nudge (independent of the 6h snooze) ----
   useEffect(() => {
@@ -276,10 +297,21 @@ export default function AuditReminder() {
   }
 
 
+  const switchRow = (
+    <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 px-3 py-2">
+      <span className="text-[11px] leading-tight">
+        {t('audit.reminderShowDaily', "Show this daily reminder (turn off if you don't want it again)")}
+      </span>
+      <Switch checked={remindOn} onCheckedChange={v => { if (!v) disableReminder(); }} />
+    </div>
+  );
+
   const nudgeDialog = nudge ? (
     <AlertDialog open onOpenChange={o => { if (!o) dismissNudge(); }}>
       <AlertDialogContent className="max-w-md">
+        {switchRow}
         <AlertDialogHeader>
+
           <AlertDialogTitle>
             📊 {nudge === 'month'
               ? t('audit.nudgeMonthTitle', 'A full month of records saved')
@@ -335,6 +367,7 @@ export default function AuditReminder() {
 
       <AlertDialogContent className="left-3 right-3 top-[calc(env(safe-area-inset-top,0px)+8px)] bottom-[calc(72px+env(safe-area-inset-bottom,0px))] mx-auto grid w-auto max-w-md translate-x-0 translate-y-0 grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden p-4 sm:left-1/2 sm:right-auto sm:top-1/2 sm:bottom-auto sm:w-full sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-h-[calc(100dvh-2rem)]">
         <div className="min-h-0 overflow-y-auto space-y-3 pr-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+          {switchRow}
           <AlertDialogHeader>
             <AlertDialogTitle>
               💰 {t('audit.reminderTitle', 'Record your daily cash')}
@@ -342,8 +375,9 @@ export default function AuditReminder() {
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-left">
                 <p>
-                  {t('audit.reminderBody', 'You still have {{count}} day(s) without the cash you found in the drawer recorded.', { count: totalMissing || missing.length })}
+                  {t('audit.reminderBody', 'You still have {{count}} day(s) without the total cash collected recorded.', { count: totalMissing || missing.length })}
                 </p>
+
                 {totalMissing > missing.length && (
                   <p className="text-xs">
                     {t('audit.reminderCapped', 'To keep it simple, only the last {{count}} day(s) are listed here. Older days can be filled in from the accountability page in Settings.', { count: missing.length })}
@@ -373,7 +407,8 @@ export default function AuditReminder() {
               </div>
             ))}
             <p className="text-[11px] text-muted-foreground">
-              {t('audit.reminderHint', 'Enter the total money you found in the drawer for each day. Use 0 for days you did not work.')}
+              {t('audit.reminderHint', 'Enter the total cash collected for each day. Use 0 for days you did not work.')}
+
             </p>
           </div>
           )}

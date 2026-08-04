@@ -1351,6 +1351,12 @@
     "saveAndContinue": "저장하고 계속",
     "reminderCapped": "간단하게 하기 위해 최근 {{count}}일만 표시합니다. 이전 날짜는 설정의 회계 페이지에서 입력할 수 있습니다.",
     "paperRecordsHint": "매일의 현금을 장부나 종이에 기록해 두셨나요? 회계 페이지를 열어 그 날짜들을 한 번에 입력하세요.",
-    "openAccountability": "설정에서 회계 열기"
+    "openAccountability": "설정에서 회계 열기",
+    "reminderShowDaily": "Show this daily reminder (turn off if you don't want it again)",
+    "reminderOffNotice": "Daily reminder turned off. Recording your money every day is still important — you can switch the reminder back on any time in Settings → Business Audit & Accountability.",
+    "reminderToggle": "Daily cash reminder popup",
+    "reminderToggleHint": "When on, the app reminds you every day to record the cash collected. You can always record it here instead.",
+    "reminderOn": "Daily reminder turned on.",
+    "reminderOff": "Daily reminder turned off. You can still record daily cash here any time."
   }
 }

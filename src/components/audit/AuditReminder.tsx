@@ -407,7 +407,8 @@ export default function AuditReminder() {
               </div>
             ))}
             <p className="text-[11px] text-muted-foreground">
-              {t('audit.reminderHint', 'Enter the total money you found in the drawer for each day. Use 0 for days you did not work.')}
+              {t('audit.reminderHint', 'Enter the total cash collected for each day. Use 0 for days you did not work.')}
+
             </p>
           </div>
           )}

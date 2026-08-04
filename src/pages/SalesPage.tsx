@@ -78,6 +78,7 @@ export default function SalesPage() {
   const [partScannerOpen, setPartScannerOpen] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'debt'>('all');
   const [historySearch, setHistorySearch] = useState('');
+  const [groupByCustomer, setGroupByCustomer] = useState(true);
   const activeStock = stock.filter(s => !s.deleted_at);
   const todaySales = sales.filter(s => new Date(s.created_at).toDateString() === new Date().toDateString());
   const previousSales = sales.filter(s => new Date(s.created_at).toDateString() !== new Date().toDateString());

@@ -19,7 +19,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import ScreenshotButton from '@/components/ScreenshotButton';
-import { isNativeShell, BANNER_HEIGHT_PX } from '@/lib/nativeAdBridge';
+import { isNativeShell } from '@/lib/nativeAdBridge';
+import { useBannerReserved } from '@/lib/bannerSpace';
+
 
 import { toast } from 'sonner';
 import AuditReminder from '@/components/audit/AuditReminder';
@@ -285,7 +287,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Always reserve the banner height so bottom controls stay tappable on
   // every device; the reserved area is transparent so a real native banner
   // still shows through.
-  const bannerPx = BANNER_HEIGHT_PX;
+  // On the web the space is reserved only while a real AdSense banner is
+  // actually filled, so an empty slot never leaves a white bar over the UI.
+  const bannerPx = useBannerReserved();
+
 
   // Trigger B: fire an interstitial when the user switches between main
   // screens (subject to 45-min gap + global 2/90min cap, see interstitialAd.ts).

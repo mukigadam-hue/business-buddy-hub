@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Package, TrendingUp, ShoppingCart, ClipboardList, Wrench, Settings, Users, LogOut, Building2, Crown, User, Bell, BellDot, Factory, Flame, Boxes, Menu, Contact, Globe, Home, CalendarCheck, MessageSquare, Search, AlertTriangle, ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react';
 import ProofVideoButton from '@/components/ProofVideoButton';
 import BottomBannerAd from '@/components/BottomBannerAd';
+import WebNativeAd from '@/components/WebNativeAd';
+
 import DemoAccountBanner from '@/components/DemoAccountBanner';
 import LegalHelpModal from '@/components/LegalHelpModal';
 import { HelpCircle } from 'lucide-react';
@@ -482,7 +484,12 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
           </div>
           <DemoAccountBanner />
           <AuditReminder />
-          <div className="p-3 sm:p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">{children}</div>
+          <div className="p-3 sm:p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">
+            {children}
+            {/* Global web-only AdSense native ad (hidden in app shell / dev) */}
+            <WebNativeAd />
+          </div>
+
           {/* Desktop prev/next page nav */}
           <DesktopPageNav navItems={navItems} pathname={pathname} />
         </main>

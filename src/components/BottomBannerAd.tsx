@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { bridgeShowBanner, bridgeHideBanner, detectShell, BANNER_HEIGHT_PX } from '@/lib/nativeAdBridge';
+import WebNativeAd from '@/components/WebNativeAd';
 
 /**
  * BottomBannerAd — persistent bottom banner mounted globally.
@@ -7,8 +8,9 @@ import { bridgeShowBanner, bridgeHideBanner, detectShell, BANNER_HEIGHT_PX } fro
  * - In a native shell (WebViewGold preferred, Despia fallback), the shell
  *   renders a real AdMob banner as a native overlay above the WebView. We
  *   just fire the show/hide URL scheme.
- * - In the web preview / PWA we render a subtle branded placeholder so the
- *   layout reserves the same space and the mobile bottom nav is never covered.
+ * - On the web (browser / PWA) we fill the same reserved space with a real
+ *   Google AdSense banner slot, which refreshes every 120 seconds like the
+ *   native banner.
  *
  * The parent layout must reserve `BANNER_HEIGHT_PX` of bottom padding.
  */
@@ -29,20 +31,23 @@ export default function BottomBannerAd() {
 
   const shell = detectShell();
   // Native shell paints the banner itself as an overlay above the WebView.
-  // Render nothing here so the user never sees an empty "Sponsored · Ad"
-  // placeholder stacked above the real native AdMob banner.
   if (shell !== 'none') return null;
 
   return (
     <div
-      className="fixed left-0 right-0 z-40 pointer-events-none"
+      className="fixed left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur"
       style={{
         bottom: 'env(safe-area-inset-bottom, 0px)',
         height: BANNER_HEIGHT_PX,
       }}
     >
-      <div className="mx-auto max-w-md h-full flex items-center justify-center bg-muted/60 border-t border-border text-[11px] text-muted-foreground">
-        Sponsored · Ad
+      <div className="mx-auto max-w-3xl h-full overflow-hidden">
+        <WebNativeAd
+          className="h-full"
+          format="horizontal"
+          height={BANNER_HEIGHT_PX}
+          placeholderLabel="[AdSense Bottom Banner - Safe Dev Mode]"
+        />
       </div>
     </div>
   );

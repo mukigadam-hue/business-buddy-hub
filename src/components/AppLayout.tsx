@@ -20,6 +20,8 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import ScreenshotButton from '@/components/ScreenshotButton';
 import { isNativeShell, BANNER_HEIGHT_PX } from '@/lib/nativeAdBridge';
+import { useBannerReserved } from '@/lib/bannerSpace';
+
 
 import { toast } from 'sonner';
 import AuditReminder from '@/components/audit/AuditReminder';

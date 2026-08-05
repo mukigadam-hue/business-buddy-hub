@@ -13,10 +13,14 @@
  *  3. Never injects for the developer accounts (hardcoded email blacklist).
  *  4. Only real public visitors on the live production domain load the script.
  *
- * Every slot refreshes itself every 120 seconds (visibility-aware: the timer
- * only fires while the tab is actually in the foreground).
+ * Layout safety: the slot collapses to ZERO height whenever AdSense reports the
+ * slot as `unfilled` (or nothing renders within a few seconds), so an empty ad
+ * never leaves a white block floating over the app UI.
+ *
+ * Every filled slot refreshes itself every 120 seconds (visibility-aware: the
+ * timer only fires while the tab is actually in the foreground).
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 const AD_CLIENT = 'ca-pub-960556471328252';
@@ -50,6 +54,10 @@ interface WebNativeAdProps {
   height?: number;
   /** Placeholder label in dev/preview mode. */
   placeholderLabel?: string;
+  /** Hide the dev/preview placeholder box (used by the bottom banner). */
+  hidePlaceholder?: boolean;
+  /** Notified with true once the slot actually renders an ad, false if empty. */
+  onFillChange?: (filled: boolean) => void;
 }
 
 export default function WebNativeAd({
@@ -59,6 +67,8 @@ export default function WebNativeAd({
   layout = 'in-article',
   height,
   placeholderLabel,
+  hidePlaceholder,
+  onFillChange,
 }: WebNativeAdProps) {
   const { user } = useAuth();
   const email = (user?.email || '').trim().toLowerCase();
@@ -69,8 +79,15 @@ export default function WebNativeAd({
   const [devHost] = useState(() => isDevHost());
   // Bumping this remounts the <ins> so AdSense fills a brand-new slot.
   const [refreshKey, setRefreshKey] = useState(0);
+  // null = unknown yet, true = filled, false = unfilled (collapse the space).
+  const [filled, setFilled] = useState<boolean | null>(null);
 
   const blocked = wrapper || devHost || isDeveloper;
+
+  const report = useCallback((value: boolean) => {
+    setFilled(value);
+    onFillChange?.(value);
+  }, [onFillChange]);
 
   // Load the AdSense library once.
   useEffect(() => {
@@ -85,16 +102,38 @@ export default function WebNativeAd({
     }
   }, [blocked]);
 
-  // Request a fill for the current <ins> (runs again on every refresh).
+  // Request a fill for the current <ins> (runs again on every refresh) and
+  // watch whether Google actually served something.
   useEffect(() => {
     if (blocked) return;
+    setFilled(null);
     try {
       (window as any).adsbygoogle = (window as any).adsbygoogle || [];
       (window as any).adsbygoogle.push({});
     } catch {
       /* ignore */
     }
-  }, [blocked, refreshKey]);
+
+    const el = insRef.current;
+    if (!el) return;
+
+    const check = () => {
+      const status = el.getAttribute('data-ad-status');
+      if (status === 'filled') { report(true); return true; }
+      if (status === 'unfilled') { report(false); return true; }
+      return false;
+    };
+
+    if (check()) return;
+    const observer = new MutationObserver(() => { check(); });
+    observer.observe(el, { attributes: true, attributeFilter: ['data-ad-status'] });
+    // Hard timeout: if nothing rendered after 6s treat the slot as empty so we
+    // never keep dead space in the layout.
+    const timer = window.setTimeout(() => {
+      if (!check()) report(el.clientHeight > 20);
+    }, 6000);
+    return () => { observer.disconnect(); window.clearTimeout(timer); };
+  }, [blocked, refreshKey, report]);
 
   // 120s visibility-aware refresh cycle.
   useEffect(() => {
@@ -107,12 +146,11 @@ export default function WebNativeAd({
   }, [blocked]);
 
   // 1. Inside the native Android wrapper: render nothing at all (no gaps).
-  if (wrapper) {
-    return <div style={{ display: 'none' }} aria-hidden="true" />;
-  }
+  if (wrapper) return null;
 
   // 2. Developer account shield.
   if (isDeveloper) {
+    if (hidePlaceholder) return null;
     return (
       <div
         className={`rounded-lg border-2 border-dashed border-muted-foreground/40 bg-muted/30 p-2 text-center text-[11px] text-muted-foreground ${className || 'my-4'}`}
@@ -125,6 +163,7 @@ export default function WebNativeAd({
 
   // 3. Local / preview environments.
   if (devHost) {
+    if (hidePlaceholder) return null;
     return (
       <div
         className={`flex items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/40 bg-muted/20 p-2 text-center text-[11px] text-muted-foreground ${className || 'my-4'}`}
@@ -136,8 +175,17 @@ export default function WebNativeAd({
   }
 
   // 4. Live public visitor on the production domain.
+  // While the fill state is unknown the container has no min height, and once
+  // it is known to be unfilled it collapses completely.
+  const collapsed = filled === false;
   return (
-    <div className={className || 'my-4'} style={height ? { height } : undefined}>
+    <div
+      className={collapsed ? undefined : (className || 'my-4')}
+      style={{
+        ...(collapsed ? { height: 0, overflow: 'hidden', margin: 0 } : height ? { height } : {}),
+      }}
+      aria-hidden={collapsed || undefined}
+    >
       <ins
         key={refreshKey}
         ref={insRef}

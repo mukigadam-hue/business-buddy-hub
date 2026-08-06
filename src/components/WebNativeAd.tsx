@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
-const AD_CLIENT = 'ca-pub-960556471328252';
+const AD_CLIENT = 'ca-pub-9605564713228252';
 const AD_SLOT = '1234567890';
 export const WEB_AD_REFRESH_MS = 120_000;
 

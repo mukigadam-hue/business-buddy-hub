@@ -169,9 +169,9 @@ export default function Dashboard() {
             <Sparkles className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-sm sm:text-base">✨ Mass AI Inventory Scan (Scan Whole Shelf)</p>
+            <p className="font-semibold text-sm sm:text-base">{t('massScan.title')}</p>
             <p className="text-[11px] sm:text-xs text-muted-foreground leading-snug">
-              Snap a photo of your shelves or wall display to automatically list all items using Google Gemini AI.
+              {t('massScan.subtitle')}
             </p>
           </div>
         </div>

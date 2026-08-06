@@ -11,7 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Pencil, Trash2, RotateCcw, AlertTriangle, Image, X, ScanLine, ArrowUp } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, RotateCcw, AlertTriangle, Image, X, ScanLine, ArrowUp, Languages, Loader2 } from 'lucide-react';
+import { languages } from '@/i18n';
+import { supabase } from '@/integrations/supabase/client';
 import BarcodeScanHandler from '@/components/BarcodeScanHandler';
 import type { StockItem } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
@@ -87,6 +89,10 @@ export default function StockPage() {
   const { stock, addStockItem, updateStockItem, deleteStockItem, restoreStockItem, permanentDeleteStockItem, userRole } = useBusiness();
   const { user } = useAuth();
   const { fmt } = useCurrency();
+  const { t, i18n } = useTranslation();
+  const langCode = (i18n.language || 'en').split('-')[0];
+  const langName = languages.find(l => l.code === langCode)?.name || 'English';
+  const [translating, setTranslating] = useState(false);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const [editItem, setEditItem] = useState<StockItem | null>(null);
@@ -118,6 +124,51 @@ export default function StockPage() {
     is_unmeasurable: false, base_unit_type: 'Liters',
     total_stock_base_units: '', wholesale_cost_per_base_unit: '',
   });
+
+  async function translateStockToCurrentLanguage() {
+    const target = stock.filter(s => !s.deleted_at);
+    if (target.length === 0) {
+      toast.error(t('massScan.nothingToTranslate'));
+      return;
+    }
+    setTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-stock', {
+        body: {
+          language: langCode,
+          languageName: langName,
+          items: target.map(it => ({
+            id: it.id,
+            name: it.name,
+            category: it.category,
+            quality: it.quality,
+            unit_type: it.unit_type,
+          })),
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const translated: any[] = Array.isArray((data as any)?.items) ? (data as any).items : [];
+      let count = 0;
+      for (const tr of translated) {
+        const original = target.find(o => o.id === tr.id);
+        if (!original) continue;
+        const updates: any = {};
+        if (tr.name && tr.name !== original.name) updates.name = String(tr.name);
+        if (tr.category && tr.category !== original.category) updates.category = String(tr.category);
+        if (tr.quality && tr.quality !== original.quality) updates.quality = String(tr.quality);
+        if (tr.unit_type && tr.unit_type !== original.unit_type) updates.unit_type = String(tr.unit_type);
+        if (Object.keys(updates).length === 0) continue;
+        await updateStockItem(original.id, updates);
+        count++;
+      }
+      toast.success(t('massScan.translated', { count }));
+    } catch (err: any) {
+      toast.error(err?.message || t('massScan.translateFailed'));
+    } finally {
+      setTranslating(false);
+    }
+  }
 
   const activeStock = stock.filter(s => !s.deleted_at);
   const deletedStock = stock.filter(s => s.deleted_at);
@@ -378,8 +429,22 @@ export default function StockPage() {
 
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search by name, category, quality..." className="pl-8 h-8 text-sm" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder={t('stock.search')} className="pl-8 h-8 text-sm" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full h-9 text-xs"
+          disabled={translating}
+          onClick={translateStockToCurrentLanguage}
+        >
+          {translating ? (
+            <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> {t('massScan.translating')}</>
+          ) : (
+            <><Languages className="h-3.5 w-3.5 mr-2" /> {t('massScan.translateStock')} ({langName})</>
+          )}
+        </Button>
 
         {/* Photo Gallery - Compact Horizontal Scroll */}
         {itemsWithPhotos.length > 0 && (

@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { image, businessName, businessType } = await req.json();
+    const { image, businessName, businessType, language, languageName } = await req.json();
     if (!image || typeof image !== "string") {
       return new Response(JSON.stringify({ error: "image (data URL) is required" }), {
         status: 400,
@@ -28,7 +28,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    const lang = (languageName || language || "English").toString();
+
     const systemPrompt = `You are an expert retail inventory assistant analyzing a photograph of shelves, walls or displays for a ${businessType || "general retail"} business named "${businessName || "the shop"}".
+
+LANGUAGE REQUIREMENT (very important):
+- Write EVERY text value you output in ${lang} (language code: ${language || "en"}).
+- This applies to "item_name", "category", "quality" and "unit_type".
+- Keep well-known brand names in their original spelling, but translate the generic product words, category, quality and unit type into ${lang}.
+- Use the natural script/alphabet of ${lang}. Do not output English unless ${lang} is English.
+- JSON keys must stay exactly in English as specified below; only the values are localized.
 
 For EACH distinct product visible in the image, return one JSON object. Group identical duplicates together (e.g. 6 identical boxes = one entry with quantity 6) and pick the tightest bounding box that contains ALL those duplicates as one region. For a unique item, box just that item tightly.
 
@@ -40,10 +49,10 @@ CRITICAL — bounding boxes:
 Output ONLY a valid JSON array, no markdown fences, no commentary. Exact structure:
 [
   {
-    "item_name": "Brand and full product name",
-    "category": "Broad category",
-    "quality": "e.g. Original, Grade A, Generic",
-    "unit_type": "Pieces",
+    "item_name": "Brand and full product name in ${lang}",
+    "category": "Broad category in ${lang}",
+    "quality": "Quality grade in ${lang}",
+    "unit_type": "Unit of measure in ${lang}",
     "cost_per_unit": 0,
     "wholesale": 0,
     "retail": 0,

@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { languages } from '@/i18n';
 import { useBusiness } from '@/context/BusinessContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -76,6 +78,9 @@ function fileToDataUrl(file: File | Blob): Promise<string> {
 }
 
 export default function MassInventoryScan({ open, onOpenChange }: MassInventoryScanProps) {
+  const { t, i18n } = useTranslation();
+  const langCode = (i18n.language || 'en').split('-')[0];
+  const langName = languages.find(l => l.code === langCode)?.name || 'English';
   const { currentBusiness, addStockItem } = useBusiness();
   const isMobile = useIsMobile();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -116,7 +121,7 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
 
   async function handleImage(file: File) {
     if (!file.type.startsWith('image/')) {
-      toast.error('Please choose an image');
+      toast.error(t('massScan.chooseImage'));
       return;
     }
     setScanning(true);
@@ -134,6 +139,8 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
           image: dataUrl,
           businessName: currentBusiness?.name || '',
           businessType: (currentBusiness as any)?.business_type || '',
+          language: langCode,
+          languageName: langName,
         },
       });
 
@@ -142,7 +149,7 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
 
       const detected: any[] = Array.isArray(data?.items) ? data.items : [];
       if (detected.length === 0) {
-        toast.error('No items detected. Try a clearer photo.');
+        toast.error(t('massScan.noneDetected'));
         setScanning(false);
         return;
       }
@@ -189,9 +196,9 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
         }),
       );
       setItems(normalized);
-      toast.success(`AI detected ${normalized.length} item${normalized.length === 1 ? '' : 's'}`);
+      toast.success(t('massScan.detected', { count: normalized.length }));
     } catch (err: any) {
-      toast.error(err?.message || 'Scan failed');
+      toast.error(err?.message || t('massScan.scanFailed'));
     } finally {
       setScanning(false);
     }
@@ -208,7 +215,7 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
     if (!items || items.length === 0) return;
     const valid = items.filter((it) => it.item_name.trim().length > 0);
     if (valid.length === 0) {
-      toast.error('Give at least one item a name');
+      toast.error(t('massScan.needName'));
       return;
     }
     setSaving(true);
@@ -229,11 +236,11 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
           image_url_3: '',
         } as any);
       }
-      toast.success(`Added ${valid.length} item${valid.length === 1 ? '' : 's'} to live stock`);
+      toast.success(t('massScan.addedItems', { count: valid.length }));
       reset();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to save some items');
+      toast.error(err?.message || t('massScan.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -250,20 +257,21 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
         <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" /> Mass AI Inventory Scan
+              <Sparkles className="h-5 w-5 text-primary" /> {t('massScan.dialogTitle')}
             </DialogTitle>
-            <DialogDescription>
-              Snap a photo of your shelves or wall display to automatically list all items using Google Gemini AI. The photo is auto-attached to each item — you can replace any image before saving or edit later from My Stock.
-            </DialogDescription>
+            <DialogDescription>{t('massScan.dialogDesc')}</DialogDescription>
           </DialogHeader>
 
           {!scanning && !items && (
             <div className="space-y-3">
               <Button onClick={openCamera} className="w-full" size="lg">
-                <ScanLine className="h-5 w-5 mr-2" /> Open Camera & Scan Shelf
+                <ScanLine className="h-5 w-5 mr-2" /> {t('massScan.openCamera')}
               </Button>
               <p className="text-xs text-muted-foreground text-center">
-                Hold the camera steady. Capture the full shelf in good light for best results.
+                {t('massScan.cameraHint')}
+              </p>
+              <p className="text-[11px] text-muted-foreground text-center">
+                🌍 {t('massScan.resultsLanguage')}: <span className="font-medium text-foreground">{langName}</span>
               </p>
             </div>
           )}
@@ -271,8 +279,8 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
           {scanning && (
             <div className="py-10 flex flex-col items-center gap-3">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <p className="font-medium">Google AI is scanning your stock...</p>
-              <p className="text-xs text-muted-foreground">This usually takes 5-15 seconds</p>
+              <p className="font-medium">{t('massScan.scanning')}</p>
+              <p className="text-xs text-muted-foreground">{t('massScan.scanningHint')}</p>
             </div>
           )}
 
@@ -280,10 +288,10 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Review, edit quantities & prices, and replace photos if needed.
+                  {t('massScan.reviewHint')}
                 </p>
                 <Button variant="outline" size="sm" onClick={openCamera}>
-                  Rescan
+                  {t('massScan.rescan')}
                 </Button>
               </div>
 
@@ -297,7 +305,7 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
                       <button
                         onClick={() => removeItem(idx)}
                         className="text-destructive hover:opacity-70"
-                        aria-label="Remove"
+                        aria-label={t('massScan.remove')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -311,10 +319,10 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
                         onUploaded={(url) => updateItem(idx, { image_url: url })}
                         onRemoved={() => updateItem(idx, { image_url: '' })}
                         size="sm"
-                        label="Photo"
+                        label={t('massScan.photo')}
                       />
                       <div className="flex-1">
-                        <Label className="text-xs">Item Name</Label>
+                        <Label className="text-xs">{t('stock.name')}</Label>
                         <Input
                           value={it.item_name}
                           onChange={(e) => updateItem(idx, { item_name: e.target.value })}
@@ -324,14 +332,14 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className="text-xs">Category</Label>
+                        <Label className="text-xs">{t('stock.category')}</Label>
                         <Input
                           value={it.category}
                           onChange={(e) => updateItem(idx, { category: e.target.value })}
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">Quality</Label>
+                        <Label className="text-xs">{t('stock.quality')}</Label>
                         <Input
                           value={it.quality}
                           onChange={(e) => updateItem(idx, { quality: e.target.value })}
@@ -340,14 +348,14 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className="text-xs">Unit Type</Label>
+                        <Label className="text-xs">{t('massScan.unitType', 'Unit Type')}</Label>
                         <Input
                           value={it.unit_type}
                           onChange={(e) => updateItem(idx, { unit_type: e.target.value })}
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">Quantity</Label>
+                        <Label className="text-xs">{t('stock.quantity')}</Label>
                         <Input
                           type="number"
                           inputMode="decimal"
@@ -361,7 +369,7 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <Label className="text-xs">Cost</Label>
+                        <Label className="text-xs">{t('stock.buyingPrice')}</Label>
                         <Input
                           type="number"
                           value={it.cost_per_unit}
@@ -369,7 +377,7 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">Wholesale</Label>
+                        <Label className="text-xs">{t('stock.wholesalePrice')}</Label>
                         <Input
                           type="number"
                           value={it.wholesale}
@@ -377,7 +385,7 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">Retail</Label>
+                        <Label className="text-xs">{t('stock.retailPrice')}</Label>
                         <Input
                           type="number"
                           value={it.retail}
@@ -392,12 +400,11 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
               <Button onClick={saveAll} disabled={saving} className="w-full" size="lg">
                 {saving ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving {items.length} item
-                    {items.length === 1 ? '' : 's'}...
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t('massScan.savingItems', { count: items.length })}
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-5 w-5 mr-2" /> Save and Add to Live Stock
+                    <CheckCircle2 className="h-5 w-5 mr-2" /> {t('massScan.saveAll')}
                   </>
                 )}
               </Button>

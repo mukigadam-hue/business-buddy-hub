@@ -1428,6 +1428,7 @@
     "translating": "Traduction...",
     "translated": "{{count}} article(s) traduit(s)",
     "translateFailed": "Échec de la traduction",
-    "nothingToTranslate": "Aucun article de stock à traduire"
+    "nothingToTranslate": "Aucun article de stock à traduire",
+    "unitType": "Type d'unité"
   }
 }

@@ -1386,6 +1386,7 @@
     "translating": "翻译中...",
     "translated": "已翻译 {{count}} 件商品",
     "translateFailed": "翻译失败",
-    "nothingToTranslate": "没有可翻译的库存商品"
+    "nothingToTranslate": "没有可翻译的库存商品",
+    "unitType": "单位类型"
   }
 }

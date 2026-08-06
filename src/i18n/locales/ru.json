@@ -1386,6 +1386,7 @@
     "translating": "Перевод...",
     "translated": "Переведено {{count}} товар(ов)",
     "translateFailed": "Ошибка перевода",
-    "nothingToTranslate": "Нет товаров для перевода"
+    "nothingToTranslate": "Нет товаров для перевода",
+    "unitType": "Тип единицы"
   }
 }

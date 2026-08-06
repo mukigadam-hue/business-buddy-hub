@@ -1386,6 +1386,7 @@
     "translating": "Übersetze...",
     "translated": "{{count}} Artikel übersetzt",
     "translateFailed": "Übersetzung fehlgeschlagen",
-    "nothingToTranslate": "Keine Artikel zum Übersetzen"
+    "nothingToTranslate": "Keine Artikel zum Übersetzen",
+    "unitType": "Einheitstyp"
   }
 }

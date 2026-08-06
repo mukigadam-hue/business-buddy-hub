@@ -1386,6 +1386,7 @@
     "translating": "جارٍ الترجمة...",
     "translated": "تمت ترجمة {{count}} منتج",
     "translateFailed": "فشلت الترجمة",
-    "nothingToTranslate": "لا توجد منتجات لترجمتها"
+    "nothingToTranslate": "لا توجد منتجات لترجمتها",
+    "unitType": "نوع الوحدة"
   }
 }

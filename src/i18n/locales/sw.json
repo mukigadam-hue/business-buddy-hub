@@ -1453,6 +1453,7 @@
     "translating": "Inatafsiri...",
     "translated": "Bidhaa {{count}} zimetafsiriwa",
     "translateFailed": "Tafsiri imeshindikana",
-    "nothingToTranslate": "Hakuna bidhaa za kutafsiri"
+    "nothingToTranslate": "Hakuna bidhaa za kutafsiri",
+    "unitType": "Aina ya Kipimo"
   }
 }

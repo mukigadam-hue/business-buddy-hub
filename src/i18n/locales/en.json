@@ -1468,6 +1468,7 @@
     "translating": "Translating...",
     "translated": "Translated {{count}} item(s)",
     "translateFailed": "Translation failed",
-    "nothingToTranslate": "No stock items to translate"
+    "nothingToTranslate": "No stock items to translate",
+    "unitType": "Unit Type"
   }
 }

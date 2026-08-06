@@ -1386,6 +1386,7 @@
     "translating": "번역 중...",
     "translated": "{{count}}개 품목 번역 완료",
     "translateFailed": "번역 실패",
-    "nothingToTranslate": "번역할 재고가 없습니다"
+    "nothingToTranslate": "번역할 재고가 없습니다",
+    "unitType": "단위 유형"
   }
 }

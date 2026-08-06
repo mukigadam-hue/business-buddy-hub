@@ -1386,6 +1386,7 @@
     "translating": "翻訳中...",
     "translated": "{{count}} 件を翻訳しました",
     "translateFailed": "翻訳に失敗しました",
-    "nothingToTranslate": "翻訳する在庫がありません"
+    "nothingToTranslate": "翻訳する在庫がありません",
+    "unitType": "単位の種類"
   }
 }

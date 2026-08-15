@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Rocket, Store, PackagePlus, ClipboardList } from 'lucide-react';
+import { Rocket, Store, PackagePlus, ClipboardList, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useBusiness } from '@/context/BusinessContext';
+import MassInventoryScan from '@/components/MassInventoryScan';
 
 type Stage = 'auth' | 'personal' | 'noStock' | 'noRecords';
 
@@ -46,10 +47,12 @@ function NudgeDialog({
   stage,
   scope,
   onAction,
+  onSecondaryAction,
 }: {
   stage: Stage;
   scope: string;
   onAction?: () => void;
+  onSecondaryAction?: () => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -66,6 +69,9 @@ function NudgeDialog({
     setOpen(false);
   };
 
+  const secondaryKey = `growth.${stage}.secondaryCta`;
+  const hasSecondary = stage === 'noStock' && t(secondaryKey) !== secondaryKey;
+
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) close(); }}>
       <DialogContent className="max-w-[92vw] sm:max-w-md rounded-xl">
@@ -76,7 +82,7 @@ function NudgeDialog({
           <DialogTitle className="text-center text-base sm:text-lg">
             {t(`growth.${stage}.title`)}
           </DialogTitle>
-          <DialogDescription className="text-center text-sm leading-relaxed">
+          <DialogDescription className="text-center text-sm leading-relaxed whitespace-pre-line">
             {t(`growth.${stage}.body`)}
           </DialogDescription>
         </DialogHeader>
@@ -90,6 +96,19 @@ function NudgeDialog({
           >
             {t(`growth.${stage}.cta`)}
           </Button>
+          {hasSecondary && onSecondaryAction && (
+            <Button
+              variant="outline"
+              className="w-full min-h-[44px]"
+              onClick={() => {
+                close();
+                onSecondaryAction();
+              }}
+            >
+              <ScanLine className="h-4 w-4 mr-2" />
+              {t(secondaryKey)}
+            </Button>
+          )}
           <Button variant="ghost" className="w-full min-h-[44px]" onClick={close}>
             {t('growth.later')}
           </Button>
@@ -108,6 +127,7 @@ export function AuthGrowthNudge({ onAction }: { onAction?: () => void }) {
 export default function GrowthNudge() {
   const { currentBusiness, stock, sales, services, loading } = useBusiness();
   const navigate = useNavigate();
+  const [massScanOpen, setMassScanOpen] = useState(false);
 
   const stage = useMemo<Stage | null>(() => {
     if (loading || !currentBusiness) return null;
@@ -128,11 +148,15 @@ export default function GrowthNudge() {
     stage === 'personal' ? '/register-business' : stage === 'noStock' ? '/stock' : '/sales';
 
   return (
-    <NudgeDialog
-      key={`${stage}-${currentBusiness.id}`}
-      stage={stage}
-      scope={currentBusiness.id}
-      onAction={() => navigate(target)}
-    />
+    <>
+      <NudgeDialog
+        key={`${stage}-${currentBusiness.id}`}
+        stage={stage}
+        scope={currentBusiness.id}
+        onAction={() => navigate(target)}
+        onSecondaryAction={stage === 'noStock' ? () => setMassScanOpen(true) : undefined}
+      />
+      <MassInventoryScan open={massScanOpen} onOpenChange={setMassScanOpen} />
+    </>
   );
 }

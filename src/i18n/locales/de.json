@@ -1403,8 +1403,9 @@
     },
     "noStock": {
       "title": "Füge deinen Bestand hinzu",
-      "body": "Dein Geschäft ist bereit. Füge die Waren hinzu, die du verkaufst, um Verkäufe zu erfassen, deinen Gewinn zu kennen und Käufern deine Waren zu zeigen.",
-      "cta": "Ersten Artikel hinzufügen"
+      "body": "Dein Geschäft ist bereit. Du kannst Artikel einzeln manuell hinzufügen oder die Massen-AI-Inventur nutzen, um ein Foto deines Regals zu machen und alles automatisch zu erfassen. Wenn du Artikel manuell hinzufügst, lade klare Fotos hoch, damit Käufer sie leicht erkennen können.",
+      "cta": "Ersten Artikel hinzufügen",
+      "secondaryCta": "Regal mit KI scannen"
     },
     "noRecords": {
       "title": "Erfasse das heutige Geschäft",

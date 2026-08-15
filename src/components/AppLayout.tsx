@@ -25,6 +25,7 @@ import { useBannerReserved } from '@/lib/bannerSpace';
 
 import { toast } from 'sonner';
 import AuditReminder from '@/components/audit/AuditReminder';
+import GrowthNudge from '@/components/GrowthNudge';
 
 function useNavItems() {
   const { t } = useTranslation();

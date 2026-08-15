@@ -1470,8 +1470,9 @@
     },
     "noStock": {
       "title": "Ongeza bidhaa zako sasa",
-      "body": "Biashara yako ipo tayari. Ongeza bidhaa unazouza ili uweke mauzo, ujue faida yako na wanunuzi waone bidhaa zako.",
-      "cta": "Ongeza bidhaa ya kwanza"
+      "body": "Biashara yako ipo tayari. Unaweza kuongeza bidhaa kwa mikono moja baada ya nyingine, au kutumia Mass AI Inventory Scan kupiga picha ya rafu yako na kuorodhesha kila kitu kiotomatiki. Ukiongeza bidhaa kwa mikono, pakua picha zilizo wazi ili wanunuzi waweze kuzitambua kwa urahisi.",
+      "cta": "Ongeza bidhaa ya kwanza",
+      "secondaryCta": "Scan Rafu kwa AI"
     },
     "noRecords": {
       "title": "Weka kumbukumbu za leo",

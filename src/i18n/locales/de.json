@@ -1388,5 +1388,28 @@
     "translateFailed": "Übersetzung fehlgeschlagen",
     "nothingToTranslate": "Keine Artikel zum Übersetzen",
     "unitType": "Einheitstyp"
+  },
+  "growth": {
+    "later": "Später",
+    "auth": {
+      "title": "Lass dein Geschäft mit BizTrack wachsen",
+      "body": "Erstelle dein kostenloses Konto, füge deine Waren hinzu und erfasse täglich dein Geschäft. Käufer in deiner Nähe und weltweit finden dann deinen Laden.",
+      "cta": "Konto erstellen"
+    },
+    "personal": {
+      "title": "Registriere dein Geschäft",
+      "body": "Wechsle zu einem Geschäftskonto. Füge Bestand hinzu, erfasse tägliche Verkäufe und lass Käufer dich finden.",
+      "cta": "Geschäft registrieren"
+    },
+    "noStock": {
+      "title": "Füge deinen Bestand hinzu",
+      "body": "Dein Geschäft ist bereit. Füge die Waren hinzu, die du verkaufst, um Verkäufe zu erfassen, deinen Gewinn zu kennen und Käufern deine Waren zu zeigen.",
+      "cta": "Ersten Artikel hinzufügen"
+    },
+    "noRecords": {
+      "title": "Erfasse das heutige Geschäft",
+      "body": "Du hast Bestand, aber keine aktuellen Einträge. Erfasse jeden Verkauf und jede Zahlung täglich, um echten Gewinn, Schulden und Wachstum zu sehen.",
+      "cta": "Verkauf erfassen"
+    }
   }
 }

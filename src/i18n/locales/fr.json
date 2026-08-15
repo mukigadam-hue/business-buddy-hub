@@ -1430,5 +1430,28 @@
     "translateFailed": "Échec de la traduction",
     "nothingToTranslate": "Aucun article de stock à traduire",
     "unitType": "Type d'unité"
+  },
+  "growth": {
+    "later": "Plus tard",
+    "auth": {
+      "title": "Développez votre commerce avec BizTrack",
+      "body": "Créez votre compte gratuit, ajoutez vos articles et enregistrez vos ventes chaque jour. Les acheteurs près de vous et dans le monde pourront trouver votre boutique.",
+      "cta": "Créer mon compte"
+    },
+    "personal": {
+      "title": "Enregistrez votre entreprise",
+      "body": "Passez à un compte professionnel. Ajoutez votre stock, enregistrez les ventes du jour et laissez les acheteurs vous trouver.",
+      "cta": "Enregistrer mon entreprise"
+    },
+    "noStock": {
+      "title": "Ajoutez votre stock",
+      "body": "Votre entreprise est prête. Ajoutez les articles que vous vendez pour enregistrer les ventes, connaître votre bénéfice et montrer vos produits.",
+      "cta": "Ajouter mon premier article"
+    },
+    "noRecords": {
+      "title": "Enregistrez les ventes du jour",
+      "body": "Vous avez du stock mais aucun enregistrement récent. Saisissez chaque vente et paiement chaque jour pour voir votre vrai bénéfice, vos dettes et votre croissance.",
+      "cta": "Enregistrer une vente"
+    }
   }
 }

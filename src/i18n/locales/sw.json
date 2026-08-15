@@ -1455,5 +1455,28 @@
     "translateFailed": "Tafsiri imeshindikana",
     "nothingToTranslate": "Hakuna bidhaa za kutafsiri",
     "unitType": "Aina ya Kipimo"
+  },
+  "growth": {
+    "later": "Baadaye",
+    "auth": {
+      "title": "Kuza biashara yako na BizTrack",
+      "body": "Fungua akaunti bila malipo, ongeza bidhaa unazouza, na weka kumbukumbu za kila siku. Wanunuzi karibu nawe na duniani kote wataiona biashara yako.",
+      "cta": "Fungua akaunti yangu"
+    },
+    "personal": {
+      "title": "Sajili biashara yako",
+      "body": "Badilisha hii kuwa akaunti ya biashara. Ongeza bidhaa, weka mauzo ya kila siku, na wanunuzi wakupate.",
+      "cta": "Sajili biashara yangu"
+    },
+    "noStock": {
+      "title": "Ongeza bidhaa zako sasa",
+      "body": "Biashara yako ipo tayari. Ongeza bidhaa unazouza ili uweke mauzo, ujue faida yako na wanunuzi waone bidhaa zako.",
+      "cta": "Ongeza bidhaa ya kwanza"
+    },
+    "noRecords": {
+      "title": "Weka kumbukumbu za leo",
+      "body": "Una bidhaa lakini hakuna kumbukumbu za hivi karibuni. Weka kila mauzo na malipo kila siku ili ujue faida halisi, madeni na ukuaji.",
+      "cta": "Weka mauzo"
+    }
   }
 }

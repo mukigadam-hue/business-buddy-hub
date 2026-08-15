@@ -400,6 +400,9 @@ export default function PhoneAuthPage() {
           <PlayStoreUpdateButton />
         </div>
 
+        {/* Encouraging first-open message for visitors who have not signed up yet */}
+        <AuthGrowthNudge onAction={() => setMode("signup")} />
+
       </div>
 
       <Card className="w-full max-w-md border-2 bg-card/95 p-3 shadow-xl backdrop-blur-sm sm:p-8">

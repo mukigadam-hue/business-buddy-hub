@@ -100,8 +100,8 @@ function NudgeDialog({
 }
 
 /** Auth screen nudge — no business context available here. */
-export function AuthGrowthNudge() {
-  return <NudgeDialog stage="auth" scope="guest" />;
+export function AuthGrowthNudge({ onAction }: { onAction?: () => void }) {
+  return <NudgeDialog stage="auth" scope="guest" onAction={onAction} />;
 }
 
 /** In-app nudge: picks the message that matches how far the user has come. */

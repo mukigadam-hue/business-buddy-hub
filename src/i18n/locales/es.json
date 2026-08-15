@@ -1388,5 +1388,28 @@
     "translateFailed": "Error de traducción",
     "nothingToTranslate": "No hay artículos para traducir",
     "unitType": "Tipo de unidad"
+  },
+  "growth": {
+    "later": "Más tarde",
+    "auth": {
+      "title": "Haz crecer tu negocio con BizTrack",
+      "body": "Crea tu cuenta gratis, agrega los productos que vendes y registra tu negocio cada día. Así los compradores cerca de ti y en el mundo podrán encontrarte.",
+      "cta": "Crear mi cuenta"
+    },
+    "personal": {
+      "title": "Registra tu negocio",
+      "body": "Cambia a una cuenta de negocio. Agrega tu inventario, registra las ventas diarias y deja que los compradores te encuentren.",
+      "cta": "Registrar mi negocio"
+    },
+    "noStock": {
+      "title": "Agrega tu inventario",
+      "body": "Tu negocio está listo. Agrega los productos que vendes para registrar ventas, conocer tu ganancia y mostrar tus productos.",
+      "cta": "Agregar mi primer producto"
+    },
+    "noRecords": {
+      "title": "Registra el negocio de hoy",
+      "body": "Tienes inventario pero no hay registros recientes. Anota cada venta y pago cada día para ver tu ganancia real, tus deudas y tu crecimiento.",
+      "cta": "Registrar una venta"
+    }
   }
 }

@@ -25,6 +25,7 @@ import { useBannerReserved } from '@/lib/bannerSpace';
 
 import { toast } from 'sonner';
 import AuditReminder from '@/components/audit/AuditReminder';
+import GrowthNudge from '@/components/GrowthNudge';
 
 function useNavItems() {
   const { t } = useTranslation();
@@ -489,6 +490,8 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
           </div>
           <DemoAccountBanner />
           <AuditReminder />
+          <GrowthNudge />
+
           <div className="p-3 sm:p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">
             {children}
             {/* Global web-only AdSense native ad (hidden in app shell / dev) */}

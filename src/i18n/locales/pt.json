@@ -1388,5 +1388,28 @@
     "translateFailed": "Falha na tradução",
     "nothingToTranslate": "Nenhum item de estoque para traduzir",
     "unitType": "Tipo de unidade"
+  },
+  "growth": {
+    "later": "Mais tarde",
+    "auth": {
+      "title": "Faça o seu negócio crescer com o BizTrack",
+      "body": "Crie a sua conta gratuita, adicione os produtos que vende e registe o negócio todos os dias. Compradores perto de você e no mundo poderão encontrar a sua loja.",
+      "cta": "Criar a minha conta"
+    },
+    "personal": {
+      "title": "Registe o seu negócio",
+      "body": "Passe para uma conta de negócio. Adicione o stock, registe as vendas diárias e deixe os compradores encontrarem-no.",
+      "cta": "Registar o meu negócio"
+    },
+    "noStock": {
+      "title": "Adicione o seu stock",
+      "body": "O seu negócio está pronto. Adicione os produtos que vende para registar vendas, saber o lucro e mostrar os produtos aos compradores.",
+      "cta": "Adicionar o primeiro produto"
+    },
+    "noRecords": {
+      "title": "Registe o negócio de hoje",
+      "body": "Tem stock mas nenhum registo recente. Lance cada venda e pagamento todos os dias para ver o lucro real, as dívidas e o crescimento.",
+      "cta": "Registar uma venda"
+    }
   }
 }

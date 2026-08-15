@@ -14,6 +14,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { Separator } from "@/components/ui/separator";
 import LegalHelpModal from "@/components/LegalHelpModal";
 import PlayStoreUpdateButton from "@/components/PlayStoreUpdateButton";
+import { AuthGrowthNudge } from "@/components/GrowthNudge";
 import { BANNER_HEIGHT_PX } from "@/lib/nativeAdBridge";
 import { isNativeShell } from "@/lib/nativeAdBridge";
 import {
@@ -398,6 +399,9 @@ export default function PhoneAuthPage() {
         <div className="mt-5">
           <PlayStoreUpdateButton />
         </div>
+
+        {/* Encouraging first-open message for visitors who have not signed up yet */}
+        <AuthGrowthNudge onAction={() => setMode("signup")} />
 
       </div>
 

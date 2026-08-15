@@ -1470,5 +1470,28 @@
     "translateFailed": "Translation failed",
     "nothingToTranslate": "No stock items to translate",
     "unitType": "Unit Type"
+  },
+  "growth": {
+    "later": "Later",
+    "auth": {
+      "title": "Grow your business with BizTrack",
+      "body": "Create your free account, add the items you sell, and record your daily business. Buyers near you and around the world can then find your shop.",
+      "cta": "Create my account"
+    },
+    "personal": {
+      "title": "Register your business",
+      "body": "Turn this into a business account. Add your stock, record daily sales, and let buyers find you online.",
+      "cta": "Register my business"
+    },
+    "noStock": {
+      "title": "Add your stock now",
+      "body": "Your business is ready. Add the items you sell so you can record sales, know your profit, and show your goods to buyers.",
+      "cta": "Add my first item"
+    },
+    "noRecords": {
+      "title": "Record today's business",
+      "body": "You have stock but no recent records. Enter every sale and payment daily to see your real profit, debts and growth.",
+      "cta": "Record a sale"
+    }
   }
 }

@@ -11,6 +11,8 @@ export interface StockItem {
   name: string;
   category: string;
   quality: string;
+  unit_type?: string;
+
   buying_price: number;
   wholesale_price: number;
   retail_price: number;

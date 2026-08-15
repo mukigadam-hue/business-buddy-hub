@@ -1403,8 +1403,9 @@
     },
     "noStock": {
       "title": "Agrega tu inventario",
-      "body": "Tu negocio está listo. Agrega los productos que vendes para registrar ventas, conocer tu ganancia y mostrar tus productos.",
-      "cta": "Agregar mi primer producto"
+      "body": "Tu negocio está listo. Puedes agregar productos manualmente uno por uno, o usar el Escaneo Masivo con IA para tomar una foto de tu estante y listar todo automáticamente. Si agregas productos manualmente, sube fotos claras para que los compradores puedan identificarlos fácilmente.",
+      "cta": "Agregar mi primer producto",
+      "secondaryCta": "Escanear estante con IA"
     },
     "noRecords": {
       "title": "Registra el negocio de hoy",

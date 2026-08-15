@@ -1485,8 +1485,9 @@
     },
     "noStock": {
       "title": "Add your stock now",
-      "body": "Your business is ready. Add the items you sell so you can record sales, know your profit, and show your goods to buyers.",
-      "cta": "Add my first item"
+      "body": "Your business is ready. You can add items manually one by one, or use Mass AI Inventory Scan to snap a photo of your shelf and list everything automatically. If you add items manually, upload clear photos so buyers can easily identify them.",
+      "cta": "Add my first item",
+      "secondaryCta": "Scan shelf with AI"
     },
     "noRecords": {
       "title": "Record today's business",

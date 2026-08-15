@@ -1445,8 +1445,9 @@
     },
     "noStock": {
       "title": "Ajoutez votre stock",
-      "body": "Votre entreprise est prête. Ajoutez les articles que vous vendez pour enregistrer les ventes, connaître votre bénéfice et montrer vos produits.",
-      "cta": "Ajouter mon premier article"
+      "body": "Votre entreprise est prête. Vous pouvez ajouter les articles manuellement un par un, ou utiliser le Scan d'Inventaire AI Massif pour prendre une photo de votre étagère et tout lister automatiquement. Si vous ajoutez les articles manuellement, téléchargez des photos claires pour que les acheteurs puissent les identifier facilement.",
+      "cta": "Ajouter mon premier article",
+      "secondaryCta": "Scanner l'étagère avec l'IA"
     },
     "noRecords": {
       "title": "Enregistrez les ventes du jour",

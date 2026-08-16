@@ -824,8 +824,9 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   }, [currentBusinessId, stock]);
 
   const updateStockItem = useCallback(async (id: string, updates: Partial<StockItem>) => {
-    setStock(prev => prev.map(s => s.id === id ? { ...s, ...updates } as StockItem : s));
-    const { error } = await supabase.from('stock_items').update(updates).eq('id', id);
+    const clean = sanitizeStockPayload(updates);
+    setStock(prev => prev.map(s => s.id === id ? { ...s, ...clean } as StockItem : s));
+    const { error } = await supabase.from('stock_items').update(clean as any).eq('id', id);
     if (error) { toast.error(error.message); return; }
     toast.success('Stock item updated!');
   }, []);

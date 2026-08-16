@@ -17,7 +17,7 @@ import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import CustomerNameInput, { buildCustomerStats } from '@/components/CustomerNameInput';
 import CustomerGroupedList from '@/components/CustomerGroupedList';
 
-import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { toSentenceCase, toTitleCase, stockMatchesQuery } from '@/lib/utils';
 
 export default function ServicesPage() {
   const { t } = useTranslation();

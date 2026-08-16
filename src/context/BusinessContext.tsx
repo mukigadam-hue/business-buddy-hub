@@ -824,7 +824,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         toast.success(`Merged with existing "${existing.name}" (qty: ${mergedQty})`);
         return;
       }
-      const { error } = await supabase.from('stock_items').update(updates).eq('id', existing.id);
+      const { error } = await supabase.from('stock_items').update(sanitizeStockPayload(updates)).eq('id', existing.id);
       if (error) { toast.error(error.message); return; }
       setStock(prev => prev.map(s => s.id === existing.id ? { ...s, ...updates } as StockItem : s));
       toast.success(`Merged with existing "${existing.name}" (qty: ${mergedQty})`);
@@ -840,7 +840,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const { data, error } = await supabase.from('stock_items').insert({ ...item, business_id: currentBusinessId } as any).select().single();
+    const { data, error } = await supabase.from('stock_items').insert(sanitizeStockPayload({ ...item, business_id: currentBusinessId }) as any).select().single();
     if (error) { toast.error(error.message); return; }
     if (data) setStock(prev => [...prev, data as unknown as StockItem].sort((a, b) => a.name.localeCompare(b.name)));
     toast.success('Item added to stock!');

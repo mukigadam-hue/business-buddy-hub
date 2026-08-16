@@ -21,7 +21,7 @@ import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import CustomerNameInput, { buildCustomerStats } from '@/components/CustomerNameInput';
 import CustomerGroupedList from '@/components/CustomerGroupedList';
 
-import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { toSentenceCase, toTitleCase, stockMatchesQuery } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
 import { cashToFullUnits } from '@/lib/intangibleUnits';
@@ -107,10 +107,9 @@ export default function SalesPage() {
 
   // Filter stock items by search text
   const filteredStock = activeStock.filter(s => {
-    if (s.quantity <= 0) return false;
-    if (!stockSearch) return true;
-    const q = stockSearch.toLowerCase();
-    return s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || s.quality.toLowerCase().includes(q);
+    // When searching, show every matching item (even out of stock) so it can always be found
+    if (!stockSearch) return s.quantity > 0;
+    return stockMatchesQuery(s, stockSearch);
   });
 
   // When stock item is selected, load its packaging config
@@ -609,7 +608,7 @@ export default function SalesPage() {
                 </div>
                 {showPartStockPicker && !selectedPartStock && (() => {
                   const q = partStockSearch.toLowerCase();
-                  const filtered = availablePartsStock.filter(s => !q || s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || (s.quality || '').toLowerCase().includes(q));
+                  const filtered = (q ? activeStock : availablePartsStock).filter(s => stockMatchesQuery(s, q));
                   return (
                     <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-card shadow-md">
                       {filtered.length === 0 ? (

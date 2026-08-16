@@ -37,6 +37,29 @@ export interface StockItem {
   wholesale_cost_per_base_unit?: number | null;
 }
 
+/** Columns that are NOT NULL in the database — nulls/undefined would reject the write. */
+const STOCK_NUMERIC_NOT_NULL = [
+  'buying_price', 'wholesale_price', 'retail_price', 'quantity', 'min_stock_level',
+  'tax_rate', 'pieces_per_carton', 'cartons_per_box', 'boxes_per_container',
+  'conversion_factor', 'total_stock_base_units', 'wholesale_cost_per_base_unit',
+] as const;
+
+const STOCK_TEXT_NOT_NULL = ['name', 'category', 'quality', 'barcode', 'unit_type', 'deleted_by'] as const;
+
+export function sanitizeStockPayload<T extends Record<string, any>>(payload: T): T {
+  const out: Record<string, any> = { ...payload };
+  for (const k of STOCK_NUMERIC_NOT_NULL) {
+    if (k in out) {
+      const n = Number(out[k]);
+      out[k] = out[k] === null || out[k] === undefined || out[k] === '' || Number.isNaN(n) ? (k === 'conversion_factor' ? 1 : 0) : n;
+    }
+  }
+  for (const k of STOCK_TEXT_NOT_NULL) {
+    if (k in out && (out[k] === null || out[k] === undefined)) out[k] = '';
+  }
+  return out as T;
+}
+
 export interface SaleItem {
   id: string;
   sale_id: string;
@@ -801,7 +824,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         toast.success(`Merged with existing "${existing.name}" (qty: ${mergedQty})`);
         return;
       }
-      const { error } = await supabase.from('stock_items').update(updates).eq('id', existing.id);
+      const { error } = await supabase.from('stock_items').update(sanitizeStockPayload(updates)).eq('id', existing.id);
       if (error) { toast.error(error.message); return; }
       setStock(prev => prev.map(s => s.id === existing.id ? { ...s, ...updates } as StockItem : s));
       toast.success(`Merged with existing "${existing.name}" (qty: ${mergedQty})`);
@@ -817,15 +840,16 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const { data, error } = await supabase.from('stock_items').insert({ ...item, business_id: currentBusinessId } as any).select().single();
+    const { data, error } = await supabase.from('stock_items').insert(sanitizeStockPayload({ ...item, business_id: currentBusinessId }) as any).select().single();
     if (error) { toast.error(error.message); return; }
     if (data) setStock(prev => [...prev, data as unknown as StockItem].sort((a, b) => a.name.localeCompare(b.name)));
     toast.success('Item added to stock!');
   }, [currentBusinessId, stock]);
 
   const updateStockItem = useCallback(async (id: string, updates: Partial<StockItem>) => {
-    setStock(prev => prev.map(s => s.id === id ? { ...s, ...updates } as StockItem : s));
-    const { error } = await supabase.from('stock_items').update(updates).eq('id', id);
+    const clean = sanitizeStockPayload(updates);
+    setStock(prev => prev.map(s => s.id === id ? { ...s, ...clean } as StockItem : s));
+    const { error } = await supabase.from('stock_items').update(clean as any).eq('id', id);
     if (error) { toast.error(error.message); return; }
     toast.success('Stock item updated!');
   }, []);

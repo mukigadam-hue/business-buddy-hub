@@ -17,7 +17,7 @@ import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import CustomerNameInput, { buildCustomerStats } from '@/components/CustomerNameInput';
 import CustomerGroupedList from '@/components/CustomerGroupedList';
 
-import { toSentenceCase, toTitleCase } from '@/lib/utils';
+import { toSentenceCase, toTitleCase, stockMatchesQuery } from '@/lib/utils';
 
 export default function ServicesPage() {
   const { t } = useTranslation();
@@ -37,7 +37,8 @@ export default function ServicesPage() {
   const [stockSearch, setStockSearch] = useState('');
   const [showStockPicker, setShowStockPicker] = useState(false);
 
-  const activeStock = stock.filter(s => !s.deleted_at && s.quantity > 0);
+  const allStock = stock.filter(s => !s.deleted_at);
+  const activeStock = allStock.filter(s => s.quantity > 0);
 
   const canSubmit = form.service_name.trim() && form.customer_name.trim() && form.seller_name.trim();
 
@@ -214,7 +215,7 @@ export default function ServicesPage() {
                 />
                 {showStockPicker && !selectedStock && (() => {
                   const q = stockSearch.toLowerCase();
-                  const filtered = activeStock.filter(s => !q || s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || (s.quality || '').toLowerCase().includes(q));
+                  const filtered = (q ? allStock : activeStock).filter(s => stockMatchesQuery(s, q));
                   return (
                     <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-card shadow-md">
                       {filtered.length === 0 ? (

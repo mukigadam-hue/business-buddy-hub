@@ -214,7 +214,7 @@ export default function ServicesPage() {
                 />
                 {showStockPicker && !selectedStock && (() => {
                   const q = stockSearch.toLowerCase();
-                  const filtered = activeStock.filter(s => !q || s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || (s.quality || '').toLowerCase().includes(q));
+                  const filtered = activeStock.filter(s => stockMatchesQuery(s, q));
                   return (
                     <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-card shadow-md">
                       {filtered.length === 0 ? (

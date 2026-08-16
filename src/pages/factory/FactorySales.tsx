@@ -129,10 +129,8 @@ export default function FactorySales() {
 
   // Filter stock items by search text
   const filteredStock = activeProducts.filter(s => {
-    if (s.quantity <= 0) return false;
-    if (!stockSearch) return true;
-    const q = stockSearch.toLowerCase();
-    return s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || (s.quality || '').toLowerCase().includes(q);
+    if (!stockSearch) return s.quantity > 0;
+    return stockMatchesQuery(s, stockSearch);
   });
 
   function handleSelectProduct(id: string) {

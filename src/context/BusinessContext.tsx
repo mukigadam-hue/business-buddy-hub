@@ -37,6 +37,29 @@ export interface StockItem {
   wholesale_cost_per_base_unit?: number | null;
 }
 
+/** Columns that are NOT NULL in the database — nulls/undefined would reject the write. */
+const STOCK_NUMERIC_NOT_NULL = [
+  'buying_price', 'wholesale_price', 'retail_price', 'quantity', 'min_stock_level',
+  'tax_rate', 'pieces_per_carton', 'cartons_per_box', 'boxes_per_container',
+  'conversion_factor', 'total_stock_base_units', 'wholesale_cost_per_base_unit',
+] as const;
+
+const STOCK_TEXT_NOT_NULL = ['name', 'category', 'quality', 'barcode', 'unit_type', 'deleted_by'] as const;
+
+export function sanitizeStockPayload<T extends Record<string, any>>(payload: T): T {
+  const out: Record<string, any> = { ...payload };
+  for (const k of STOCK_NUMERIC_NOT_NULL) {
+    if (k in out) {
+      const n = Number(out[k]);
+      out[k] = out[k] === null || out[k] === undefined || out[k] === '' || Number.isNaN(n) ? (k === 'conversion_factor' ? 1 : 0) : n;
+    }
+  }
+  for (const k of STOCK_TEXT_NOT_NULL) {
+    if (k in out && (out[k] === null || out[k] === undefined)) out[k] = '';
+  }
+  return out as T;
+}
+
 export interface SaleItem {
   id: string;
   sale_id: string;

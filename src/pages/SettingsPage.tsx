@@ -518,6 +518,16 @@ export default function SettingsPage() {
   // Net position today
   const todayNetPosition = todayTotalCashCollected - todayExpenseTotal - todayPurchaseTotal;
 
+  // ====== CASH THAT SHOULD BE IN THE DRAWER TODAY ======
+  // Cash collected today (incl. part-payments) + debts repaid today − expenses − purchases paid out
+  const todayDrawerCash = todayTotalCashCollected + todayRepaidDebtsTotal - todayExpenseTotal - todayPurchaseTotal;
+
+  // ====== NEW DEBTS CREATED TODAY (unpaid balances on today's sales & services) ======
+  const todaySalesDebtTotal = todaySales.reduce((sum, s) => sum + Math.max(0, Number(s.balance) || 0), 0);
+  const todayServicesDebtTotal = todayServices.reduce((sum, s) => sum + Math.max(0, Number(s.balance) || 0), 0);
+  const todayNewDebtsTotal = todaySalesDebtTotal + todayServicesDebtTotal;
+
+
   function getRoleForBusiness(businessId: string) {
     return memberships.find(m => m.business_id === businessId)?.role || null;
   }

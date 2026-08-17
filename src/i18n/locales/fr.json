@@ -427,7 +427,14 @@
       "thisMonthRevenue": "Revenu du mois",
       "cashCollectedThisMonth": "Espèces collectées ce mois",
       "purchasesIncludesOrders": "Inclut les achats + commandes envoyées aux fournisseurs",
-      "revenueIncludesOrders": "Inclut les ventes, services + commandes clients reçues"
+      "revenueIncludesOrders": "Inclut les ventes, services + commandes clients reçues",
+      "drawerCashTitle": "Argent qui doit être dans la caisse maintenant",
+      "drawerCashFormula": "Encaissements − dépenses − achats + dettes remboursées",
+      "drawerCashHint": "Comptez l'argent avec votre employé et comparez avec ce montant.",
+      "todaysDebtsTitle": "Total des dettes créées aujourd'hui",
+      "todaysDebtsFormula": "Soldes impayés des ventes et services du jour",
+      "todaysDebtsHint": "Cet argent est encore chez les clients, pas dans la caisse.",
+      "debtsRepaidToday": "dettes remboursées"
     }
   },
   "common": {

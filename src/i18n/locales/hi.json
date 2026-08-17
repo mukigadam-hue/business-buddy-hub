@@ -427,7 +427,14 @@
       "thisMonthRevenue": "इस महीने का राजस्व",
       "cashCollectedThisMonth": "इस महीने एकत्रित नकद",
       "purchasesIncludesOrders": "खरीद + आपूर्तिकर्ताओं को भेजे गए आदेश शामिल हैं",
-      "revenueIncludesOrders": "बिक्री, सेवाएँ + प्राप्त ग्राहक आदेश शामिल हैं"
+      "revenueIncludesOrders": "बिक्री, सेवाएँ + प्राप्त ग्राहक आदेश शामिल हैं",
+      "drawerCashTitle": "अभी दराज़ में जो नकद होना चाहिए",
+      "drawerCashFormula": "प्राप्त नकद − खर्च − खरीद + चुकाए गए उधार",
+      "drawerCashHint": "अपने कर्मचारी के साथ पैसे गिनें और इस राशि से मिलाएँ।",
+      "todaysDebtsTitle": "आज बने कुल उधार",
+      "todaysDebtsFormula": "आज की बिक्री और सेवाओं का बकाया",
+      "todaysDebtsHint": "यह पैसा अभी ग्राहकों के पास है, दराज़ में नहीं।",
+      "debtsRepaidToday": "चुकाए गए उधार"
     }
   },
   "common": {

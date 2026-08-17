@@ -427,7 +427,14 @@
       "thisMonthRevenue": "Ingresos de este mes",
       "cashCollectedThisMonth": "Efectivo recaudado este mes",
       "purchasesIncludesOrders": "Incluye compras + pedidos enviados a proveedores",
-      "revenueIncludesOrders": "Incluye ventas, servicios + pedidos de clientes recibidos"
+      "revenueIncludesOrders": "Incluye ventas, servicios + pedidos de clientes recibidos",
+      "drawerCashTitle": "Efectivo que debe estar en la caja ahora",
+      "drawerCashFormula": "Efectivo cobrado − gastos − compras + deudas pagadas",
+      "drawerCashHint": "Cuente el dinero con su trabajador y compárelo con esta cifra.",
+      "todaysDebtsTitle": "Total de deudas generadas hoy",
+      "todaysDebtsFormula": "Saldos pendientes de las ventas y servicios de hoy",
+      "todaysDebtsHint": "Ese dinero sigue con los clientes, no en la caja.",
+      "debtsRepaidToday": "deudas pagadas"
     }
   },
   "common": {

@@ -427,7 +427,14 @@
       "thisMonthRevenue": "今月の収益",
       "cashCollectedThisMonth": "今月の集金額",
       "purchasesIncludesOrders": "仕入 + サプライヤーへの注文を含む",
-      "revenueIncludesOrders": "売上、サービス + 受注した顧客注文を含む"
+      "revenueIncludesOrders": "売上、サービス + 受注した顧客注文を含む",
+      "drawerCashTitle": "今レジにあるべき現金",
+      "drawerCashFormula": "回収した現金 − 経費 − 仕入 + 返済された売掛金",
+      "drawerCashHint": "従業員と現金を数え、この金額と照合してください。",
+      "todaysDebtsTitle": "本日発生した未回収の合計",
+      "todaysDebtsFormula": "本日の売上・サービスの未払残高",
+      "todaysDebtsHint": "このお金はまだ顧客側にあり、レジにはありません。",
+      "debtsRepaidToday": "返済された売掛金"
     }
   },
   "common": {

@@ -427,7 +427,14 @@
       "thisMonthRevenue": "이번 달 수익",
       "cashCollectedThisMonth": "이번 달 수금액",
       "purchasesIncludesOrders": "구매 + 공급업체로 보낸 주문 포함",
-      "revenueIncludesOrders": "판매, 서비스 + 받은 고객 주문 포함"
+      "revenueIncludesOrders": "판매, 서비스 + 받은 고객 주문 포함",
+      "drawerCashTitle": "지금 금고에 있어야 할 현금",
+      "drawerCashFormula": "수취 현금 − 비용 − 구매 + 상환된 미수금",
+      "drawerCashHint": "직원과 함께 현금을 세어 이 금액과 비교하세요.",
+      "todaysDebtsTitle": "오늘 발생한 총 미수금",
+      "todaysDebtsFormula": "오늘 판매·서비스의 미결제 잔액",
+      "todaysDebtsHint": "이 금액은 아직 고객에게 있으며 금고에 없습니다.",
+      "debtsRepaidToday": "상환된 미수금"
     }
   },
   "common": {

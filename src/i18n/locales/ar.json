@@ -427,7 +427,14 @@
       "thisMonthRevenue": "إيرادات هذا الشهر",
       "cashCollectedThisMonth": "النقدية المحصلة هذا الشهر",
       "purchasesIncludesOrders": "يشمل المشتريات + الطلبات المرسلة إلى الموردين",
-      "revenueIncludesOrders": "يشمل المبيعات والخدمات + طلبات العملاء المستلمة"
+      "revenueIncludesOrders": "يشمل المبيعات والخدمات + طلبات العملاء المستلمة",
+      "drawerCashTitle": "النقد الذي يجب أن يكون في الصندوق الآن",
+      "drawerCashFormula": "النقد المحصل − المصروفات − المشتريات + الديون المسددة",
+      "drawerCashHint": "اعدد النقود مع العامل وقارنها بهذا المبلغ.",
+      "todaysDebtsTitle": "إجمالي الديون التي نشأت اليوم",
+      "todaysDebtsFormula": "الأرصدة غير المسددة من مبيعات وخدمات اليوم",
+      "todaysDebtsHint": "هذه الأموال لا تزال عند العملاء وليست في الصندوق.",
+      "debtsRepaidToday": "الديون المسددة"
     }
   },
   "common": {

@@ -518,6 +518,16 @@ export default function SettingsPage() {
   // Net position today
   const todayNetPosition = todayTotalCashCollected - todayExpenseTotal - todayPurchaseTotal;
 
+  // ====== CASH THAT SHOULD BE IN THE DRAWER TODAY ======
+  // Cash collected today (incl. part-payments) + debts repaid today − expenses − purchases paid out
+  const todayDrawerCash = todayTotalCashCollected + todayRepaidDebtsTotal - todayExpenseTotal - todayPurchaseTotal;
+
+  // ====== NEW DEBTS CREATED TODAY (unpaid balances on today's sales & services) ======
+  const todaySalesDebtTotal = todaySales.reduce((sum, s) => sum + Math.max(0, Number(s.balance) || 0), 0);
+  const todayServicesDebtTotal = todayServices.reduce((sum, s) => sum + Math.max(0, Number(s.balance) || 0), 0);
+  const todayNewDebtsTotal = todaySalesDebtTotal + todayServicesDebtTotal;
+
+
   function getRoleForBusiness(businessId: string) {
     return memberships.find(m => m.business_id === businessId)?.role || null;
   }
@@ -1097,6 +1107,40 @@ export default function SettingsPage() {
               <p>− {t('settings.financial.purchases')}: {fmt(todayPurchaseTotal)}</p>
             </div>
           </div>
+
+          {/* Cash that should be in the drawer today */}
+          <div className="rounded-xl border-2 border-success/40 bg-success/10 p-4">
+            <p className="text-sm font-bold flex items-center gap-2">💵 {t('settings.financial.drawerCashTitle')}</p>
+            <p className="text-xs font-medium text-muted-foreground mt-0.5">{t('settings.financial.drawerCashFormula')}</p>
+            <p className={`mt-1 text-3xl font-extrabold tabular-nums break-words leading-tight ${todayDrawerCash >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(todayDrawerCash)}</p>
+            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              <span className="text-muted-foreground">+ {t('settings.financial.cashCollected')}</span>
+              <span className="text-right font-semibold tabular-nums">{fmt(todayTotalCashCollected)}</span>
+              <span className="text-muted-foreground">+ {t('settings.financial.debtsRepaidToday')}</span>
+              <span className="text-right font-semibold tabular-nums">{fmt(todayRepaidDebtsTotal)}</span>
+              <span className="text-muted-foreground">− {t('settings.financial.expenses')}</span>
+              <span className="text-right font-semibold tabular-nums text-destructive">{fmt(todayExpenseTotal)}</span>
+              <span className="text-muted-foreground">− {t('settings.financial.purchases')}</span>
+              <span className="text-right font-semibold tabular-nums text-destructive">{fmt(todayPurchaseTotal)}</span>
+            </div>
+            <p className="mt-2 text-[11px] font-medium text-muted-foreground">{t('settings.financial.drawerCashHint')}</p>
+          </div>
+
+          {/* New debts created today */}
+          <div className="rounded-xl border-2 border-destructive/40 bg-destructive/10 p-4">
+            <p className="text-sm font-bold flex items-center gap-2">🔴 {t('settings.financial.todaysDebtsTitle')}</p>
+            <p className="text-xs font-medium text-muted-foreground mt-0.5">{t('settings.financial.todaysDebtsFormula')}</p>
+            <p className="mt-1 text-3xl font-extrabold tabular-nums text-destructive break-words leading-tight">{fmt(todayNewDebtsTotal)}</p>
+            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              <span className="text-muted-foreground">🛒 {t('settings.financial.stockSales')}</span>
+              <span className="text-right font-semibold tabular-nums text-destructive">{fmt(todaySalesDebtTotal)}</span>
+              <span className="text-muted-foreground">🔧 {t('settings.financial.serviceFees')}</span>
+              <span className="text-right font-semibold tabular-nums text-destructive">{fmt(todayServicesDebtTotal)}</span>
+            </div>
+            <p className="mt-2 text-[11px] font-medium text-muted-foreground">{t('settings.financial.todaysDebtsHint')}</p>
+          </div>
+
+
 
           {/* All-time Revenue Overview */}
           <div className="p-3 rounded-lg bg-muted/30 border">

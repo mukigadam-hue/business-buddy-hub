@@ -434,7 +434,14 @@
       "thisMonthRevenue": "This Month's Revenue",
       "cashCollectedThisMonth": "Cash collected this month",
       "purchasesIncludesOrders": "Includes purchases + orders sent to suppliers",
-      "revenueIncludesOrders": "Includes sales, services + customer orders received"
+      "revenueIncludesOrders": "Includes sales, services + customer orders received",
+      "drawerCashTitle": "Cash that should be in the drawer now",
+      "drawerCashFormula": "Cash collected − expenses − purchases + debts repaid",
+      "drawerCashHint": "Count the money with your worker and compare it with this figure.",
+      "todaysDebtsTitle": "Total debts created today",
+      "todaysDebtsFormula": "Unpaid balances from today's sales and services",
+      "todaysDebtsHint": "This money is still with customers, not in the drawer.",
+      "debtsRepaidToday": "Debts repaid today"
     }
   },
   "common": {

@@ -219,7 +219,7 @@ export default function BusinessContactConsent() {
             </div>
           )}
 
-          {needsPhone && !!candidate.phone && (
+          {phoneActionable && (
             <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">

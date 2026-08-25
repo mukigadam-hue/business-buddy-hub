@@ -27,6 +27,14 @@
  * that is why earlier iframe-based schemes did nothing. fireBridge therefore
  * uses a top-level navigation; WebViewGold intercepts the scheme and cancels
  * the load, so the SPA never actually navigates or reloads.
+ *
+ * SAFETY — why custom schemes are gated: a main-frame navigation to a scheme
+ * the native build does NOT intercept kills the WebView with
+ * net::ERR_UNKNOWN_URL_SCHEME (the app is replaced by an error page and can
+ * no longer open). fireBridge therefore only navigates when the shell is
+ * positively identified as WebViewGold, and custom schemes
+ * (`showinterstitial://` / `preloadinterstitial://`) additionally require the
+ * native handlers to have announced themselves (see isCustomBridgeSupported).
  */
 
 export const BANNER_HEIGHT_PX = 60; // reserved space in the web layout

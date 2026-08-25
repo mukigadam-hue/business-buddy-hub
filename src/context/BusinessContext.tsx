@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { CACHE_KEYS, cachePersist, readJsonSync, writeJsonSync, removeJsonSync, addToOfflineQueue } from '@/lib/offlineStore';
 import { broadcastCurrency, resolveCurrencySymbol } from '@/hooks/useCurrency';
+import { dbCall, isOfflineError, withTimeout } from '@/lib/offlineSubmit';
 
 export interface StockItem {
   id: string;
@@ -818,29 +819,32 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       if (item.image_url_2 && !existing.image_url_2) updates.image_url_2 = item.image_url_2;
       if (item.image_url_3 && !existing.image_url_3) updates.image_url_3 = item.image_url_3;
 
-      if (!navigator.onLine) {
+      const mergeOffline = async () => {
         setStock(prev => prev.map(s => s.id === existing.id ? { ...s, ...updates } as StockItem : s));
-        await addToOfflineQueue({ action: 'update_stock_item', payload: { id: existing.id, updates }, optimisticIds: [] });
-        toast.success(`Merged with existing "${existing.name}" (qty: ${mergedQty})`);
-        return;
-      }
-      const { error } = await supabase.from('stock_items').update(sanitizeStockPayload(updates)).eq('id', existing.id);
-      if (error) { toast.error(error.message); return; }
+        await addToOfflineQueue({ action: 'update_stock_item', payload: { id: existing.id, updates: sanitizeStockPayload(updates) }, optimisticIds: [] });
+        toast.success(`Merged with existing "${existing.name}" (qty: ${mergedQty}) — will sync when online`);
+      };
+      if (!navigator.onLine) { await mergeOffline(); return; }
+      const { error: mergeError } = await dbCall(supabase.from('stock_items').update(sanitizeStockPayload(updates)).eq('id', existing.id));
+      if (mergeError && isOfflineError(mergeError)) { await mergeOffline(); return; }
+      if (mergeError) { toast.error(mergeError.message); return; }
       setStock(prev => prev.map(s => s.id === existing.id ? { ...s, ...updates } as StockItem : s));
       toast.success(`Merged with existing "${existing.name}" (qty: ${mergedQty})`);
       return;
     }
 
-    if (!navigator.onLine) {
+    const queueNewStockItem = async () => {
       const tempId = crypto.randomUUID();
       const optimistic = { ...item, id: tempId, business_id: currentBusinessId, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deleted_at: null, deleted_by: '', pieces_per_carton: item.pieces_per_carton || 0, cartons_per_box: item.cartons_per_box || 0, boxes_per_container: item.boxes_per_container || 0 } as StockItem;
       setStock(prev => [...prev, optimistic].sort((a, b) => a.name.localeCompare(b.name)));
-      await addToOfflineQueue({ action: 'create_stock_item', payload: { item: { ...item, business_id: currentBusinessId } }, optimisticIds: [tempId] });
+      await addToOfflineQueue({ action: 'create_stock_item', payload: { item: sanitizeStockPayload({ ...item, business_id: currentBusinessId }) }, optimisticIds: [tempId] });
       toast.success('Item saved offline — will sync when online');
-      return;
-    }
+    };
 
-    const { data, error } = await supabase.from('stock_items').insert(sanitizeStockPayload({ ...item, business_id: currentBusinessId }) as any).select().single();
+    if (!navigator.onLine) { await queueNewStockItem(); return; }
+
+    const { data, error } = await dbCall(supabase.from('stock_items').insert(sanitizeStockPayload({ ...item, business_id: currentBusinessId }) as any).select().single());
+    if (error && isOfflineError(error)) { await queueNewStockItem(); return; }
     if (error) { toast.error(error.message); return; }
     if (data) setStock(prev => [...prev, data as unknown as StockItem].sort((a, b) => a.name.localeCompare(b.name)));
     toast.success('Item added to stock!');
@@ -953,8 +957,18 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     }));
     toast.success('Sale recorded!');
 
-    const { data: saleData, error: saleError } = await supabase.from('sales').insert(salePayload as any).select().single();
-    if (saleError || !saleData) { toast.error(saleError?.message || 'Failed to save sale'); setSales(prev => prev.filter(s => s.id !== tempId)); return null; }
+    const { data: saleData, error: saleError } = await dbCall(supabase.from('sales').insert(salePayload as any).select().single());
+    if (saleError || !saleData) {
+      if (isOfflineError(saleError)) {
+        // Connection dropped mid-save — optimistic UI already applied, just queue for sync
+        await addToOfflineQueue({ action: 'create_sale', payload: { sale: salePayload, items, businessId: currentBusinessId }, optimisticIds: [tempId] });
+        toast.success('Connection lost — sale queued, will sync when online');
+        return optimisticSale;
+      }
+      toast.error(saleError?.message || 'Failed to save sale');
+      setSales(prev => prev.filter(s => s.id !== tempId));
+      return null;
+    }
 
     // Replace optimistic with real
     setSales(prev => prev.map(s => s.id === tempId ? { ...s, id: saleData.id } as Sale : s));
@@ -979,7 +993,11 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       return null;
     }).filter(Boolean);
 
-    await Promise.all([supabase.from('sale_items').insert(saleItems), ...stockUpdates]);
+    try {
+      await withTimeout(Promise.all([supabase.from('sale_items').insert(saleItems), ...stockUpdates]));
+    } catch (postErr) {
+      console.warn('Sale saved; follow-up item/stock sync issue:', postErr);
+    }
     return { ...saleData, items: saleItems as any, customer_name: customerName } as Sale;
   }, [currentBusinessId, stock]);
 
@@ -1065,8 +1083,14 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     } as Purchase;
     setPurchases(prev => [optimisticPurchase, ...prev]);
 
-    const { data: purchaseData, error } = await supabase.from('purchases').insert(purchasePayload as any).select().single();
+    const { data: purchaseData, error } = await dbCall(supabase.from('purchases').insert(purchasePayload as any).select().single());
     if (error || !purchaseData) {
+      if (isOfflineError(error)) {
+        // Connection dropped mid-save — keep the optimistic record and queue for sync
+        await addToOfflineQueue({ action: 'create_purchase', payload: { purchase: purchasePayload, items, businessId: currentBusinessId }, optimisticIds: [tempId] });
+        toast.success('Connection lost — purchase queued, will sync when online');
+        return;
+      }
       // Rollback optimistic update
       setPurchases(prev => prev.filter(p => p.id !== tempId));
       toast.error(error?.message || 'Failed');
@@ -1114,11 +1138,15 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    await Promise.all([
-      supabase.from('purchase_items').insert(purchaseItems),
-      addNotification('new_purchase', '🛒 New Purchase Recorded', `${items.length} item(s) from ${supplier} — Total: recorded by ${recordedBy}`),
-      ...stockOps,
-    ]);
+    try {
+      await withTimeout(Promise.all([
+        supabase.from('purchase_items').insert(purchaseItems),
+        addNotification('new_purchase', '🛒 New Purchase Recorded', `${items.length} item(s) from ${supplier} — Total: recorded by ${recordedBy}`),
+        ...stockOps,
+      ]));
+    } catch (postErr) {
+      console.warn('Purchase saved; follow-up item/stock sync issue:', postErr);
+    }
     toast.success('Purchase recorded!');
   }, [currentBusinessId, stock]);
 
@@ -1131,7 +1159,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     const code = generateCode();
     const sharingCode = recipientBusinessId ? 'SHR-' + Math.random().toString(36).substring(2, 10).toUpperCase() : null;
 
-    if (!navigator.onLine) {
+    const queueOrderOffline = async () => {
       const tempId = crypto.randomUUID();
       const optimistic = {
         id: tempId, business_id: currentBusinessId, type, customer_name: customerName,
@@ -1174,34 +1202,43 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
         optimisticIds: [tempId],
       });
       toast.success('Order saved offline — will sync when online');
-      return;
-    }
+    };
+
+    if (!navigator.onLine) { await queueOrderOffline(); return; }
 
     if (recipientBusinessId && type === 'request') {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await dbCall(supabase.auth.getSession());
+      if (sessionError && isOfflineError(sessionError)) { await queueOrderOffline(); return; }
       const token = sessionData?.session?.access_token;
       if (!token) { toast.error('Not authenticated'); return; }
 
-      const res = await supabase.functions.invoke('send-b2b-order', {
+      const res = await dbCall(supabase.functions.invoke('send-b2b-order', {
         body: {
           senderBusinessId: currentBusinessId, recipientBusinessId,
           customerName: customerName || 'Walk-in', items, code, sharingCode,
           comment: comment || '',
         },
-      });
+      }));
 
+      if (res.error && isOfflineError(res.error)) { await queueOrderOffline(); return; }
       if (res.error) { toast.error(res.error.message || 'Failed to send order'); return; }
       if (res.data?.error) { toast.error(res.data.error); return; }
 
-      const { data: existingContact } = await supabase
-        .from('business_contacts').select('id')
-        .eq('business_id', currentBusinessId).eq('contact_business_id', recipientBusinessId).maybeSingle();
-      if (!existingContact) {
-        const { data: recipientBiz } = await supabase.from('businesses').select('name').eq('id', recipientBusinessId).maybeSingle();
-        await supabase.from('business_contacts').insert({
-          business_id: currentBusinessId, contact_business_id: recipientBusinessId,
-          nickname: recipientBiz?.name || '', notes: 'Auto-added from order request',
-        });
+      try {
+        await withTimeout((async () => {
+          const { data: existingContact } = await supabase
+            .from('business_contacts').select('id')
+            .eq('business_id', currentBusinessId).eq('contact_business_id', recipientBusinessId).maybeSingle();
+          if (!existingContact) {
+            const { data: recipientBiz } = await supabase.from('businesses').select('name').eq('id', recipientBusinessId).maybeSingle();
+            await supabase.from('business_contacts').insert({
+              business_id: currentBusinessId, contact_business_id: recipientBusinessId,
+              nickname: recipientBiz?.name || '', notes: 'Auto-added from order request',
+            });
+          }
+        })());
+      } catch (contactErr) {
+        console.warn('Order sent; contact auto-add issue:', contactErr);
       }
 
       toast.success('Request sent to supplier!');
@@ -1209,11 +1246,14 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const { data: orderData, error } = await supabase.from('orders').insert({
+    const { data: orderData, error } = await dbCall(supabase.from('orders').insert({
       business_id: currentBusinessId, type, customer_name: customerName,
       grand_total: grandTotal, status, code, sharing_code: sharingCode,
-    }).select().single();
-    if (error || !orderData) { toast.error(error?.message || 'Failed'); return; }
+    }).select().single());
+    if (error || !orderData) {
+      if (isOfflineError(error)) { await queueOrderOffline(); return; }
+      toast.error(error?.message || 'Failed'); return;
+    }
 
     const orderItems = items.map(item => ({
       order_id: orderData.id, item_name: item.item_name, category: item.category,
@@ -1221,10 +1261,15 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       unit_price: item.unit_price, subtotal: item.subtotal,
       serial_numbers: item.serial_numbers || '',
     }));
-    await supabase.from('order_items').insert(orderItems);
-
-    if (type === 'inbox') {
-      await addNotification('new_order', '📥 New Order Received', `Order ${code} from ${customerName} — ${items.length} item(s)`);
+    try {
+      await withTimeout((async () => {
+        await supabase.from('order_items').insert(orderItems);
+        if (type === 'inbox') {
+          await addNotification('new_order', '📥 New Order Received', `Order ${code} from ${customerName} — ${items.length} item(s)`);
+        }
+      })());
+    } catch (postErr) {
+      console.warn('Order saved; follow-up item sync issue:', postErr);
     }
     toast.success('Order created!');
     await loadBusinessData();
@@ -1280,28 +1325,68 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     itemsUsed?: { stock_item_id: string; item_name: string; category: string; quality: string; quantity: number; unit_price: number; subtotal: number }[]
   ): Promise<ServiceRecord | null> => {
     if (!currentBusinessId) return null;
-    const { data, error } = await supabase.from('services').insert({
+
+    const queueServiceOffline = async (): Promise<ServiceRecord> => {
+      const tempId = crypto.randomUUID();
+      const optimistic = {
+        ...service, id: tempId, business_id: currentBusinessId,
+        created_at: new Date().toISOString(), items_used: itemsUsed || [],
+      } as unknown as ServiceRecord;
+      setServices(prev => [optimistic, ...prev]);
+      if (itemsUsed && itemsUsed.length > 0) {
+        const usedItems = itemsUsed;
+        setStock(prev => prev.map(s => {
+          const used = usedItems.find(i => i.stock_item_id === s.id);
+          return used ? { ...s, quantity: Math.max(0, Number(s.quantity) - Number(used.quantity)) } : s;
+        }));
+      }
+      await addToOfflineQueue({
+        action: 'create_service',
+        payload: { service: { ...service, business_id: currentBusinessId }, itemsUsed: itemsUsed || [], businessId: currentBusinessId },
+        optimisticIds: [tempId],
+      });
+      toast.success('Service saved offline — will sync when online');
+      return optimistic;
+    };
+
+    if (!navigator.onLine) return queueServiceOffline();
+
+    const { data, error } = await dbCall(supabase.from('services').insert({
       ...service, business_id: currentBusinessId,
-    } as any).select().single();
-    if (error || !data) { toast.error(error?.message || 'Failed'); return null; }
+    } as any).select().single());
+    if (error || !data) {
+      if (isOfflineError(error)) return queueServiceOffline();
+      toast.error(error?.message || 'Failed'); return null;
+    }
 
     if (itemsUsed && itemsUsed.length > 0) {
-      const serviceItemRows = itemsUsed.map(item => ({
-        service_id: data.id, stock_item_id: item.stock_item_id,
-        item_name: item.item_name, category: item.category, quality: item.quality,
-        quantity: item.quantity, unit_price: item.unit_price, subtotal: item.subtotal,
-      }));
-      await supabase.from('service_items').insert(serviceItemRows);
+      const usedItems = itemsUsed;
+      try {
+        await withTimeout((async () => {
+          const serviceItemRows = usedItems.map(item => ({
+            service_id: data.id, stock_item_id: item.stock_item_id,
+            item_name: item.item_name, category: item.category, quality: item.quality,
+            quantity: item.quantity, unit_price: item.unit_price, subtotal: item.subtotal,
+          }));
+          await supabase.from('service_items').insert(serviceItemRows);
 
-      const currentStock = stock;
-      for (const item of itemsUsed) {
-        const stockItem = currentStock.find(s => s.id === item.stock_item_id);
-        if (stockItem) {
-          await supabase.from('stock_items').update({
-            quantity: Math.max(0, stockItem.quantity - item.quantity),
-          }).eq('id', item.stock_item_id);
-        }
+          const currentStock = stock;
+          for (const item of usedItems) {
+            const stockItem = currentStock.find(s => s.id === item.stock_item_id);
+            if (stockItem) {
+              await supabase.from('stock_items').update({
+                quantity: Math.max(0, stockItem.quantity - item.quantity),
+              }).eq('id', item.stock_item_id);
+            }
+          }
+        })());
+      } catch (postErr) {
+        console.warn('Service saved; stock sync issue:', postErr);
       }
+      setStock(prev => prev.map(s => {
+        const used = usedItems.find(i => i.stock_item_id === s.id);
+        return used ? { ...s, quantity: Math.max(0, Number(s.quantity) - Number(used.quantity)) } : s;
+      }));
     }
 
     toast.success('Service recorded!');
@@ -1438,16 +1523,18 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
   const addExpense = useCallback(async (expense: { category: string; description: string; amount: number; recorded_by: string; expense_date: string; from_order_id?: string }) => {
     if (!currentBusinessId) return;
 
-    if (!navigator.onLine) {
+    const queueExpenseOffline = async () => {
       const tempId = crypto.randomUUID();
       const optimistic = { ...expense, id: tempId, business_id: currentBusinessId, created_at: new Date().toISOString(), from_order_id: expense.from_order_id || null } as BusinessExpense;
       setExpenses(prev => [optimistic, ...prev]);
       await addToOfflineQueue({ action: 'create_expense' as any, payload: { expense: { ...expense, business_id: currentBusinessId } }, optimisticIds: [tempId] });
       toast.success('Expense saved offline — will sync when online');
-      return;
-    }
+    };
 
-    const { error } = await supabase.from('business_expenses').insert({ ...expense, business_id: currentBusinessId } as any);
+    if (!navigator.onLine) { await queueExpenseOffline(); return; }
+
+    const { error } = await dbCall(supabase.from('business_expenses').insert({ ...expense, business_id: currentBusinessId } as any));
+    if (error && isOfflineError(error)) { await queueExpenseOffline(); return; }
     if (error) { toast.error(error.message); return; }
     toast.success('Expense recorded!');
     await loadBusinessData();
@@ -1469,11 +1556,17 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString(),
     };
     setDebtPayments(prev => [optimistic, ...prev]);
-    const { data, error } = await (supabase as any).from('debt_payments').insert({
+    const paymentRow = {
       business_id: currentBusinessId, source_type: sourceType, source_id: sourceId,
       amount: delta, recorded_by: recordedBy || '',
-    }).select().single();
+    };
+    const { data, error } = await dbCall((supabase as any).from('debt_payments').insert(paymentRow).select().single());
     if (error) {
+      if (isOfflineError(error)) {
+        // Keep the optimistic entry and queue for sync
+        await addToOfflineQueue({ action: 'create_debt_payment' as any, payload: { payment: paymentRow }, optimisticIds: [tempId] });
+        return;
+      }
       console.warn('Failed to log debt payment:', error);
       setDebtPayments(prev => prev.filter(d => d.id !== tempId));
       return;
@@ -1488,9 +1581,16 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     const delta = Math.max(0, amountPaid - previousPaid);
     const bal = Math.max(0, Number(sale.grand_total) - amountPaid);
     const status = bal <= 0 ? 'paid' : (amountPaid > 0 ? 'partial' : 'unpaid');
-    const { error } = await supabase.from('sales').update({
+    const { error } = await dbCall(supabase.from('sales').update({
       amount_paid: amountPaid, balance: bal, payment_status: status,
-    }).eq('id', saleId);
+    }).eq('id', saleId));
+    if (error && isOfflineError(error)) {
+      setSales(prev => prev.map(s => s.id === saleId ? { ...s, amount_paid: amountPaid, balance: bal, payment_status: status } : s));
+      await addToOfflineQueue({ action: 'update_invoice_payment' as any, payload: { table: 'sales', id: saleId, updates: { amount_paid: amountPaid, balance: bal, payment_status: status } }, optimisticIds: [] });
+      if (delta > 0) await logDebtPayment('sale', saleId, delta, sale.recorded_by);
+      toast.success('Payment saved offline — will sync when online');
+      return;
+    }
     if (error) { toast.error(error.message); return; }
     setSales(prev => prev.map(s => s.id === saleId ? { ...s, amount_paid: amountPaid, balance: bal, payment_status: status } : s));
     if (delta > 0) await logDebtPayment('sale', saleId, delta, sale.recorded_by);
@@ -1516,9 +1616,16 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     const delta = Math.max(0, amountPaid - previousPaid);
     const bal = Math.max(0, Number(purchase.grand_total) - amountPaid);
     const status = bal <= 0 ? 'paid' : (amountPaid > 0 ? 'partial' : 'unpaid');
-    const { error } = await supabase.from('purchases').update({
+    const { error } = await dbCall(supabase.from('purchases').update({
       amount_paid: amountPaid, balance: bal, payment_status: status,
-    } as any).eq('id', purchaseId);
+    } as any).eq('id', purchaseId));
+    if (error && isOfflineError(error)) {
+      setPurchases(prev => prev.map(p => p.id === purchaseId ? { ...p, amount_paid: amountPaid, balance: bal, payment_status: status } : p));
+      await addToOfflineQueue({ action: 'update_invoice_payment' as any, payload: { table: 'purchases', id: purchaseId, updates: { amount_paid: amountPaid, balance: bal, payment_status: status } }, optimisticIds: [] });
+      if (delta > 0) await logDebtPayment('purchase', purchaseId, delta, purchase.recorded_by);
+      toast.success('Payment saved offline — will sync when online');
+      return;
+    }
     if (error) { toast.error(error.message); return; }
     setPurchases(prev => prev.map(p => p.id === purchaseId ? { ...p, amount_paid: amountPaid, balance: bal, payment_status: status } : p));
     if (delta > 0) await logDebtPayment('purchase', purchaseId, delta, purchase.recorded_by);
@@ -1544,9 +1651,16 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     const delta = Math.max(0, amountPaid - previousPaid);
     const bal = Math.max(0, Number(service.cost) - amountPaid);
     const status = bal <= 0 ? 'paid' : (amountPaid > 0 ? 'partial' : 'unpaid');
-    const { error } = await supabase.from('services').update({
+    const { error } = await dbCall(supabase.from('services').update({
       amount_paid: amountPaid, balance: bal, payment_status: status,
-    }).eq('id', serviceId);
+    }).eq('id', serviceId));
+    if (error && isOfflineError(error)) {
+      setServices(prev => prev.map(s => s.id === serviceId ? { ...s, amount_paid: amountPaid, balance: bal, payment_status: status } : s));
+      await addToOfflineQueue({ action: 'update_invoice_payment' as any, payload: { table: 'services', id: serviceId, updates: { amount_paid: amountPaid, balance: bal, payment_status: status } }, optimisticIds: [] });
+      if (delta > 0) await logDebtPayment('service', serviceId, delta, service.seller_name);
+      toast.success('Payment saved offline — will sync when online');
+      return;
+    }
     if (error) { toast.error(error.message); return; }
     setServices(prev => prev.map(s => s.id === serviceId ? { ...s, amount_paid: amountPaid, balance: bal, payment_status: status } : s));
     if (delta > 0) await logDebtPayment('service', serviceId, delta, service.seller_name);

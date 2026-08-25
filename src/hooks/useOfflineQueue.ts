@@ -54,6 +54,17 @@ async function syncOperation(op: OfflineQueueItem): Promise<string[]> {
       if (error) throw error;
       return op.optimisticIds || [];
     }
+    case 'update_invoice_payment': {
+      const { table, id, updates } = op.payload;
+      const { error } = await supabase.from(table as any).update(updates as any).eq('id', id);
+      if (error) throw error;
+      return op.optimisticIds || [];
+    }
+    case 'create_debt_payment': {
+      const { error } = await supabase.from('debt_payments').insert(op.payload.payment as any);
+      if (error) throw error;
+      return op.optimisticIds || [];
+    }
     case 'create_factory_team_member': {
       const { error } = await supabase.from('factory_team_members').insert(op.payload.member as any);
       if (error) throw error;

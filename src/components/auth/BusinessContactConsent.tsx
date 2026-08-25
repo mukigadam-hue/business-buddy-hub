@@ -143,10 +143,10 @@ export default function BusinessContactConsent() {
       setPhone(digits.replace(/^0+/, ""));
     }
     setUseEmail(needsEmail && !!candidate.email);
-    setUsePhone(needsPhone && !!candidate.phone);
+    setUsePhone(phoneActionable);
     setOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, needsEmail, needsPhone, candidate.email, candidate.phone, candidate.countryCode, user]);
+  }, [loaded, needsEmail, needsPhone, phoneTaken, phoneActionable, candidate.email, candidate.phone, candidate.countryCode, user]);
 
   if (!open) return null;
 

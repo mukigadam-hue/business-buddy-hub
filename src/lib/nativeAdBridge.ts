@@ -86,23 +86,91 @@ function withLocale(cmd: string): string {
   return `${cmd}${sep}lang=${encodeURIComponent(language)}&region=${encodeURIComponent(region)}&locale=${encodeURIComponent(locale)}`;
 }
 
+/* --------------------------- shell capability ---------------------------- */
+
+const SUPPORT_FLAG_KEY = 'bm:wvg-bridge:supported';
+
+/** Schemes WebViewGold itself handles natively (documented URL-scheme API). */
+const DOCUMENTED_SCHEMES = ['enableads://', 'disableads://', 'displayrewardedad://'];
+
+function isDocumentedScheme(cmd: string): boolean {
+  return DOCUMENTED_SCHEMES.some((s) => cmd.startsWith(s));
+}
+
 /**
- * Fire a bridge command via the most reliable channels.
+ * True only when the wrapper is POSITIVELY identified as WebViewGold
+ * (explicit UA marker or an injected native bridge object). The generic
+ * "any Android WebView" fallback in detectShell() is deliberately NOT enough
+ * to justify a top-level scheme navigation: in an in-app browser (Telegram,
+ * Facebook, …) an unhandled scheme would kill the page with
+ * net::ERR_UNKNOWN_URL_SCHEME.
+ */
+export function isWebViewGoldConfirmed(): boolean {
+  if (typeof window === 'undefined') return false;
+  const ua = window.navigator.userAgent.toLowerCase();
+  if (ua.includes('webviewgold') || ua.includes('wvg') || ua.includes('biztrack')) return true;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  return !!(w?.Android?.webviewgold || w?.webkit?.messageHandlers?.webviewgold);
+}
+
+/**
+ * True once the native on-demand interstitial handlers
+ * (docs/WEBVIEWGOLD_INTERSTITIAL.md) have announced themselves — either live
+ * via `window.WebViewGoldInterstitial` (injected by the native snippet) or
+ * persisted in localStorage from a previous launch. Until then the custom
+ * schemes are NEVER fired: an unhandled custom scheme in the main frame
+ * replaces the whole app with an error page.
+ */
+export function isCustomBridgeSupported(): boolean {
+  if (typeof window === 'undefined') return false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  if (w.WebViewGoldInterstitial === true) {
+    try { window.localStorage.setItem(SUPPORT_FLAG_KEY, '1'); } catch {}
+    return true;
+  }
+  try { return window.localStorage.getItem(SUPPORT_FLAG_KEY) === '1'; } catch { return false; }
+}
+
+/**
+ * Fire a bridge command via the safest available channel.
  * The top-level `window.location.href` assignment is what makes the command
  * actually reach WebViewGold: Android WebView only intercepts main-frame
  * navigations in shouldOverrideUrlLoading, where every WebViewGold URL-scheme
  * API (`qrcode://`, `takescreenshot://`, `enableads://`, …) is handled.
  * WebViewGold cancels the load once it handles the scheme, so the web app
  * itself never navigates away.
+ *
+ * Guards (in order):
+ *  1. No shell → do nothing.
+ *  2. Legacy Despia shell → only the JS bridge function, never navigate.
+ *  3. Unconfirmed Android WebView (in-app browsers etc.) → never navigate.
+ *  4. Custom schemes require the native support flag (see above).
  */
 export function fireBridge(cmd: string) {
   if (typeof window === 'undefined') return;
   const url = withLocale(cmd);
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = window as any;
-    if (typeof w.despia === 'function') { try { w.despia(url); } catch {} }
-  } catch {}
+  const shell = detectShell();
+  if (shell === 'none') return;
+
+  if (shell === 'despia') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const w = window as any;
+      if (typeof w.despia === 'function') { try { w.despia(url); } catch {} }
+    } catch {}
+    return;
+  }
+
+  if (!isWebViewGoldConfirmed()) return;
+
+  if (!isDocumentedScheme(cmd) && !isCustomBridgeSupported()) {
+    // eslint-disable-next-line no-console
+    console.log(`[AD-BRIDGE] Skipped ${cmd} — native interstitial handlers not detected yet (see docs/WEBVIEWGOLD_INTERSTITIAL.md).`);
+    return;
+  }
+
   try { window.location.href = url; } catch {}
 }
 

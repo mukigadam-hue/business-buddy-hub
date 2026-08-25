@@ -63,6 +63,9 @@ export default function BusinessAuditPanel() {
   const [debts, setDebts] = useState<DebtTotals>({ receivables: [], payables: [], receivableTotal: 0, payableTotal: 0 });
 
   const today = localDayKey(new Date());
+  // Accountability always runs up to the last completed day: today's figures
+  // are still changing, so asking for today's drawer cash is never accurate.
+  const endDate = localDayKey(new Date(Date.now() - 86400000));
 
   // Deep link: /settings?section=audit (or #audit) opens and scrolls straight
   // into the accountability panel, so nobody has to hunt for it in Settings.
@@ -97,10 +100,10 @@ export default function BusinessAuditPanel() {
     setLoading(true);
     try {
       const [totals, sold, all, debtData, cashRows, countRows] = await Promise.all([
-        fetchPeriodTotals(businessId, session.start_date, today),
-        fetchSoldItems(businessId, session.start_date, today),
+        fetchPeriodTotals(businessId, session.start_date, endDate),
+        fetchSoldItems(businessId, session.start_date, endDate),
         fetchAllStockItems(businessId),
-        fetchPeriodDebts(businessId, session.start_date, today),
+        fetchPeriodDebts(businessId, session.start_date, endDate),
         supabase.from('audit_daily_cash').select('*').eq('business_id', businessId).gte('audit_date', session.start_date),
         supabase.from('audit_stock_counts').select('*').eq('session_id', session.id),
       ]);
@@ -122,7 +125,7 @@ export default function BusinessAuditPanel() {
       });
       setCounts(km);
     } finally { setLoading(false); }
-  }, [businessId, session, today]);
+  }, [businessId, session, endDate]);
 
   useEffect(() => { if (open && session) loadPeriod(); }, [open, session, loadPeriod]);
 
@@ -214,7 +217,7 @@ export default function BusinessAuditPanel() {
       businessName: currentBusiness?.name || 'Business',
       currency: fmt,
       startDate: session?.start_date || today,
-      endDate: today,
+      endDate,
       days,
       cash,
       items: sheetItems,
@@ -234,7 +237,7 @@ export default function BusinessAuditPanel() {
     setSheetBusy(true);
     try {
       const blob = buildSheet();
-      const name = sheetFileName(currentBusiness?.name || 'Business', session.start_date, today);
+      const name = sheetFileName(currentBusiness?.name || 'Business', session.start_date, endDate);
       await saveSheetPermanently(session.id, name, blob);
       await saveFile(blob, name, 'application/pdf');
       toast.success(t('audit.sheetSaved', 'Data sheet downloaded and saved for future reference'));
@@ -256,7 +259,7 @@ export default function BusinessAuditPanel() {
     if (!businessId || !session) return;
     setSaving(true);
     const { error } = await supabase.from('audit_sessions').update({
-      status: 'closed', end_date: today, closed_at: new Date().toISOString(),
+      status: 'closed', end_date: endDate, closed_at: new Date().toISOString(),
       total_expected_cash: totals.expected, total_counted_cash: totals.counted,
       cash_variance_total: totals.cashVariance, stock_shortfall_value: totals.shortfallValue,
       net_balance: totals.netBalance, profit_amount: totals.profit,
@@ -264,12 +267,12 @@ export default function BusinessAuditPanel() {
     if (error) { setSaving(false); toast.error(error.message); return; }
     // keep a permanent copy of the accountability sheet for this closed period
     try {
-      await saveSheetPermanently(session.id, sheetFileName(currentBusiness?.name || 'Business', session.start_date, today), buildSheet());
+      await saveSheetPermanently(session.id, sheetFileName(currentBusiness?.name || 'Business', session.start_date, endDate), buildSheet());
     } catch { /* non-blocking */ }
-    const next = localDayKey(new Date(Date.now() + 86400000));
-    await supabase.from('audit_sessions').insert({ business_id: businessId, start_date: next, status: 'open' } as any);
+    // The closed period ended yesterday, so the next one starts today.
+    await supabase.from('audit_sessions').insert({ business_id: businessId, start_date: today, status: 'open' } as any);
     setSaving(false);
-    toast.success(t('audit.closed', 'Audit closed and saved. Next period starts tomorrow.'));
+    toast.success(t('audit.closed', 'Audit closed and saved. The next period starts from today.'));
     loadSession();
   }
 
@@ -342,8 +345,11 @@ export default function BusinessAuditPanel() {
             {session && (
               <>
                 <div className="text-xs text-muted-foreground">
-                  {t('audit.periodLabel', 'Current period')}: <span className="font-semibold text-foreground">{session.start_date} → {today}</span>
+                  {t('audit.periodLabel', 'Current period')}: <span className="font-semibold text-foreground">{session.start_date} → {endDate}</span>
                 </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {t('audit.todayExcluded', "Today's records are still changing, so accountability always runs up to yesterday ({{date}}). Today will be included from tomorrow.", { date: endDate })}
+                </p>
 
                 {/* Daily cash table */}
                 <div className="rounded-lg border overflow-hidden">

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from './BusinessContext';
 import { CACHE_KEYS, cachePersist, readJsonSync } from '@/lib/offlineStore';
 import { addToOfflineQueue } from '@/lib/offlineStore';
+import { dbCall, isOfflineError } from '@/lib/offlineSubmit';
 
 export interface RawMaterial {
   id: string;
@@ -196,7 +197,13 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
     const optimistic = { ...item, id: tempId, business_id: businessId, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deleted_at: null } as RawMaterial;
     setRawMaterials(prev => [...prev, optimistic].sort((a, b) => a.name.localeCompare(b.name)));
     toast.success('Raw material added!');
-    const { error } = await supabase.from('factory_raw_materials').insert({ ...item, business_id: businessId } as any);
+    const { error } = await dbCall(supabase.from('factory_raw_materials').insert({ ...item, business_id: businessId } as any));
+    if (error && isOfflineError(error)) {
+      // Connection dropped mid-save — optimistic record already applied, queue for sync
+      await addToOfflineQueue({ action: 'create_raw_material' as any, payload: { item: { ...item, business_id: businessId } }, optimisticIds: [tempId] });
+      toast.success('Connection lost — saved offline, will sync when online');
+      return;
+    }
     if (error) { toast.error('Save failed: ' + error.message); setRawMaterials(prev => prev.filter(r => r.id !== tempId)); }
   }, [businessId]);
 
@@ -227,7 +234,12 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
     const optimistic = { ...expense, id: tempId, business_id: businessId, created_at: new Date().toISOString() } as FactoryExpense;
     setExpenses(prev => [optimistic, ...prev]);
     toast.success('Expense recorded!');
-    const { error } = await supabase.from('factory_expenses').insert({ ...expense, business_id: businessId } as any);
+    const { error } = await dbCall(supabase.from('factory_expenses').insert({ ...expense, business_id: businessId } as any));
+    if (error && isOfflineError(error)) {
+      await addToOfflineQueue({ action: 'create_factory_expense' as any, payload: { expense: { ...expense, business_id: businessId } }, optimisticIds: [tempId] });
+      toast.success('Connection lost — expense queued, will sync when online');
+      return;
+    }
     if (error) { toast.error('Save failed: ' + error.message); setExpenses(prev => prev.filter(e => e.id !== tempId)); }
   }, [businessId]);
 
@@ -244,7 +256,12 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
     const optimistic = { ...member, id: tempId, business_id: businessId, created_at: new Date().toISOString() } as FactoryTeamMember;
     setTeamMembers(prev => [...prev, optimistic].sort((a, b) => a.full_name.localeCompare(b.full_name)));
     toast.success('Team member added!');
-    const { error } = await supabase.from('factory_team_members').insert({ ...member, business_id: businessId } as any);
+    const { error } = await dbCall(supabase.from('factory_team_members').insert({ ...member, business_id: businessId } as any));
+    if (error && isOfflineError(error)) {
+      await addToOfflineQueue({ action: 'create_factory_team_member' as any, payload: { member: { ...member, business_id: businessId } }, optimisticIds: [tempId] });
+      toast.success('Connection lost — team member queued, will sync when online');
+      return;
+    }
     if (error) { toast.error('Save failed: ' + error.message); setTeamMembers(prev => prev.filter(t => t.id !== tempId)); }
   }, [businessId]);
 
@@ -293,14 +310,30 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
       toast.success('Production saved offline — will sync when online');
       return;
     }
-    const { error } = await supabase.from('factory_production').insert({ ...record, business_id: businessId } as any);
+    const { error } = await dbCall(supabase.from('factory_production').insert({ ...record, business_id: businessId } as any));
+    if (error && isOfflineError(error)) {
+      const tempId = crypto.randomUUID();
+      const optimistic = { ...record, id: tempId, business_id: businessId, created_at: new Date().toISOString() } as ProductionRecord;
+      setProduction(prev => [optimistic, ...prev]);
+      await addToOfflineQueue({ action: 'create_production' as any, payload: { record: { ...record, business_id: businessId } }, optimisticIds: [tempId] });
+      toast.success('Connection lost — production queued, will sync when online');
+      return;
+    }
     if (error) { toast.error(error.message); return; }
     toast.success('Production recorded!');
   }, [businessId]);
 
   const addWorkerPayment = useCallback(async (payment: Omit<WorkerPayment, 'id' | 'business_id' | 'created_at'>) => {
     if (!businessId) return;
-    const { error } = await supabase.from('factory_worker_payments').insert({ ...payment, business_id: businessId } as any);
+    const queueOffline = async () => {
+      const tempId = crypto.randomUUID();
+      setWorkerPayments(prev => [{ ...payment, id: tempId, business_id: businessId, created_at: new Date().toISOString() } as WorkerPayment, ...prev]);
+      await addToOfflineQueue({ action: 'create_factory_worker_payment' as any, payload: { payment: { ...payment, business_id: businessId } }, optimisticIds: [tempId] });
+      toast.success('Payment saved offline — will sync when online');
+    };
+    if (!navigator.onLine) { await queueOffline(); return; }
+    const { error } = await dbCall(supabase.from('factory_worker_payments').insert({ ...payment, business_id: businessId } as any));
+    if (error && isOfflineError(error)) { await queueOffline(); return; }
     if (error) { toast.error(error.message); return; }
     toast.success('Payment recorded!');
   }, [businessId]);
@@ -320,7 +353,15 @@ export function FactoryProvider({ children }: { children: React.ReactNode }) {
 
   const addWorkerAdvance = useCallback(async (advance: Omit<WorkerAdvance, 'id' | 'business_id' | 'created_at'>) => {
     if (!businessId) return;
-    const { error } = await supabase.from('factory_worker_advances').insert({ ...advance, business_id: businessId } as any);
+    const queueOffline = async () => {
+      const tempId = crypto.randomUUID();
+      setWorkerAdvances(prev => [{ ...advance, id: tempId, business_id: businessId, created_at: new Date().toISOString() } as WorkerAdvance, ...prev]);
+      await addToOfflineQueue({ action: 'create_factory_worker_advance' as any, payload: { advance: { ...advance, business_id: businessId } }, optimisticIds: [tempId] });
+      toast.success('Advance saved offline — will sync when online');
+    };
+    if (!navigator.onLine) { await queueOffline(); return; }
+    const { error } = await dbCall(supabase.from('factory_worker_advances').insert({ ...advance, business_id: businessId } as any));
+    if (error && isOfflineError(error)) { await queueOffline(); return; }
     if (error) { toast.error(error.message); return; }
     toast.success('Advance recorded!');
   }, [businessId]);

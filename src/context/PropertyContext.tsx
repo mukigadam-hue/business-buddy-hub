@@ -5,6 +5,7 @@ import { useBusiness } from './BusinessContext';
 import { useAuth } from './AuthContext';
 import { CACHE_KEYS, cachePersist, readJsonSync } from '@/lib/offlineStore';
 import { addToOfflineQueue } from '@/lib/offlineStore';
+import { dbCall, isOfflineError } from '@/lib/offlineSubmit';
 
 export interface PropertyAsset {
   id: string;
@@ -157,7 +158,12 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
     const optimistic = { ...asset, id: tempId, business_id: businessId, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deleted_at: null } as PropertyAsset;
     setAssets(prev => [optimistic, ...prev]);
     toast.success('Asset listed!');
-    const { error } = await supabase.from('property_assets').insert({ ...asset, business_id: businessId } as any);
+    const { error } = await dbCall(supabase.from('property_assets').insert({ ...asset, business_id: businessId } as any));
+    if (error && isOfflineError(error)) {
+      await addToOfflineQueue({ action: 'create_property_asset', payload: { asset: { ...asset, business_id: businessId } }, optimisticIds: [tempId] });
+      toast.success('Connection lost — asset queued, will sync when online');
+      return;
+    }
     if (error) { toast.error('Save failed: ' + error.message); setAssets(prev => prev.filter(a => a.id !== tempId)); return; }
     loadData();
   }
@@ -179,7 +185,7 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   async function addBooking(booking: Partial<PropertyBooking>): Promise<boolean> {
     if (!businessId || !user) return false;
 
-    if (!navigator.onLine) {
+    const queueBookingOffline = async (message: string): Promise<boolean> => {
       const tempId = crypto.randomUUID();
       const optimistic = {
         ...booking, id: tempId, business_id: businessId, renter_id: user.id,
@@ -195,22 +201,26 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
         },
         optimisticIds: [tempId],
       });
-      toast.success('Booking saved offline — will sync when online');
+      toast.success(message);
       return true;
-    }
+    };
 
-    const { data: hasConflict } = await supabase.rpc('check_booking_conflict', {
+    if (!navigator.onLine) return queueBookingOffline('Booking saved offline — will sync when online');
+
+    const { data: hasConflict, error: conflictError } = await dbCall(supabase.rpc('check_booking_conflict', {
       _asset_id: booking.asset_id!,
       _start: booking.start_date!,
       _end: booking.end_date!,
-    });
+    }));
+    if (conflictError && isOfflineError(conflictError)) return queueBookingOffline('Connection lost — booking queued, will sync when online');
     if (hasConflict) {
       toast.error('All units of this asset are booked for the selected dates');
       return false;
     }
-    const { error } = await supabase.from('property_bookings').insert({
+    const { error } = await dbCall(supabase.from('property_bookings').insert({
       ...booking, business_id: businessId, renter_id: user.id,
-    } as any);
+    } as any));
+    if (error && isOfflineError(error)) return queueBookingOffline('Connection lost — booking queued, will sync when online');
     if (error) { toast.error(error.message); return false; }
     toast.success('Booking request sent!');
     loadData();
@@ -225,7 +235,8 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function addCheckIn(checkIn: Omit<PropertyCheckIn, 'id' | 'created_at'>) {
-    const { error } = await supabase.from('property_check_ins').insert(checkIn as any);
+    const { error } = await dbCall(supabase.from('property_check_ins').insert(checkIn as any));
+    if (error && isOfflineError(error)) { toast.error('You are offline — check-in could not be saved. Please try again when online.'); return; }
     if (error) { toast.error(error.message); return; }
     toast.success('Check-in recorded!');
   }

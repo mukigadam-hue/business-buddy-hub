@@ -106,10 +106,33 @@ export default function BusinessContactConsent() {
 
   const needsPhone = loaded && profilePhone === "";
 
+  // Cloud check: if the candidate phone is already registered (on this or any
+  // other account), it cannot be attached — never ask for it. This survives
+  // reinstalls and new devices because it reads the account, not local flags.
+  useEffect(() => {
+    if (!loaded || !user) return;
+    if (!needsPhone || !candidateE164) { setPhoneTaken(false); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.rpc("phone_exists", { _phone: candidateE164 });
+        if (!cancelled) setPhoneTaken(!!data);
+      } catch {
+        // On a failed check, let the user try; a real conflict surfaces on save.
+        if (!cancelled) setPhoneTaken(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [loaded, user, needsPhone, candidateE164]);
+
+  const phoneActionable = needsPhone && !!candidate.phone && phoneTaken === false;
+
   // Open the dialog once we know something is missing AND we have a candidate
   useEffect(() => {
     if (!loaded || !user) return;
-    if ((!needsEmail || !candidate.email) && (!needsPhone || !candidate.phone)) return;
+    // Wait for the phone availability check before deciding
+    if (needsPhone && !!candidate.phone && phoneTaken === null) return;
+    if ((!needsEmail || !candidate.email) && !phoneActionable) return;
     if (candidate.phone) {
       const cc = getCountryByCode(candidate.countryCode);
       if (cc) setCountry(cc);

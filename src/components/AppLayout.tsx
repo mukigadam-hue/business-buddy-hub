@@ -8,6 +8,7 @@ import BottomBannerAd from '@/components/BottomBannerAd';
 import WebNativeAd from '@/components/WebNativeAd';
 
 import DemoAccountBanner from '@/components/DemoAccountBanner';
+import BusinessContactConsent from '@/components/auth/BusinessContactConsent';
 import LegalHelpModal from '@/components/LegalHelpModal';
 import { HelpCircle } from 'lucide-react';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
@@ -489,6 +490,7 @@ function DesktopPageNav({ navItems, pathname }: { navItems: { to: string; label:
             </div>
           </div>
           <DemoAccountBanner />
+          <BusinessContactConsent />
           <AuditReminder />
           <GrowthNudge />
 

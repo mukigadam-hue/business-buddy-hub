@@ -1456,5 +1456,24 @@
     "consentSaved": "In Ihrem Konto gespeichert",
     "notNow": "Nicht jetzt",
     "yesSave": "Ja, in meinem Konto speichern"
+  },
+  "visitors": {
+    "notifTitle": "Sie hatten {{count}} Besucher 👀",
+    "notifBody": "Tippen, um die Herkunft zu sehen",
+    "title": "Wer Ihr Unternehmen angesehen hat",
+    "subtitle": "Nur Länder — Namen bleiben privat.",
+    "visitorsLabel": "Besucher",
+    "viewsLabel": "Aufrufe gesamt",
+    "empty": "Noch keine Besucher. Fügen Sie Artikel mit klaren Fotos hinzu.",
+    "unknownCountry": "Unbekanntes Land",
+    "lastViewed": "Zuletzt gesehen",
+    "timesViewed": "{{count}} Aufrufe",
+    "addImagesTitle": "Fotos zu Ihren Artikeln hinzufügen",
+    "addImagesBody": "Betriebe mit guten Fotos erhalten deutlich mehr Besucher und Aufträge.",
+    "addImagesCta": "Artikel mit Fotos hinzufügen",
+    "recordsTitle": "Täglich erfassen",
+    "recordsBody": "Erfassen Sie jeden Verkauf und Service täglich, um den echten Gewinn zu sehen.",
+    "recordsCta": "Verkauf erfassen",
+    "exploreCta": "Discover erkunden"
   }
 }

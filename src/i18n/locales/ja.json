@@ -1456,5 +1456,24 @@
     "consentSaved": "アカウントに保存しました",
     "notNow": "後で",
     "yesSave": "はい、アカウントに保存"
+  },
+  "visitors": {
+    "notifTitle": "{{count}}人の訪問者がありました 👀",
+    "notifBody": "タップして訪問者の国を確認",
+    "title": "あなたのビジネスを見た人",
+    "subtitle": "国のみ表示 — 名前は非公開です。",
+    "visitorsLabel": "訪問者",
+    "viewsLabel": "合計閲覧",
+    "empty": "まだ訪問者はいません。写真付きの商品を追加しましょう。",
+    "unknownCountry": "不明な国",
+    "lastViewed": "最終閲覧",
+    "timesViewed": "{{count}}回閲覧",
+    "addImagesTitle": "商品に写真を追加",
+    "addImagesBody": "写真がある店舗は訪問者と注文が大きく増えます。",
+    "addImagesCta": "写真付きで商品を追加",
+    "recordsTitle": "毎日記録しましょう",
+    "recordsBody": "売上とサービスを毎日記録すると本当の利益が見えます。",
+    "recordsCta": "売上を記録",
+    "exploreCta": "Discover を見る"
   }
 }

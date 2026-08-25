@@ -1456,5 +1456,24 @@
     "consentSaved": "已保存到您的账户",
     "notNow": "暂不",
     "yesSave": "是的，保存到我的账户"
+  },
+  "visitors": {
+    "notifTitle": "有 {{count}} 位访客 👀",
+    "notifBody": "点击查看访客来自哪里",
+    "title": "谁查看了您的商家",
+    "subtitle": "仅显示国家 — 访客姓名始终保密。",
+    "visitorsLabel": "访客",
+    "viewsLabel": "总浏览",
+    "empty": "暂无访客。添加带清晰照片的商品。",
+    "unknownCountry": "未知国家",
+    "lastViewed": "最近查看",
+    "timesViewed": "{{count}} 次浏览",
+    "addImagesTitle": "为商品添加照片",
+    "addImagesBody": "有清晰照片的商家会获得更多访客和订单。",
+    "addImagesCta": "添加带照片的商品",
+    "recordsTitle": "坚持每日记录",
+    "recordsBody": "每天记录每笔销售和服务，才能看到真实利润。",
+    "recordsCta": "记录一笔销售",
+    "exploreCta": "浏览 Discover"
   }
 }

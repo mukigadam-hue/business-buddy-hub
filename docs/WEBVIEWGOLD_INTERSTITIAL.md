@@ -41,7 +41,25 @@ else if (url.startsWith("preloadinterstitial://")) {
 }
 ```
 
-## Step 3 — Paste the two helper methods
+## Step 3 — Announce support to the web app (REQUIRED)
+
+For safety, the web app **never fires the custom schemes until the native
+build announces that the handlers exist** (an unhandled scheme navigation
+would crash the WebView with `net::ERR_UNKNOWN_URL_SCHEME`). Add this one
+call so the announcement happens on every page load — in `onPageFinished`
+(or directly after your WebView is set up):
+
+```java
+webView.evaluateJavascript(
+    "try{window.WebViewGoldInterstitial=true;localStorage.setItem('bm:wvg-bridge:supported','1');}catch(e){}",
+    null);
+```
+
+Once this runs on a device even once, the web app remembers it
+(`localStorage`) and enables `preloadinterstitial://` / `showinterstitial://`
+permanently on that device.
+
+## Step 4 — Paste the two helper methods
 
 Anywhere inside the `MainActivity` class body:
 
@@ -102,10 +120,11 @@ private void showInterstitialAdNow() {
 > for `SHOW_FULL_SCREEN_AD`: the handlers become
 > `if (mInterstitialAd.isLoaded()) { mInterstitialAd.show(); } else { /* your template's load call */ }`.
 
-## Step 4 — Rebuild
+## Step 5 — Rebuild
 
 Build → Generate Signed Bundle/APK and install the new build. The schemes only
-exist once this snippet is compiled into the app.
+exist once this snippet is compiled into the app — until then the web app
+silently skips them, so the app always opens normally.
 
 ## Verification checklist
 

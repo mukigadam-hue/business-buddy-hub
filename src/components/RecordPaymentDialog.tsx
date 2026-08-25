@@ -11,6 +11,8 @@ import { useCurrency } from '@/hooks/useCurrency';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
+import { dbCall, isOfflineError } from '@/lib/offlineSubmit';
+import { addToOfflineQueue } from '@/lib/offlineStore';
 
 export type InvoiceSource = 'sale' | 'purchase' | 'order' | 'booking';
 
@@ -40,7 +42,7 @@ export default function RecordPaymentDialog({ open, onOpenChange, sourceType, so
     if (!amt || amt <= 0) { toast.error(t('invoice.invalidAmount')); return; }
     if (amt > balance + 0.01) { toast.error(t('invoice.exceedsBalance')); return; }
     if (!currentBusiness) return;
-    const { error } = await supabase.from('invoice_payments').insert({
+    const payment = {
       business_id: currentBusiness.id,
       source_type: sourceType,
       source_id: sourceId,
@@ -48,7 +50,16 @@ export default function RecordPaymentDialog({ open, onOpenChange, sourceType, so
       payment_method: method,
       recorded_by: recordedBy.trim() || 'Staff',
       notes: notes.trim(),
-    });
+    };
+    const { error } = await dbCall(supabase.from('invoice_payments').insert(payment as any));
+    if (error && isOfflineError(error)) {
+      await addToOfflineQueue({ action: 'create_invoice_payment', payload: { payment }, optimisticIds: [] });
+      toast.success(t('invoice.paymentSavedOffline', 'Payment saved offline — will sync when online'));
+      setAmount('0'); setNotes(''); setRecordedBy('');
+      onOpenChange(false);
+      onSaved?.();
+      return;
+    }
     if (error) { toast.error(error.message); return; }
     toast.success(t('invoice.paymentRecorded'));
     setAmount('0'); setNotes(''); setRecordedBy('');

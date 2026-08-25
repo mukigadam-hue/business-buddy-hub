@@ -1,14 +1,15 @@
 /* -------------------------------------------------------------------------- */
-/* Despia / AdMob constants                                                   */
+/* WebViewGold / AdMob constants                                              */
 /* -------------------------------------------------------------------------- */
 /**
- * Native Advanced ads are NOT supported by Despia. Despia currently offers
- * Reward ads and Interstitial ads (beta). This project uses Interstitial ads
- * via the Despia bridge: `despia("displayinterstitialad://")`.
+ * The production app is wrapped with WebViewGold (package com.despia.biztrack).
+ * WebViewGold natively supports Banner ads, Interstitial ads (interval-based,
+ * preloaded silently by the native SDK), Rewarded ads and App Open ads —
+ * all configured in Config.java / the WebViewGold Cloud Builder.
  *
- * AdSense / inline `<ins class="adsbygoogle">` slots have been removed
- * permanently. We keep `app-ads.txt` reachable at the developer domain so the
- * AdMob app remains verified.
+ * Inline AdSense slots are used on the web (browser/PWA) only. We keep
+ * `app-ads.txt` reachable at the developer domain so the AdMob app remains
+ * verified.
  */
 
 export const ADMOB_APP_ID = 'ca-app-pub-9605564713228252~8941826330';
@@ -20,8 +21,21 @@ export function adLog(message: string) {
   console.log(message);
 }
 
+/**
+ * True when running inside the native WebViewGold wrapper (or any legacy
+ * native shell). Kept under its historical name for import compatibility —
+ * detection itself is WebViewGold-first (see nativeAdBridge.detectShell).
+ */
 export function isDespiaNativeShell(): boolean {
   if (typeof window === 'undefined') return false;
   const ua = window.navigator.userAgent.toLowerCase();
-  return ua.includes('despia') || ua.includes('biztrack') || ua.includes('com.despia.biztrack');
+  if (ua.includes('webviewgold') || ua.includes('wvg') || ua.includes('biztrack')) return true;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  if (w?.Android?.webviewgold || w?.webkit?.messageHandlers?.webviewgold) return true;
+  if (/\bwv\b/.test(ua) && /android/.test(ua)) return true;
+  // Legacy Despia builds.
+  if (ua.includes('despia') || ua.includes('com.despia.biztrack')) return true;
+  if (typeof w?.despia === 'function') return true;
+  return false;
 }

@@ -23,6 +23,7 @@ export default function AppToaster() {
     <SonnerToaster
       offset={{ top: '32px', right: '32px', bottom, left: '32px' }}
       mobileOffset={{ top: '16px', right: '16px', bottom, left: '16px' }}
+      style={{ zIndex: 9999 }}
     />
   );
 }

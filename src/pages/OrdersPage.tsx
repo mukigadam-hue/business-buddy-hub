@@ -128,6 +128,9 @@ export default function OrdersPage() {
   const [allocating, setAllocating] = useState(false);
   const [orderMode, setOrderMode] = useState<'my_order' | 'inbox' | 'request'>('my_order');
   const isFactory = currentBusiness?.business_type === 'factory';
+  const isPersonal = currentBusiness?.business_type === 'personal';
+  // Personal accounts have no business to record walk-in sales for — default to supplier ordering
+  useEffect(() => { if (isPersonal && orderMode === 'my_order') setOrderMode('request'); }, [isPersonal]);
 
   // Supplier products when coming from Discover page
   const [supplierProducts, setSupplierProducts] = useState<{ name: string; category: string; quality: string; retail_price: number }[]>([]);
@@ -1355,16 +1358,18 @@ export default function OrdersPage() {
         className="h-9"
       />
 
-      {/* Create new order */}
+      {/* Create new order — personal accounts can only order from suppliers */}
       {!fromDiscover && (
         <div className="flex gap-2 flex-wrap">
-          <Button
-            size="sm"
-            variant={orderMode === 'my_order' ? 'default' : 'outline'}
-            onClick={() => { setOrderMode('my_order'); setItems([]); setCustomerName(''); }}
-          >
-            {t('ordersUI.newOrderWalkin')}
-          </Button>
+          {!isPersonal && (
+            <Button
+              size="sm"
+              variant={orderMode === 'my_order' ? 'default' : 'outline'}
+              onClick={() => { setOrderMode('my_order'); setItems([]); setCustomerName(''); }}
+            >
+              {t('ordersUI.newOrderWalkin')}
+            </Button>
+          )}
           <Button
             size="sm"
             variant={orderMode === 'request' ? 'default' : 'outline'}

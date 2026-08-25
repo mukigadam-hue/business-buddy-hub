@@ -129,6 +129,8 @@ export default function OrdersPage() {
   const [orderMode, setOrderMode] = useState<'my_order' | 'inbox' | 'request'>('my_order');
   const isFactory = currentBusiness?.business_type === 'factory';
   const isPersonal = currentBusiness?.business_type === 'personal';
+  // Personal accounts have no business to record walk-in sales for — default to supplier ordering
+  useEffect(() => { if (isPersonal && orderMode === 'my_order') setOrderMode('request'); }, [isPersonal]);
 
   // Supplier products when coming from Discover page
   const [supplierProducts, setSupplierProducts] = useState<{ name: string; category: string; quality: string; retail_price: number }[]>([]);

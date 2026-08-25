@@ -633,6 +633,7 @@ export default function SettingsPage() {
             </h2>
             <p className="text-xs text-muted-foreground">Signed in as <strong>{user?.email}</strong></p>
             <AccountContactSettings />
+            <div className="grid grid-cols-1 gap-2">
               <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" onClick={() => setShowDeleteAccount(true)}>
                 <UserX className="h-4 w-4 mr-2" /> Delete Account
               </Button>
@@ -1617,6 +1618,7 @@ export default function SettingsPage() {
           <p className="text-xs text-muted-foreground">Signed in as <strong>{user?.email}</strong></p>
 
           <AccountContactSettings />
+          <div className="grid grid-cols-1 gap-2">
             <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" onClick={() => setShowDeleteAccount(true)}>
               <UserX className="h-4 w-4 mr-2" /> Delete Account
             </Button>

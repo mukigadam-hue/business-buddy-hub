@@ -3,21 +3,11 @@ import React from "react";
 import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
+import { registerAppSW } from "./lib/registerAppSW";
 
-// PWA: VitePWA handles SW registration automatically via registerType: "autoUpdate"
-// Guard against iframe/preview contexts where SW causes issues
-const isInIframe = (() => {
-  try { return window.self !== window.top; } catch { return true; }
-})();
-const isPreviewHost =
-  window.location.hostname.includes("id-preview--") ||
-  window.location.hostname.includes("lovableproject.com");
-
-if (isPreviewHost || isInIframe) {
-  navigator.serviceWorker?.getRegistrations().then((regs) => {
-    regs.forEach((r) => r.unregister());
-  });
-}
+// Offline app shell: registers /sw.js only in real production (never in
+// dev, iframe, or Lovable preview; supports ?sw=off kill switch).
+registerAppSW();
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },

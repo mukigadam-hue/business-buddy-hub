@@ -23,6 +23,57 @@ async function syncOperation(op: OfflineQueueItem): Promise<string[]> {
       if (error) throw error;
       return op.optimisticIds || [];
     }
+    case 'update_stock_item': {
+      const { error } = await supabase.from('stock_items').update(op.payload.updates as any).eq('id', op.payload.id);
+      if (error) throw error;
+      return op.optimisticIds || [];
+    }
+    case 'create_service': {
+      const { service, itemsUsed, businessId } = op.payload;
+      const { data: svc, error } = await supabase.from('services').insert(service as any).select().single();
+      if (error || !svc) throw error || new Error('Failed to sync service');
+      if (itemsUsed && itemsUsed.length > 0) {
+        const serviceItems = itemsUsed.map((item: any) => ({
+          service_id: svc.id, stock_item_id: item.stock_item_id, item_name: item.item_name,
+          category: item.category, quality: item.quality, quantity: item.quantity,
+          unit_price: item.unit_price, subtotal: item.subtotal,
+        }));
+        await supabase.from('service_items').insert(serviceItems as any);
+        const { data: stockItems } = await supabase.from('stock_items').select('*').eq('business_id', businessId).is('deleted_at', null);
+        for (const item of itemsUsed) {
+          const stockItem = stockItems?.find((s: any) => s.id === item.stock_item_id);
+          if (stockItem) {
+            await supabase.from('stock_items').update({ quantity: Math.max(0, Number(stockItem.quantity) - Number(item.quantity)) } as any).eq('id', stockItem.id);
+          }
+        }
+      }
+      return op.optimisticIds || [];
+    }
+    case 'create_invoice_payment': {
+      const { error } = await supabase.from('invoice_payments').insert(op.payload.payment as any);
+      if (error) throw error;
+      return op.optimisticIds || [];
+    }
+    case 'create_factory_team_member': {
+      const { error } = await supabase.from('factory_team_members').insert(op.payload.member as any);
+      if (error) throw error;
+      return op.optimisticIds || [];
+    }
+    case 'create_factory_worker_payment': {
+      const { error } = await supabase.from('factory_worker_payments').insert(op.payload.payment as any);
+      if (error) throw error;
+      return op.optimisticIds || [];
+    }
+    case 'create_factory_worker_advance': {
+      const { error } = await supabase.from('factory_worker_advances').insert(op.payload.advance as any);
+      if (error) throw error;
+      return op.optimisticIds || [];
+    }
+    case 'create_property_asset': {
+      const { error } = await supabase.from('property_assets').insert(op.payload.asset as any);
+      if (error) throw error;
+      return op.optimisticIds || [];
+    }
     case 'create_sale': {
       const { sale, items, businessId } = op.payload;
       const { data: saleData, error } = await supabase.from('sales').insert(sale as any).select().single();

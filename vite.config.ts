@@ -32,7 +32,10 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      selfDestroying: true,
+      // The app registers /sw.js itself through src/lib/registerAppSW.ts —
+      // never let the plugin auto-inject a registrar.
+      injectRegister: null,
+      filename: "sw.js",
       includeAssets: ["favicon.ico", "placeholder.svg"],
       devOptions: {
         enabled: false,

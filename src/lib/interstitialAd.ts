@@ -1,56 +1,62 @@
 import { adLog } from './despiaAds';
-import { detectShell, isNativeShell } from './nativeAdBridge';
+import { bridgeInitAdMob, bridgeShowInterstitial, detectShell, isNativeShell } from './nativeAdBridge';
 
 /**
  * ────────────────────────────────────────────────────────────────────────────
- *  BizTrack Interstitial Ad Manager — FRESH IMPLEMENTATION (v3)
+ *  BizTrack Interstitial Ad Manager — WebViewGold implementation (v4)
  * ────────────────────────────────────────────────────────────────────────────
  *
- *  Root cause of the old "100% match rate, 0 impressions" failure:
- *  the previous build fired invented bridge schemes
- *  (`admob://www.webviewgold.com/interstitial`, `admob_initialize://`)
- *  that no native shell understands. The AdMob SDK loaded the ad (hence the
- *  100% match rate in the AdMob console) but the SHOW command never reached
- *  the native layer, so the ad was never presented.
+ *  This app is wrapped with WebViewGold (NOT Despia). Verified against the
+ *  official WebViewGold for Android documentation (Docs → AdMob Ads API):
  *
- *  This rewrite uses ONLY the officially documented Despia command:
+ *  FACT 1 — WebViewGold has NO documented on-demand web command to show an
+ *           interstitial. The only documented ad URL schemes are:
+ *             enableads://, disableads://, displayrewardedad://
  *
- *      despia('admob://interstitial')
+ *  FACT 2 — Interstitials are configured natively in Config.java / the
+ *           WebViewGold Cloud Builder:
+ *             SHOW_FULL_SCREEN_AD = true   → enable interstitials
+ *             SHOW_AD_AFTER_X     = <n>    → show after every X website
+ *                                            interactions (clicks/loads)
+ *           The native AdMob SDK preloads the next interstitial silently in
+ *           the background, so the ad appears smoothly — never abruptly — at
+ *           natural transition points (exactly what AdMob policy requires).
  *
- *  (Despia Docs → Native Features → AdMob → Interstitial Ads). The call is
- *  fire-and-forget: the native runtime loads the Ad Unit ID configured in the
- *  Despia Editor and presents the full-screen ad above the WebView. Loading
- *  is handled natively — the ad is already prepared in the background by the
- *  SDK, so the ad appears smoothly (never abruptly) at the transition point.
+ *  FACT 3 — The old build's "100% match rate, 0 impressions" came from firing
+ *           invented schemes (`admob://www.webviewgold.com/interstitial`,
+ *           `admob_initialize://`) that WebViewGold does not implement. AdMob
+ *           loaded the ad (match rate) but nothing ever presented it.
  *
- *  Lifecycle:
- *    1. STARTUP   — initInterstitialAds() runs once at app mount, verifies the
- *                   native shell and logs diagnostics ([AD-INTERSTITIAL]).
- *    2. TRIGGER   — triggerInterstitial(reason) is called when a receipt is
- *                   closed after a sale/service is recorded, plus the other
- *                   natural completion points already wired in the app.
- *    3. DELAY     — the show command fires 600ms AFTER the dialog has fully
- *                   closed so the ad never interrupts an animation (AdMob
- *                   policy: ads only at natural break points).
- *    4. GUARD     — a 60-second anti-double-fire guard prevents two stacked
- *                   events (e.g. dialog close + export) from firing twice.
+ *  What this manager does:
+ *    1. STARTUP   — initInterstitialAds() verifies the native shell and fires
+ *                   the documented `enableads://` command.
+ *    2. TRIGGER   — triggerInterstitial(reason) is called at every receipt
+ *                   closure / completion point. Each call is a real user
+ *                   interaction that counts toward WebViewGold's
+ *                   SHOW_AD_AFTER_X interval; the manager logs the transition
+ *                   and keeps an anti-double-fire guard so diagnostics stay
+ *                   meaningful. The actual presentation is native.
+ *    3. DELAY     — 600ms after the dialog closes, so the transition point is
+ *                   a clean natural break (AdMob policy).
  *
- *  Required native-side setup (Despia Editor → App → Integrations → AdMob):
- *    - AdMob integration toggled ON
- *    - Android Interstitial Ad Unit ID pasted (Main_App_receip closure)
- *    - App REBUILT after enabling — otherwise the SDK is not compiled into
- *      the binary and the call resolves silently (0 impressions).
+ *  REQUIRED native-side setup (WebViewGold Cloud Builder or Config.java):
+ *    - SHOW_BANNER_AD      = true   (bottom banner)
+ *    - SHOW_FULL_SCREEN_AD = true   (interstitials)
+ *    - SHOW_AD_AFTER_X     = 8      (≈ every 8 interactions — tune to taste)
+ *    - AdMob App ID + Interstitial + Banner unit IDs in strings.xml
+ *    - REBUILD the app after changing these — otherwise the settings are not
+ *      compiled into the binary and no interstitial can ever appear.
  * ────────────────────────────────────────────────────────────────────────────
  */
 
 const LAST_FIRE_KEY = 'bm:interstitial:lastFire';
 const SUPPRESS_KEY = 'bm:interstitial:suppress';
 
-/** Minimum time between any two interstitial shows (anti double-fire). */
+/** Minimum time between any two interstitial transition logs (anti double-fire). */
 const MIN_GAP_MS = 60 * 1000;
 /** Screen-change (navigation) triggers stay conservative for policy safety. */
 const NAV_GAP_MS = 30 * 60 * 1000;
-/** Delay so the receipt dialog finishes closing before the ad appears. */
+/** Delay so the receipt dialog finishes closing before the transition point. */
 const SHOW_DELAY_MS = 600;
 
 /* ----------------------------- storage helpers ---------------------------- */
@@ -70,95 +76,14 @@ function consumeSuppression(): boolean {
   return false;
 }
 
-/* ---------------------------- bridge invocation --------------------------- */
-
-/**
- * Fire the documented Despia interstitial command through every delivery
- * channel the shell may hook. Firing more than one is safe — the native
- * runtime dedupes on the scheme and presents the ad once.
- *
- * Channels:
- *   1. Global `despia()` function (injected by the Despia runtime / the
- *      `despia-native` package when present).
- *   2. Hidden iframe navigation to the scheme (most reliable from inside
- *      setTimeout / dialog-close callbacks).
- *   3. Top-level `location.assign` as the last resort.
- */
-function fireScheme(cmd: string) {
-  if (typeof window === 'undefined') return;
-  let delivered = false;
-
-  // 1) Global despia(...) function — the documented call path.
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = window as any;
-    if (typeof w.despia === 'function') {
-      w.despia(cmd);
-      delivered = true;
-    }
-  } catch (e) {
-    adLog(`[AD-INTERSTITIAL] despia() call failed (${cmd}): ${(e as Error)?.message ?? e}`);
-  }
-
-  // 2) Hidden iframe navigation — intercepted by the native shell.
-  try {
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.setAttribute('aria-hidden', 'true');
-    iframe.src = cmd;
-    document.body.appendChild(iframe);
-    setTimeout(() => { try { iframe.remove(); } catch {} }, 1500);
-    delivered = true;
-  } catch (e) {
-    adLog(`[AD-INTERSTITIAL] iframe bridge failed (${cmd}): ${(e as Error)?.message ?? e}`);
-  }
-
-  // 3) Last-resort top-level navigation.
-  if (!delivered) {
-    try { window.location.assign(cmd); } catch (e) {
-      adLog(`[AD-INTERSTITIAL] location.assign failed (${cmd}): ${(e as Error)?.message ?? e}`);
-    }
-  }
-}
-
-/** The one canonical command — documented in the Despia AdMob guide. */
-const DESPIA_INTERSTITIAL_CMD = 'admob://interstitial';
-/** Legacy beta scheme kept ONLY as a fallback for very old builds. */
-const LEGACY_INTERSTITIAL_CMD = 'displayinterstitialad://';
-
-/**
- * Present the interstitial now. Equivalent to `interstitialAd.show()`.
- * The native runtime shows the ad it has loaded in the background; if no ad
- * is ready the call is a safe native-side no-op.
- */
-export function triggerNativeAd(reason = 'unspecified') {
-  const shell = detectShell();
-  console.log(`[AD-INTERSTITIAL] show() → shell=${shell} reason=${reason}`);
-  // Documented command first, legacy fallback second.
-  fireScheme(DESPIA_INTERSTITIAL_CMD);
-  // Small delay so the shell processes the primary command first.
-  setTimeout(() => fireScheme(LEGACY_INTERSTITIAL_CMD), 120);
-}
-
-/**
- * Background warmup. Despia's runtime loads the interstitial natively and
- * keeps it ready, so there is nothing to fetch from the web side — this ping
- * simply nudges the legacy preload scheme on old builds and logs readiness.
- */
-export function loadInterstitial() {
-  if (!isNativeShell()) return;
-  console.log('[AD-INTERSTITIAL] Background load handled natively (fire-and-forget SDK).');
-  try { fireScheme('preloadinterstitialad://'); } catch {}
-}
-
 /* ------------------------------ initialization ---------------------------- */
 
 let initialized = false;
 
 /**
  * Initialize interstitial ads once at app startup. Idempotent.
- * Verifies the native shell, wires optional lifecycle callbacks the shell may
- * expose, and exposes a manual QA hook: `window.Despia.showInterstitial()`.
+ * Verifies the WebViewGold shell, fires the documented `enableads://`
+ * command, and exposes a manual QA hook: `window.WebViewGold.showInterstitial()`.
  */
 export function initInterstitialAds() {
   if (initialized) return;
@@ -170,25 +95,15 @@ export function initInterstitialAds() {
     return;
   }
 
-  adLog(`[AD-INTERSTITIAL] Init OK — shell=${shell}. Command: despia('${DESPIA_INTERSTITIAL_CMD}')`);
+  adLog(`[AD-INTERSTITIAL] Init OK — shell=${shell} (WebViewGold). Firing enableads:// …`);
+  bridgeInitAdMob();
 
-  // Optional lifecycle callbacks (fired by shells that support them).
+  // Manual QA hook — call `WebViewGold.showInterstitial()` from any console.
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any;
-    w.onDespiaInterstitialLoaded = () => console.log('[AD-INTERSTITIAL] onAdLoaded');
-    w.onDespiaInterstitialFailed = (err?: unknown) =>
-      console.log(`[AD-INTERSTITIAL] onAdFailedToLoad(${err ?? 'unknown'})`);
-    w.onDespiaInterstitialDismissed = () => console.log('[AD-INTERSTITIAL] onAdDismissedFullScreenContent');
-  } catch {}
-
-  // Manual QA hook — call `Despia.showInterstitial()` from any console.
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = window as any;
-    w.Despia = w.Despia || {};
-    w.Despia.showInterstitial = (reason = 'manual') => showNow(`manual:${reason}`);
-    w.Despia.loadInterstitial = () => loadInterstitial();
+    w.WebViewGold = w.WebViewGold || {};
+    w.WebViewGold.showInterstitial = (reason = 'manual') => showNow(`manual:${reason}`);
   } catch {}
 }
 
@@ -199,18 +114,21 @@ function showNow(reason: string) {
     adLog(`[AD-INTERSTITIAL] Skipped (web browser). reason=${reason}`);
     return;
   }
-  // Record before firing so concurrent events cannot double-show.
+  // Record before the transition so concurrent events cannot double-log.
   writeNumber(LAST_FIRE_KEY, Date.now());
-  setTimeout(() => triggerNativeAd(reason), SHOW_DELAY_MS);
-  console.log(`[AD-INTERSTITIAL] show() scheduled in ${SHOW_DELAY_MS}ms (after transition). reason=${reason}`);
+  setTimeout(() => bridgeShowInterstitial(reason), SHOW_DELAY_MS);
+  // eslint-disable-next-line no-console
+  console.log(`[AD-INTERSTITIAL] Transition scheduled in ${SHOW_DELAY_MS}ms. reason=${reason}`);
 }
 
 /* ----------------------------- public triggers ---------------------------- */
 
 /**
- * Trigger A — task-completion point. Fires EVERY time a receipt is closed
- * after a sale/service is recorded (per current testing policy), plus the
- * other wired completion points. Only a 60s anti-double-fire guard applies.
+ * Trigger A — task-completion point. Called EVERY time a receipt is closed
+ * after a sale/service is recorded, plus the other wired completion points.
+ * Each call marks a genuine user interaction at a natural break point;
+ * WebViewGold presents the natively-preloaded interstitial according to its
+ * SHOW_AD_AFTER_X interval. Only a 60s anti-double-fire guard applies.
  */
 export function triggerInterstitial(reason: string) {
   if (typeof window === 'undefined') return;
@@ -221,7 +139,7 @@ export function triggerInterstitial(reason: string) {
   }
   const since = Date.now() - readNumber(LAST_FIRE_KEY);
   if (readNumber(LAST_FIRE_KEY) && since < MIN_GAP_MS) {
-    adLog(`[AD-INTERSTITIAL] Skipped — ad fired ${Math.round(since / 1000)}s ago (60s guard). reason=${reason}`);
+    adLog(`[AD-INTERSTITIAL] Skipped — transition ${Math.round(since / 1000)}s ago (60s guard). reason=${reason}`);
     return;
   }
   showNow(`A:${reason}`);
@@ -237,7 +155,7 @@ export function triggerInterstitialOnScreenChange(reason: string) {
   if (consumeSuppression()) return;
   const since = Date.now() - readNumber(LAST_FIRE_KEY);
   if (readNumber(LAST_FIRE_KEY) && since < NAV_GAP_MS) {
-    adLog(`[AD-INTERSTITIAL] Nav trigger skipped — last ad ${Math.round(since / 60000)}min ago. reason=${reason}`);
+    adLog(`[AD-INTERSTITIAL] Nav trigger skipped — last transition ${Math.round(since / 60000)}min ago. reason=${reason}`);
     return;
   }
   showNow(`B:${reason}`);

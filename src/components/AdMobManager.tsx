@@ -5,8 +5,9 @@ import i18n from '@/i18n';
 import { useEffect } from 'react';
 
 /**
- * AdMobManager — initializes the AdMob SDK at app launch and preloads the
- * first interstitial in the background so it's ready before the first trigger.
+ * AdMobManager — initializes ads at app launch inside the WebViewGold shell.
+ * Fires the documented `enableads://` command; the native AdMob SDK then
+ * preloads banner + interstitial creatives silently in the background.
  * Ads are localized: the current i18n language + device region are passed to
  * the native shell so AdMob serves creatives in the user's country language.
  */

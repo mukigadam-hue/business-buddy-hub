@@ -1,8 +1,13 @@
 // Phone-first authentication endpoint.
-// Actions: signup, signin, reset-pin, change-phone
+// Actions: signup, signin, reset-pin, change-phone, attach-email, attach-phone
 // Uses a deterministic synthetic email + password for Supabase auth, so a phone+PIN
 // can produce a real Supabase session. The PIN is also hashed and stored separately
 // for explicit verification (e.g., before phone change).
+//
+// Accounts can later attach a REAL email (attach-email) or a REAL phone
+// (attach-phone). Once an account has a real email, phone+PIN sign-in switches to
+// a one-time token (generateLink) instead of synthetic credentials, so both
+// sign-in methods keep working no matter which contact was registered first.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -16,6 +21,7 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 // Server-side salt — never sent to clients.
 const SALT = "ndamwesiga.phone.salt.v1";
+const SYNTH_DOMAIN = "@phone.ndamwesigaapp.local";
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -28,7 +34,13 @@ function digitsOnly(raw: string) {
   return (raw || "").replace(/\D/g, "");
 }
 function synthEmail(phone: string) {
-  return `p${digitsOnly(phone)}@phone.ndamwesigaapp.local`;
+  return `p${digitsOnly(phone)}${SYNTH_DOMAIN}`;
+}
+function isSynthEmail(email: string | null | undefined) {
+  return !!email && email.toLowerCase().endsWith(SYNTH_DOMAIN);
+}
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 async function sha256(input: string) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
@@ -59,6 +71,30 @@ async function getUserFromAuthHeader(authHeader: string | null) {
   });
   const { data } = await client.auth.getUser();
   return data?.user ?? null;
+}
+
+/**
+ * Build the sign-in payload for a profile AFTER the PIN has been verified.
+ * - Synthetic (phone-first, no real email yet): return synthetic credentials.
+ * - Real email attached: return a one-time token so the client can open a
+ *   session via verifyOtp without knowing the account password.
+ */
+async function signInPayload(userId: string, phone: string, pin: string) {
+  const { data: userData, error } = await admin.auth.admin.getUserById(userId);
+  if (error || !userData?.user) return bad("Account not found", 404);
+  const email = userData.user.email || "";
+
+  if (isSynthEmail(email)) {
+    return ok({ email, password: await synthPassword(phone, pin) });
+  }
+
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+  });
+  const tokenHash = linkData?.properties?.hashed_token;
+  if (linkErr || !tokenHash) return bad(linkErr?.message || "Could not create sign-in token", 500);
+  return ok({ mode: "otp", email, token_hash: tokenHash });
 }
 
 Deno.serve(async (req) => {
@@ -126,7 +162,7 @@ Deno.serve(async (req) => {
       const computed = await pinHash(phone, pin);
       if (prof.pin_hash && prof.pin_hash !== computed) return bad("Incorrect PIN", 401);
 
-      return ok({ email: synthEmail(phone), password: await synthPassword(phone, pin) });
+      return await signInPayload(prof.id, phone, pin);
     }
 
     if (action === "reset-pin") {
@@ -144,18 +180,24 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (!prof) return bad("No account found for this phone number", 404);
 
-      const newPassword = await synthPassword(phone, newPin);
-      const { error: updErr } = await admin.auth.admin.updateUserById(prof.id, {
-        password: newPassword,
-      });
-      if (updErr) return bad(updErr.message, 500);
+      // Only re-key the auth password for synthetic (phone-only) accounts.
+      // Accounts with a real email keep their existing password untouched.
+      const { data: userData } = await admin.auth.admin.getUserById(prof.id);
+      const email = userData?.user?.email || "";
+      if (isSynthEmail(email)) {
+        const newPassword = await synthPassword(phone, newPin);
+        const { error: updErr } = await admin.auth.admin.updateUserById(prof.id, {
+          password: newPassword,
+        });
+        if (updErr) return bad(updErr.message, 500);
+      }
 
       await admin
         .from("profiles")
         .update({ pin_hash: await pinHash(phone, newPin) })
         .eq("id", prof.id);
 
-      return ok({ email: synthEmail(phone), password: newPassword });
+      return await signInPayload(prof.id, phone, newPin);
     }
 
     if (action === "change-phone") {
@@ -188,17 +230,35 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (clash) return bad("That phone number is already registered to another account", 409);
 
-      // Re-key synthetic email + password to new phone (PIN stays the same)
-      const newEmail = synthEmail(newPhone);
-      const newPassword = await synthPassword(newPhone, pin);
+      const currentEmail = authUser.email || "";
 
-      const { error: updErr } = await admin.auth.admin.updateUserById(prof.id, {
-        email: newEmail,
-        password: newPassword,
-        email_confirm: true,
-      });
-      if (updErr) return bad(updErr.message, 500);
+      if (isSynthEmail(currentEmail)) {
+        // Phone-first account: re-key synthetic email + password to new phone (PIN stays the same)
+        const newEmail = synthEmail(newPhone);
+        const newPassword = await synthPassword(newPhone, pin);
 
+        const { error: updErr } = await admin.auth.admin.updateUserById(prof.id, {
+          email: newEmail,
+          password: newPassword,
+          email_confirm: true,
+        });
+        if (updErr) return bad(updErr.message, 500);
+
+        await admin
+          .from("profiles")
+          .update({
+            phone: newPhone,
+            country_code: newCountry,
+            pin_hash: await pinHash(newPhone, pin),
+            phone_changed_at: new Date().toISOString(),
+          })
+          .eq("id", prof.id);
+
+        return ok({ email: newEmail, password: newPassword });
+      }
+
+      // Real-email account: NEVER touch the auth email/password — just re-key
+      // the phone fields on the profile. The current session stays valid.
       await admin
         .from("profiles")
         .update({
@@ -209,7 +269,89 @@ Deno.serve(async (req) => {
         })
         .eq("id", prof.id);
 
-      return ok({ email: newEmail, password: newPassword });
+      return ok({ mode: "session" });
+    }
+
+    if (action === "attach-email") {
+      // Register a REAL email on an account that started with phone only
+      // (or on the demo account). Keeps phone+PIN sign-in working afterwards.
+      const authUser = await getUserFromAuthHeader(req.headers.get("Authorization"));
+      if (!authUser) return bad("Not authenticated", 401);
+
+      const email = String(body.email || "").trim().toLowerCase();
+      const newPassword = String(body.password || "");
+      if (!isValidEmail(email)) return bad("Invalid email address");
+      if (newPassword && newPassword.length < 6) return bad("Password must be at least 6 characters");
+      if (authUser.email && authUser.email.toLowerCase() === email) {
+        return bad("That is already your account email");
+      }
+
+      const updatePayload: Record<string, unknown> = { email, email_confirm: true };
+      if (newPassword) updatePayload.password = newPassword;
+
+      const { error: updErr } = await admin.auth.admin.updateUserById(authUser.id, updatePayload as never);
+      if (updErr) {
+        const msg = String(updErr.message || "");
+        if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("duplicate")) {
+          return bad("This email is already registered to another account", 409);
+        }
+        return bad(msg || "Could not register email", 500);
+      }
+
+      await admin
+        .from("profiles")
+        .update({
+          email,
+          recovery_email: email,
+          verification_status: "verified",
+        })
+        .eq("id", authUser.id);
+
+      return ok({ ok: true, email });
+    }
+
+    if (action === "attach-phone") {
+      // Register a phone + PIN on an account that started with email only
+      // (or on the demo account). Never touches the auth email/password.
+      const authUser = await getUserFromAuthHeader(req.headers.get("Authorization"));
+      if (!authUser) return bad("Not authenticated", 401);
+
+      const phone = normalizePhone(body.phone);
+      const countryCode = String(body.country_code || "").trim();
+      const pin = String(body.pin || "");
+      if (!/^\+?\d{6,16}$/.test(phone)) return bad("Invalid phone number");
+      if (!/^\d{5}$/.test(pin)) return bad("PIN must be 5 digits");
+
+      const { data: prof } = await admin
+        .from("profiles")
+        .select("id, phone")
+        .eq("id", authUser.id)
+        .maybeSingle();
+      if (!prof) return bad("Profile not found", 404);
+      if (prof.phone && prof.phone !== "" && prof.phone !== phone) {
+        return bad("This account already has a phone number. Use Change phone instead.", 409);
+      }
+
+      const { data: clash } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("phone", phone)
+        .neq("id", prof.id)
+        .maybeSingle();
+      if (clash) return bad("That phone number is already registered to another account", 409);
+
+      await admin
+        .from("profiles")
+        .update({
+          phone,
+          country_code: countryCode,
+          pin_hash: await pinHash(phone, pin),
+          phone_changed_at: new Date().toISOString(),
+          verification_status: "verified",
+        })
+        .eq("id", prof.id);
+
+      return ok({ ok: true, phone });
     }
 
     return bad("Unknown action", 400);

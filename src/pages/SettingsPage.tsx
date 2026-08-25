@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Save, DollarSign, TrendingUp, Wallet, Building2, Plus, Crown, User, ChevronRight, Receipt as ReceiptIcon, Search, ShoppingCart, Trash2, RotateCcw, Wrench, Lock, Copy, Factory, KeyRound, Eye, EyeOff, ShieldBan, X, Flame, Home, Mail, UserX, LogOut, MoreVertical } from 'lucide-react';
+import { Save, DollarSign, TrendingUp, Wallet, Building2, Plus, Crown, User, ChevronRight, Receipt as ReceiptIcon, Search, ShoppingCart, Trash2, RotateCcw, Wrench, Lock, Copy, Factory, KeyRound, Eye, EyeOff, ShieldBan, X, Flame, Home, UserX, LogOut, MoreVertical } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -26,7 +26,7 @@ import CollapsibleSection from '@/components/CollapsibleSection';
 import { toSentenceCase } from '@/lib/utils';
 import PaymentMethodsManager from '@/components/PaymentMethodsManager';
 import RecycleBinPanel from '@/components/RecycleBinPanel';
-import { ChangePhoneCard } from '@/components/auth/ChangePhoneCard';
+import { AccountContactSettings } from '@/components/auth/AccountContactSettings';
 import BusinessAuditPanel from '@/components/audit/BusinessAuditPanel';
 
 function AddBusinessDialog({ onCreated, defaultType = 'business' }: { onCreated: () => void; defaultType?: 'business' | 'factory' | 'property' }) {
@@ -354,9 +354,6 @@ export default function SettingsPage() {
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const [showChangeEmail, setShowChangeEmail] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [changingEmail, setChangingEmail] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deleteAccountConfirm, setDeleteAccountConfirm] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -635,11 +632,8 @@ export default function SettingsPage() {
               <User className="h-4 w-4" /> Account
             </h2>
             <p className="text-xs text-muted-foreground">Signed in as <strong>{user?.email}</strong></p>
+            <AccountContactSettings />
             <div className="grid grid-cols-1 gap-2">
-              <ChangePhoneCard />
-              <Button variant="outline" className="w-full justify-start" onClick={() => setShowChangeEmail(true)}>
-                <Mail className="h-4 w-4 mr-2" /> Change Email
-              </Button>
               <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" onClick={() => setShowDeleteAccount(true)}>
                 <UserX className="h-4 w-4 mr-2" /> Delete Account
               </Button>
@@ -711,31 +705,6 @@ export default function SettingsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Change Email Dialog */}
-        <Dialog open={showChangeEmail} onOpenChange={o => { if (!o) setNewEmail(''); setShowChangeEmail(o); }}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> Change Email</DialogTitle></DialogHeader>
-            <div className="space-y-4 mt-2">
-              <p className="text-sm text-muted-foreground">Current: <strong>{user?.email}</strong></p>
-              <div><Label>New Email</Label><Input type="email" placeholder="newemail@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} className="mt-1" /></div>
-              <Button className="w-full" disabled={changingEmail || !newEmail.includes('@')} onClick={async () => {
-                setChangingEmail(true);
-                try {
-                  const res = await supabase.functions.invoke('change-email', { body: { newEmail: newEmail.trim() } });
-                  if (res.error) throw new Error(res.error.message || 'Failed');
-                  const resData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-                  if (resData.error) throw new Error(resData.error);
-                  toast.success('Email changed! Please sign in again.');
-                  setShowChangeEmail(false); setNewEmail('');
-                  await signOut();
-                } catch (err: any) { toast.error(err.message || 'Failed'); }
-                finally { setChangingEmail(false); }
-              }}>
-                <Mail className="h-4 w-4 mr-2" /> {changingEmail ? 'Changing...' : 'Change Email'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Delete Account Dialog */}
         <Dialog open={showDeleteAccount} onOpenChange={o => { if (!o) setDeleteAccountConfirm(''); setShowDeleteAccount(o); }}>
@@ -1648,11 +1617,8 @@ export default function SettingsPage() {
           </h2>
           <p className="text-xs text-muted-foreground">Signed in as <strong>{user?.email}</strong></p>
 
+          <AccountContactSettings />
           <div className="grid grid-cols-1 gap-2">
-            <ChangePhoneCard />
-            <Button variant="outline" className="w-full justify-start" onClick={() => setShowChangeEmail(true)}>
-              <Mail className="h-4 w-4 mr-2" /> Change Email
-            </Button>
             <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" onClick={() => setShowDeleteAccount(true)}>
               <UserX className="h-4 w-4 mr-2" /> Delete Account
             </Button>
@@ -1663,38 +1629,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Change Email Dialog */}
-      <Dialog open={showChangeEmail} onOpenChange={o => { if (!o) setNewEmail(''); setShowChangeEmail(o); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> Change Email</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <p className="text-sm text-muted-foreground">Current: <strong>{user?.email}</strong></p>
-            <div>
-              <Label>New Email</Label>
-              <Input type="email" placeholder="newemail@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} className="mt-1" />
-            </div>
-            <Button className="w-full" disabled={changingEmail || !newEmail.includes('@')} onClick={async () => {
-              setChangingEmail(true);
-              try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const res = await supabase.functions.invoke('change-email', {
-                  body: { newEmail: newEmail.trim() },
-                });
-                if (res.error) throw new Error(res.error.message || 'Failed');
-                const resData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-                if (resData.error) throw new Error(resData.error);
-                toast.success('Email changed! Please sign in again with your new email.');
-                setShowChangeEmail(false);
-                setNewEmail('');
-                await signOut();
-              } catch (err: any) { toast.error(err.message || 'Failed to change email'); }
-              finally { setChangingEmail(false); }
-            }}>
-              <Mail className="h-4 w-4 mr-2" /> {changingEmail ? 'Changing...' : 'Change Email'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Account Dialog */}
       <Dialog open={showDeleteAccount} onOpenChange={o => { if (!o) setDeleteAccountConfirm(''); setShowDeleteAccount(o); }}>

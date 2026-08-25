@@ -128,6 +128,7 @@ export default function OrdersPage() {
   const [allocating, setAllocating] = useState(false);
   const [orderMode, setOrderMode] = useState<'my_order' | 'inbox' | 'request'>('my_order');
   const isFactory = currentBusiness?.business_type === 'factory';
+  const isPersonal = currentBusiness?.business_type === 'personal';
 
   // Supplier products when coming from Discover page
   const [supplierProducts, setSupplierProducts] = useState<{ name: string; category: string; quality: string; retail_price: number }[]>([]);

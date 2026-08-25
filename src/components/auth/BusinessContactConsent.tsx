@@ -69,6 +69,21 @@ export default function BusinessContactConsent() {
     };
   }, [ownedWithInfo, user?.email]);
 
+  /** E.164 version of the candidate phone, matching how attach-phone stores it. */
+  const candidateE164 = useMemo(() => {
+    const digits = (candidate.phone || "").replace(/\D/g, "");
+    if (!digits) return "";
+    const cc = getCountryByCode(candidate.countryCode);
+    const dialDigits = (cc?.dial || "").replace(/\D/g, "");
+    const national = dialDigits && digits.startsWith(dialDigits)
+      ? digits
+      : `${dialDigits}${digits.replace(/^0+/, "")}`;
+    return national ? `+${national}` : "";
+  }, [candidate.phone, candidate.countryCode]);
+
+  // null = not checked yet, true = already registered on an account (cannot attach)
+  const [phoneTaken, setPhoneTaken] = useState<boolean | null>(null);
+
   useEffect(() => {
     if (!user) return;
     let cancelled = false;

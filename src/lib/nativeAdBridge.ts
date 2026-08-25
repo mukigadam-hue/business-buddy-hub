@@ -1,12 +1,17 @@
 /**
  * Native Ad Bridge — abstraction over the wrapping native shell.
  *
- * The app is migrating from Despia to WebViewGold because Despia's AdMob
- * plumbing produced 100% match rate but 0 impressions. WebViewGold exposes
- * a well-documented `admob://` URL-scheme bridge for interstitial and banner
- * ads. We detect the active shell via UserAgent and dispatch the correct
- * scheme. Despia is kept as a fallback so existing installs keep working
- * until they update.
+ * Only DOCUMENTED shell commands are used here:
+ *  - Despia interstitial: `admob://interstitial` (Despia Docs → AdMob →
+ *    Interstitial Ads). Legacy beta scheme `displayinterstitialad://` is kept
+ *    as a fallback for very old builds.
+ *  - WebViewGold ads are configured natively (banner, app open, interstitial
+ *    interval) in Config.java / Cloud Builder; the only documented web-side
+ *    commands are `enableads://` / `disableads://` and `displayrewardedad://`.
+ *
+ * Previously invented schemes (`admob://www.webviewgold.com/...`,
+ * `admob_initialize://`) were silently ignored by the shells and caused the
+ * "100% match rate, 0 impressions" failure. They have been removed.
  */
 
 export const BANNER_HEIGHT_PX = 60; // reserved space in the web layout

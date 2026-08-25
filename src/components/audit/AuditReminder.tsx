@@ -162,6 +162,15 @@ export default function AuditReminder() {
         .order('audit_date', { ascending: true });
       if (error) return;
 
+      // Days already covered by a CLOSED accountability (audit session) are
+      // settled — never ask for them again, even after a reinstall or on a
+      // different device, because this comes from the cloud, not local storage.
+      const { data: closedSessions } = await supabase.from('audit_sessions')
+        .select('start_date, end_date, closed_at')
+        .eq('business_id', businessId)
+        .eq('status', 'closed');
+      if (cancelled) return;
+
       const firstSaved = (rows || [])[0]?.audit_date as string | undefined;
       if (firstSaved && firstSaved > start) {
         start = firstSaved;
@@ -169,6 +178,13 @@ export default function AuditReminder() {
       }
 
       const done = new Set((rows || []).map((r: any) => r.audit_date));
+      for (const s of closedSessions || []) {
+        const sStart = s.start_date as string | null;
+        const sEnd = (s.end_date as string | null)
+          || (s.closed_at ? localDayKey(new Date(s.closed_at)) : null);
+        if (!sStart || !sEnd || sEnd < sStart) continue;
+        for (const d of enumerateDays(sStart, sEnd)) done.add(d);
+      }
 
       const gaps = enumerateDays(start, end).filter(d => !done.has(d)).sort().reverse();
       if (cancelled) return;

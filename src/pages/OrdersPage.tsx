@@ -1355,16 +1355,18 @@ export default function OrdersPage() {
         className="h-9"
       />
 
-      {/* Create new order */}
+      {/* Create new order — personal accounts can only order from suppliers */}
       {!fromDiscover && (
         <div className="flex gap-2 flex-wrap">
-          <Button
-            size="sm"
-            variant={orderMode === 'my_order' ? 'default' : 'outline'}
-            onClick={() => { setOrderMode('my_order'); setItems([]); setCustomerName(''); }}
-          >
-            {t('ordersUI.newOrderWalkin')}
-          </Button>
+          {!isPersonal && (
+            <Button
+              size="sm"
+              variant={orderMode === 'my_order' ? 'default' : 'outline'}
+              onClick={() => { setOrderMode('my_order'); setItems([]); setCustomerName(''); }}
+            >
+              {t('ordersUI.newOrderWalkin')}
+            </Button>
+          )}
           <Button
             size="sm"
             variant={orderMode === 'request' ? 'default' : 'outline'}

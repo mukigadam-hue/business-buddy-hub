@@ -116,14 +116,21 @@ export default function PersonalDashboard() {
         </Card>
       )}
 
-      {/* Prompt to add business */}
-      <Card className="shadow-card border-dashed border-2">
-        <CardContent className="p-4 text-center space-y-2">
-          <Plus className="h-6 w-6 mx-auto text-muted-foreground" />
-          <p className="text-sm font-medium">Ready to start a business?</p>
-          <p className="text-xs text-muted-foreground">You can register a business, factory, or property anytime.</p>
-          <Link to="/register-business" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
-            <Plus className="h-3.5 w-3.5" /> Add Business
+      {/* Prompt to add business — prominent CTA for business-oriented users */}
+      <Card className="shadow-card border-2 border-primary bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+        <CardContent className="p-5 text-center space-y-3">
+          <div className="mx-auto h-12 w-12 rounded-full bg-primary/15 flex items-center justify-center">
+            <Plus className="h-6 w-6 text-primary" />
+          </div>
+          <p className="text-base font-bold text-foreground">Ready to start a business?</p>
+          <p className="text-xs text-muted-foreground max-w-[260px] mx-auto">
+            You can register a business, factory, or property anytime and unlock the full power of BizTrack.
+          </p>
+          <Link
+            to="/register-business"
+            className="inline-flex items-center justify-center gap-1.5 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 px-5 py-2.5 rounded-xl shadow-md transition-all hover:shadow-lg hover:scale-[1.02] active:scale-95"
+          >
+            <Plus className="h-4 w-4" /> Add Business
           </Link>
         </CardContent>
       </Card>

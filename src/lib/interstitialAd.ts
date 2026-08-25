@@ -1,53 +1,57 @@
 import { adLog } from './despiaAds';
-import {
-  bridgeShowInterstitial,
-  bridgePreloadInterstitial,
-  bridgeInitAdMob,
-  isNativeShell,
-  detectShell,
-} from './nativeAdBridge';
-
-// Back-compat alias — the rest of this file was originally written against
-// `isDespiaNativeShell`. The migration to WebViewGold makes it a superset
-// check ("is there any native shell wrapping the WebView?").
-const isDespiaNativeShell = isNativeShell;
+import { detectShell, isNativeShell } from './nativeAdBridge';
 
 /**
- * Despia Interstitial Ad Manager — dual-trigger logic with dedicated
- * `triggerNativeAd()` invoker.
+ * ────────────────────────────────────────────────────────────────────────────
+ *  BizTrack Interstitial Ad Manager — FRESH IMPLEMENTATION (v3)
+ * ────────────────────────────────────────────────────────────────────────────
  *
- * Lifecycle:
- *   - Pre-load on Startup:  `loadInterstitial()` runs as soon as the app mounts
- *     (via `initInterstitialAds`) so an ad is ready before the first trigger.
- *   - Trigger on Action:    `triggerNativeAd()` is called from natural transition
- *     points (closing a receipt dialog, screen navigation completion).
- *   - Validation Check:     a `interstitialAd != null` style guard ensures we
- *     don't fire `displayinterstitialad://` when nothing is preloaded.
- *   - Post-Show Reload:     immediately call `loadInterstitial()` again after
- *     the ad is shown / dismissed so the next ad is ready.
- *   - Debug Logs:           onAdLoaded / onAdFailedToLoad / onAdDismissed are
- *     all logged with `[AD-INTERSTITIAL]` prefixes for AdMob lifecycle tracing.
+ *  Root cause of the old "100% match rate, 0 impressions" failure:
+ *  the previous build fired invented bridge schemes
+ *  (`admob://www.webviewgold.com/interstitial`, `admob_initialize://`)
+ *  that no native shell understands. The AdMob SDK loaded the ad (hence the
+ *  100% match rate in the AdMob console) but the SHOW command never reached
+ *  the native layer, so the ad was never presented.
  *
- * Caps (persisted in localStorage so they survive restarts):
- *   - At most 2 interstitials per 90 minutes
- *   - At least 35 minutes between any two ads
- *   - Trigger B (screen change) additionally requires 45+ min since last ad
+ *  This rewrite uses ONLY the officially documented Despia command:
+ *
+ *      despia('admob://interstitial')
+ *
+ *  (Despia Docs → Native Features → AdMob → Interstitial Ads). The call is
+ *  fire-and-forget: the native runtime loads the Ad Unit ID configured in the
+ *  Despia Editor and presents the full-screen ad above the WebView. Loading
+ *  is handled natively — the ad is already prepared in the background by the
+ *  SDK, so the ad appears smoothly (never abruptly) at the transition point.
+ *
+ *  Lifecycle:
+ *    1. STARTUP   — initInterstitialAds() runs once at app mount, verifies the
+ *                   native shell and logs diagnostics ([AD-INTERSTITIAL]).
+ *    2. TRIGGER   — triggerInterstitial(reason) is called when a receipt is
+ *                   closed after a sale/service is recorded, plus the other
+ *                   natural completion points already wired in the app.
+ *    3. DELAY     — the show command fires 600ms AFTER the dialog has fully
+ *                   closed so the ad never interrupts an animation (AdMob
+ *                   policy: ads only at natural break points).
+ *    4. GUARD     — a 60-second anti-double-fire guard prevents two stacked
+ *                   events (e.g. dialog close + export) from firing twice.
+ *
+ *  Required native-side setup (Despia Editor → App → Integrations → AdMob):
+ *    - AdMob integration toggled ON
+ *    - Android Interstitial Ad Unit ID pasted (Main_App_receip closure)
+ *    - App REBUILT after enabling — otherwise the SDK is not compiled into
+ *      the binary and the call resolves silently (0 impressions).
+ * ────────────────────────────────────────────────────────────────────────────
  */
 
-const LAST_AD_KEY = 'lastAdTime';
-const SHOWN_TIMES_KEY = 'adShownTimes';
-const SUPPRESS_KEY = 'suppressNextInterstitial';
+const LAST_FIRE_KEY = 'bm:interstitial:lastFire';
+const SUPPRESS_KEY = 'bm:interstitial:suppress';
 
-const WINDOW_MS = 60 * 60 * 1000;
-const MAX_PER_WINDOW = 6;
-const MIN_GAP_MS = 4 * 60 * 1000;
-const SCREEN_CHANGE_GAP_MS = 6 * 60 * 1000;
-
-
-// 450ms delay before firing the ad bridge so the UI finishes its current
-// transition (dialog close animation, route change paint) before AdMob takes
-// over the screen. Despia recommends letting the WebView settle first.
-const DISPLAY_DELAY_MS = 450;
+/** Minimum time between any two interstitial shows (anti double-fire). */
+const MIN_GAP_MS = 60 * 1000;
+/** Screen-change (navigation) triggers stay conservative for policy safety. */
+const NAV_GAP_MS = 30 * 60 * 1000;
+/** Delay so the receipt dialog finishes closing before the ad appears. */
+const SHOW_DELAY_MS = 600;
 
 /* ----------------------------- storage helpers ---------------------------- */
 function readNumber(key: string): number {
@@ -58,67 +62,45 @@ function writeNumber(key: string, value: number) {
 }
 function clearKey(key: string) { try { localStorage.removeItem(key); } catch {} }
 
-function readShownTimes(): number[] {
-  try {
-    const raw = localStorage.getItem(SHOWN_TIMES_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr.filter((n) => typeof n === 'number') : [];
-  } catch { return []; }
-}
-function writeShownTimes(times: number[]) {
-  try { localStorage.setItem(SHOWN_TIMES_KEY, JSON.stringify(times)); } catch {}
-}
-function pruneAndRecordShown(now: number) {
-  const kept = readShownTimes().filter((t) => now - t < WINDOW_MS);
-  kept.push(now);
-  writeShownTimes(kept);
-  writeNumber(LAST_AD_KEY, now);
-}
-
 /* ------------------------------ suppression ------------------------------- */
+/** One-shot suppression (e.g. a flow that closes two dialogs back-to-back). */
 export function suppressNextInterstitial() { writeNumber(SUPPRESS_KEY, 1); }
 function consumeSuppression(): boolean {
   if (readNumber(SUPPRESS_KEY)) { clearKey(SUPPRESS_KEY); return true; }
   return false;
 }
 
-/* --------------------------- ad-loaded tracking --------------------------- */
-// Tracks whether AdMob has reported a preloaded interstitial ready to show.
-// This is the equivalent of the `interstitialAd != null` guard used by the
-// AdMob native SDK pattern.
-let interstitialAd: { ready: true } | null = null;
-
 /* ---------------------------- bridge invocation --------------------------- */
 
 /**
- * Fire a Despia bridge URL. The Despia native shell intercepts navigations to
- * custom `xxx://` schemes. We try MULTIPLE invocation channels because the
- * WebView will honor whichever it happens to hook — the global `despia()`
- * function (when injected), a hidden iframe navigation (most reliable across
- * Despia builds, especially from timers/dialog callbacks), and finally a
- * top-level `location.assign` as last resort. Firing more than one is safe;
- * the shell dedupes on the scheme.
+ * Fire the documented Despia interstitial command through every delivery
+ * channel the shell may hook. Firing more than one is safe — the native
+ * runtime dedupes on the scheme and presents the ad once.
+ *
+ * Channels:
+ *   1. Global `despia()` function (injected by the Despia runtime / the
+ *      `despia-native` package when present).
+ *   2. Hidden iframe navigation to the scheme (most reliable from inside
+ *      setTimeout / dialog-close callbacks).
+ *   3. Top-level `location.assign` as the last resort.
  */
-function fireDespia(cmd: string) {
+function fireScheme(cmd: string) {
   if (typeof window === 'undefined') return;
   let delivered = false;
 
-  // 1) Global despia(...) function, if the native shell injected it.
+  // 1) Global despia(...) function — the documented call path.
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any;
-    const fn = (typeof w.despia === 'function' ? w.despia : undefined) as
-      | ((c: string) => void)
-      | undefined;
-    if (fn) { fn(cmd); delivered = true; }
+    if (typeof w.despia === 'function') {
+      w.despia(cmd);
+      delivered = true;
+    }
   } catch (e) {
     adLog(`[AD-INTERSTITIAL] despia() call failed (${cmd}): ${(e as Error)?.message ?? e}`);
   }
 
-  // 2) Hidden iframe navigation — the canonical Despia trigger pattern. This
-  //    works even when top-level `location.assign` is blocked by the SPA
-  //    router or React re-renders steal focus.
+  // 2) Hidden iframe navigation — intercepted by the native shell.
   try {
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
@@ -131,7 +113,7 @@ function fireDespia(cmd: string) {
     adLog(`[AD-INTERSTITIAL] iframe bridge failed (${cmd}): ${(e as Error)?.message ?? e}`);
   }
 
-  // 3) Last-resort top-level assign.
+  // 3) Last-resort top-level navigation.
   if (!delivered) {
     try { window.location.assign(cmd); } catch (e) {
       adLog(`[AD-INTERSTITIAL] location.assign failed (${cmd}): ${(e as Error)?.message ?? e}`);
@@ -139,146 +121,126 @@ function fireDespia(cmd: string) {
   }
 }
 
+/** The one canonical command — documented in the Despia AdMob guide. */
+const DESPIA_INTERSTITIAL_CMD = 'admob://interstitial';
+/** Legacy beta scheme kept ONLY as a fallback for very old builds. */
+const LEGACY_INTERSTITIAL_CMD = 'displayinterstitialad://';
+
 /**
- * Dedicated invoker for the Despia interstitial bridge. Every call site funnels
- * through here so logs stay consistent.
+ * Present the interstitial now. Equivalent to `interstitialAd.show()`.
+ * The native runtime shows the ad it has loaded in the background; if no ad
+ * is ready the call is a safe native-side no-op.
  */
 export function triggerNativeAd(reason = 'unspecified') {
-  console.log(`[AD-INTERSTITIAL] Attempting to trigger interstitial (${detectShell()}). reason=${reason}`);
-  bridgeShowInterstitial();
-}
-
-/** Preload the next interstitial. Equivalent to `InterstitialAd.load()`. */
-export function loadInterstitial() {
-  if (!isDespiaNativeShell()) return;
-  console.log('[AD-INTERSTITIAL] load() requested.');
-  bridgePreloadInterstitial();
+  const shell = detectShell();
+  console.log(`[AD-INTERSTITIAL] show() → shell=${shell} reason=${reason}`);
+  // Documented command first, legacy fallback second.
+  fireScheme(DESPIA_INTERSTITIAL_CMD);
+  // Small delay so the shell processes the primary command first.
+  setTimeout(() => fireScheme(LEGACY_INTERSTITIAL_CMD), 120);
 }
 
 /**
- * Initialize the AdMob SDK and preload the first interstitial. Idempotent.
+ * Background warmup. Despia's runtime loads the interstitial natively and
+ * keeps it ready, so there is nothing to fetch from the web side — this ping
+ * simply nudges the legacy preload scheme on old builds and logs readiness.
  */
+export function loadInterstitial() {
+  if (!isNativeShell()) return;
+  console.log('[AD-INTERSTITIAL] Background load handled natively (fire-and-forget SDK).');
+  try { fireScheme('preloadinterstitialad://'); } catch {}
+}
+
+/* ------------------------------ initialization ---------------------------- */
+
 let initialized = false;
+
+/**
+ * Initialize interstitial ads once at app startup. Idempotent.
+ * Verifies the native shell, wires optional lifecycle callbacks the shell may
+ * expose, and exposes a manual QA hook: `window.Despia.showInterstitial()`.
+ */
 export function initInterstitialAds() {
   if (initialized) return;
   initialized = true;
-  if (!isDespiaNativeShell()) {
-    adLog('[AD-INTERSTITIAL] Init skipped (not in Despia shell).');
+
+  const shell = detectShell();
+  if (shell === 'none') {
+    adLog('[AD-INTERSTITIAL] Init skipped — web browser (no native shell).');
     return;
   }
 
-  // Wire up Despia / AdMob lifecycle callbacks if exposed by the shell.
+  adLog(`[AD-INTERSTITIAL] Init OK — shell=${shell}. Command: despia('${DESPIA_INTERSTITIAL_CMD}')`);
+
+  // Optional lifecycle callbacks (fired by shells that support them).
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any;
-    w.onDespiaInterstitialLoaded = () => {
-      interstitialAd = { ready: true };
-      console.log('[AD-INTERSTITIAL] onAdLoaded');
-    };
-    w.onDespiaInterstitialFailed = (err?: unknown) => {
-      interstitialAd = null;
+    w.onDespiaInterstitialLoaded = () => console.log('[AD-INTERSTITIAL] onAdLoaded');
+    w.onDespiaInterstitialFailed = (err?: unknown) =>
       console.log(`[AD-INTERSTITIAL] onAdFailedToLoad(${err ?? 'unknown'})`);
-      setTimeout(loadInterstitial, 5000);
-    };
-    w.onDespiaInterstitialDismissed = () => {
-      interstitialAd = null;
-      console.log('[AD-INTERSTITIAL] onAdDismissedFullScreenContent');
-      // Post-Show Reload: queue the next ad immediately.
-      loadInterstitial();
-    };
+    w.onDespiaInterstitialDismissed = () => console.log('[AD-INTERSTITIAL] onAdDismissedFullScreenContent');
   } catch {}
 
-  bridgeInitAdMob();
-  loadInterstitial();
-  // Optimistic readiness flag — Despia doesn't reliably surface `onAdLoaded`,
-  // and per the Despia AdMob doc the native wrapper holds the preloaded ad
-  // in memory until we fire `displayinterstitialad://`. Without this flag we
-  // would gate ourselves out and produce the "100% match, 0 impressions"
-  // symptom. Mark ready shortly after init.
-  setTimeout(() => { if (!interstitialAd) interstitialAd = { ready: true }; }, 1500);
-
-  // Expose a Despia-friendly alias so any legacy code / manual QA can call
-  // `window.Despia.showInterstitial()` from the console to force a trigger.
+  // Manual QA hook — call `Despia.showInterstitial()` from any console.
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).Despia = (window as any).Despia || {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).Despia.showInterstitial = (reason = 'manual') => triggerNativeAd(reason);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).Despia.loadInterstitial = () => loadInterstitial();
+    const w = window as any;
+    w.Despia = w.Despia || {};
+    w.Despia.showInterstitial = (reason = 'manual') => showNow(`manual:${reason}`);
+    w.Despia.loadInterstitial = () => loadInterstitial();
   } catch {}
 }
 
-/* ---------------------------- gating predicate ---------------------------- */
-function canShowAd(now: number, minGapMs: number): { ok: boolean; reason?: string } {
-  const last = readNumber(LAST_AD_KEY);
-  if (last && now - last < minGapMs) {
-    return { ok: false, reason: `gap (${Math.round((now - last) / 60000)}min < ${Math.round(minGapMs / 60000)}min)` };
-  }
-  const shown = readShownTimes().filter((t) => now - t < WINDOW_MS);
-  if (shown.length >= MAX_PER_WINDOW) {
-    return { ok: false, reason: `cap (${shown.length}/${MAX_PER_WINDOW} in 90min)` };
-  }
-  return { ok: true };
-}
+/* --------------------------------- showing -------------------------------- */
 
-function showWithDelay(reason: string) {
-  if (!isDespiaNativeShell()) {
-    adLog(`[AD-INTERSTITIAL] Skipped (not in Despia shell). reason=${reason}`);
+function showNow(reason: string) {
+  if (!isNativeShell()) {
+    adLog(`[AD-INTERSTITIAL] Skipped (web browser). reason=${reason}`);
     return;
   }
-  // NOTE: we intentionally do NOT gate on `interstitialAd != null` here.
-  // Despia's WebView often never emits `onAdLoaded`, so gating on it would
-  // silently suppress every real trigger (the "100% match, 0 impressions"
-  // failure mode). We rely on the frequency cap above + Despia's own
-  // "no-ad → no-op" behavior instead. If nothing is loaded, also re-request
-  // a preload so the next trigger has a fresh ad ready.
-  if (!interstitialAd) {
-    console.log(`[AD-INTERSTITIAL] No preload confirmation — firing anyway + reloading. reason=${reason}`);
-    loadInterstitial();
-  }
-  const now = Date.now();
-  // Record before firing so concurrent triggers can't double-show.
-  pruneAndRecordShown(now);
-  interstitialAd = null;
-  // 450ms delay so the dialog/route transition completes first.
-  setTimeout(() => {
-    triggerNativeAd(reason);
-    // Post-Show Reload: ensure next ad is queued even if onDismissed never fires.
-    setTimeout(loadInterstitial, 800);
-  }, DISPLAY_DELAY_MS);
-  console.log(`[AD-INTERSTITIAL] show() scheduled in ${DISPLAY_DELAY_MS}ms. reason=${reason}`);
+  // Record before firing so concurrent events cannot double-show.
+  writeNumber(LAST_FIRE_KEY, Date.now());
+  setTimeout(() => triggerNativeAd(reason), SHOW_DELAY_MS);
+  console.log(`[AD-INTERSTITIAL] show() scheduled in ${SHOW_DELAY_MS}ms (after transition). reason=${reason}`);
 }
 
 /* ----------------------------- public triggers ---------------------------- */
 
-/** Trigger A — explicit completion point (e.g. close sales receipt). */
+/**
+ * Trigger A — task-completion point. Fires EVERY time a receipt is closed
+ * after a sale/service is recorded (per current testing policy), plus the
+ * other wired completion points. Only a 60s anti-double-fire guard applies.
+ */
 export function triggerInterstitial(reason: string) {
   if (typeof window === 'undefined') return;
+  if (!isNativeShell()) return;
   if (consumeSuppression()) {
     adLog(`[AD-INTERSTITIAL] Suppressed (one-shot). reason=${reason}`);
     return;
   }
-  const now = Date.now();
-  const gate = canShowAd(now, MIN_GAP_MS);
-  if (!gate.ok) {
-    adLog(`[AD-INTERSTITIAL] Trigger A blocked: ${gate.reason}. reason=${reason}`);
+  const since = Date.now() - readNumber(LAST_FIRE_KEY);
+  if (readNumber(LAST_FIRE_KEY) && since < MIN_GAP_MS) {
+    adLog(`[AD-INTERSTITIAL] Skipped — ad fired ${Math.round(since / 1000)}s ago (60s guard). reason=${reason}`);
     return;
   }
-  showWithDelay(`A:${reason}`);
+  showNow(`A:${reason}`);
 }
 
-/** Trigger B — screen navigation completed (45-min minimum gap). */
+/**
+ * Trigger B — screen navigation completed. Conservative 30-minute gap so the
+ * app never feels ad-heavy between ordinary page changes (AdMob policy).
+ */
 export function triggerInterstitialOnScreenChange(reason: string) {
   if (typeof window === 'undefined') return;
+  if (!isNativeShell()) return;
   if (consumeSuppression()) return;
-  const now = Date.now();
-  const gate = canShowAd(now, Math.max(MIN_GAP_MS, SCREEN_CHANGE_GAP_MS));
-  if (!gate.ok) {
-    adLog(`[AD-INTERSTITIAL] Trigger B blocked: ${gate.reason}. reason=${reason}`);
+  const since = Date.now() - readNumber(LAST_FIRE_KEY);
+  if (readNumber(LAST_FIRE_KEY) && since < NAV_GAP_MS) {
+    adLog(`[AD-INTERSTITIAL] Nav trigger skipped — last ad ${Math.round(since / 60000)}min ago. reason=${reason}`);
     return;
   }
-  showWithDelay(`B:${reason}`);
+  showNow(`B:${reason}`);
 }
 
 /** @deprecated Kept for backwards compatibility — no-op. */

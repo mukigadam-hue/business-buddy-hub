@@ -87,33 +87,41 @@ export function fireBridge(cmd: string) {
 
 /* ------------------------------ Interstitial ------------------------------ */
 
+/**
+ * Show the native interstitial. Uses the documented Despia command
+ * `admob://interstitial` (fire-and-forget: the native runtime presents the
+ * ad it has already loaded in the background). The legacy beta scheme is
+ * fired shortly after as a fallback for very old builds. WebViewGold builds
+ * show interstitials natively by interval (SHOW_AD_AFTER_X) — there is no
+ * documented on-demand scheme, so nothing fabricated is fired for them.
+ */
 export function bridgeShowInterstitial() {
   const shell = detectShell();
-  if (shell === 'webviewgold') {
-    // WebViewGold AdMob interstitial trigger
-    fireBridge('admob://www.webviewgold.com/interstitial');
-  } else {
-    // Legacy Despia scheme
-    fireBridge('displayinterstitialad://');
+  if (shell === 'none') return;
+  fireBridge('admob://interstitial');
+  if (shell === 'despia') {
+    setTimeout(() => fireBridge('displayinterstitialad://'), 120);
   }
 }
 
+/**
+ * Despia's runtime loads interstitials natively in the background, so no web
+ * preload is required. This ping keeps very old (beta) builds warm.
+ */
 export function bridgePreloadInterstitial() {
   const shell = detectShell();
-  if (shell === 'webviewgold') {
-    // WebViewGold auto-preloads; a no-op ping keeps the SDK warm.
-    fireBridge('admob://www.webviewgold.com/preload');
-  } else {
-    fireBridge('preloadinterstitialad://');
-  }
+  if (shell === 'despia') fireBridge('preloadinterstitialad://');
 }
 
+/**
+ * Init hook. The only documented web-side ad command WebViewGold exposes is
+ * `enableads://` — fired defensively in case ads were disabled for the user.
+ * Despia needs no init call: the Mobile Ads SDK is compiled into the binary.
+ */
 export function bridgeInitAdMob() {
   const shell = detectShell();
   if (shell === 'webviewgold') {
-    fireBridge('admob://www.webviewgold.com/initialize');
-  } else {
-    fireBridge('admob_initialize://');
+    fireBridge('enableads://');
   }
 }
 

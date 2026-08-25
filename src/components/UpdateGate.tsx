@@ -14,6 +14,15 @@ function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 2500): Promise<T>
 async function getDeviceVersion(): Promise<string> {
   if (!isDespiaNativeShell()) return '';
 
+  // Only the real Despia runtime exposes the bridge. WebViewGold builds and
+  // generic Android WebViews match the broad UA fallback in
+  // isDespiaNativeShell() too, but there is no despia bridge behind it —
+  // never poke despia-native there (wasted work, risk of weird behaviour).
+  const w = window as unknown as { despia?: unknown };
+  const ua = window.navigator.userAgent.toLowerCase();
+  const isRealDespia = typeof w.despia === 'function' || ua.includes('despia');
+  if (!isRealDespia) return '';
+
   try {
     const mod = await import('despia-native');
     const res = await withTimeout(

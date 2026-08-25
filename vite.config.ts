@@ -42,6 +42,9 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,txt}"],
+        // Evict precache buckets from previous app generations on activation —
+        // prevents installed apps from booting stale HTML/JS after an update.
+        cleanupOutdatedCaches: true,
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [
           /^\/~oauth/,

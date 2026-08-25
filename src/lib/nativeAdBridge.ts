@@ -186,7 +186,10 @@ export function bridgeInitAdMob() {
   const shell = detectShell();
   if (shell === 'none') return;
   fireBridge('enableads://');
-  bridgePreloadInterstitial();
+  // Warm the first interstitial a few seconds after launch: startup stays
+  // fast, and the native page-finished hook gets time to announce the
+  // custom-scheme support flag before we ever fire it.
+  setTimeout(() => bridgePreloadInterstitial(), 6000);
 }
 
 /** Documented rewarded-ad command (requires ENABLE_REWARDED_ADS = true). */

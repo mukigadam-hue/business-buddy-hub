@@ -23,8 +23,10 @@ import { bridgeInitAdMob, bridgeShowInterstitial, detectShell, isNativeShell } f
  *   2. NATIVE (one-time, ~30 lines, Android Studio): paste the handler
  *      snippet from docs/WEBVIEWGOLD_INTERSTITIAL.md into
  *      MainActivity.shouldOverrideUrlLoading, then REBUILD the app.
- *      Until that snippet is compiled in, WebViewGold ignores the unknown
- *      scheme — nothing breaks, but no interstitial can appear either.
+ *      Until that snippet is compiled in, the web app never fires the custom
+ *      schemes at all (they are gated behind the native support flag in
+ *      nativeAdBridge) — the app can never be killed by an unhandled scheme,
+ *      and interstitials switch on automatically with the new native build.
  *
  *  POLICY SAFETY: the ad is only ever requested AFTER a completed user task
  *  (dialog fully closed + 600ms), with a 60s anti-double-fire guard and a

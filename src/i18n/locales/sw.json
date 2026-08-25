@@ -1523,5 +1523,24 @@
     "consentSaved": "Imehifadhiwa kwenye akaunti yako",
     "notNow": "Sio sasa",
     "yesSave": "Ndiyo, hifadhi kwenye akaunti yangu"
+  },
+  "visitors": {
+    "notifTitle": "Ulikuwa na wageni {{count}} 👀",
+    "notifBody": "Bofya kuona walikotoka",
+    "title": "Nani ametazama biashara yako",
+    "subtitle": "Nchi tu — majina ya wageni yanabaki siri.",
+    "visitorsLabel": "Wageni",
+    "viewsLabel": "Mitazamo yote",
+    "empty": "Hakuna wageni bado. Ongeza bidhaa na picha nzuri ili wanunuzi wakupate.",
+    "unknownCountry": "Nchi haijulikani",
+    "lastViewed": "Alitazama",
+    "timesViewed": "Mitazamo {{count}}",
+    "addImagesTitle": "Ongeza picha kwenye bidhaa zako",
+    "addImagesBody": "Biashara zenye picha nzuri hupata wageni na oda nyingi zaidi. Ongeza picha leo.",
+    "addImagesCta": "Ongeza bidhaa na picha",
+    "recordsTitle": "Endelea kurekodi kila siku",
+    "recordsBody": "Rekodi mauzo na huduma kila siku. Kumbukumbu za kila siku zinaonyesha faida halisi.",
+    "recordsCta": "Rekodi mauzo",
+    "exploreCta": "Tembelea Discover"
   }
 }

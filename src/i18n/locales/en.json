@@ -1538,5 +1538,24 @@
     "consentSaved": "Saved to your account",
     "notNow": "Not now",
     "yesSave": "Yes, save to my account"
+  },
+  "visitors": {
+    "notifTitle": "You had {{count}} visitor(s) 👀",
+    "notifBody": "Tap to see where they came from",
+    "title": "Who viewed your business",
+    "subtitle": "Countries only — visitor names stay private.",
+    "visitorsLabel": "Visitors",
+    "viewsLabel": "Total views",
+    "empty": "No visitors yet. Add items with clear photos so buyers can find you.",
+    "unknownCountry": "Unknown country",
+    "lastViewed": "Last viewed",
+    "timesViewed": "{{count}} view(s)",
+    "addImagesTitle": "Add photos to your items",
+    "addImagesBody": "Businesses with clear item photos get far more visitors and orders. Add photos to your top items today.",
+    "addImagesCta": "Add items with photos",
+    "recordsTitle": "Keep recording daily",
+    "recordsBody": "Record every sale and service daily. Steady records reveal your real profit and help your business grow.",
+    "recordsCta": "Record a sale",
+    "exploreCta": "Explore Discover"
   }
 }

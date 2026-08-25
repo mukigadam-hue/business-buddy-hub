@@ -1456,5 +1456,24 @@
     "consentSaved": "تم الحفظ في حسابك",
     "notNow": "ليس الآن",
     "yesSave": "نعم، احفظ في حسابي"
+  },
+  "visitors": {
+    "notifTitle": "لديك {{count}} زائر 👀",
+    "notifBody": "اضغط لمعرفة بلد الزوار",
+    "title": "من شاهد عملك",
+    "subtitle": "البلدان فقط — أسماء الزوار تبقى خاصة.",
+    "visitorsLabel": "الزوار",
+    "viewsLabel": "إجمالي المشاهدات",
+    "empty": "لا زوار بعد. أضف منتجات بصور واضحة.",
+    "unknownCountry": "بلد غير معروف",
+    "lastViewed": "آخر مشاهدة",
+    "timesViewed": "{{count}} مشاهدة",
+    "addImagesTitle": "أضف صورًا لمنتجاتك",
+    "addImagesBody": "الأعمال التي تحتوي صورًا واضحة تحصل على زوار وطلبات أكثر.",
+    "addImagesCta": "أضف منتجات بصور",
+    "recordsTitle": "سجّل يوميًا",
+    "recordsBody": "سجّل كل بيع وخدمة يوميًا لتعرف ربحك الحقيقي.",
+    "recordsCta": "تسجيل عملية بيع",
+    "exploreCta": "استكشف Discover"
   }
 }

@@ -1456,5 +1456,24 @@
     "consentSaved": "계정에 저장되었습니다",
     "notNow": "나중에",
     "yesSave": "예, 내 계정에 저장"
+  },
+  "visitors": {
+    "notifTitle": "방문자 {{count}}명 👀",
+    "notifBody": "어디서 왔는지 확인하세요",
+    "title": "내 비즈니스를 본 사람",
+    "subtitle": "국가만 표시 — 이름은 항상 비공개입니다.",
+    "visitorsLabel": "방문자",
+    "viewsLabel": "총 조회",
+    "empty": "아직 방문자가 없습니다. 선명한 사진과 함께 상품을 추가하세요.",
+    "unknownCountry": "알 수 없는 국가",
+    "lastViewed": "마지막 조회",
+    "timesViewed": "{{count}}회 조회",
+    "addImagesTitle": "상품에 사진 추가",
+    "addImagesBody": "사진이 있는 업체는 방문자와 주문이 훨씬 많습니다.",
+    "addImagesCta": "사진과 함께 상품 추가",
+    "recordsTitle": "매일 기록하세요",
+    "recordsBody": "매일 판매와 서비스를 기록하면 실제 이익이 보입니다.",
+    "recordsCta": "판매 기록",
+    "exploreCta": "Discover 탐색"
   }
 }

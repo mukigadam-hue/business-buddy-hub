@@ -27,6 +27,7 @@ import { useBannerReserved } from '@/lib/bannerSpace';
 import { toast } from 'sonner';
 import AuditReminder from '@/components/audit/AuditReminder';
 import GrowthNudge from '@/components/GrowthNudge';
+import VisitorInsightsDialog from '@/components/VisitorInsightsDialog';
 
 function useNavItems() {
   const { t } = useTranslation();
@@ -203,15 +204,40 @@ function getNotificationRoute(type: string): string {
   }
 }
 
+/** Visitor alerts are stored language-neutral ("count=3") so they render in the
+ *  user's chosen language every time the app is opened. */
+function visitorCount(message: string): number {
+  const m = /count=(\d+)/.exec(message || '');
+  return m ? Number(m[1]) : 1;
+}
+
+function notificationTitle(n: { type: string; title: string; message: string }, t: (k: string, o?: any) => string) {
+  if (n.type === 'visitor') return t('visitors.notifTitle', { count: visitorCount(n.message) });
+  return n.title;
+}
+
+function notificationMessage(n: { type: string; message: string }, t: (k: string, o?: any) => string) {
+  if (n.type === 'visitor') return t('visitors.notifBody');
+  return n.message;
+}
+
 function NotificationsPanel({ onNavigate, variant = 'desktop' }: { onNavigate?: () => void; variant?: 'desktop' | 'mobile' }) {
   const { t } = useTranslation();
   const { notifications, markNotificationRead, markAllNotificationsRead } = useBusiness();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [visitorsOpen, setVisitorsOpen] = useState(false);
   const unread = notifications.filter(n => !n.is_read).length;
 
   function handleNotificationClick(n: { id: string; type: string; is_read: boolean; title: string; message: string }) {
     if (!n.is_read) markNotificationRead(n.id);
+    // Visitor alerts open the anonymous visitor insights panel instead of a route
+    if (n.type === 'visitor') {
+      setOpen(false);
+      onNavigate?.();
+      setVisitorsOpen(true);
+      return;
+    }
     const route = getNotificationRoute(n.type);
     setOpen(false);
     onNavigate?.();
@@ -255,8 +281,8 @@ function NotificationsPanel({ onNavigate, variant = 'desktop' }: { onNavigate?: 
             notifications.map(n => (
               <button key={n.id} onClick={() => handleNotificationClick(n)}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${n.is_read ? 'bg-muted/30 border-border' : 'bg-warning/5 border-warning/30'}`}>
-                <p className={`text-sm font-medium ${n.is_read ? 'text-muted-foreground' : 'text-foreground'}`}>{n.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
+                <p className={`text-sm font-medium ${n.is_read ? 'text-muted-foreground' : 'text-foreground'}`}>{notificationTitle(n, t)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{notificationMessage(n, t)}</p>
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString()}</p>
                   <span className="text-[10px] text-primary underline">{t('common.view')}</span>
@@ -267,6 +293,7 @@ function NotificationsPanel({ onNavigate, variant = 'desktop' }: { onNavigate?: 
           )}
         </div>
       </SheetContent>
+      <VisitorInsightsDialog open={visitorsOpen} onOpenChange={setVisitorsOpen} />
     </Sheet>
   );
 }

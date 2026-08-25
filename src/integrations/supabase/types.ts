@@ -641,6 +641,44 @@ export type Database = {
         }
         Relationships: []
       }
+      business_visits: {
+        Row: {
+          business_id: string
+          first_visited_at: string
+          id: string
+          last_visited_at: string
+          visit_count: number
+          visitor_country_code: string
+          visitor_id: string
+        }
+        Insert: {
+          business_id: string
+          first_visited_at?: string
+          id?: string
+          last_visited_at?: string
+          visit_count?: number
+          visitor_country_code?: string
+          visitor_id: string
+        }
+        Update: {
+          business_id?: string
+          first_visited_at?: string
+          id?: string
+          last_visited_at?: string
+          visit_count?: number
+          visitor_country_code?: string
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_visits_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_worker_advances: {
         Row: {
           amount: number
@@ -2756,6 +2794,15 @@ export type Database = {
           reviewer_name: string
         }[]
       }
+      get_business_visitors: {
+        Args: { _business_id: string; _limit?: number }
+        Returns: {
+          country_code: string
+          first_visited_at: string
+          last_visited_at: string
+          visit_count: number
+        }[]
+      }
       get_country_business_counts: {
         Args: never
         Returns: {
@@ -2812,6 +2859,10 @@ export type Database = {
       phone_exists: { Args: { _phone: string }; Returns: boolean }
       recompute_invoice_status: {
         Args: { _source_id: string; _source_type: string }
+        Returns: undefined
+      }
+      record_business_visit: {
+        Args: { _business_id: string }
         Returns: undefined
       }
       reset_settings_password_with_code: {

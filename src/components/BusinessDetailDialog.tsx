@@ -373,6 +373,14 @@ export default function BusinessDetailDialog({ business, open, onOpenChange, onO
     if (open && business) { loadProducts(); loadReviews(); }
   }, [open, business, loadProducts, loadReviews]);
 
+  // Anonymous visit ping: lets business owners see "you had N visitors"
+  // (country + time + times viewed only, never the visitor's identity).
+  useEffect(() => {
+    if (!open || !business || !user) return;
+    (supabase.rpc as any)('record_business_visit', { _business_id: business.id }).then(() => {}, () => {});
+  }, [open, business, user]);
+
+
   async function submitReview() {
     if (!business || !user || !newComment.trim()) return;
     setSubmitting(true);

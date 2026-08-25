@@ -1456,5 +1456,24 @@
     "consentSaved": "Guardado en tu cuenta",
     "notNow": "Ahora no",
     "yesSave": "Sí, guardar en mi cuenta"
+  },
+  "visitors": {
+    "notifTitle": "Tuviste {{count}} visitante(s) 👀",
+    "notifBody": "Toca para ver de dónde vinieron",
+    "title": "Quién vio tu negocio",
+    "subtitle": "Solo países — los nombres siguen privados.",
+    "visitorsLabel": "Visitantes",
+    "viewsLabel": "Vistas totales",
+    "empty": "Aún no hay visitantes. Agrega artículos con fotos claras.",
+    "unknownCountry": "País desconocido",
+    "lastViewed": "Visto",
+    "timesViewed": "{{count}} vista(s)",
+    "addImagesTitle": "Agrega fotos a tus artículos",
+    "addImagesBody": "Los negocios con buenas fotos reciben muchos más visitantes y pedidos.",
+    "addImagesCta": "Agregar artículos con fotos",
+    "recordsTitle": "Registra a diario",
+    "recordsBody": "Registra cada venta y servicio a diario para conocer tu ganancia real.",
+    "recordsCta": "Registrar una venta",
+    "exploreCta": "Explorar Discover"
   }
 }

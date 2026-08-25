@@ -3,60 +3,43 @@ import { bridgeInitAdMob, bridgeShowInterstitial, detectShell, isNativeShell } f
 
 /**
  * ────────────────────────────────────────────────────────────────────────────
- *  BizTrack Interstitial Ad Manager — WebViewGold implementation (v4)
+ *  BizTrack Interstitial Ad Manager — WebViewGold on-demand bridge (v5)
  * ────────────────────────────────────────────────────────────────────────────
  *
- *  This app is wrapped with WebViewGold (NOT Despia). Verified against the
- *  official WebViewGold for Android documentation (Docs → AdMob Ads API):
+ *  ROOT CAUSE of the "100% match rate, 0 impressions" failure:
+ *  WebViewGold presents interstitials natively after every SHOW_AD_AFTER_X
+ *  "website interactions" — but that counter only increments on REAL page
+ *  loads. BizTrack is a single-page app: React Router changes never reload
+ *  the WebView, so the native counter never reaches X and the interstitial
+ *  is never presented (while banners and app-open ads, which have no such
+ *  counter, work fine). No value of SHOW_AD_AFTER_X can fix an SPA.
  *
- *  FACT 1 — WebViewGold has NO documented on-demand web command to show an
- *           interstitial. The only documented ad URL schemes are:
- *             enableads://, disableads://, displayrewardedad://
+ *  THE FIX (two parts):
+ *   1. WEB (this file): fires the custom bridge scheme `showinterstitial://`
+ *      at every natural transition point (receipt closure after a sale or
+ *      service, order completion, …) and `preloadinterstitial://` at startup
+ *      and after each show, so the creative is always loaded silently in the
+ *      background and never pops up abruptly (AdMob policy).
+ *   2. NATIVE (one-time, ~30 lines, Android Studio): paste the handler
+ *      snippet from docs/WEBVIEWGOLD_INTERSTITIAL.md into
+ *      MainActivity.shouldOverrideUrlLoading, then REBUILD the app.
+ *      Until that snippet is compiled in, WebViewGold ignores the unknown
+ *      scheme — nothing breaks, but no interstitial can appear either.
  *
- *  FACT 2 — Interstitials are configured natively in Config.java / the
- *           WebViewGold Cloud Builder:
- *             SHOW_FULL_SCREEN_AD = true   → enable interstitials
- *             SHOW_AD_AFTER_X     = <n>    → show after every X website
- *                                            interactions (clicks/loads)
- *           The native AdMob SDK preloads the next interstitial silently in
- *           the background, so the ad appears smoothly — never abruptly — at
- *           natural transition points (exactly what AdMob policy requires).
- *
- *  FACT 3 — The old build's "100% match rate, 0 impressions" came from firing
- *           invented schemes (`admob://www.webviewgold.com/interstitial`,
- *           `admob_initialize://`) that WebViewGold does not implement. AdMob
- *           loaded the ad (match rate) but nothing ever presented it.
- *
- *  What this manager does:
- *    1. STARTUP   — initInterstitialAds() verifies the native shell and fires
- *                   the documented `enableads://` command.
- *    2. TRIGGER   — triggerInterstitial(reason) is called at every receipt
- *                   closure / completion point. Each call is a real user
- *                   interaction that counts toward WebViewGold's
- *                   SHOW_AD_AFTER_X interval; the manager logs the transition
- *                   and keeps an anti-double-fire guard so diagnostics stay
- *                   meaningful. The actual presentation is native.
- *    3. DELAY     — 600ms after the dialog closes, so the transition point is
- *                   a clean natural break (AdMob policy).
- *
- *  REQUIRED native-side setup (WebViewGold Cloud Builder or Config.java):
- *    - SHOW_BANNER_AD      = true   (bottom banner)
- *    - SHOW_FULL_SCREEN_AD = true   (interstitials)
- *    - SHOW_AD_AFTER_X     = 8      (≈ every 8 interactions — tune to taste)
- *    - AdMob App ID + Interstitial + Banner unit IDs in strings.xml
- *    - REBUILD the app after changing these — otherwise the settings are not
- *      compiled into the binary and no interstitial can ever appear.
+ *  POLICY SAFETY: the ad is only ever requested AFTER a completed user task
+ *  (dialog fully closed + 600ms), with a 60s anti-double-fire guard and a
+ *  30-minute cap on plain navigation triggers.
  * ────────────────────────────────────────────────────────────────────────────
  */
 
 const LAST_FIRE_KEY = 'bm:interstitial:lastFire';
 const SUPPRESS_KEY = 'bm:interstitial:suppress';
 
-/** Minimum time between any two interstitial transition logs (anti double-fire). */
+/** Minimum time between any two interstitial requests (anti double-fire). */
 const MIN_GAP_MS = 60 * 1000;
 /** Screen-change (navigation) triggers stay conservative for policy safety. */
 const NAV_GAP_MS = 30 * 60 * 1000;
-/** Delay so the receipt dialog finishes closing before the transition point. */
+/** Delay so the receipt dialog finishes closing before the ad appears. */
 const SHOW_DELAY_MS = 600;
 
 /* ----------------------------- storage helpers ---------------------------- */
@@ -82,8 +65,10 @@ let initialized = false;
 
 /**
  * Initialize interstitial ads once at app startup. Idempotent.
- * Verifies the WebViewGold shell, fires the documented `enableads://`
- * command, and exposes a manual QA hook: `window.WebViewGold.showInterstitial()`.
+ * Verifies the native shell, fires the documented `enableads://` command and
+ * warms the first interstitial via `preloadinterstitial://` so the creative
+ * is loaded silently in the background long before it is needed.
+ * Exposes a manual QA hook: `window.WebViewGold.showInterstitial()`.
  */
 export function initInterstitialAds() {
   if (initialized) return;
@@ -95,7 +80,7 @@ export function initInterstitialAds() {
     return;
   }
 
-  adLog(`[AD-INTERSTITIAL] Init OK — shell=${shell} (WebViewGold). Firing enableads:// …`);
+  adLog(`[AD-INTERSTITIAL] Init OK — shell=${shell}. Firing enableads:// + preloadinterstitial:// …`);
   bridgeInitAdMob();
 
   // Manual QA hook — call `WebViewGold.showInterstitial()` from any console.
@@ -114,11 +99,11 @@ function showNow(reason: string) {
     adLog(`[AD-INTERSTITIAL] Skipped (web browser). reason=${reason}`);
     return;
   }
-  // Record before the transition so concurrent events cannot double-log.
+  // Record before the transition so concurrent events cannot double-fire.
   writeNumber(LAST_FIRE_KEY, Date.now());
   setTimeout(() => bridgeShowInterstitial(reason), SHOW_DELAY_MS);
   // eslint-disable-next-line no-console
-  console.log(`[AD-INTERSTITIAL] Transition scheduled in ${SHOW_DELAY_MS}ms. reason=${reason}`);
+  console.log(`[AD-INTERSTITIAL] showinterstitial:// fires in ${SHOW_DELAY_MS}ms. reason=${reason}`);
 }
 
 /* ----------------------------- public triggers ---------------------------- */
@@ -126,9 +111,7 @@ function showNow(reason: string) {
 /**
  * Trigger A — task-completion point. Called EVERY time a receipt is closed
  * after a sale/service is recorded, plus the other wired completion points.
- * Each call marks a genuine user interaction at a natural break point;
- * WebViewGold presents the natively-preloaded interstitial according to its
- * SHOW_AD_AFTER_X interval. Only a 60s anti-double-fire guard applies.
+ * Each call is a genuine natural break; a 60s anti-double-fire guard applies.
  */
 export function triggerInterstitial(reason: string) {
   if (typeof window === 'undefined') return;
@@ -139,7 +122,7 @@ export function triggerInterstitial(reason: string) {
   }
   const since = Date.now() - readNumber(LAST_FIRE_KEY);
   if (readNumber(LAST_FIRE_KEY) && since < MIN_GAP_MS) {
-    adLog(`[AD-INTERSTITIAL] Skipped — transition ${Math.round(since / 1000)}s ago (60s guard). reason=${reason}`);
+    adLog(`[AD-INTERSTITIAL] Skipped — shown ${Math.round(since / 1000)}s ago (60s guard). reason=${reason}`);
     return;
   }
   showNow(`A:${reason}`);
@@ -155,7 +138,7 @@ export function triggerInterstitialOnScreenChange(reason: string) {
   if (consumeSuppression()) return;
   const since = Date.now() - readNumber(LAST_FIRE_KEY);
   if (readNumber(LAST_FIRE_KEY) && since < NAV_GAP_MS) {
-    adLog(`[AD-INTERSTITIAL] Nav trigger skipped — last transition ${Math.round(since / 60000)}min ago. reason=${reason}`);
+    adLog(`[AD-INTERSTITIAL] Nav trigger skipped — last ad ${Math.round(since / 60000)}min ago. reason=${reason}`);
     return;
   }
   showNow(`B:${reason}`);

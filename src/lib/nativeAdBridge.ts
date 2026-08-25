@@ -1,24 +1,32 @@
 /**
  * Native Ad Bridge — WebViewGold (the wrapper this app ships with).
  *
- * ONLY officially documented WebViewGold commands are used here
- * (WebViewGold Docs → Android → AdMob Ads API):
+ * Documented WebViewGold commands (WebViewGold Docs → Android → AdMob Ads API):
  *  - `enableads://`          — re-enable ads for the current user
  *  - `disableads://`         — permanently disable ads for the current user
  *  - `displayrewardedad://`  — show a rewarded ad (requires ENABLE_REWARDED_ADS)
  *
- * Banner and interstitial ads have NO documented on-demand web trigger in
- * WebViewGold. They are configured natively in Config.java / Cloud Builder:
- *  - SHOW_BANNER_AD      = true   → persistent native banner
- *  - SHOW_FULL_SCREEN_AD = true   → interstitials
- *  - SHOW_AD_AFTER_X     = <n>    → interstitial shows after every X website
- *                                   interactions, preloaded silently in the
- *                                   background by the native AdMob SDK.
+ * Custom BizTrack commands (handled by a small snippet pasted into
+ * MainActivity.shouldOverrideUrlLoading — see docs/WEBVIEWGOLD_INTERSTITIAL.md):
+ *  - `showinterstitial://`     — present the preloaded interstitial NOW
+ *  - `preloadinterstitial://`  — silently load the next interstitial in the
+ *                                background so it never appears abruptly
  *
- * Previously invented schemes (`admob://www.webviewgold.com/showbanner`,
- * `admob_initialize://`, `admob://interstitial`) are NOT understood by
- * WebViewGold — they were silently ignored and caused the "100% match rate,
- * 0 impressions" failure. They have been permanently removed.
+ * WHY the custom commands are needed: WebViewGold presents interstitials
+ * natively after every SHOW_AD_AFTER_X "website interactions" — but that
+ * counter only increments on REAL page loads. BizTrack is a single-page app
+ * (React Router changes never reload the WebView), so the counter never
+ * reaches X. That is exactly why AdMob reported a 100% match rate (the SDK
+ * preloads fine) with 0 impressions (the interval is never hit). The custom
+ * scheme restores reliable, policy-compliant interstitials at natural
+ * transition points (receipt closed after a sale/service).
+ *
+ * IMPORTANT — how the bridge fires: Android WebView only intercepts
+ * MAIN-FRAME navigations in shouldOverrideUrlLoading. Setting the `src` of a
+ * hidden iframe is a SUBFRAME load and never reaches the native handler —
+ * that is why earlier iframe-based schemes did nothing. fireBridge therefore
+ * uses a top-level navigation; WebViewGold intercepts the scheme and cancels
+ * the load, so the SPA never actually navigates or reloads.
  */
 
 export const BANNER_HEIGHT_PX = 60; // reserved space in the web layout
@@ -70,7 +78,15 @@ function withLocale(cmd: string): string {
   return `${cmd}${sep}lang=${encodeURIComponent(language)}&region=${encodeURIComponent(region)}&locale=${encodeURIComponent(locale)}`;
 }
 
-/** Fire a documented URL-scheme bridge command via the most reliable channels. */
+/**
+ * Fire a bridge command via the most reliable channels.
+ * The top-level `window.location.href` assignment is what makes the command
+ * actually reach WebViewGold: Android WebView only intercepts main-frame
+ * navigations in shouldOverrideUrlLoading, where every WebViewGold URL-scheme
+ * API (`qrcode://`, `takescreenshot://`, `enableads://`, …) is handled.
+ * WebViewGold cancels the load once it handles the scheme, so the web app
+ * itself never navigates away.
+ */
 export function fireBridge(cmd: string) {
   if (typeof window === 'undefined') return;
   const url = withLocale(cmd);
@@ -79,14 +95,7 @@ export function fireBridge(cmd: string) {
     const w = window as any;
     if (typeof w.despia === 'function') { try { w.despia(url); } catch {} }
   } catch {}
-  try {
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.setAttribute('aria-hidden', 'true');
-    iframe.src = url;
-    document.body.appendChild(iframe);
-    setTimeout(() => { try { iframe.remove(); } catch {} }, 1500);
-  } catch {}
+  try { window.location.href = url; } catch {}
 }
 
 /* ------------------------- Documented commands --------------------------- */
@@ -94,12 +103,14 @@ export function fireBridge(cmd: string) {
 /**
  * Init hook — fires the documented `enableads://` command so ads are active
  * for the current user (defensive: a previous `disableads://` or an ad-free
- * in-app purchase flag could otherwise suppress every format).
+ * in-app purchase flag could otherwise suppress every format). Also warms the
+ * first interstitial silently in the background.
  */
 export function bridgeInitAdMob() {
   const shell = detectShell();
   if (shell === 'none') return;
   fireBridge('enableads://');
+  bridgePreloadInterstitial();
 }
 
 /** Documented rewarded-ad command (requires ENABLE_REWARDED_ADS = true). */
@@ -112,48 +123,45 @@ export function bridgeShowRewardedAd() {
 /* ------------------------------ Interstitial ------------------------------ */
 
 /**
- * WebViewGold has NO documented on-demand interstitial trigger. Interstitials
- * are presented natively after every SHOW_AD_AFTER_X website interactions and
- * are preloaded silently in the background by the native AdMob SDK — so the
- * ad appears smoothly at natural transition points (receipt closure, page
- * navigation) without any web-side show command.
- *
- * This function therefore only logs the transition point. Make sure
- * SHOW_FULL_SCREEN_AD = true and a sensible SHOW_AD_AFTER_X value are set in
- * Config.java / Cloud Builder, and that the app has been REBUILT with those
- * settings — otherwise no web code can make the interstitial appear.
+ * Present the preloaded interstitial NOW via the custom `showinterstitial://`
+ * scheme (native handler: docs/WEBVIEWGOLD_INTERSTITIAL.md). The creative is
+ * always loaded silently in the background first, so the ad appears smoothly
+ * at a natural transition point — never abruptly (AdMob policy). If the
+ * native handler is not compiled into the app yet, WebViewGold simply ignores
+ * the unknown scheme and nothing breaks.
  */
 export function bridgeShowInterstitial(reason = 'unspecified') {
   const shell = detectShell();
   if (shell === 'none') return;
   // eslint-disable-next-line no-console
-  console.log(
-    `[AD-INTERSTITIAL] Transition point reached (${reason}). ` +
-    `WebViewGold presents interstitials natively by interval (SHOW_AD_AFTER_X) — ` +
-    `verify SHOW_FULL_SCREEN_AD=true in the native config.`
-  );
+  console.log(`[AD-INTERSTITIAL] Firing showinterstitial:// (${reason}).`);
+  fireBridge(`showinterstitial://?reason=${encodeURIComponent(reason)}`);
 }
 
 /**
- * WebViewGold's native AdMob SDK preloads the next interstitial automatically
- * after each show, so no web-side preload exists. Kept as a safe no-op so the
- * language-change re-preload hook in AdMobManager remains harmless.
+ * Silently preload the next interstitial in the background so the next
+ * `showinterstitial://` is instant and smooth. Fired at app startup, after
+ * every interstitial dismissal (native side re-preloads too), and on language
+ * change. Throttled to one fire per 20s; the native handler additionally
+ * dedupes (it no-ops while an ad is loaded or already loading).
  */
+let lastPreloadAt = 0;
 export function bridgePreloadInterstitial() {
   if (detectShell() === 'none') return;
-  // Native SDK handles preloading — nothing to fire.
+  const now = Date.now();
+  if (now - lastPreloadAt < 20 * 1000) return;
+  lastPreloadAt = now;
+  fireBridge('preloadinterstitial://');
 }
 
 /* --------------------------------- Banner --------------------------------- */
 
 /**
  * WebViewGold renders the banner natively (SHOW_BANNER_AD = true in
- * Config.java / Cloud Builder) as an overlay above the WebView, and the
- * native AdMob SDK auto-refreshes the creative. There is no documented
- * web-side show/hide banner scheme — the previously used
- * `admob://www.webviewgold.com/showbanner` was invented and ignored.
- * These functions are kept as no-ops so the 120s refresh loop in
- * BottomBannerAd stays harmless.
+ * Config.java) as an overlay above the WebView, and the native AdMob SDK
+ * auto-refreshes the creative. There is no documented web-side show/hide
+ * banner scheme. These functions are kept as no-ops so the 120s refresh loop
+ * in BottomBannerAd stays harmless.
  */
 export function bridgeShowBanner() {
   if (detectShell() === 'none') return;

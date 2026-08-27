@@ -126,14 +126,10 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
             <Camera className="h-3 w-3 mr-1" />Photo
           </Button>
           <Button type="button" size="sm" variant="default" className="text-xs h-7 px-2" disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}>
+            onClick={handleUploadClick}>
             <Upload className="h-3 w-3 mr-1" />Upload
           </Button>
         </div>
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
-          onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
-        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
-          onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
       </div>
 
       <WebcamCapture open={webcamOpen} onOpenChange={setWebcamOpen} onCapture={handleFile} />

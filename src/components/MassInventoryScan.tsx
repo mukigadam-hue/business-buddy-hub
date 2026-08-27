@@ -13,6 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
 import ImageUpload from '@/components/ImageUpload';
 import { compressImage } from '@/lib/compressImage';
+import { pickImage, canUseWebcam } from '@/lib/nativeCamera';
 
 interface MassInventoryScanProps {
   open: boolean;

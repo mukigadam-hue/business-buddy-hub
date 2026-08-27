@@ -141,7 +141,7 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
                         <button onClick={handleCameraClick} className="p-1.5 rounded-md bg-primary/10 hover:bg-primary/20">
                           <Camera className="h-4 w-4 text-primary" />
                         </button>
-                        <button onClick={() => fileInputRef.current?.click()} className="p-1.5 rounded-md bg-primary/10 hover:bg-primary/20">
+                        <button onClick={handleGalleryClick} className="p-1.5 rounded-md bg-primary/10 hover:bg-primary/20">
                           <Upload className="h-4 w-4 text-primary" />
                         </button>
                       </div>
@@ -151,10 +151,6 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
                 </div>
               )}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
-              onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
-            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
-              onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
           </div>
 
           {/* Mode selector */}

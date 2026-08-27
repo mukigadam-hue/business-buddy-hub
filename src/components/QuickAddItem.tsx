@@ -60,12 +60,18 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
     setImages(prev => prev.filter((_, i) => i !== idx));
   }
 
-  function handleCameraClick() {
-    if (isMobile) {
-      cameraInputRef.current?.click();
-    } else {
+  async function handleCameraClick() {
+    if (!isMobile && canUseWebcam()) {
       setWebcamOpen(true);
+      return;
     }
+    const file = await pickImage('camera');
+    if (file) handleFile(file);
+  }
+
+  async function handleGalleryClick() {
+    const file = await pickImage('gallery');
+    if (file) handleFile(file);
   }
 
   async function handleSubmit() {

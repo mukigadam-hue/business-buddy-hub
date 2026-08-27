@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
 import { compressImage } from '@/lib/compressImage';
+import { pickImage, canUseWebcam } from '@/lib/nativeCamera';
 
 interface QuickAddItemProps {
   open: boolean;

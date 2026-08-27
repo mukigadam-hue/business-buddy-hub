@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Loader2, ScanLine, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Loader2, ScanLine, Trash2, CheckCircle2, Sparkles, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
 import ImageUpload from '@/components/ImageUpload';
 import { compressImage } from '@/lib/compressImage';
+import { pickImage, canUseWebcam } from '@/lib/nativeCamera';
 
 interface MassInventoryScanProps {
   open: boolean;
@@ -83,7 +84,6 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
   const langName = languages.find(l => l.code === langCode)?.name || 'English';
   const { currentBusiness, addStockItem } = useBusiness();
   const isMobile = useIsMobile();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [webcamOpen, setWebcamOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [items, setItems] = useState<DetectedItem[] | null>(null);
@@ -97,12 +97,18 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
     setShelfPhotoUrl('');
   }
 
-  function openCamera() {
-    if (isMobile) {
-      fileInputRef.current?.click();
-    } else {
+  async function openCamera() {
+    if (!isMobile && canUseWebcam()) {
       setWebcamOpen(true);
+      return;
     }
+    const file = await pickImage('camera');
+    if (file) handleImage(file);
+  }
+
+  async function openGallery() {
+    const file = await pickImage('gallery');
+    if (file) handleImage(file);
   }
 
   async function uploadShelfPhoto(file: File | Blob): Promise<string> {
@@ -267,6 +273,9 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
               <Button onClick={openCamera} className="w-full" size="lg">
                 <ScanLine className="h-5 w-5 mr-2" /> {t('massScan.openCamera')}
               </Button>
+              <Button onClick={openGallery} variant="outline" className="w-full" size="lg">
+                <Upload className="h-5 w-5 mr-2" /> {t('massScan.chooseFromGallery')}
+              </Button>
               <p className="text-xs text-muted-foreground text-center">
                 {t('massScan.cameraHint')}
               </p>
@@ -411,18 +420,6 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
             </div>
           )}
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleImage(f);
-              e.target.value = '';
-            }}
-          />
         </DialogContent>
       </Dialog>
 

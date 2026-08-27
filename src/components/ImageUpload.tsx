@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, X, Loader2, Lock } from 'lucide-react';
@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
 import { compressImage } from '@/lib/compressImage';
+import { pickImage, canUseWebcam } from '@/lib/nativeCamera';
 import { usePremium } from '@/hooks/usePremium';
 
 interface ImageUploadProps {
@@ -26,8 +27,6 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
   const [preview, setPreview] = useState<string | null>(null);
   const [webcamOpen, setWebcamOpen] = useState(false);
   const isMobile = useIsMobile();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { canUploadItemPhotos } = usePremium();
 
   const blocked = premiumOnly && !canUploadItemPhotos;
@@ -70,12 +69,18 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
     onRemoved?.();
   }
 
-  function handleCameraClick() {
-    if (isMobile) {
-      cameraInputRef.current?.click();
-    } else {
+  async function handleCameraClick() {
+    if (!isMobile && canUseWebcam()) {
       setWebcamOpen(true);
+      return;
     }
+    const file = await pickImage('camera');
+    if (file) handleFile(file);
+  }
+
+  async function handleUploadClick() {
+    const file = await pickImage('gallery');
+    if (file) handleFile(file);
   }
 
   if (blocked) {
@@ -119,14 +124,10 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
             <Camera className="h-3 w-3 mr-1" />Photo
           </Button>
           <Button type="button" size="sm" variant="default" className="text-xs h-7 px-2" disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}>
+            onClick={handleUploadClick}>
             <Upload className="h-3 w-3 mr-1" />Upload
           </Button>
         </div>
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
-          onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
-        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
-          onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
       </div>
 
       <WebcamCapture open={webcamOpen} onOpenChange={setWebcamOpen} onCapture={handleFile} />

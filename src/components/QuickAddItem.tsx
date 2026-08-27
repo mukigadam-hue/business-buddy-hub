@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
 import { compressImage } from '@/lib/compressImage';
+import { pickImage, canUseWebcam } from '@/lib/nativeCamera';
 
 interface QuickAddItemProps {
   open: boolean;
@@ -34,8 +35,6 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
     buying_price: '', wholesale_price: '', retail_price: '', quantity: '',
   });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith('image/')) { toast.error('Select an image'); return; }
@@ -60,12 +59,18 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
     setImages(prev => prev.filter((_, i) => i !== idx));
   }
 
-  function handleCameraClick() {
-    if (isMobile) {
-      cameraInputRef.current?.click();
-    } else {
+  async function handleCameraClick() {
+    if (!isMobile && canUseWebcam()) {
       setWebcamOpen(true);
+      return;
     }
+    const file = await pickImage('camera');
+    if (file) handleFile(file);
+  }
+
+  async function handleGalleryClick() {
+    const file = await pickImage('gallery');
+    if (file) handleFile(file);
   }
 
   async function handleSubmit() {
@@ -134,7 +139,7 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
                         <button onClick={handleCameraClick} className="p-1.5 rounded-md bg-primary/10 hover:bg-primary/20">
                           <Camera className="h-4 w-4 text-primary" />
                         </button>
-                        <button onClick={() => fileInputRef.current?.click()} className="p-1.5 rounded-md bg-primary/10 hover:bg-primary/20">
+                        <button onClick={handleGalleryClick} className="p-1.5 rounded-md bg-primary/10 hover:bg-primary/20">
                           <Upload className="h-4 w-4 text-primary" />
                         </button>
                       </div>
@@ -144,10 +149,6 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
                 </div>
               )}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
-              onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
-            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
-              onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
           </div>
 
           {/* Mode selector */}

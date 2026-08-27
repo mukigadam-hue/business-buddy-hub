@@ -70,12 +70,18 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
     onRemoved?.();
   }
 
-  function handleCameraClick() {
-    if (isMobile) {
-      cameraInputRef.current?.click();
-    } else {
+  async function handleCameraClick() {
+    if (!isMobile && canUseWebcam()) {
       setWebcamOpen(true);
+      return;
     }
+    const file = await pickImage('camera');
+    if (file) handleFile(file);
+  }
+
+  async function handleUploadClick() {
+    const file = await pickImage('gallery');
+    if (file) handleFile(file);
   }
 
   if (blocked) {

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, X, Loader2, Lock } from 'lucide-react';
@@ -27,8 +27,6 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
   const [preview, setPreview] = useState<string | null>(null);
   const [webcamOpen, setWebcamOpen] = useState(false);
   const isMobile = useIsMobile();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { canUploadItemPhotos } = usePremium();
 
   const blocked = premiumOnly && !canUploadItemPhotos;

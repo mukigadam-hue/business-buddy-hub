@@ -97,12 +97,18 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
     setShelfPhotoUrl('');
   }
 
-  function openCamera() {
-    if (isMobile) {
-      fileInputRef.current?.click();
-    } else {
+  async function openCamera() {
+    if (!isMobile && canUseWebcam()) {
       setWebcamOpen(true);
+      return;
     }
+    const file = await pickImage('camera');
+    if (file) handleImage(file);
+  }
+
+  async function openGallery() {
+    const file = await pickImage('gallery');
+    if (file) handleImage(file);
   }
 
   async function uploadShelfPhoto(file: File | Blob): Promise<string> {

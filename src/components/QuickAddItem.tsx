@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,8 +35,6 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
     buying_price: '', wholesale_price: '', retail_price: '', quantity: '',
   });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
     if (!file.type.startsWith('image/')) { toast.error('Select an image'); return; }

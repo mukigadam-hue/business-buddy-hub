@@ -274,6 +274,9 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
               <Button onClick={openCamera} className="w-full" size="lg">
                 <ScanLine className="h-5 w-5 mr-2" /> {t('massScan.openCamera')}
               </Button>
+              <Button onClick={openGallery} variant="outline" className="w-full" size="lg">
+                <Upload className="h-5 w-5 mr-2" /> {t('massScan.chooseFromGallery')}
+              </Button>
               <p className="text-xs text-muted-foreground text-center">
                 {t('massScan.cameraHint')}
               </p>

@@ -84,7 +84,6 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
   const langName = languages.find(l => l.code === langCode)?.name || 'English';
   const { currentBusiness, addStockItem } = useBusiness();
   const isMobile = useIsMobile();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [webcamOpen, setWebcamOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [items, setItems] = useState<DetectedItem[] | null>(null);

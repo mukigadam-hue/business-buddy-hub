@@ -1395,7 +1395,8 @@
     "translated": "{{count}} आइटम अनुवादित",
     "translateFailed": "अनुवाद विफल",
     "nothingToTranslate": "अनुवाद के लिए कोई स्टॉक आइटम नहीं",
-    "unitType": "इकाई प्रकार"
+    "unitType": "इकाई प्रकार",
+    "chooseFromGallery": "गैलरी से चुनें"
   },
   "growth": {
     "later": "बाद में",

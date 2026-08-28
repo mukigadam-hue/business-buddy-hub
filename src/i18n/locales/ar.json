@@ -1395,7 +1395,8 @@
     "translated": "تمت ترجمة {{count}} منتج",
     "translateFailed": "فشلت الترجمة",
     "nothingToTranslate": "لا توجد منتجات لترجمتها",
-    "unitType": "نوع الوحدة"
+    "unitType": "نوع الوحدة",
+    "chooseFromGallery": "اختر من المعرض"
   },
   "growth": {
     "later": "لاحقًا",

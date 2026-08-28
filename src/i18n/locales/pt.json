@@ -1395,7 +1395,8 @@
     "translated": "{{count}} item(ns) traduzido(s)",
     "translateFailed": "Falha na tradução",
     "nothingToTranslate": "Nenhum item de estoque para traduzir",
-    "unitType": "Tipo de unidade"
+    "unitType": "Tipo de unidade",
+    "chooseFromGallery": "Escolher da galeria"
   },
   "growth": {
     "later": "Mais tarde",

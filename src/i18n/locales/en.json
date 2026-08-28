@@ -1477,7 +1477,8 @@
     "translated": "Translated {{count}} item(s)",
     "translateFailed": "Translation failed",
     "nothingToTranslate": "No stock items to translate",
-    "unitType": "Unit Type"
+    "unitType": "Unit Type",
+    "chooseFromGallery": "Choose from gallery"
   },
   "growth": {
     "later": "Later",

@@ -1462,7 +1462,8 @@
     "translated": "Bidhaa {{count}} zimetafsiriwa",
     "translateFailed": "Tafsiri imeshindikana",
     "nothingToTranslate": "Hakuna bidhaa za kutafsiri",
-    "unitType": "Aina ya Kipimo"
+    "unitType": "Aina ya Kipimo",
+    "chooseFromGallery": "Chagua kutoka ghala"
   },
   "growth": {
     "later": "Baadaye",

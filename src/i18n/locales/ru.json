@@ -1395,7 +1395,8 @@
     "translated": "Переведено {{count}} товар(ов)",
     "translateFailed": "Ошибка перевода",
     "nothingToTranslate": "Нет товаров для перевода",
-    "unitType": "Тип единицы"
+    "unitType": "Тип единицы",
+    "chooseFromGallery": "Выбрать из галереи"
   },
   "growth": {
     "later": "Позже",

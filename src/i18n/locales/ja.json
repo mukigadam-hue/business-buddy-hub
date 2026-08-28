@@ -1395,7 +1395,8 @@
     "translated": "{{count}} 件を翻訳しました",
     "translateFailed": "翻訳に失敗しました",
     "nothingToTranslate": "翻訳する在庫がありません",
-    "unitType": "単位の種類"
+    "unitType": "単位の種類",
+    "chooseFromGallery": "ギャラリーから選択"
   },
   "growth": {
     "later": "あとで",

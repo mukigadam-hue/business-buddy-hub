@@ -28,6 +28,7 @@ import RecycleDeleteButton from '@/components/RecycleDeleteButton';
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useSubmitLock } from '@/hooks/useSubmitLock';
+import { pickImage } from '@/lib/nativeCamera';
 
 export default function OrdersPage() {
   const { t } = useTranslation();
@@ -111,7 +112,6 @@ export default function OrdersPage() {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Recipient selection for requests
   const [contacts, setContacts] = useState<{ id: string; contact_business_id: string; nickname: string; business_name?: string; business_code?: string }[]>([]);
@@ -825,8 +825,8 @@ export default function OrdersPage() {
     }
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function chooseProof() {
+    const file = await pickImage('gallery');
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast.error(t('ordersUI.uploadImage')); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error(t('ordersUI.fileUnder5mb')); return; }
@@ -2096,7 +2096,7 @@ export default function OrdersPage() {
                       <div>
                         <Label className="text-xs font-semibold text-destructive">Upload Payment Screenshot *</Label>
                         <div
-                          onClick={() => fileInputRef.current?.click()}
+                          onClick={chooseProof}
                           className="mt-1 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:border-primary/50 transition-colors"
                         >
                           {proofPreview ? (
@@ -2108,7 +2108,6 @@ export default function OrdersPage() {
                             </div>
                           )}
                         </div>
-                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                         {proofFile && <p className="text-xs text-success mt-1">✓ {proofFile.name}</p>}
                       </div>
                     </div>

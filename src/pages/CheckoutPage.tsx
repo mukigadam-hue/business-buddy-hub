@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useBusiness } from '@/context/BusinessContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +15,7 @@ import Receipt from '@/components/Receipt';
 import { PaymentMethodsViewer } from '@/components/PaymentMethodsManager';
 import type { Order } from '@/context/BusinessContext';
 import AdSpace from '@/components/AdSpace';
+import { pickImage } from '@/lib/nativeCamera';
 
 import { toSentenceCase, toTitleCase } from '@/lib/utils';
 
@@ -37,7 +38,6 @@ export default function CheckoutPage() {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function addItem() {
     const product = activeProducts.find(p => p.id === selectedProduct);
@@ -55,8 +55,8 @@ export default function CheckoutPage() {
   function removeItem(idx: number) { setItems(prev => prev.filter((_, i) => i !== idx)); }
   const grandTotal = items.reduce((sum, i) => sum + i.subtotal, 0);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function chooseProof() {
+    const file = await pickImage('gallery');
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
@@ -330,7 +330,7 @@ export default function CheckoutPage() {
                 <div>
                   <Label className="text-xs font-semibold text-destructive">Upload Payment Screenshot *</Label>
                   <div
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={chooseProof}
                     className="mt-1 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
                   >
                     {proofPreview ? (
@@ -343,7 +343,6 @@ export default function CheckoutPage() {
                       </div>
                     )}
                   </div>
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                   {proofFile && <p className="text-xs text-success mt-1">✓ {proofFile.name}</p>}
                 </div>
               </div>

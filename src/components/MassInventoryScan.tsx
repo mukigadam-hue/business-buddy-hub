@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
 import ImageUpload from '@/components/ImageUpload';
-import { compressImage } from '@/lib/compressImage';
+import { compressImage, cropNormalizedRegion } from '@/lib/compressImage';
 import { pickImage, canUseWebcam } from '@/lib/nativeCamera';
 
 interface MassInventoryScanProps {
@@ -33,40 +33,6 @@ interface DetectedItem {
   quantity: string; // string to allow proper editing including empty
   image_url?: string;
   bbox?: [number, number, number, number]; // [ymin,xmin,ymax,xmax] 0-1000
-}
-
-async function cropFromBbox(
-  sourceBlob: Blob,
-  bbox: [number, number, number, number],
-): Promise<Blob | null> {
-  try {
-    const bmp = await createImageBitmap(sourceBlob);
-    const [ymin, xmin, ymax, xmax] = bbox;
-    // Clamp and validate
-    const y1 = Math.max(0, Math.min(1000, ymin));
-    const x1 = Math.max(0, Math.min(1000, xmin));
-    const y2 = Math.max(0, Math.min(1000, ymax));
-    const x2 = Math.max(0, Math.min(1000, xmax));
-    if (x2 <= x1 || y2 <= y1) { bmp.close(); return null; }
-    const sx = (x1 / 1000) * bmp.width;
-    const sy = (y1 / 1000) * bmp.height;
-    const sw = ((x2 - x1) / 1000) * bmp.width;
-    const sh = ((y2 - y1) / 1000) * bmp.height;
-    if (sw < 8 || sh < 8) { bmp.close(); return null; }
-    // Scale to <= 512px longest side
-    const maxDim = 512;
-    const ratio = Math.min(1, maxDim / Math.max(sw, sh));
-    const dw = Math.round(sw * ratio);
-    const dh = Math.round(sh * ratio);
-    const canvas = new OffscreenCanvas(dw, dh);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { bmp.close(); return null; }
-    ctx.drawImage(bmp, sx, sy, sw, sh, 0, 0, dw, dh);
-    bmp.close();
-    return await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.75 });
-  } catch {
-    return null;
-  }
 }
 
 function fileToDataUrl(file: File | Blob): Promise<string> {
@@ -133,7 +99,10 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
     setScanning(true);
     setItems(null);
     try {
-      const compressed = await compressImage(file).catch(() => file);
+      // Never pass the original camera photo into FileReader. A full-resolution
+      // photo becomes a much larger base64 string and can exhaust Android
+      // WebView memory, terminating the installed app.
+      const compressed = await compressImage(file);
       const [dataUrl, publicUrl] = await Promise.all([
         fileToDataUrl(compressed),
         uploadShelfPhoto(compressed),
@@ -171,7 +140,7 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
             : undefined;
           let itemImageUrl = publicUrl; // fallback: whole shelf photo
           if (bbox) {
-            const cropped = await cropFromBbox(compressed, bbox);
+            const cropped = await cropNormalizedRegion(compressed, bbox);
             if (cropped) {
               const fname = `${uid}/mass-scan/item-${Date.now()}-${idx}.jpg`;
               const { error: upErr } = await supabase.storage

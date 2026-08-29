@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Camera, AlertTriangle, CheckCircle, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/compressImage';
+import { pickImage, type PickSource } from '@/lib/nativeCamera';
 
 interface OrderDisputeDialogProps {
   open: boolean;
@@ -27,25 +29,25 @@ export default function OrderDisputeDialog({
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
-
-  function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(f => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024);
-    if (validFiles.length + photos.length > 5) {
+  async function addPhoto(source: PickSource) {
+    if (photos.length >= 5) {
       toast.error('Maximum 5 photos allowed');
       return;
     }
-    setPhotos(prev => [...prev, ...validFiles]);
-    validFiles.forEach(f => {
-      const reader = new FileReader();
-      reader.onload = ev => setPreviews(prev => [...prev, ev.target?.result as string]);
-      reader.readAsDataURL(f);
-    });
+    const selected = await pickImage(source);
+    if (!selected) return;
+    try {
+      const photo = await compressImage(selected);
+      setPhotos(prev => [...prev, photo]);
+      setPreviews(prev => [...prev, URL.createObjectURL(photo)]);
+    } catch (err: any) {
+      toast.error(err?.message || 'Could not process photo');
+    }
   }
 
   function removePhoto(idx: number) {
+    const preview = previews[idx];
+    if (preview) URL.revokeObjectURL(preview);
     setPhotos(prev => prev.filter((_, i) => i !== idx));
     setPreviews(prev => prev.filter((_, i) => i !== idx));
   }
@@ -177,14 +179,14 @@ export default function OrderDisputeDialog({
               {photos.length < 5 && (
                 <>
                   <button
-                    onClick={() => fileRef.current?.click()}
+                    onClick={() => addPhoto('gallery')}
                     className="w-16 h-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 transition-colors"
                   >
                     <Upload className="h-4 w-4" />
                     <span className="text-[8px]">Upload</span>
                   </button>
                   <button
-                    onClick={() => cameraRef.current?.click()}
+                    onClick={() => addPhoto('camera')}
                     className="w-16 h-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 transition-colors"
                   >
                     <Camera className="h-4 w-4" />
@@ -193,8 +195,6 @@ export default function OrderDisputeDialog({
                 </>
               )}
             </div>
-            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
-            <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFiles} />
           </div>
 
           <Button onClick={handleSubmit} className="w-full" disabled={submitting || !description.trim()}>

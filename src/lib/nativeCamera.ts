@@ -24,7 +24,7 @@ export function pickImage(source: PickSource): Promise<File | null> {
 
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    input.accept = 'image/jpeg,image/png,image/webp,image/*';
     if (source === 'camera' && !isNativeShell()) {
       // Native shells handle camera through their own chooser.
       input.setAttribute('capture', 'environment');
@@ -47,7 +47,18 @@ export function pickImage(source: PickSource): Promise<File | null> {
     };
 
     input.addEventListener('change', () => {
-      finish(input.files?.[0] ?? null);
+      const selected = input.files?.[0] ?? null;
+      // Some Android content providers return an empty MIME type. Preserve the
+      // bytes but normalize the File so image validation does not reject a
+      // valid camera result before compression can inspect it.
+      if (selected && !selected.type) {
+        finish(new File([selected], selected.name || `camera-${Date.now()}.jpg`, {
+          type: 'image/jpeg',
+          lastModified: selected.lastModified,
+        }));
+        return;
+      }
+      finish(selected);
     });
     // Chrome/WebView fire `cancel` when the chooser is dismissed.
     input.addEventListener('cancel', () => finish(null));

@@ -15,6 +15,23 @@ async function decode(file: Blob): Promise<
   | { kind: 'bitmap'; bmp: ImageBitmap; width: number; height: number }
   | { kind: 'img'; img: HTMLImageElement; url: string; width: number; height: number }
 > {
+  // The DOM image path is deliberately tried first. Several Android WebView
+  // releases expose createImageBitmap but terminate the renderer while
+  // decoding large camera JPEGs with it. Object URLs avoid an extra base64 or
+  // ArrayBuffer copy and have proved considerably more stable in native shells.
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error('Could not read this image'));
+      el.src = url;
+    });
+    return { kind: 'img', img, url, width: img.naturalWidth || img.width, height: img.naturalHeight || img.height };
+  } catch {
+    try { URL.revokeObjectURL(url); } catch {}
+  }
+
   if (typeof createImageBitmap === 'function') {
     try {
       const bmp = await createImageBitmap(file);
@@ -23,14 +40,7 @@ async function decode(file: Blob): Promise<
       /* fall through to <img> decoding */
     }
   }
-  const url = URL.createObjectURL(file);
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const el = new Image();
-    el.onload = () => resolve(el);
-    el.onerror = () => reject(new Error('Could not read this image'));
-    el.src = url;
-  });
-  return { kind: 'img', img, url, width: img.naturalWidth || img.width, height: img.naturalHeight || img.height };
+  throw new Error('Could not read this image');
 }
 
 async function drawToJpeg(
@@ -43,19 +53,9 @@ async function drawToJpeg(
   dh: number,
   quality: number,
 ): Promise<Blob> {
-  // Preferred: OffscreenCanvas (off main thread, no layout impact).
-  if (typeof OffscreenCanvas === 'function') {
-    try {
-      const off = new OffscreenCanvas(dw, dh);
-      const octx = off.getContext('2d') as OffscreenCanvasRenderingContext2D | null;
-      if (octx) {
-        octx.drawImage(source, sx, sy, sw, sh, 0, 0, dw, dh);
-        return await off.convertToBlob({ type: 'image/jpeg', quality });
-      }
-    } catch {
-      /* fall through to DOM canvas */
-    }
-  }
+  // Use a DOM canvas consistently. OffscreenCanvas is nominally present in
+  // some Android WebViews but its hardware-backed conversion can crash the
+  // renderer instead of throwing a catchable JavaScript error.
   const canvas = document.createElement('canvas');
   canvas.width = dw;
   canvas.height = dh;

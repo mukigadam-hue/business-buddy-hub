@@ -1,5 +1,3 @@
-import { isNativeShell } from '@/lib/nativeAdBridge';
-
 /**
  * Reliable image picker for browsers AND Android WebView shells
  * (WebViewGold / Despia).

@@ -11,10 +11,12 @@ import { isNativeShell } from '@/lib/nativeAdBridge';
  *    file chooser for a `display:none` input, so tapping "camera" did
  *    nothing at all. We therefore mount a real, visible-but-offscreen input.
  *
- * 2. `capture="environment"` is not honoured by every WebView file-chooser
- *    implementation; when unsupported the intent silently fails. Inside a
- *    native shell we drop `capture` so the native chooser shows its own
- *    "Camera / Gallery" options (which do work).
+ * 2. Camera and gallery must be separate native intents. Omitting `capture`
+ *    inside WebViewGold opens its generic "Upload File" action sheet. On some
+ *    Android builds, choosing "Take Photo" from that sheet destroys the app's
+ *    WebView before the camera activity starts (the app drops to the launcher
+ *    and then cold-starts). A camera input with `capture="environment"` takes
+ *    WebViewGold's direct camera path instead and avoids that crashing sheet.
  */
 export type PickSource = 'camera' | 'gallery';
 
@@ -24,9 +26,11 @@ export function pickImage(source: PickSource): Promise<File | null> {
 
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/jpeg,image/png,image/webp,image/*';
-    if (source === 'camera' && !isNativeShell()) {
-      // Native shells handle camera through their own chooser.
+    input.accept = 'image/*';
+    if (source === 'camera') {
+      // Keep this on native shells too. It bypasses WebViewGold's generic
+      // Upload File chooser, whose indirect Take Photo action crashes on a
+      // number of Android/OEM combinations.
       input.setAttribute('capture', 'environment');
     }
     // Offscreen but NOT display:none — required by old Android WebViews.

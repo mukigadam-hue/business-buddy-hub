@@ -56,7 +56,7 @@ export default function CheckoutPage() {
   const grandTotal = items.reduce((sum, i) => sum + i.subtotal, 0);
 
   async function chooseProof() {
-    const file = await pickImage('gallery');
+    const file = await pickImage();
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');

@@ -3,10 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, X, Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
-import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
 import { compressImage } from '@/lib/compressImage';
-import { pickImage, canUseWebcam } from '@/lib/nativeCamera';
+import { pickImage } from '@/lib/nativeCamera';
 import { usePremium } from '@/hooks/usePremium';
 
 interface ImageUploadProps {
@@ -26,7 +25,6 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [webcamOpen, setWebcamOpen] = useState(false);
-  const isMobile = useIsMobile();
   const { canUploadItemPhotos } = usePremium();
 
   const blocked = premiumOnly && !canUploadItemPhotos;
@@ -69,17 +67,12 @@ export default function ImageUpload({ bucket, path, currentUrl, onUploaded, onRe
     onRemoved?.();
   }
 
-  async function handleCameraClick() {
-    if (!isMobile && canUseWebcam()) {
-      setWebcamOpen(true);
-      return;
-    }
-    const file = await pickImage('camera');
-    if (file) handleFile(file);
+  function handleCameraClick() {
+    setWebcamOpen(true);
   }
 
   async function handleUploadClick() {
-    const file = await pickImage('gallery');
+    const file = await pickImage();
     if (file) handleFile(file);
   }
 

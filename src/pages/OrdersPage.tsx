@@ -826,7 +826,7 @@ export default function OrdersPage() {
   }
 
   async function chooseProof() {
-    const file = await pickImage('gallery');
+    const file = await pickImage();
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast.error(t('ordersUI.uploadImage')); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error(t('ordersUI.fileUnder5mb')); return; }

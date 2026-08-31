@@ -9,10 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Camera, Upload, Plus, X, Loader2, Package } from 'lucide-react';
 import { toast } from 'sonner';
-import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
 import { compressImage } from '@/lib/compressImage';
-import { pickImage, canUseWebcam } from '@/lib/nativeCamera';
+import { pickImage } from '@/lib/nativeCamera';
 
 interface QuickAddItemProps {
   open: boolean;
@@ -22,7 +21,6 @@ interface QuickAddItemProps {
 export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) {
   const { stock, addStockItem, updateStockItem, currentBusiness } = useBusiness();
   const { fmt } = useCurrency();
-  const isMobile = useIsMobile();
   const activeStock = stock.filter(s => !s.deleted_at);
 
   const [mode, setMode] = useState<'existing' | 'new'>('new');
@@ -59,17 +57,12 @@ export default function QuickAddItem({ open, onOpenChange }: QuickAddItemProps) 
     setImages(prev => prev.filter((_, i) => i !== idx));
   }
 
-  async function handleCameraClick() {
-    if (!isMobile && canUseWebcam()) {
-      setWebcamOpen(true);
-      return;
-    }
-    const file = await pickImage('camera');
-    if (file) handleFile(file);
+  function handleCameraClick() {
+    setWebcamOpen(true);
   }
 
   async function handleGalleryClick() {
-    const file = await pickImage('gallery');
+    const file = await pickImage();
     if (file) handleFile(file);
   }
 

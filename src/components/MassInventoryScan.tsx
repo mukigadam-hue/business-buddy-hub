@@ -9,11 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Loader2, ScanLine, Trash2, CheckCircle2, Sparkles, Upload } from 'lucide-react';
 import { toast } from 'sonner';
-import { useIsMobile } from '@/hooks/use-mobile';
 import WebcamCapture from '@/components/WebcamCapture';
 import ImageUpload from '@/components/ImageUpload';
 import { compressImage, cropNormalizedRegion } from '@/lib/compressImage';
-import { pickImage, canUseWebcam } from '@/lib/nativeCamera';
+import { pickImage } from '@/lib/nativeCamera';
 
 interface MassInventoryScanProps {
   open: boolean;
@@ -49,7 +48,6 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
   const langCode = (i18n.language || 'en').split('-')[0];
   const langName = languages.find(l => l.code === langCode)?.name || 'English';
   const { currentBusiness, addStockItem } = useBusiness();
-  const isMobile = useIsMobile();
   const [webcamOpen, setWebcamOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [items, setItems] = useState<DetectedItem[] | null>(null);
@@ -63,17 +61,12 @@ export default function MassInventoryScan({ open, onOpenChange }: MassInventoryS
     setShelfPhotoUrl('');
   }
 
-  async function openCamera() {
-    if (!isMobile && canUseWebcam()) {
-      setWebcamOpen(true);
-      return;
-    }
-    const file = await pickImage('camera');
-    if (file) handleImage(file);
+  function openCamera() {
+    setWebcamOpen(true);
   }
 
   async function openGallery() {
-    const file = await pickImage('gallery');
+    const file = await pickImage();
     if (file) handleImage(file);
   }
 

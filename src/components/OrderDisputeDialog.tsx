@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Upload, Camera, AlertTriangle, CheckCircle, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/compressImage';
-import { pickImage, type PickSource } from '@/lib/nativeCamera';
+import { pickImage } from '@/lib/nativeCamera';
+import WebcamCapture from '@/components/WebcamCapture';
 
 interface OrderDisputeDialogProps {
   open: boolean;
@@ -29,12 +30,9 @@ export default function OrderDisputeDialog({
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  async function addPhoto(source: PickSource) {
-    if (photos.length >= 5) {
-      toast.error('Maximum 5 photos allowed');
-      return;
-    }
-    const selected = await pickImage(source);
+  const [webcamOpen, setWebcamOpen] = useState(false);
+
+  async function handlePicked(selected: File | null) {
     if (!selected) return;
     try {
       const photo = await compressImage(selected);
@@ -43,6 +41,22 @@ export default function OrderDisputeDialog({
     } catch (err: any) {
       toast.error(err?.message || 'Could not process photo');
     }
+  }
+
+  async function addGalleryPhoto() {
+    if (photos.length >= 5) {
+      toast.error('Maximum 5 photos allowed');
+      return;
+    }
+    await handlePicked(await pickImage());
+  }
+
+  function openCamera() {
+    if (photos.length >= 5) {
+      toast.error('Maximum 5 photos allowed');
+      return;
+    }
+    setWebcamOpen(true);
   }
 
   function removePhoto(idx: number) {
@@ -179,14 +193,14 @@ export default function OrderDisputeDialog({
               {photos.length < 5 && (
                 <>
                   <button
-                    onClick={() => addPhoto('gallery')}
+                    onClick={addGalleryPhoto}
                     className="w-16 h-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 transition-colors"
                   >
                     <Upload className="h-4 w-4" />
                     <span className="text-[8px]">Upload</span>
                   </button>
                   <button
-                    onClick={() => addPhoto('camera')}
+                    onClick={openCamera}
                     className="w-16 h-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 transition-colors"
                   >
                     <Camera className="h-4 w-4" />
@@ -201,6 +215,7 @@ export default function OrderDisputeDialog({
             {submitting ? 'Submitting...' : <><AlertTriangle className="h-4 w-4 mr-2" />Submit Dispute</>}
           </Button>
         </div>
+        <WebcamCapture open={webcamOpen} onOpenChange={setWebcamOpen} onCapture={file => handlePicked(file)} />
       </DialogContent>
     </Dialog>
   );

@@ -193,14 +193,14 @@ export default function OrderDisputeDialog({
               {photos.length < 5 && (
                 <>
                   <button
-                    onClick={() => addPhoto('gallery')}
+                    onClick={addGalleryPhoto}
                     className="w-16 h-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 transition-colors"
                   >
                     <Upload className="h-4 w-4" />
                     <span className="text-[8px]">Upload</span>
                   </button>
                   <button
-                    onClick={() => addPhoto('camera')}
+                    onClick={openCamera}
                     className="w-16 h-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:border-primary/50 transition-colors"
                   >
                     <Camera className="h-4 w-4" />

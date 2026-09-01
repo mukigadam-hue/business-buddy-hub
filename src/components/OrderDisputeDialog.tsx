@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Upload, Camera, AlertTriangle, CheckCircle, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/compressImage';
-import { pickImage, type PickSource } from '@/lib/nativeCamera';
+import { pickImage } from '@/lib/nativeCamera';
+import WebcamCapture from '@/components/WebcamCapture';
 
 interface OrderDisputeDialogProps {
   open: boolean;
@@ -29,12 +30,9 @@ export default function OrderDisputeDialog({
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  async function addPhoto(source: PickSource) {
-    if (photos.length >= 5) {
-      toast.error('Maximum 5 photos allowed');
-      return;
-    }
-    const selected = await pickImage(source);
+  const [webcamOpen, setWebcamOpen] = useState(false);
+
+  async function handlePicked(selected: File | null) {
     if (!selected) return;
     try {
       const photo = await compressImage(selected);
@@ -43,6 +41,22 @@ export default function OrderDisputeDialog({
     } catch (err: any) {
       toast.error(err?.message || 'Could not process photo');
     }
+  }
+
+  async function addGalleryPhoto() {
+    if (photos.length >= 5) {
+      toast.error('Maximum 5 photos allowed');
+      return;
+    }
+    await handlePicked(await pickImage());
+  }
+
+  function openCamera() {
+    if (photos.length >= 5) {
+      toast.error('Maximum 5 photos allowed');
+      return;
+    }
+    setWebcamOpen(true);
   }
 
   function removePhoto(idx: number) {

@@ -215,6 +215,7 @@ export default function OrderDisputeDialog({
             {submitting ? 'Submitting...' : <><AlertTriangle className="h-4 w-4 mr-2" />Submit Dispute</>}
           </Button>
         </div>
+        <WebcamCapture open={webcamOpen} onOpenChange={setWebcamOpen} onCapture={file => handlePicked(file)} />
       </DialogContent>
     </Dialog>
   );

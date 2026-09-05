@@ -4,7 +4,7 @@ import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import AppToaster from "@/components/AppToaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { BusinessProvider, useBusiness } from "@/context/BusinessContext";
 import { FactoryProvider } from "@/context/FactoryContext";
@@ -18,6 +18,7 @@ import { SecurityUpgradeModal } from "./components/auth/SecurityUpgradeModal";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import BusinessSetupPage from "./pages/BusinessSetupPage";
 import VerifyReceiptPage from "./pages/VerifyReceiptPage";
+import LandingPage from "./pages/LandingPage";
 
 // Lazy-load all page components for faster initial load
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -105,11 +106,24 @@ function AppContent() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify/:type/:id" element={<VerifyReceiptPage />} />
+          {/* Public marketing landing page (root) — logged-in users go straight to the app */}
+          <Route path="/" element={
+            !user ? <LandingPage /> : (
+              <BusinessProvider>
+                <SecurityUpgradeModal />
+                <BusinessContent />
+              </BusinessProvider>
+            )
+          } />
+          {/* Dedicated login route */}
+          <Route path="/login" element={
+            user ? <Navigate to="/" replace /> : <PhoneAuthPage />
+          } />
           {/* Legacy email/password auth — kept available for existing users */}
           <Route path="/login-email" element={<AuthPage />} />
           {/* Auth-gated routes */}
           <Route path="/*" element={
-            !user ? <PhoneAuthPage /> : (
+            !user ? <Navigate to="/login" replace /> : (
               <BusinessProvider>
                 <SecurityUpgradeModal />
                 <BusinessContent />

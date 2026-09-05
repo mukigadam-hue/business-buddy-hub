@@ -4,7 +4,7 @@ import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import AppToaster from "@/components/AppToaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { BusinessProvider, useBusiness } from "@/context/BusinessContext";
 import { FactoryProvider } from "@/context/FactoryContext";

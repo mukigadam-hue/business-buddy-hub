@@ -1,7 +1,31 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ShoppingCart, Users, UserCog, Compass, Smartphone, MonitorSmartphone } from "lucide-react";
 
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.despia.biztrack";
+const ADSENSE_CLIENT = "ca-pub-9605564713228252";
+
+function useAdSenseScript() {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const id = `adsense-script-${ADSENSE_CLIENT}`;
+    if (document.getElementById(id)) return;
+
+    const script = document.createElement("script");
+    script.id = id;
+    script.async = true;
+    script.crossOrigin = "anonymous";
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
+    document.head.appendChild(script);
+
+    return () => {
+      const existing = document.getElementById(id);
+      if (existing && existing.parentNode) {
+        existing.parentNode.removeChild(existing);
+      }
+    };
+  }, []);
+}
 
 function AdPlaceholder({ label }: { label: string }) {
   return (
@@ -38,6 +62,8 @@ const features = [
 ];
 
 export default function LandingPage() {
+  useAdSenseScript();
+
   return (
     <div className="min-h-screen-safe bg-background text-foreground overflow-y-auto">
       {/* Header */}

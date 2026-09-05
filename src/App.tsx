@@ -18,6 +18,7 @@ import { SecurityUpgradeModal } from "./components/auth/SecurityUpgradeModal";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import BusinessSetupPage from "./pages/BusinessSetupPage";
 import VerifyReceiptPage from "./pages/VerifyReceiptPage";
+import LandingPage from "./pages/LandingPage";
 
 // Lazy-load all page components for faster initial load
 const Dashboard = lazy(() => import("./pages/Dashboard"));

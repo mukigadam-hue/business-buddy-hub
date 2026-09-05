@@ -106,11 +106,24 @@ function AppContent() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify/:type/:id" element={<VerifyReceiptPage />} />
+          {/* Public marketing landing page (root) — logged-in users go straight to the app */}
+          <Route path="/" element={
+            !user ? <LandingPage /> : (
+              <BusinessProvider>
+                <SecurityUpgradeModal />
+                <BusinessContent />
+              </BusinessProvider>
+            )
+          } />
+          {/* Dedicated login route */}
+          <Route path="/login" element={
+            user ? <Navigate to="/" replace /> : <PhoneAuthPage />
+          } />
           {/* Legacy email/password auth — kept available for existing users */}
           <Route path="/login-email" element={<AuthPage />} />
           {/* Auth-gated routes */}
           <Route path="/*" element={
-            !user ? <PhoneAuthPage /> : (
+            !user ? <Navigate to="/login" replace /> : (
               <BusinessProvider>
                 <SecurityUpgradeModal />
                 <BusinessContent />

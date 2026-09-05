@@ -62,6 +62,8 @@ const features = [
 ];
 
 export default function LandingPage() {
+  useAdSenseScript();
+
   return (
     <div className="min-h-screen-safe bg-background text-foreground overflow-y-auto">
       {/* Header */}

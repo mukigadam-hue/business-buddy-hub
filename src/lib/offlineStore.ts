@@ -56,8 +56,17 @@ export interface OfflineQueueItem {
 
 const QUEUE_KEY = 'pending_operations';
 
+async function queueGet<T>(key: string, fallback: T): Promise<T> {
+  try {
+    const val = await queueStore.getItem<T>(key);
+    return val !== null && val !== undefined ? val : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function getOfflineQueue(): Promise<OfflineQueueItem[]> {
-  return cacheGet<OfflineQueueItem[]>(QUEUE_KEY, []);
+  return queueGet<OfflineQueueItem[]>(QUEUE_KEY, []);
 }
 
 export async function addToOfflineQueue(item: Omit<OfflineQueueItem, 'id' | 'timestamp'>): Promise<void> {

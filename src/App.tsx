@@ -19,6 +19,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import BusinessSetupPage from "./pages/BusinessSetupPage";
 import VerifyReceiptPage from "./pages/VerifyReceiptPage";
 import LandingPage from "./pages/LandingPage";
+import { isNativeShell } from "@/lib/nativeAdBridge";
 
 // Lazy-load all page components for faster initial load
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -106,9 +107,11 @@ function AppContent() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify/:type/:id" element={<VerifyReceiptPage />} />
-          {/* Public marketing landing page (root) — logged-in users go straight to the app */}
+          {/* Public marketing landing page (root) — web visitors only.
+              Installed apps (WebViewGold/Despia shells) skip it and go
+              straight to sign-in so users never see marketing content. */}
           <Route path="/" element={
-            !user ? <LandingPage /> : (
+            !user ? (isNativeShell() ? <Navigate to="/login" replace /> : <LandingPage />) : (
               <BusinessProvider>
                 <SecurityUpgradeModal />
                 <BusinessContent />
